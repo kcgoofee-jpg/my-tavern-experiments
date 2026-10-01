@@ -1,0 +1,20 @@
+{
+  "_note": "The fixture pack pack3d-min (S7-3 T1): the smallest schema-2 pack with a 3D building (one view of kind model3d, three room nodes). Test fixture only: the generic-pack probe (tools/browser/) serves it under packs/pack3d-min/ and opens it in the viewer; it ships nowhere. Words are neutral on purpose: no word of the first pack may reach the 3D page for it.",
+  "id": "pack3d-min",
+  "schema": 2,
+  "title": "Test Hall",
+  "lang": "en",
+  "version": "1",
+  "match": { "card": { "name": ["Test Hall"] } },
+  "credits": { "pack": [{ "name": "Fixture", "role": "model", "license": "CC0-1.0" }] },
+  "nodes": [
+    { "id": "campus", "name": "Test Campus", "type": "site", "alias": ["Test Campus"] },
+    { "id": "hall", "name": "Test Hall", "type": "building", "parent": "campus", "alias": ["Test Hall"], "view": "hall3d" },
+    { "id": "atrium", "name": "Atrium", "type": "room", "parent": "hall", "alias": ["Atrium"] },
+    { "id": "workshop", "name": "Workshop", "type": "room", "parent": "hall", "alias": ["Workshop"] },
+    { "id": "loft", "name": "Loft", "type": "room", "parent": "hall", "alias": ["Loft"] }
+  ],
+  "views": { "hall3d": { "kind": "model3d", "open": "locate", "manifest": "scene/manifest.json" } },
+  "vars": { "location": "world.location" },
+  "ui": { "start": "hall", "tabs": ["places", "characters", "events", "items"] }
+}

@@ -55,10 +55,10 @@ test('容错与兜底：未知字段原样保留不报错；缺 id / 缺 glb 报
 });
 test('账实对拍：庄园清单的 glb / data 文件都真实存在，floors 与 eden_estate_rooms.json 一致', () => {
   const rooms = rd('data/eden_estate_rooms.json');
-  assert.deepEqual(estateManifest.floors, rooms.floors.map(f => f.id), '清单 floors = 房间数据的楼层顺序');
+  assert.deepEqual(Estate3D.floorList(estateManifest).map(f => f.id), rooms.floors.map(f => f.id), '清单 floors = 房间数据的楼层顺序（S7-3：floors 的项带 label / i18n，K-R132）');
   const n = Estate3D.normalize(estateManifest, { base: estateBase });
   for (const p of ['site', 'house']) for (const t of ['std', 'low']) assert.ok(existsSync(new URL(n.parts[p][t])), `estate ${p}.${t}`);
-  for (const k of ['rooms', 'zones']) assert.ok(existsSync(new URL(n.data[k])), `estate data.${k}`);
+  for (const k of ['rooms', 'zones', 'extras']) assert.ok(existsSync(new URL(n.data[k])), `estate data.${k}`);
 });
 test('账实对拍：55 个地标清单全部合格——id = 目录名、glb 文件在盘、热点 id 唯一', () => {
   const dirs = readdirSync(new URL('props/', root)).filter(d => !d.endsWith('.html') && !d.startsWith('.'));

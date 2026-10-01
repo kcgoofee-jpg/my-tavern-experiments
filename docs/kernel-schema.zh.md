@@ -501,6 +501,10 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 
 **K-R104 —— 3D 场景清单的 schema。** `map/data/schema/v2/scene3d.schema.json` 是通用 3D 查看器清单的 v2 schema（文件 `map/estate/model/manifest.json` 与每个 `map/props/<id>/manifest.json`；K-R64 许下的）。它依 `core/scene3d-manifest.mjs` 写成：`id` 与 `glb` 必填，`glb` 是 `"x.glb"`、`{ std, low? }` 或 `{ <部件>: { std, low? } }`（地标的旧写法 `glb` 加 `glb_low` 也认），`floors` 是字符串或 `{ id }`，`hotspots` 是带 `id` 的对象，`budget` / `budgets`，`license` / `credit`，`data` = `{ rooms?, zones?, galleries? }`（相对清单的路径），`flows[].color` 是 `#rrggbb`；未知字段保留（`additionalProperties: true`，这个格式一向如此）。`tools/check_pack.py` 用它和核心模块的 `validate` 检查每一份随仓清单；不合格的只报告、不改。
 
+**K-R131 —— 房间类别作为设定包数据。** 3D 清单可带 `room_kinds: { <kind>: { color: "#rrggbb", label, rank?: 1 | 2 | 3, i18n?: { <lang>: { label } } } }`：该类别每间房的底板颜色，以及它在剖切视图色标与房间卡上的名字（有语言条目取语言条目，否则取 `label`；`rank` 是该类别房间标注的优先级，1 最先，缺省 2）。类别 id 符合 `^[a-z][a-z0-9_]{0,63}$`，颜色运行时用 `recheck.hex` 复核，名字是纯文本、只经 `textContent` 上页（K-R64）。房间用了而表里没有的类别：生成一个颜色（`core/kind-palette.mjs`：八个颜色，在两种主题底色上都至少 3:1，在正常视觉与红色盲、绿色盲、蓝色盲模拟下两两至少相距 20，按类别 id 的稳定哈希挑选），名字就是类别 id。查看器不再自带类别表。`rooms.json`（清单的 `data.rooms`，`map/data/schema/v2/rooms.schema.json`）列 `floors: [{ id, name?, z }]` 与 `rooms: [{ name, node, floor, kind, area?, note?, poly }]`；`node` 是该房间在设定包节点树里的 id（同名房间可共用一个节点），房间卡、人物头像与房间列表按节点 id 对账，名字只作兜底。清单的 `data.extras` 可指向一个可选的包文件，里面有 `room_alias`（搜索时认房间的叫法）、`sub_rooms`（房间里的一个热点）与 `vehicles`（画出来的几件道具及其卡文字）；3D 页自己一个也不写。
+
+**K-R132 —— 建筑的名字。** 3D 清单可带 `building: { title, subtitle?, summary?, i18n?: { <lang>: { title?, subtitle?, summary? } } }`：查看器显示的标题、副标题与一句话简介（外壳的无障碍名字、建筑的卡）。楼层名字是现有 K-R104 `floors[]` 各项上的 `label` 与 `i18n`；`building.floors` 键会被 schema 拒绝（一份列表、一个位置）。没有这个块时，查看器说「Building」、不显示副标题与简介、用楼层 id 当名字。所有文字都是纯文本、用 `textContent` 设置。（地标清单里的 `building: { min, max }` 是它的包围盒，由 `props/viewer3d.html` 读取，不是这个块。）可选的 `view.ext = { target: [x, y, z], size: [w, d, h] }` 以 layout 米给外观视图取景；没有时用模型包围盒。
+
 ### 4.6 查看器里的 schema-2 包
 
 **K-R96 —— 打开 schema-2 包。** `core/pack.mjs` 在 `schema: 1` 之外也收 `schema: 2`：schema-2 清单的 `validate` 只查 `id` 与 `title`，`load` 返回带 `schema` 的解析结果，并把清单放在 `v2` 里；查看器（`app/current-pack.mjs`）接着跑 `resolveBlocks`（块文件相对包目录）、`validate2`（只有随引擎发布的包才算可信，即从 `packs/<id>/` 加载的包）与 `withDefaults`。查看器用一份内存里的投影工作，`projectV2(pack, { base })`（`core/pack-v2-view.mjs`，纯函数），形状就是它现在画的注册表；没有任何查看器模块自己读 schema 2，schema-1 的包也从不经过它。
@@ -930,7 +934,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S8-4b 新增：** K-R110、K-R112 与 K-R113（§9）、K-R111（§10.2）、K-R114（§4.6），以及 K-R80 的 `badge` 样式键；至此 S8-4 设计的 K-R107 – K-R114 全部写成正文。
 
-**S7-1 已加：** K-R130（§9，`OP_ROUTE`）。**S7 计划**（S7-design 预留，`docs/ui-refactor.md`；全文随所注步骤落地）：K-R131（§4.5，3D 清单里的 `room_kinds`：房间类型 → 颜色与名称作为包数据，N9）；K-R132（§4.5，3D 清单的 `building` 块：标题、题词、楼层名，N11）；K-R131、K-R132 随步骤 S7-3 落地。
+**S7-1 已加：** K-R130（§9，`OP_ROUTE`）。**S7-3 已加：** K-R131（§4.5，3D 清单里的 `room_kinds`、`rooms.json` 与 `data.extras`：房间类别 → 颜色与名称作为包数据，房间与节点对账，N9）与 K-R132（§4.5，3D 清单的 `building` 块与楼层名，N11）。
 
 
 ## 14. 设计方的决定与遗留点

@@ -77,12 +77,21 @@
               "id": {
                 "type": "string",
                 "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The floor's name in the viewer (K-R132); the floor id when absent."
+              },
+              "i18n": {
+                "type": "object",
+                "description": "{ <lang>: { label } }"
               }
             }
           }
         ]
       },
-      "description": "Floor ids (checked against the room plan's floors)."
+      "description": "Floor ids, bottom to top (checked against the room plan's floors); an item may carry `label` and `i18n` (K-R132)."
     },
     "hotspots": {
       "type": "array",
@@ -121,6 +130,10 @@
         },
         "zones": {
           "type": "string"
+        },
+        "extras": {
+          "type": "string",
+          "description": "Optional pack data file: room aliases, sub-areas and vehicles of the building (data/extras shape in docs/kernel-schema.md K-R131)."
         }
       }
     },
@@ -148,6 +161,118 @@
           }
         }
       }
+    },
+    "building": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "title"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subtitle": {
+              "type": "string"
+            },
+            "i18n": {
+              "type": "object",
+              "description": "{ <lang>: { title?, subtitle?, summary? } }"
+            },
+            "floors": false,
+            "summary": {
+              "type": "string"
+            }
+          },
+          "description": "K-R132: the building's title and subtitle (plain text, put on the page with textContent); the viewer says \"Building\" and shows no subtitle without it. A `floors` key is rejected: floor labels live on floors[] items."
+        },
+        {
+          "type": "object",
+          "required": [
+            "min",
+            "max"
+          ],
+          "properties": {
+            "min": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "max": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "description": "Legacy landmark spelling: the bounding box of the whole model (read by props/viewer3d.html); not the K-R132 block."
+        }
+      ],
+      "description": "K-R132: the building's words { title, subtitle?, i18n? }, or (legacy landmark manifests) the model's bounding box { min, max }."
+    },
+    "room_kinds": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "color",
+          "label"
+        ],
+        "properties": {
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "i18n": {
+            "type": "object",
+            "description": "{ <lang>: { label } }"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "Label priority: 1 is shown first, 3 last (2 when absent)."
+          }
+        }
+      },
+      "description": "K-R131: room kind -> plate colour and legend label (plain text). A kind a room uses and the table lacks gets a generated colour-vision-safe colour and its id as label."
+    },
+    "view": {
+      "type": "object",
+      "properties": {
+        "ext": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          }
+        }
+      },
+      "description": "Optional camera framing of the exterior view in metres (layout coordinates: x east, y north, z up); the model's bounding box when absent."
     }
   }
 }

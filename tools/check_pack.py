@@ -253,6 +253,7 @@ def check_index():
 def check_scene3d():
     """K-R104：每份随仓 3D 清单（主场景 map/estate/model + 每个 map/props/<id>）过 map/data/schema/v2/scene3d.schema.json，并过 core/scene3d-manifest.mjs 的 validate（node）。清单数据这里不改，只报。"""
     sch = json.load(open(os.path.join(MAP, 'data', 'schema', 'v2', 'scene3d.schema.json'), encoding='utf-8'))
+    rooms_sch = json.load(open(os.path.join(MAP, 'data', 'schema', 'v2', 'rooms.schema.json'), encoding='utf-8'))
     files = [os.path.join(MAP, 'estate', 'model', 'manifest.json')] + sorted(glob.glob(os.path.join(MAP, 'props', '*', 'manifest.json')))
     errs = []
     for f in files:
@@ -260,6 +261,15 @@ def check_scene3d():
         try: m = json.load(open(f, encoding='utf-8'))
         except Exception as e: errs.append(f'{rel}: 读不出来：{e}'); continue
         errs += [f'{rel} {e}' for e in validate(m, sch)]
+        rp = (m.get('data') or {}).get('rooms')   # K-R131 / K-R132: the room plan the manifest names: rooms.schema.json, floors of the plan = floors of the manifest, a node per room
+        if isinstance(rp, str) and os.path.exists(os.path.join(os.path.dirname(f), rp)):
+            try: rooms = json.load(open(os.path.join(os.path.dirname(f), rp), encoding='utf-8'))
+            except Exception as e: errs.append(f'{rel}: data.rooms 读不出来：{e}'); continue
+            errs += [f'{os.path.relpath(os.path.join(os.path.dirname(f), rp), MAP)} {e}' for e in validate(rooms, rooms_sch)]
+            fl = [x if isinstance(x, str) else (x or {}).get('id') for x in m.get('floors') or []]
+            pf = [x.get('id') for x in rooms.get('floors', []) if isinstance(x, dict)]
+            if fl and fl != pf: errs.append(f'{rel}: floors {fl} 与房间表的楼层 {pf} 不一致')
+            errs += [f'{rel}: 房间 {r.get("name")} 的楼层 {r.get("floor")} 不在 floors 里' for r in rooms.get('rooms', []) if isinstance(r, dict) and fl and r.get('floor') not in fl]
     js = "import('./map/core/scene3d-manifest.mjs').then(async M=>{const fs=await import('node:fs');for(const f of process.argv.slice(1)){for(const e of M.validate(JSON.parse(fs.readFileSync(f,'utf8'))))console.log(f+': '+e)}})"
     try:
         r = subprocess.run(['node', '-e', js, *files], capture_output=True, text=True, timeout=60, cwd=ROOT)
@@ -268,7 +278,53 @@ def check_scene3d():
     return errs
 
 
+SURFACE_ROWS = [   # docs/ui-refactor.md 2.7 (the pack-author surface): a node test (tests/check_pack_surface.test.mjs) compares these rows with that table
+    ('chrome accent', '`ui.theme.chrome.accent`, `onAccent?`', 'overlay schema (K-R70 amended)', '`check_pack` contrast (below)', 'engine accent; `onAccent` computed'),
+    ('map pins, routes, tint, labels', '`ui.theme.views.<view>` → `--map-*`', 'overlay schema (K-R70 amended)', '`check_pack` contrast', 'kernel map tokens'),
+    ('layer menu reason', '`layers[].menu.when`, `menu.i18n.<lang>.when`', 'layers schema (K-R83)', '`check_pack` plain text', 'generated from `applies` with i18n words (§3.3)'),
+    ('layer one-line description', '`layers[].menu.title`', 'layers schema', 'plain text', 'none shown'),
+    ('person ring colour', 'none (engine palette, U-24 A′)', '—', '—', '—'),
+    ('building title, subtitle', '3D manifest `building { title, subtitle?, i18n }` (K-R132)', '`scene3d.schema.json`', 'schema + `textContent`', '"Building", no subtitle'),
+    ('floor labels', '3D manifest `floors[] { id, label?, i18n? }` (K-R104 + K-R132)', '`scene3d.schema.json`', 'schema', 'floor id'),
+    ('room kinds', '`room_kinds { <kind>: { color, label, i18n? } }` (K-R131)', '`scene3d.schema.json`', '`recheck.hex`, plain text', 'generated categorical colour, kind id as label'),
+    ('rooms', '`rooms.json` per `rooms.schema.json` (`name`, `node`, `floor`, `kind`, `area?`, `note?`, geometry)', '`rooms.schema.json` (new)', 'schema; `node` resolves', 'none: no interior without rooms'),
+    ('view mode words, floor words', 'core i18n keys (`v3.ext`, `v3.xray`, `v3.section`, `v3.floor`) via `ui.strings`', 'manifest `strings` (K-R57)', '`check_pack` key list', 'core words'),
+    ('credits, original post link', '`credits`, `credits.card.url` (K-R70)', 'manifest', 'URL scheme check', 'none'),
+    ('other UI words', '`ui.strings` (K-R57)', 'manifest', 'non-overridable list', 'core i18n'),
+]
+
+
+def surface(pid=None):
+    """--surface [<id>]: print the pack-author surface table (the rows of docs/ui-refactor.md 2.7) and, for a pack, which rows it declares."""
+    print('| Visible element | Pack field | Schema | Checked by | Engine fallback |'); print('|---|---|---|---|---|')
+    for r in SURFACE_ROWS: print('| ' + ' | '.join(r) + ' |')
+    if not pid: return
+    d = os.path.join(MAP, 'packs', pid)
+    try: m = json.load(open(os.path.join(d, 'manifest.json'), encoding='utf-8'))
+    except Exception as e: print(f'\n{pid}: manifest unreadable ({e})'); return
+    ov = {}
+    if (m.get('data') or {}).get('overlay'):
+        try: ov = json.load(open(os.path.join(MAP if pid == 'eden' else d, m['data']['overlay']), encoding='utf-8'))
+        except Exception: ov = {}
+    ui = m.get('ui') if isinstance(m.get('ui'), dict) else (ov.get('ui') or {})
+    th = (ui.get('theme') or {})
+    sc, sc3 = {}, None
+    p3 = os.path.join(MAP, 'estate', 'model', 'manifest.json') if pid == 'eden' else None
+    for v in (m.get('views') or {}).values():
+        if isinstance(v, dict) and v.get('kind') == 'model3d' and v.get('manifest'): p3 = os.path.join(d, v['manifest'])
+    if p3 and os.path.exists(p3): sc = json.load(open(p3, encoding='utf-8'))
+    if sc: sc3 = os.path.relpath(p3, MAP)
+    rooms = bool((sc.get('data') or {}).get('rooms'))
+    got = {'chrome accent': bool((th.get('chrome') or {}).get('accent')), 'map pins, routes, tint, labels': bool(th.get('views')), 'building title, subtitle': isinstance(sc.get('building'), dict),
+           'floor labels': any(isinstance(f, dict) and f.get('label') for f in sc.get('floors') or []), 'room kinds': bool(sc.get('room_kinds')), 'rooms': rooms,
+           'credits, original post link': bool(m.get('credits')), 'other UI words': bool(ui.get('strings') or m.get('strings'))}
+    print(f'\n{pid}' + (f' (3D manifest {sc3})' if sc3 else '') + ':')
+    for k, v in got.items(): print(f'  {k}: ' + ('declared' if v else 'engine fallback'))
+
+
 def main():
+    if '--surface' in sys.argv[1:]:
+        rest = [a for a in sys.argv[1:] if a != '--surface']; return surface(rest[0] if rest else None)
     ids = sys.argv[1:] or sorted(x for x in os.listdir(os.path.join(MAP, 'packs')) if os.path.isdir(os.path.join(MAP, 'packs', x)))
     bad = 0
     if not sys.argv[1:]:

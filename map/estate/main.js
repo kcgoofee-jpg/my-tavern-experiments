@@ -1,7 +1,8 @@
-// 伊甸庄园 · 网页三维（estate2 r4 整岛 + round-3 主楼分层）：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
-// 模型：加载由清单 model/manifest.json 驱动（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验 / 解析，代码里不写死资源路径）。
-//   site.glb（整岛外观，烘焙光照，blender/estate2/export_web.py）+ house.glb（主楼室内体量 B2–F3，blender/estate2/house_web.py，进内透 / 剖切时才加载）。
-// 房间数据：清单 data.rooms → ../data/eden_estate_rooms.json（floorplans.py 生成的精确多边形）；室外热点：清单 data.zones → model/zones.json（web_zones.py）。
+// 三维室内查看器：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
+// 模型：加载由清单驱动（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验 / 解析，代码里不写死资源路径；嵌入时宿主给清单地址）。
+//   site 部件（整岛 / 场地外观，烘焙光照）+ house 部件（室内体量，进内透 / 剖切时才加载）。
+// 数据（都来自清单）：房间表 data.rooms（精确多边形，房间以 node 对到包的节点）、室外热点 data.zones、房间叫法 / 子区域 / 载具 data.extras；
+//   建筑名与楼层名（building、floors）、房间类别的颜色与名字（room_kinds）也在清单里，页面只留中性兜底。
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
@@ -37,18 +38,18 @@ document.body.classList.toggle('embed', EMBED);
 document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light');
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
-// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 图例 · 关于（默认收起）----------------
+// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）；色标只在剖切视图里（kindsEl）----------------
 document.getElementById('zoom')?.remove();
-const legendEl = document.createElement('div'); legendEl.id = 'legend';
 const aboutEl = document.createElement('div'); aboutEl.id = 'about';
 const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; roomEl.append(document.getElementById('card')); { const e = document.createElement('p'); e.id = 'cardEmpty'; roomEl.append(e); }
 const C3 = window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'sect', label: '剖切' }], view: 'ext', sub: document.getElementById('floors'),
   onView: (v) => setMode(v === 'sect' ? (isFloor(mode) ? mode : lastFloor) : v, { fly: true, user: true }),
   controls: [{ id: 'lblBtn', icon: 'labels', pressed: true }, { id: 'zin', icon: 'in' }, { id: 'zout', icon: 'out' }, { id: 'zreset', icon: 'reset' }],
-  tabs: [{ id: 'room', btnClass: 'roomTab', panel: roomEl }, { id: 'legend', btnClass: 'legTab', panel: legendEl }, { id: 'about', btnClass: 'aboutTab', panel: aboutEl }],
+  tabs: [{ id: 'room', btnClass: 'roomTab', panel: roomEl }, { id: 'about', btnClass: 'aboutTab', panel: aboutEl }],
   onEsc: () => { if (IN_FRAME) post({ type: 'estate:key', key: 'Escape' }); else if (pinned) unpin(); } });
 C3.setAuto(LS('edenMap3dAuto') === '1');
 let lastFloor = 2;
+const kindsEl = document.createElement('div'); kindsEl.id = 'kinds'; kindsEl.className = 'g1'; kindsEl.hidden = true; C3.root.append(kindsEl);   // 色标：只在剖切视图里，当前楼层有哪几类房间就几枚
 const url = (p) => new URL(p, document.baseURI).href;   // 查看器用 blob + <base> 载入本页：相对地址按 <base> 解析
 const kick = (phase) => { try { window.__estateKick && window.__estateKick(phase); } catch (e) { } };
 const clamp = THREE.MathUtils.clamp;
@@ -81,31 +82,22 @@ let dayNightT = 0, dayNightPhase = '';
 
 /* ---------------- 数据（P3-A：模型 / 数据文件地址全部来自清单，代码不再写死或拼装资源路径） ---------------- */
 kick('data');
-const MAN_URL = url('model/manifest.json');
+const MAN_URL = window.__sceneManifest ? new URL(window.__sceneManifest, document.baseURI).href : url('model/manifest.json');   // 嵌入时宿主注入 __sceneManifest（设定包的清单地址）；独立打开读同目录的 model/manifest.json
 const M3D = Estate3D.normalize(await fetch(MAN_URL).then((r) => r.json()), { base: new URL('.', MAN_URL).href });
 const MAN = M3D.manifest;   // 清单原样保留（未知字段容错）；地址一律经 M3D.parts / M3D.data（已按清单所在目录解析）
-const [CARD, ZDATA] = await Promise.all([
-  fetch(M3D.data.rooms).then((r) => r.json()),
-  fetch(M3D.data.zones).then((r) => r.json()).catch(() => ({ zones: [] })),
-]);
+const getJSON = (u, dflt) => (u ? fetch(u).then((r) => r.json()).catch(() => dflt) : Promise.resolve(dflt));
+const [CARD, ZDATA, EXTRAS] = await Promise.all([getJSON(M3D.data.rooms, { floors: [], rooms: [] }), getJSON(M3D.data.zones, { zones: [] }), getJSON(M3D.data.extras, {})]);
 const F1Y = MAN.f1_z ?? 30;                                  // F1 地坪的世界标高（layout z）
-const FLOORS = CARD.floors.map((f) => ({ ...f, y: F1Y + f.z }));   // B2, B1, F1, F2, F3
+const FLOORS = (CARD.floors || []).map((f) => ({ ...f, y: F1Y + f.z }));   // bottom to top
 const FI = Object.fromEntries(FLOORS.map((f, i) => [f.id, i]));
-const FLOOR_EN = { B2: 'Basement 2', B1: 'Basement 1', F1: 'Ground floor', F2: 'First floor', F3: 'Second floor' };
 const CUT = 1.5;                                             // 剖切高度（楼面以上）
 const V = (x, y, z) => new THREE.Vector3(x, z, -y);          // layout (x 东, y 北, z 上) → three
-// 庄园页搜索用的英文名（房间名本身和卡里的其他写法在数据的 name / words 里；仓库以前自编的旧名只经 retired_names 解析，不再列出）
-const ALIAS = {
-  '主人主卧': ['Master Bedroom', 'Dressing Room'], '大厅': ['Grand Hall', 'Entrance Hall'], '会客厅': ['Drawing Room'], '餐厅': ['Dining Room'],
-  '厨房与后勤区': ['Kitchen'], '主人书房': ['Library', 'Study'], '女仆长寝室': ["Head Maid's Room"], '客房': ['Guest Room'], '个人寝室': ['Bedroom'],
-  '三楼公共浴室': ['Bathroom'], '恒温酒窖': ['Wine Cellar'], '衣物清洗与维护间': ['Laundry'], '东侧长廊': ['Gallery'], '体能训练室': ['Gym'],
-  '主人通道': ['主人专用通道'], '储藏室': ['Storeroom'],
-};
+// 房间的英文叫法（搜索用）、可点的子区域、室外载具：清单的 data.extras（包数据）
+const ALIAS = EXTRAS.room_alias || {};
 let PICS = {};   // 房间名 -> 这个房间的包图片 [{ id, item, url }]：宿主按运行时节点树发来（estate:media），地址经 pack-media 的来源规则；没有 = 空
-// 主卧套间内的子区域（卡：主卧「带衣帽间和独立浴室」，主人通道 F2 开进衣帽间）：单独做一个可点的热点，点开就是衣帽间图集
-const SUBS = [{ parent: 'F2-57', id: 'F2-57w', name: '衣帽间', en: 'Walk-in Wardrobe', alias: ['私人衣帽间', '步入式衣帽间', '更衣室', 'Dressing Room', 'Walk-in Wardrobe'], floor: 'F2', kind: 'card', sub: true,
-  note: '主卧套间内的步入式衣帽间；东侧门通主人专用通道', poly: [[12, -10], [16, -10], [16, -6], [12, -6]] }];
-const KIND_COL = { card: '#d9c29a', support: '#aab3bb', circ: '#e9e4d8', owner: '#a79bb6', medical: '#8fc7cf', open: '#c8cfbd' };
+// 房间里的子区域（单独一个可点的热点，点开就是它自己的卡 / 图集）：data.extras.sub_rooms
+const SUBS = (EXTRAS.sub_rooms || []).map((w) => ({ ...w, sub: true, en: w.i18n?.en?.name || '', whereEn: w.i18n?.en?.where || '' }));
+const KIND = (k) => Estate3D.kindInfo(MAN, k, LANG);   // K-R131：清单里的颜色与名字，没声明的类别 = 生成的颜色 + 类别 id
 
 /* ---------------- 相机与控制（正交；缩放以光标为中心） ---------------- */
 const BASE = 60, DIST = 1600;
@@ -141,16 +133,23 @@ function projExtent(w, d, h, theta, phi) {
   return [w * c + d * s, (w * s + d * c) * Math.cos(phi) + h * Math.sin(phi)];
 }
 // 主楼群外包（layout）：x −80…75，y −25…43
-const HOUSE_BOX = { x0: -80, x1: 75, y0: -25, y1: 43 };
+const polyBox = (rooms) => {   // 房间多边形的外包（layout 米）；没有房间 = 一个小方块
+  const ps = rooms.flatMap((r) => r.poly || []); if (!ps.length) return { x0: -10, x1: 10, y0: -10, y1: 10 };
+  return { x0: Math.min(...ps.map((p) => p[0])), x1: Math.max(...ps.map((p) => p[0])), y0: Math.min(...ps.map((p) => p[1])), y1: Math.max(...ps.map((p) => p[1])) };
+};
+const HOUSE_BOX = polyBox(CARD.rooms || []);
 const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 2, 0);
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', title: '伊甸家族府邸', motto: '始建约一百九十年 · HORTUS SUPRA NUBES', sub: '浮岛庄园 · 主楼地上三层 + 地下两层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', title: 'Eden Family Seat', motto: 'Founded c. 190 years ago · HORTUS SUPRA NUBES', sub: 'Floating-isle estate · house: 3 floors + 2 basements', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', xray: '内透', sect: '剖切', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
-const floorName = (i) => LANG === 'en' ? `${FLOORS[i].id} · ${FLOOR_EN[FLOORS[i].id]}` : `${FLOORS[i].id} · ${FLOORS[i].name}`;
+const FL = () => Estate3D.floorList(MAN, LANG);   // K-R132: id + label (the id when the manifest gives none)
+const floorLabel = (i) => FL()[i]?.label || FLOORS[i].id;
+const floorName = (i) => (floorLabel(i) === FLOORS[i].id ? FLOORS[i].id : `${FLOORS[i].id} · ${floorLabel(i)}`);
+const BLD = () => Estate3D.building(MAN, LANG);
 
 /* ---------------- 挡土墙 / 陡坡：地面贴图是俯视烘焙，竖直面上被拉成条纹 → 陡面拆出来，改用按世界坐标平铺的石砌材质 ---------------- */
 function stoneTex() {
@@ -370,10 +369,10 @@ const polyShape = (poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vecto
 const flatGeo = (poly, y) => { const g = new THREE.ShapeGeometry(polyShape(poly)); g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };   // (x, y) → (x, y0, −y)
 const bboxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
 const plateMats = {};
-const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND_COL[kind] || KIND_COL.open, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND(kind).color, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 const edgeMat = new THREE.LineBasicMaterial({ color: '#5a4a32', transparent: true, opacity: 0.55 });
 const plates = FLOORS.map(() => []);
-CARD.rooms.concat(SUBS.filter((w) => CARD.rooms.some((r) => r.id === w.parent)).map((w) => ({ ...w, area: 16 }))).forEach((r) => {
+(CARD.rooms || []).concat(SUBS.filter((w) => (CARD.rooms || []).some((r) => r.id === w.parent))).forEach((r) => {
   const fi = FI[r.floor]; if (fi == null) return;
   const f = FLOORS[fi], bb = bboxOf(r.poly);
   const plate = new THREE.Mesh(flatGeo(r.poly, f.y + 0.06), plateMat(r.kind)); plate.renderOrder = 2; roomG[fi].add(plate); plates[fi].push(plate);
@@ -382,7 +381,7 @@ CARD.rooms.concat(SUBS.filter((w) => CARD.rooms.some((r) => r.id === w.parent)).
   const pg = new THREE.ExtrudeGeometry(polyShape(r.poly), { depth: r.sub ? 2.5 : 2.4, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); pg.translate(0, f.y, 0);
   const pick = new THREE.Mesh(pg, pickMat); roomG[fi].add(pick);
   const c = V((bb.x0 + bb.x1) / 2, (bb.y0 + bb.y1) / 2, f.y);
-  const rank = r.kind === 'card' ? 1 : r.kind === 'circ' ? 3 : 2;
+  const rank = r.sub ? 1 : KIND(r.kind).rank;
   const it = { kind: 'room', d: r, floor: fi, poly: r.poly, cx: c.x, cz: c.z, w: bb.x1 - bb.x0, dd: bb.y1 - bb.y0, y: f.y, rank, pick };
   pick.userData.item = it;
   it.label = mkLabel(roomG[fi], c.x, f.y + 1.2, c.z, 'room');
@@ -397,22 +396,24 @@ ZDATA.zones.forEach((z) => {
   it.label = mkLabel(zoneG, z.x, z.z + z.h, -z.y, 'area'); it.pri = z.pri * 1000 + z.r;
   ITEMS.push(it);
 });
-// 庄园悬浮车（卡里的交通是悬浮车 / 悬浮载具，没有地面车）：主楼门廊前车道两辆，程序生成（无轮、离地悬停 + 柔光），可点
-const CARS = [[5.5, -37.5, 90], [-6.0, -37.8, 90]];
-const carG = new THREE.Group(); carG.name = 'hovercars'; scene.add(carG);
-{
+// 室外载具（data.extras.vehicles，程序生成的悬浮车：无轮、离地悬停 + 柔光），可点；卡文字来自 data.extras.vehicle_card
+const VEH = (EXTRAS.vehicles || []).filter((v) => v && v.kind === 'hover' && Number.isFinite(v.x) && Number.isFinite(v.y));
+const VCARD = EXTRAS.vehicle_card || {};
+const vText = (k) => (LANG === 'en' && VCARD.i18n?.en?.[k]) || VCARD[k];
+const carG = new THREE.Group(); carG.name = 'vehicles'; scene.add(carG);
+if (VEH.length) {
   const body = new THREE.MeshLambertMaterial({ color: '#2b2f36' }), glass = new THREE.MeshLambertMaterial({ color: '#8fa6b4' }), trim = new THREE.MeshLambertMaterial({ color: '#c9a45c' });
   const glow = new THREE.MeshBasicMaterial({ color: '#9fe6ff', transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending });
   const bodyG = new THREE.CapsuleGeometry(0.72, 3.9, 4, 12).rotateZ(Math.PI / 2).scale(1, 0.62, 1.25);
   const cabG = new THREE.CapsuleGeometry(0.55, 1.7, 4, 12).rotateZ(Math.PI / 2).scale(1, 0.7, 1.15);
   const glowG = new THREE.CircleGeometry(1, 32).scale(2.9, 1.2, 1).rotateX(-Math.PI / 2);
-  CARS.forEach(([x, y, a], i) => {
-    const gz = F1Y, g = new THREE.Group(); g.position.copy(V(x, y, gz)); g.rotation.y = (a * Math.PI) / 180 - Math.PI / 2;
+  VEH.forEach((v) => {
+    const gz = F1Y, g = new THREE.Group(); g.position.copy(V(v.x, v.y, gz)); g.rotation.y = ((v.deg || 0) * Math.PI) / 180 - Math.PI / 2;
     const b = new THREE.Mesh(bodyG, body); b.position.y = 1.05; const c = new THREE.Mesh(cabG, glass); c.position.set(-0.3, 1.5, 0);
     const t = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.05, 0.05), trim); t.position.set(0, 1.0, 0.92); const t2 = t.clone(); t2.position.z = -0.92;
     const gl = new THREE.Mesh(glowG, glow); gl.position.y = 0.06; gl.renderOrder = 3;
     g.add(b, c, t, t2, gl); carG.add(g);
-    const it = { kind: 'car', d: { name: '庄园悬浮车', en: 'Estate hover car', id: 'hovercar' + i }, floor: null, cx: g.position.x, cz: g.position.z, w: 6, dd: 6, y: gz };
+    const it = { kind: 'car', d: { name: VCARD.name || '', en: VCARD.i18n?.en?.name || '', id: v.id }, floor: null, cx: g.position.x, cz: g.position.z, w: 6, dd: 6, y: gz };
     const pk = new THREE.Mesh(new THREE.BoxGeometry(6, 2.6, 2.6), pickMat); pk.position.y = 1.2; pk.userData.item = it; g.add(pk); it.pick = pk;
     it.label = mkLabel(g, 0, 3, 0, 'area'); it.pri = 100; it.rank = 3; ITEMS.push(it);
   });
@@ -577,19 +578,23 @@ const floorsEl = $('#floors'); const BTN = {};
 function buildNav() {
   floorsEl.innerHTML = ''; for (const k of Object.keys(BTN)) delete BTN[k];
   C3.setViews([{ id: 'ext', label: tx('ext') }, { id: 'xray', label: tx('xray') }, { id: 'sect', label: tx('sect') }]);
-  for (let i = 0; i < FLOORS.length; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = LANG === 'en' ? FLOOR_EN[FLOORS[i].id] : FLOORS[i].name;
+  for (let i = 0; i < FLOORS.length; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = floorLabel(i);
     b.onclick = () => setMode(i, { fly: true, user: true }); floorsEl.appendChild(b); BTN[i] = b; }
   const zh = LANG === 'zh';
-  C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间、图例与关于' : 'Room, legend and about' });
-  C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('legend', zh ? '图例' : 'Legend', zh ? '图' : 'L'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
+  C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间与关于' : 'Room and about' });
+  C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
   $('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
-  const KL = zh ? { card: '房间', owner: '主人区域', support: '服务 / 后勤', circ: '走廊 / 楼梯', medical: '医疗中心', open: '其他空间' } : { card: 'Rooms', owner: "Owner's areas", support: 'Service', circ: 'Corridors / stairs', medical: 'Medical centre', open: 'Other spaces' };
-  legendEl.innerHTML = '<ul>' + Object.entries(KL).map(([k, v]) => `<li><i style="background:${KIND_COL[k]}"></i>${v}</li>`).join('') + '</ul>';
-  aboutEl.innerHTML = `<h2>${tx('title')}</h2><div class="motto">${tx('motto')}</div><p>${tx('sub')}</p><p>${tx('hint')}</p>`;
-  C3.setTitle(tx('title'));
-  syncNav();
+  const bd = BLD(); aboutEl.replaceChildren(...[['h2', bd.title], ['div', bd.subtitle, 'motto'], ['p', bd.summary], ['p', tx('hint')]].filter(([, t]) => t).map(([tag, t, c]) => { const e = document.createElement(tag); e.textContent = t; if (c) e.className = c; return e; }));
+  C3.setTitle(bd.title);
+  syncNav(); renderKinds();
   $('#lblBtn').title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; $('#lblBtn').setAttribute('aria-label', $('#lblBtn').title);
   for (const k of ['zin', 'zout', 'zreset']) { $('#' + k).title = tx(k); $('#' + k).setAttribute('aria-label', tx(k)); } document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
+}
+/** 色标（N9）：剖切视图里，当前楼层出现的每类房间一枚（颜色 + 名字，都来自清单的 room_kinds） */
+function renderKinds() {
+  const f = isFloor(mode) ? FLOORS[mode].id : null, ks = f ? [...new Set((CARD.rooms || []).filter((r) => r.floor === f).map((r) => r.kind))].map(KIND) : [];
+  kindsEl.hidden = !ks.length;
+  kindsEl.replaceChildren(...ks.map((k) => { const e = document.createElement('span'); e.append(kindChip(k), k.label); return e; }));
 }
 function syncNav() { for (const [k, b] of Object.entries(BTN)) { const on = String(mode) === k; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   C3.setView(isFloor(mode) ? 'sect' : mode); C3.showSub(isFloor(mode)); if (isFloor(mode)) lastFloor = mode; }
@@ -597,16 +602,19 @@ function syncNav() { for (const [k, b] of Object.entries(BTN)) { const on = Stri
 /* ---------------- 模式：ext 外观 / xray 内透 / 0..4 剖切（B2…F3） ---------------- */
 let mode = 'ext';
 const isFloor = (m) => typeof m === 'number';
+const SITE_BOX = new THREE.Box3().setFromObject(siteG), SITE_C = SITE_BOX.getCenter(new THREE.Vector3()), SITE_S = SITE_BOX.getSize(new THREE.Vector3());
 function viewFor(m) {
   const P_ = PORTRAIT();
-  if (m === 'ext') {
-    const th = AZ, ph = P_ ? 0.9 : 0.98; const [w, h] = projExtent(660, 500, 60, th, ph);
-    return { target: new THREE.Vector3(0, 12, -5), zoom: P_ ? fitZoom(w * 0.62, 1) : fitZoom(w * 0.9, h * 0.95), theta: th, phi: ph };
+  if (m === 'ext') {   // 外观取景：清单的 view.ext（layout 米：target、size = 宽 × 深 × 高），没有就按模型包围盒
+    const e = MAN.view?.ext, th = AZ, ph = P_ ? 0.9 : 0.98, sz = e?.size || [SITE_S.x, SITE_S.z, SITE_S.y];
+    const [w, h] = projExtent(sz[0], sz[1], sz[2], th, ph);
+    return { target: e?.target ? V(...e.target) : SITE_C.clone(), zoom: P_ ? fitZoom(w * 0.62, 1) : fitZoom(w * 0.9, h * 0.95), theta: th, phi: ph };
   }
   const W = HOUSE_BOX.x1 - HOUSE_BOX.x0, D = HOUSE_BOX.y1 - HOUSE_BOX.y0;
   if (m === 'xray') { const th = AZ, ph = 1.0; const [w, h] = projExtent(W, D, 32, th, ph); return { target: new THREE.Vector3(HC.x, F1Y + 7, HC.z), zoom: P_ ? fitZoom(w * 0.8, 1) : fitZoom(w * 1.08, h * 1.12), theta: th, phi: ph }; }
-  const y = FLOORS[m].y, main = m <= 1;   // 地下只有主楼下 40 × 22 m
-  const w0 = main ? 48 : W + 4, d0 = main ? 30 : D + 4, cx = main ? 0 : HC.x, cz = main ? 3 : HC.z;
+  const y = FLOORS[m].y, under = FLOORS[m].z < 0;   // 地下层：只取这一层的外包（加 8 m 边），地上层：整幢楼的外包（加 4 m 边）
+  const fb = under ? polyBox((CARD.rooms || []).filter((r) => r.floor === FLOORS[m].id)) : HOUSE_BOX, c = V((fb.x0 + fb.x1) / 2, (fb.y0 + fb.y1) / 2, 0);
+  const w0 = fb.x1 - fb.x0 + (under ? 8 : 4), d0 = fb.y1 - fb.y0 + (under ? 8 : 4), cx = c.x, cz = c.z;
   const th = AZ * 0.6, ph = 0.72; const [w, h] = projExtent(w0, d0, 5, th, ph);
   return { target: new THREE.Vector3(cx, y, cz), zoom: P_ ? fitZoom(w * 0.92, 1) : fitZoom(w * 1.08, h * 1.15), theta: th, phi: ph };
 }
@@ -640,7 +648,7 @@ function setMode(m, o = {}) {
   applyMode();
   if (pinned && !itemVisible(pinned)) unpin();
   hover = null; hideCard(true); showHi(hiHover, null);
-  syncNav(); updateLabelSet();
+  syncNav(); renderKinds(); updateLabelSet();
   if (o.fly) flyTo(viewFor(m));
   if (o.user) post({ type: 'estate:floor', floor: modeKey(m) });
 }
@@ -733,30 +741,38 @@ function showHi(h, it) {
 /* ---------------- 房间卡 ---------------- */
 const card = $('#card');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function cardHTML(it) {
-  const d = it.d, zh = LANG === 'zh';
+const shown = (t) => !!t && (LANG === 'zh' || !/[\u4e00-\u9fff]/.test(t));   // 数据里只有中文的说明，英文界面不显示
+/** 一张卡的内容（独立页自己画；嵌入时发给查看器，由它画共用的地点卡）：{ title, sub, kind?, rows: [[label, text]], acts: [{ id, label, ... }] } */
+function info(it) {
+  const d = it.d, rows = [], acts = [], zh = LANG === 'zh';
   if (it.kind === 'car') {
-    return zh ? `<h3>庄园悬浮车</h3><div class="sub">室外 · 主楼门廊前车道</div><div class="row"><em>说明</em>庄园自用的悬浮代步车：没有车轮，离地悬停行驶，底部有柔和的推进光。</div><div class="row"><em>停放</em>悬浮车库（服务院旁）/ 载具停靠坪</div><div class="acts"><button class="garage" type="button">去悬浮车库 ›</button></div>`
-      : `<h3>Estate hover car</h3><div class="sub">Grounds · drive in front of the portico</div><div class="row"><em>Notes</em>The estate's own hover cars: no wheels, they float just above the ground on a soft thruster glow.</div><div class="row"><em>Parking</em>Hover Garage (by the service court) / Vehicle Pad</div><div class="acts"><button class="garage" type="button">Go to the garage ›</button></div>`;
+    for (const r of (LANG === 'en' && VCARD.i18n?.en?.rows) || VCARD.rows || []) rows.push([r.label, r.text]);
+    const a = (LANG === 'en' && VCARD.i18n?.en?.action) || VCARD.action; if (a?.label) acts.push({ id: 'zone', label: a.label, zone: VCARD.action?.zone });
+    return { title: vText('name') || '', sub: vText('sub') || '', rows, acts };
   }
   if (it.kind === 'area') {
-    return `<h3>${esc(nameOf(it))}</h3><div class="sub">${esc(tx('estate'))}${zh && d.en ? ' · ' + esc(d.en) : ''}</div>` + (d.alias?.length && zh ? `<div class="row"><em>别名</em>${esc(d.alias.filter((a) => /[一-鿿]/.test(a)).slice(0, 4).join('、'))}</div>` : '')
-      + (childrenOf(it) ? `<div class="acts">${childrenOf(it).map((c) => `<button class="enter3d" type="button" data-node="${esc(c.node)}" title="${esc(c.title)}">${esc(tx('enter3d'))} ›</button>`).join('')}</div>` : '');
+    if (d.alias?.length && zh) rows.push([tx('alias'), d.alias.filter((a) => /[\u4e00-\u9fff]/.test(a)).slice(0, 4).join('、')]);
+    for (const c of childrenOf(it) || []) acts.push({ id: 'enter', label: tx('enter3d') + ' ›', node: c.node, title: c.title });
+    return { title: nameOf(it), sub: tx('estate') + (zh && d.en ? ' · ' + d.en : ''), rows: rows.filter((r) => r[1]), acts };
   }
-  const custom = getCustomName(d.name);
-  let h = `<h3>${esc(custom || nameOf(it))}</h3><div class="sub">${esc(floorName(it.floor))} · ${esc(d.id)}</div>`;
-  if (custom && zh) h += `<div class="row"><em>原名</em>${esc(nameOf(it))}</div>`;
-  if (d.sub) {
-    h += `<div class="row"><em>${zh ? '位置' : 'Where'}</em>${zh ? '主卧套间内' : 'Inside the master suite'}</div>`;
-    if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
-    return h + roomCustomBlockHTML(d.name, LANG);
-  }
-  const area = `${Math.round(d.area)} ㎡`;
-  h += `<div class="row"><em>${tx('size')}</em>${esc(area)}</div>`;
-  if (zh && d.note) h += `<div class="row"><em>${tx('use')}</em>${esc(d.note)}</div>`;
-  if (zh && d.access) h += `<div class="row"><em>${tx('access')}</em>${esc(d.access)}</div>`;
-  return h + roomCustomBlockHTML(d.name, LANG);
+  const k = KIND(d.kind), out = { title: nameOf(it), sub: floorName(it.floor) + (d.id ? ' · ' + d.id : ''), kind: { id: k.id, label: k.label, color: k.color }, rows, acts };
+  if (d.sub) { const w = LANG === 'en' ? it.d.whereEn : d.where; if (w) rows.push([tx('where'), w]); }
+  else if (Number.isFinite(d.area)) rows.push([tx('size'), `${Math.round(d.area)} ㎡`]);
+  if (shown(d.note)) rows.push([tx('use'), d.note]);
+  if (!d.sub && shown(d.access)) rows.push([tx('access'), d.access]);
+  return out;
 }
+const kindChip = (k) => { const c = document.createElement('i'); c.className = 'kc'; c.style.setProperty('--kc', k.color); c.title = k.label; return c; };
+function cardHTML(it) {
+  const o = info(it), d = it.d, custom = it.kind === 'room' ? getCustomName(d.name) : '', h = document.createElement('div');
+  const t = document.createElement('h3'); if (o.kind) t.append(kindChip(o.kind)); t.append(custom || o.title); h.append(t);
+  const sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = o.sub; h.append(sub);
+  if (custom && LANG === 'zh') rows(h, [[tx('orig'), o.title]]);
+  rows(h, o.rows);
+  if (o.acts.length) { const a = document.createElement('div'); a.className = 'acts'; for (const x of o.acts) { const b = document.createElement('button'); b.type = 'button'; b.className = x.id === 'enter' ? 'enter3d' : 'garage'; if (x.node) b.dataset.node = x.node; if (x.zone) b.dataset.zone = x.zone; if (x.title) b.title = x.title; b.textContent = x.label; a.append(b); } h.append(a); }
+  return h.innerHTML + (it.kind === 'room' ? roomCustomBlockHTML(d.name, LANG) : '');
+}
+function rows(h, list) { for (const [k, v] of list) { const r = document.createElement('div'); r.className = 'row'; const e = document.createElement('em'); e.textContent = k; r.append(e, v); h.append(r); } }
 // 区域下挂着的子地图（宿主按运行时节点树发来的 estate:children）：有子节点的区域，卡片带「进入三维」、双击直接进
 let CHILDREN = {};
 const childrenOf = (it) => { const c = it?.kind === 'area' ? CHILDREN[it.d.id] : null; return c?.length ? c : null; };
@@ -764,14 +780,14 @@ let cardFor = null, cardAt = null;
 const tip = $('#tip');
 let tipFor = null;
 function showCard(it, x, y) {
-  if (x != null && it !== pinned) { if (tipFor !== it) { tip.innerHTML = cardHTML(it); tipFor = it; } cardAt = [x, y]; placeCard(); tip.classList.add('on'); return; }   // 悬停：小提示
+  if (x != null && it !== pinned) { if (tipFor !== it) { tip.textContent = info(it).title; tipFor = it; } cardAt = [x, y]; placeCard(); tip.classList.add('on'); return; }   // 悬停：只有名字的一枚小标签
   tip.classList.remove('on'); tipFor = null;
   if (cardFor !== it) { card.innerHTML = cardHTML(it); cardFor = it; }
   cardAt = null; card.classList.add('on', 'pinned');
   if (it === pinned && C3.sheet.tab !== 'room' || !C3.sheet.open) C3.sheet.setTab('room', C3.sheet.state === 'full' ? 'full' : 'half');   // 点选 → 抽屉半开到「房间」
 }
 card.addEventListener('click', (e) => { const b = e.target.closest('.enter3d'); if (!b) return; e.stopPropagation(); post({ type: 'estate:go', node: b.dataset.node }); });
-card.addEventListener('click', (e) => { if (!e.target.closest('.garage')) return; e.stopPropagation(); const g = ITEMS.find((it) => it.kind === 'area' && it.d.id === 'garage'); if (g) focusItem(g); });
+card.addEventListener('click', (e) => { const b = e.target.closest('.garage'); if (!b) return; e.stopPropagation(); const g = ITEMS.find((it) => it.kind === 'area' && it.d.id === b.dataset.zone); if (g) focusItem(g); });
 card.dataset.lang = LANG;
 bindRoomCustomEvents(card, { base: url('../'), pictures: (name) => PICS[name] || [], onOpenGallery: { refresh: () => { if (cardFor) { const it = cardFor; cardFor = null; showCard(it); } } } });
 function placeCard() {
@@ -831,7 +847,7 @@ function findByName(name, floor) {
   let best = null, score = -1;
   for (const it of ITEMS) {
     if (floor != null && it.floor !== floor) continue;
-    const rank = it.kind === 'room' ? (it.d.sub ? 5 : it.d.kind === 'card' ? 4 : 2) : it.d.pri >= 8 ? 1 : 3;
+    const rank = it.kind === 'room' ? (it.d.sub ? 5 : KIND(it.d.kind).rank === 1 ? 4 : 2) : it.d.pri >= 8 ? 1 : 3;
     for (const k of keysOf(it).filter((k) => typeof k === 'string' && k)) {
       const kl = norm(k); let sc = -1;
       if (s === kl) sc = 10000 + rank; else if (kl.length > 1 && s.includes(kl)) sc = rank * 100 + kl.length; else continue;

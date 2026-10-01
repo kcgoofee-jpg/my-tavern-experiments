@@ -91,6 +91,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
+| `kind-palette.mjs` | The generated colours of room kinds a 3D manifest does not declare (K-R131): eight colour-vision-safe colours picked by a stable hash of the kind id. Pure. |
 | `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
 | `layer-geometry.mjs` | Declared layers, pure geometry and style (K-R80): the route paths of the `line` block (compared with a frozen copy of the old loop), converters from the view data to features, the resolved style of a feature, legend swatches, flow tables, the first-visibility rule. Pure. |

@@ -1,0 +1,152 @@
+{
+ "_说明": "庄园网页三维的包数据（清单 data.extras，docs/kernel-schema.md K-R131 末尾）：房间的英文叫法 / 别名、主卧套间里可点的子区域、室外的悬浮车。主页面（map/estate/main.js）只读这份，不写任何地点名。",
+ "room_alias": {
+  "主人主卧": [
+   "Master Bedroom",
+   "Dressing Room"
+  ],
+  "大厅": [
+   "Grand Hall",
+   "Entrance Hall"
+  ],
+  "会客厅": [
+   "Drawing Room"
+  ],
+  "餐厅": [
+   "Dining Room"
+  ],
+  "厨房与后勤区": [
+   "Kitchen"
+  ],
+  "主人书房": [
+   "Library",
+   "Study"
+  ],
+  "女仆长寝室": [
+   "Head Maid's Room"
+  ],
+  "客房": [
+   "Guest Room"
+  ],
+  "个人寝室": [
+   "Bedroom"
+  ],
+  "三楼公共浴室": [
+   "Bathroom"
+  ],
+  "恒温酒窖": [
+   "Wine Cellar"
+  ],
+  "衣物清洗与维护间": [
+   "Laundry"
+  ],
+  "东侧长廊": [
+   "Gallery"
+  ],
+  "体能训练室": [
+   "Gym"
+  ],
+  "主人通道": [
+   "主人专用通道"
+  ],
+  "储藏室": [
+   "Storeroom"
+  ]
+ },
+ "sub_rooms": [
+  {
+   "id": "F2-57w",
+   "parent": "F2-57",
+   "name": "衣帽间",
+   "floor": "F2",
+   "kind": "card",
+   "area": 16,
+   "alias": [
+    "私人衣帽间",
+    "步入式衣帽间",
+    "更衣室",
+    "Dressing Room",
+    "Walk-in Wardrobe"
+   ],
+   "where": "主卧套间内",
+   "note": "主卧套间内的步入式衣帽间；东侧门通主人专用通道",
+   "poly": [
+    [
+     12,
+     -10
+    ],
+    [
+     16,
+     -10
+    ],
+    [
+     16,
+     -6
+    ],
+    [
+     12,
+     -6
+    ]
+   ],
+   "i18n": {
+    "en": {
+     "name": "Walk-in Wardrobe",
+     "where": "Inside the master suite"
+    }
+   }
+  }
+ ],
+ "vehicles": [
+  {
+   "id": "hovercar0",
+   "kind": "hover",
+   "x": 5.5,
+   "y": -37.5,
+   "deg": 90
+  },
+  {
+   "id": "hovercar1",
+   "kind": "hover",
+   "x": -6.0,
+   "y": -37.8,
+   "deg": 90
+  }
+ ],
+ "vehicle_card": {
+  "name": "庄园悬浮车",
+  "sub": "室外 · 主楼门廊前车道",
+  "rows": [
+   {
+    "label": "说明",
+    "text": "庄园自用的悬浮代步车：没有车轮，离地悬停行驶，底部有柔和的推进光。"
+   },
+   {
+    "label": "停放",
+    "text": "悬浮车库（服务院旁）/ 载具停靠坪"
+   }
+  ],
+  "action": {
+   "label": "去悬浮车库 ›",
+   "zone": "garage"
+  },
+  "i18n": {
+   "en": {
+    "name": "Estate hover car",
+    "sub": "Grounds · drive in front of the portico",
+    "rows": [
+     {
+      "label": "Notes",
+      "text": "The estate's own hover cars: no wheels, they float just above the ground on a soft thruster glow."
+     },
+     {
+      "label": "Parking",
+      "text": "Hover Garage (by the service court) / Vehicle Pad"
+     }
+    ],
+    "action": {
+     "label": "Go to the garage ›"
+    }
+   }
+  }
+ }
+}

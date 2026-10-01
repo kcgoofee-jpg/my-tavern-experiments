@@ -1,0 +1,10 @@
+{
+ "_note": "Room plan of the fixture pack pack3d-min (map/data/schema/v2/rooms.schema.json): three rooms, each linked to its node of the pack by `node`.",
+ "version": 1,
+ "floors": [ { "id": "L1", "z": 0 }, { "id": "L2", "z": 4 } ],
+ "rooms": [
+  { "name": "Atrium", "node": "atrium", "floor": "L1", "kind": "hall", "area": 192, "note": "The entrance hall: a tall room with a tiled floor.", "poly": [[-12, -8], [0, -8], [0, 8], [-12, 8]] },
+  { "name": "Workshop", "node": "workshop", "floor": "L1", "kind": "work", "area": 192, "note": "Benches and a tool wall.", "poly": [[0, -8], [12, -8], [12, 8], [0, 8]] },
+  { "name": "Loft", "node": "loft", "floor": "L2", "kind": "rest", "area": 256, "note": "A quiet gallery above the atrium.", "poly": [[-12, -8], [4, -8], [4, 8], [-12, 8]] }
+ ]
+}

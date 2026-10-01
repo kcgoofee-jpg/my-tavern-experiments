@@ -115,3 +115,20 @@ test('S8-4b K-R111: eden-map:route-plan (viewer to host) and eden-map:route (hos
     assert.ok(!check({ type, v: 2, plan: 'x' }).ok);
   }
 });
+
+test('S7-3: the 3D shell messages are registered with their directions and shapes (estate:view, estate:people, estate:person, estate:select.room / .node, estate:esc, estate:cam, estate:labels, the richer estate:ready)', () => {
+  assert.equal(SCHEMA['estate:view'][0], 'both'); assert.equal(SCHEMA['estate:select'][0], 'both');
+  assert.equal(SCHEMA['estate:people'][0], 'viewer→sub'); assert.equal(SCHEMA['estate:person'][0], 'sub→viewer'); assert.equal(SCHEMA['estate:esc'][0], 'sub→viewer');
+  assert.equal(SCHEMA['estate:cam'][0], 'viewer→sub'); assert.equal(SCHEMA['estate:labels'][0], 'viewer→sub');
+  assert.ok(check(envelope('estate:view', { mode: 'sect' })).ok); assert.equal(check(envelope('estate:view', {})).why, 'field:mode');
+  assert.ok(check(envelope('estate:people', { items: [{ name: 'A', room: 'r', floor: 'F1', color: '#123456' }] })).ok); assert.equal(check(envelope('estate:people', { items: {} })).why, 'field:items'); assert.equal(check(envelope('estate:people', {})).why, 'field:items');
+  assert.ok(check(envelope('estate:person', { name: 'A' })).ok); assert.equal(check(envelope('estate:person', {})).why, 'field:name');
+  assert.ok(check(envelope('estate:esc', {})).ok);
+  assert.ok(check(envelope('estate:select', { node: 'room_x' })).ok);   // viewer → frame
+  assert.ok(check(envelope('estate:select', { name: 'Hall', floor: 'F1', node: 'room_x', room: { name: 'Hall', floor: 'F1', kind: 'k', area: 10, note: '' } })).ok);   // frame → viewer
+  assert.equal(check(envelope('estate:select', { room: 'Hall' })).why, 'field:room'); assert.equal(check(envelope('estate:select', { node: 3 })).why, 'field:node');
+  assert.ok(check(envelope('estate:cam', { op: 'in' })).ok); assert.equal(check(envelope('estate:cam', {})).why, 'field:op');
+  assert.ok(check(envelope('estate:labels', { on: false })).ok); assert.equal(check(envelope('estate:labels', { on: 'no' })).why, 'field:on');
+  assert.ok(check(envelope('estate:ready', {})).ok);   // old pages send the bare message
+  assert.ok(check(envelope('estate:ready', { floors: [{ id: 'A', label: 'A' }], rooms: [], building: { title: 'T' }, kinds: [] })).ok); assert.equal(check(envelope('estate:ready', { floors: 'A' })).why, 'field:floors');
+});

@@ -72,6 +72,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
+| `kind-palette.mjs` | 3D 清单没有声明的房间类别所用的生成颜色（K-R131）：八个对色觉友好的颜色，按类别 id 的稳定哈希挑选。纯函数。 |
 | `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |

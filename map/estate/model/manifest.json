@@ -8,10 +8,29 @@
  },
  "f1_z": 30.0,
  "v": "2026-10-02-b1b2-r24",
- "floors": ["B2", "B1", "F1", "F2", "F3"],
+ "floors": [
+  { "id": "B2", "label": "地下二层", "i18n": { "en": { "label": "Basement 2" } } },
+  { "id": "B1", "label": "地下一层", "i18n": { "en": { "label": "Basement 1" } } },
+  { "id": "F1", "label": "一层", "i18n": { "en": { "label": "Ground floor" } } },
+  { "id": "F2", "label": "二层", "i18n": { "en": { "label": "First floor" } } },
+  { "id": "F3", "label": "三层", "i18n": { "en": { "label": "Second floor" } } }
+ ],
+ "building": {
+  "title": "伊甸家族府邸", "subtitle": "始建约一百九十年 · HORTUS SUPRA NUBES", "summary": "浮岛庄园 · 主楼地上三层 + 地下两层",
+  "i18n": { "en": { "title": "Eden Family Seat", "subtitle": "Founded c. 190 years ago · HORTUS SUPRA NUBES", "summary": "Floating-isle estate · house: 3 floors + 2 basements" } }
+ },
+ "room_kinds": {
+  "card": { "color": "#d9c29a", "rank": 1, "label": "房间", "i18n": { "en": { "label": "Rooms" } } },
+  "owner": { "color": "#a79bb6", "label": "主人区域", "i18n": { "en": { "label": "Owner's areas" } } },
+  "support": { "color": "#aab3bb", "label": "服务 / 后勤", "i18n": { "en": { "label": "Service" } } },
+  "circ": { "color": "#e9e4d8", "rank": 3, "label": "走廊 / 楼梯", "i18n": { "en": { "label": "Corridors / stairs" } } },
+  "medical": { "color": "#8fc7cf", "label": "医疗中心", "i18n": { "en": { "label": "Medical centre" } } }
+ },
+ "view": { "ext": { "target": [0, 5, 12], "size": [660, 500, 60] } },
  "data": {
   "rooms": "../../data/eden_estate_rooms.json",
-  "zones": "zones.json"
+  "zones": "zones.json",
+  "extras": "extras.json"
  },
  "budget": { "anisotropy": 8, "anisotropy_low": 4, "low_device_memory_gb": 4 },
  "license": { "credit": { "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）", "en": "Own model; textures Poly Haven / ambientCG (CC0)" } }

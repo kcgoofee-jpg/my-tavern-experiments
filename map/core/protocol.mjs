@@ -112,12 +112,18 @@ export const SCHEMA = {
   'v3d:viewport': [SUBPAGE_TO_VIEWER, { tileCache: 'number?' }],   // Part 3 §5：显存 / 内存吃紧时请宿主收紧解码瓦片缓存
   'v3d:budget': [SUBPAGE_TO_VIEWER, {}],                           // 直嵌接口：三维页自报的预算摘要
   'estate:go': [SUBPAGE_TO_VIEWER, { node: 'string' }],   // S2-B：三维页 → 宿主：进入区域下的子地图（node = 子地图 id，宿主只认当前图的子节点）
-  'estate:ready': [SUBPAGE_TO_VIEWER, {}],
+  'estate:ready': [SUBPAGE_TO_VIEWER, { floors: 'array?', rooms: 'array?', building: 'object?', kinds: 'array?' }],   // S7-3: the first frame is drawn; floors [{ id, label }], rooms [{ name, node, floor, kind, area }], building { title, subtitle, summary }, kinds [{ id, label, color }] are what the viewer's shell needs (level strip, room list, accessible name)
   'estate:disposed': [SUBPAGE_TO_VIEWER, {}],   // S7-2 I-05: the answer to estate:dispose
   'estate:fail': [SUBPAGE_TO_VIEWER, { reason: 'string?' }],
   'estate:progress': [SUBPAGE_TO_VIEWER, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [SUBPAGE_TO_VIEWER, { key: 'string' }],
-  'estate:select': [SUBPAGE_TO_VIEWER, { name: 'string?' }],   // 直嵌接口
+  'estate:select': ['both', { name: 'string?', node: 'string?', floor: 'string?', room: 'object?', zone: 'object?', car: 'object?' }],   // up (S7-3): the user picked a room { name, floor, kind, area, note } with its node, an outdoor zone or a vehicle (the viewer opens the shared place card); down: select and fly to the room of node `node`
+  'estate:view': ['both', { mode: 'string' }],                  // S7-3: the view mode 'ext' | 'xray' | 'sect' (down: the viewer's segment / keys 1 2 3; up: the page changed it itself)
+  'estate:cam': [VIEWER_TO_SUBPAGE, { op: 'string' }],          // S7-3: the toolbar's 'in' | 'out' | 'reset'
+  'estate:labels': [VIEWER_TO_SUBPAGE, { on: 'boolean' }],      // S7-3: the toolbar's label switch
+  'estate:people': [VIEWER_TO_SUBPAGE, { items: 'array' }],     // S7-3 U-27 / U-28: the people the chat places in rooms of this building [{ name, room (node id), floor, color, avatar?, dim? }]; sent only when the list changes
+  'estate:person': [SUBPAGE_TO_VIEWER, { name: 'string' }],     // S7-3: a presence chip was tapped (the viewer opens the shared character card)
+  'estate:esc': [SUBPAGE_TO_VIEWER, {}],                        // S7-3: Esc inside the frame (the viewer closes its top layer)
   'estate:loot': [SUBPAGE_TO_VIEWER, { id: 'string', name: 'string', place: 'string?', hidden: 'boolean?', floor: 'string?' }],   // Part 8-1：三维里点起了一枚发光道具（查看器转成 eden-map:loot 给宿主）
   'v3d:state': [SUBPAGE_TO_VIEWER, {}],                        // 直嵌接口
 };

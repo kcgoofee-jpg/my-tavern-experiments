@@ -88,7 +88,7 @@ def walk(s, where):
 files = sorted(glob.glob('map/data/schema/v2/*.schema.json'))
 for f in files: walk(json.load(open(f, encoding='utf-8')), f)
 print(json.dumps({'n': len(files), 'bad': bad}))`);
-  assert.equal(bad.n, 13, '13 个 v2 schema 文件（S8-1 加了 scene3d，S9b 加了 media，S8-4a 加了 transit）');
+  assert.equal(bad.n, 14, '14 个 v2 schema 文件（S8-1 加了 scene3d，S9b 加了 media，S8-4a 加了 transit，S7-3 加了 rooms）');
   assert.deepEqual(bad.bad, []);
 });
 
