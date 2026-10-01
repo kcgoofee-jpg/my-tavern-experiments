@@ -5,7 +5,8 @@
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
 import { PACK, packData } from './app/current-pack.mjs'; import { worldbookPrefix } from './core/pack.mjs';
-import { esc, post } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
+import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
 import { mountProgress } from './ui/progress.mjs';
 import { go } from './app/map-switch.mjs';

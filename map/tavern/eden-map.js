@@ -30,7 +30,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
   import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
-  let FOGm = null, explored = {}; import(SELF + 'core/depth.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
+  let FOGm = null, explored = {}; import(SELF + 'core/exploration-ledger.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
   let SRCm = null; import(SELF + 'tavern/data-source-registry.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
   const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN, manifest: MAN });

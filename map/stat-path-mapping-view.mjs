@@ -1,7 +1,8 @@
 // 设置里的「变量映射」（v0.9.5，换卡兼容）：卡内脚本发来 { card, paths, map, user, detected, mode }（tavern/stat-path-mapping.mjs），
 // 这里列出每一项读哪个 stat_data 路径（下拉从实际的变量树里选，「自动」= 默认 / 自动找到的），旅行方式关键词，重置。改动发回卡内脚本，按角色卡存本机。
 // 只在嵌在酒馆里时显示。查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
-import { esc, post } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
+import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
 import { TCSettings } from './app/settings.mjs';
 import { tableRows } from './core/people.mjs';

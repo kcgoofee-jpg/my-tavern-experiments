@@ -1,10 +1,13 @@
 // 设置弹层：分页、TCSettings.registerSection、搜索、initSettings、关于 / 检查更新、自检。
-import { $, esc, post, tx } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
 import { estateLook, narrowNow } from './subpage3d-host.mjs';
-import { firstRunHint, noticeRefresh, setActs } from './shell.mjs';
+import { firstRunHint, noticeRefresh } from './notice-layer.mjs';
+import { setActs } from './control-column.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 import { setFpsMeter } from './fps.mjs';

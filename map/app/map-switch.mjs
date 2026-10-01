@@ -1,6 +1,7 @@
 // 地图切换：go（带可注册的包装）、snapshot、mapChrome、另一版底图。
 import { REG, cur, curData, ovData, pendingFocus, setCur, setCurData, setOvData, setDepthData, setPendingFocus, viewer } from './state.mjs';
-import { $, getJSON } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { getJSON } from './json-cache.mjs';
 import { applyTier } from './sharpness-tiers.mjs';
 import { nm, postState, t } from './i18n.mjs';
 import { dropParked, estateFocus, leaveEstate, openEstate } from './subpage3d-host.mjs';

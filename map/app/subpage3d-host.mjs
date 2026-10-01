@@ -1,7 +1,10 @@
 // 庄园 / 三维子页宿主：openEstate（blob iframe + <base> + 失败钩子）、子页消息、通用三维查看器入口。
 import { lp } from './load-progress.mjs';
 import { REG, cur, pendingFocus, setPendingFocus, viewer } from './state.mjs';
-import { $, PR, SUB_ORIGIN, announce, post, tx } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { PR, SUB_ORIGIN, post } from './protocol-stamp.mjs';
+import { announce } from './screen-reader-announce.mjs';
+import { tx } from './text-lookup.mjs';
 import { LANG, nm, postState } from './i18n.mjs';
 import { getText, textCache } from './topbar.mjs';
 import { applyCredit, go } from './map-switch.mjs';

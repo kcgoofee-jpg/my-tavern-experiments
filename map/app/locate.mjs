@@ -1,6 +1,7 @@
 // 初始视角与当前地点：focusStart、markHere、当前地点的落点（app/place-resolver.mjs：nodes.locate 落到节点树，再还原成原来的结果形状）、jumpHere。
 import { M, REG, aspect, cur, curData, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
-import { $, toImg } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { toImg } from './coordinates.mjs';
 import { leanBg } from './sharpness-tiers.mjs';
 import { go, groupView } from './map-switch.mjs';
 import { estFail, estateRoom, estateStandIn } from './subpage3d-host.mjs';

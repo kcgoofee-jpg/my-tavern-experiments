@@ -1,5 +1,5 @@
 // UI v2 · 唯一的图标集（docs/design/ui-v2/icons.md）。24 格网格、1.75 描线、圆头圆角，currentColor；不用 emoji、不用单字按钮。
-// 普通脚本（sheet.js / chrome3d.js 也是普通脚本），挂 window.UIIcon；ES 模块经 app/util.mjs 的 ico() 取用。
+// 普通脚本（sheet.js / chrome3d.js 也是普通脚本），挂 window.UIIcon；ES 模块经 app/dom-helpers.mjs 的 ico() 取用。
 //   UIIcon.svg(name, { size, cls }) → '<svg …>'（aria-hidden，名字由按钮的 aria-label / title 给）· UIIcon.names
 (function () {
   if (window.UIIcon) return;

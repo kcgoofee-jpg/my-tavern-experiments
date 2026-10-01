@@ -51,7 +51,7 @@ test('静态清点：仓库里每个发送的消息类型都登记在 SCHEMA', (
 });
 test('宿主 PROTO 与 core/protocol.mjs 一致；settings / notice-act 可缺字段（设置首页深链、无 key 的通知按钮）', () => {
   assert.match(rd('map/tavern/eden-map.js'), new RegExp(`const PROTO = ${PROTO};`));
-  assert.match(rd('map/app/util.mjs'), new RegExp(`const PROTO = ${PROTO};`));
+  assert.match(rd('map/app/protocol-stamp.mjs'), new RegExp(`const PROTO = ${PROTO};`));
   assert.equal(check({ type: 'eden-map:settings' }).ok, true); assert.equal(check({ type: 'eden-map:notice-act' }).ok, true);
 });
 test('真实负载：outfit 是对象（mvu.outfit）、events / chars 带 v:1 也照收', () => {

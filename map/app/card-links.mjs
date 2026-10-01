@@ -78,7 +78,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', e => { const a = e.target.closest?.('[data-inject]'); if (a) { e.preventDefault(); injectFrom(a); } });
   document.addEventListener('keydown', e => { const a = (e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-inject]'); if (a) { e.preventDefault(); injectFrom(a); } });
   async function injectFrom(a) {
-    const { post } = await import('./util.mjs'); const { cur } = await import('./state.mjs');
+    const { post } = await import('./protocol-stamp.mjs'); const { cur } = await import('./state.mjs');
     post({ type: 'eden-map:action', kind: a.dataset.inject || 'go', name: a.dataset.name || '', map: cur || '' });
   }
   document.addEventListener('click', e => { const a = e.target.closest?.('[data-gallery]'); if (a) { e.preventDefault(); openGal(a); } });

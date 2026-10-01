@@ -1,6 +1,8 @@
 // 层导航与键盘：层切换条、上一级、Esc 分层、单字符快捷键。
 import { REG, cur, pendingFocus, pendingHome, setPendingFocus, setPendingHome, viewer } from './state.mjs';
-import { $, esc, post, tx } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { nm } from './i18n.mjs';
 import { layoutHeader } from './topbar.mjs';
 import { go } from './map-switch.mjs';
@@ -8,7 +10,9 @@ import { narrowNow } from './subpage3d-host.mjs';
 import { closeCard } from './markers.mjs';
 import { focusStart, hereRes, setUserMoved, userMoved } from './locate.mjs';
 import { TCSettings, kbdHelp, showLay, showSet } from './settings.mjs';
-import { NT, placeLayers, toggleLabels } from './shell.mjs';
+import { NT } from './notice-layer.mjs';
+import { placeLayers } from './drawer-glue.mjs';
+import { toggleLabels } from './control-column.mjs';
 import { P } from './plugins.mjs';
 import { anchorIn, crumbs, parentMap, strip } from './nodes-runtime.mjs';
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起

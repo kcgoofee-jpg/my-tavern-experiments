@@ -2,7 +2,7 @@
 // 打开某房间的地点卡，能看到这里存放 / 藏起来的东西（CRPG 搜刮感）。编辑走宿主 EdenMap.setInv / removeInv
 //（本机扩展接口，docs/content-compat.md）；单独打开地图（无宿主）时没有数据源，列表为空不显示。
 // 插件模式与 custom-names-view.mjs 一致（app/plugins.mjs 的 P.TCInv；没加载时调用处带守卫）。
-import { esc } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
 import { register } from './app/plugins.mjs';
 const TCInv = (() => {
   const T = (k, zh) => window.I18N.tx(k, zh);   // 共享 i18n 服务（viewer.html window.I18N）

@@ -1,7 +1,10 @@
 // i18n 与主题：LANG/DICT/t/tr/nm、setLang、setTheme、postState；window.I18N 是外挂与子页共用的服务。
 import { REG, cur, viewer } from './state.mjs';
 import { PACK } from './current-pack.mjs';
-import { $, esc, getJSON, post, tx } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { getJSON } from './json-cache.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { applyTier, drawOverlays, tierLabels } from './sharpness-tiers.mjs';
 import { mapChrome } from './map-switch.mjs';
 import { estateLook } from './subpage3d-host.mjs';
@@ -9,7 +12,8 @@ import { renderNav } from './map-level-nav.mjs';
 import { closeCard } from './markers.mjs';
 import { q3Pref, renderAbout, renderSelfCheck, rmPref, setPage, setPageNow } from './settings.mjs';
 import { emMapChanged, enNames } from './extension-api.mjs';
-import { placeEmpty, stDotLabel } from './shell.mjs';
+import { placeEmpty } from './drawer-glue.mjs';
+import { stDotLabel } from './status-dot.mjs';
 import { P } from './plugins.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 // ---------------- 界面语言（中 / EN）与主题（自动 / 浅色 / 深色）----------------

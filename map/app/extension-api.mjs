@@ -1,7 +1,8 @@
 // 本机扩展接口 window.EdenMap 与聊天 id（E6，docs/content-compat.md）。
 import { nsStore } from '../core/pack.mjs';
 import { M, REG, cur } from './state.mjs';
-import { $, post } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
 import { nm } from './i18n.mjs';
 import { v3dFly } from './subpage3d-host.mjs';
 import { estPlan, hereIdx, markHere, setHereIdx } from './locate.mjs';

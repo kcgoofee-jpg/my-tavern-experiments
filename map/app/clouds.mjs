@@ -6,7 +6,8 @@
 // (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
 // 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
 import { REG, cur, depthData, viewer } from './state.mjs';
-import { $ , narrow } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { narrow } from './viewport-mode.mjs';
 import { registry } from './layer-host.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './sharpness-tiers.mjs';

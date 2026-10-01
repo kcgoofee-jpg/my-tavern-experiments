@@ -1,7 +1,9 @@
 // 设置里的酒馆助手功能（docs/tavernhelper-audit.md B1 / B9，docs/interaction-modes.md (a)）：
 // 「数据与映射」：世界书附加条目（写入 / 自动同步，写前看差异）、状态注入开关、类宏开关；「高级」：注入深度与 token 上限。
 // 真正读写都在卡内脚本（tavern/eden-map.js onTh）；这里只发 eden-map:th 请求、画 eden-map:th-state。单独打开（不在酒馆里）时整栏不显示。
-import { $, esc, post, tx } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 
 const W = { global: ['th.wb_global', '全局'], char: ['th.wb_char', '当前角色的附加世界书'], chat: ['th.wb_chat', '当前聊天'] };

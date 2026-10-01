@@ -1,7 +1,8 @@
 // 地图事件层的「盖在地图上的效果」：按类型声明的屏幕特效（花屏）与世界图城市标记上的事态数角标（S5-1 自 events.mjs 原样搬出；行为不变）。
 // 状态与事件表仍在 events.mjs 的 TCEvents 里，这里经依赖对象取（活的变量 = 取值函数）；花屏的样式表留在 events.mjs（z-index 账本）。
 import { REG, cur } from './app/state.mjs';
-import { $, announce } from './app/util.mjs';
+import { $ } from './app/dom-helpers.mjs';
+import { announce } from './app/screen-reader-announce.mjs';
 import { eventGeo, inScope, worldGroup } from './app/nodes-runtime.mjs';
 export function createEventsFx({ T, all, vis, live, mapOf, isShown, floorNow, evm }) {
   let glitchLv = 0;

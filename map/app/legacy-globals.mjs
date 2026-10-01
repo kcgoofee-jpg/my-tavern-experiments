@@ -1,7 +1,10 @@
 // 兼容面：原内联主脚本的顶层绑定是全局的，浏览器测试（page.evaluate）与本机调试一直按全局名读它们（cur、viewer、go…）。
 // 拆成模块后在 window 上挂同名只读 getter，读到的是各模块的活绑定。只读：要改状态走各模块的 set*() 或公开接口（window.EdenMap）。
 // 新代码不要依赖这些全局名；这里只加不减，名单变了要同步 docs/design/arch-v2.md §4。
-import { esc, jsonCache, post, toImg } from './util.mjs';
+import { esc } from './dom-helpers.mjs';
+import { jsonCache } from './json-cache.mjs';
+import { post } from './protocol-stamp.mjs';
+import { toImg } from './coordinates.mjs';
 import { M, REG, aspect, cur, curData, sleeping, viewer } from './state.mjs';
 import { lean, tier } from './sharpness-tiers.mjs';
 import { LANG, nm, setTheme, t } from './i18n.mjs';

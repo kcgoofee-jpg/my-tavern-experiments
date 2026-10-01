@@ -5,10 +5,11 @@
 // （P3-A 收口：FOG_KEY / FOG_LOCAL_KEY 只在 core/storage.mjs 定义，这里不再写死键名；直连适配器后 get 套登记默认值——
 //   用户从没动过开关时 on() 按登记的 def '1' 生效，与设置页默认勾选、KEYS 登记一致，原先镜像不套默认值导致默认开悄悄失效）。
 import { REG, cur, viewer } from './state.mjs';
-import { $, post } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
 import { registry } from './layer-host.mjs';
 import { markHere } from './locate.mjs';
-import { norm, visit, known, count } from '../core/depth.mjs';
+import { norm, visit, known, count } from '../core/exploration-ledger.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
 import * as TCStore from '../core/storage.mjs';
 import { register } from './plugins.mjs';

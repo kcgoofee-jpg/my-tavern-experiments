@@ -6,7 +6,8 @@
 import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
 import { packOverlay } from './app/current-pack.mjs';
 import { everyone, groupLabel, groupList, paneModel } from './core/people.mjs';   // 人物页的分组：包声明几组就画几节（S4-4）
-import { afterLoadIdle, esc, getJSON } from './app/util.mjs';
+import { afterLoadIdle, esc } from './app/dom-helpers.mjs';
+import { getJSON } from './app/json-cache.mjs';
 import { declutter, leanBg } from './app/sharpness-tiers.mjs';
 import { LANG } from './app/i18n.mjs';
 import { go } from './app/map-switch.mjs';

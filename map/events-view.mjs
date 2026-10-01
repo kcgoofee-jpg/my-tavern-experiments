@@ -6,14 +6,17 @@
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 // 界面文字走查看器的 window.I18N（键在 i18n/*.json 的 ev.*）；类别、大类、层、状态名英文在设定包的英文地名表（清单 data.names.en）。事件标题、地点、发布方是剧情原文，不翻译。
 import { REG, aspect, cur, viewer } from './app/state.mjs';
-import { $, announce, coarse, esc, getJSON } from './app/util.mjs';
+import { $, esc } from './app/dom-helpers.mjs';
+import { announce } from './app/screen-reader-announce.mjs';
+import { coarse } from './app/viewport-mode.mjs';
+import { getJSON } from './app/json-cache.mjs';
 import { registry } from './app/layer-host.mjs';
 import { declutter, tabOrder } from './app/sharpness-tiers.mjs';
 import { go } from './app/map-switch.mjs';
 import { updateLayerBadges } from './app/map-level-nav.mjs';
 import { cardFrom, closeCard, placeN, setCardFrom, showCard, trackEl, untrack } from './app/markers.mjs';
 import { setUserMoved, userMoved } from './app/locate.mjs';
-import { sheetVis } from './app/shell.mjs';
+import { sheetVis } from './app/drawer-glue.mjs';
 import { P, register } from './app/plugins.mjs';
 import { eventGeo, eventLevel } from './app/nodes-runtime.mjs';
 import { hash01, spotOf } from './core/event-geo.mjs';

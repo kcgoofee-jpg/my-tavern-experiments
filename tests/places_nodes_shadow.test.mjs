@@ -14,7 +14,7 @@ import { normStash } from '../map/core/stash.mjs';
 import { edenInputs, townInputs, J } from './helpers/eden-inputs.mjs';
 import { sessionPlaces } from './helpers/session-places.mjs';
 
-const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];   // app/util.mjs
+const toImg = (x, y) => [(x / 1600 - .0075) / .985, (y / 1000 - .015) / .97];   // app/coordinates.mjs
 function setup(inputs) {
   const rt = makeRuntime(inputs), here = makeHere(inputs), maps = inputs.maps.maps, g = rt.geo();
   const world = [...(inputs.world?.places || []), ...(inputs.world?.fiefs || [])];   // the old rule looked at places and fiefs only

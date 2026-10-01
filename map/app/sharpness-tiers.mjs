@@ -1,7 +1,9 @@
 // 清晰度档位、省流判断、加载进度、叠加层与标注避让（原内联主脚本「清晰度上限」「加载进度」两区 + 档位常量）。
 import { lp } from './load-progress.mjs';
 import { REG, aspect, cur, pendingFocus, setAspect, setCur, setPendingFocus, viewer } from './state.mjs';
-import { $, announce, post, setSrQ, srQ, srT } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { announce, setSrQ, srQ, srT } from './screen-reader-announce.mjs';
+import { post } from './protocol-stamp.mjs';
 import { nm, t } from './i18n.mjs';
 import { go } from './map-switch.mjs';
 import { focusAfterGo } from './map-level-nav.mjs';

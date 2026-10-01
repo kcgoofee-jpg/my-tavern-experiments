@@ -47,3 +47,51 @@ test('S5-2 codemod: idempotent — a second run plans no edit, move or delete', 
   const out = execFileSync('node', ['tools/rename_s5.mjs', '--map', 'tools/rename_s5_map.json', '--dry-run'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
   assert.match(out, /dry run: 0 edit\(s\) in 0 file\(s\), 0 move\(s\), 0 delete\(s\)/, out.split('\n').slice(-6).join('\n'));
 });
+
+// ---- T3: util.mjs / shell.mjs split by job, the fog part of depth.mjs split out ----------------------------------------------
+const rd = f => readFileSync(path.join(ROOT, f), 'utf8');
+const exportsOf = f => {   // names after `export const|let|function`, also the later declarators of `export let a = [], b = 0;`
+  const t = rd(f), out = new Set();
+  for (const m of t.matchAll(/export\s+(?:async\s+)?(?:const|let|function)\s+([\w$]+)/g)) out.add(m[1]);
+  for (const m of t.matchAll(/export\s+(?:const|let)\s+[^;\n]*/g)) for (const d of m[0].matchAll(/,\s*([\w$]+)\s*=/g)) out.add(d[1]);
+  return out;
+};
+
+test('S5-2 split: every job module exists, carries its listed exports, stays under 400 lines; the sources are gone (no shim)', () => {
+  assert.equal(MAP.splits.length, 3);
+  for (const sp of MAP.splits) {
+    assert.equal(has(sp.from), !!sp.keep, sp.from + (sp.keep ? ' stays (gives up only the listed exports)' : ' is gone'));
+    for (const [t, names] of Object.entries(sp.to)) {
+      assert.ok(has(t), t); assert.ok(rd(t).split('\n').length <= 401, t + ' <= 400 lines');
+      const ex = exportsOf(t); for (const n of names) assert.ok(ex.has(n), `${t} exports ${n}`);
+      assert.doesNotMatch(rd(t), /z-index\s*:\s*\d|zIndex\s*:\s*\d/, t + ': no bare z-index');
+    }
+  }
+  const ledger = exportsOf('map/core/exploration-ledger.mjs'), depth = exportsOf('map/core/depth.mjs');
+  for (const n of ['norm', 'visit', 'known', 'count', 'MAX_MAPS', 'MAX_PER_MAP', 'MAX_NAME']) { assert.ok(ledger.has(n), n); assert.ok(!depth.has(n), n + ' left depth.mjs'); }
+});
+
+test('S5-2 split: no importer names util.mjs / shell.mjs; every import of a job module names an export it really has', () => {
+  const files = execFileSync('git', ['ls-files', '-z', 'map', 'tests', 'tools', 'skills'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 }).split('\0').filter(f => /\.(mjs|js|html)$/.test(f) && has(f) && !/^(tools\/(rename_s5|split_s5)|tests\/rename_s5|map\/vendor|map\/estate\/vendor)/.test(f));
+  const targets = new Map(); for (const sp of MAP.splits) for (const t of Object.keys(sp.to)) targets.set(t, exportsOf(t));
+  const bad = [];
+  for (const f of files) {
+    const text = rd(f);
+    if (/(?<![\w-])(app\/)?(util|shell)\.mjs/.test(text) && !/^tests\/text_lookup/.test(f)) bad.push(f + ' names util / shell');
+    for (const m of text.matchAll(/import\s*\{([^}]*)\}\s*from\s*'([^']+)'/g)) {
+      const t = path.posix.normalize(path.posix.join(path.posix.dirname(f), m[2])); if (!targets.has(t)) continue;
+      for (const item of m[1].split(',').map(x => x.trim().split(/\s+as\s+/)[0]).filter(Boolean)) if (!targets.get(t).has(item)) bad.push(`${f}: ${item} is not exported by ${t}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('S5-2 split: boot.mjs pulls in every shell job module at the old slot, viewer.html preloads every new module', () => {
+  const boot = rd('map/app/boot.mjs'), html = rd('map/viewer.html');
+  const shellMods = Object.keys(MAP.splits.find(s => s.from === 'map/app/shell.mjs').to);
+  let at = boot.indexOf("import './extension-api.mjs';");
+  assert.ok(at >= 0);
+  for (const t of shellMods) { const i = boot.indexOf(`import './${path.posix.basename(t)}';`, at); assert.ok(i > at, `${t} imported (bare) after extension-api, in order`); at = i; }
+  assert.ok(boot.indexOf("import './host-messages.mjs';") > at, 'host-messages stays after the shell block');
+  for (const sp of MAP.splits) for (const t of Object.keys(sp.to)) assert.ok(html.includes(`<link rel="modulepreload" href="${t.replace(/^map\//, '')}">`), t + ' preloaded');
+});

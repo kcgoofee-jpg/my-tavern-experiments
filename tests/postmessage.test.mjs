@@ -15,8 +15,8 @@ test('viewer: host listener checks source, subframe posts use SUB_ORIGIN', () =>
   assert.match(v, /function fromHost\(e\) \{[\s\S]{0,400}if \(e\.source === window\.parent\) return true;/);
   assert.match(v, /if \(!fromHost\(e\) \|\| \(PR && !PR\.accept\(e\.data/);
   assert.match(v, /if \(!est \|\| e\.source !== est\.frame\.contentWindow \|\| \(PR && !PR\.accept/);
-  assert.match(rd('map/app/util.mjs'), /export const SUB_ORIGIN = /);
-  for (const f of ['map/app/subpage3d-host.mjs', 'map/app/host-messages.mjs']) assert.match(rd(f), /import \{[^}]*\bSUB_ORIGIN\b[^}]*\} from '\.\/util\.mjs'/, f);
+  assert.match(rd('map/app/protocol-stamp.mjs'), /export const SUB_ORIGIN = /);
+  for (const f of ['map/app/subpage3d-host.mjs', 'map/app/host-messages.mjs']) assert.match(rd(f), /import \{[^}]*\bSUB_ORIGIN\b[^}]*\} from '\.\/protocol-stamp\.mjs'/, f);
   const bad = v.split('\n').filter(l => /(contentWindow\??|\bw)\.postMessage\([^;]*'\*'\)/.test(l));
   assert.deepEqual(bad, [], 'subframe postMessage with "*"');
 });

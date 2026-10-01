@@ -2,7 +2,8 @@
 // 挂点：设置「更新与版本」页 + 自检卡片各放一个按钮（见 map/app/settings.mjs、map/tavern/selfcheck.mjs）。
 import { buildReportText, buildIssueLink } from './feedback-report.mjs';
 import * as logbuf from '../core/logbuf.mjs';
-import { $, esc, tx } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { tx } from './text-lookup.mjs';
 import { about, selfCheck } from './settings.mjs';
 import { buildInfo } from './topbar.mjs';
 import { REG, cur } from './state.mjs';

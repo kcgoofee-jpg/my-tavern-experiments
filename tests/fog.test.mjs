@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { norm, visit, known, count, MAX_PER_MAP } from '../map/core/depth.mjs';
+import { norm, visit, known, count, MAX_PER_MAP } from '../map/core/exploration-ledger.mjs';
 import { HOST_SRC } from './_host_src.mjs';
 
 test('norm：坏数据不抛，只留合法 id / 名字，去重', () => {

@@ -3,7 +3,8 @@
 // 宿主在附加书里按触发词 / 名字匹配条目、回 eden-map:wb-peek（条目名 + 摘要），这里渲染进卡片抽屉。
 // 只读：不写任何条目、不发请求；宿主没这本书 / 没这接口时点了就显示「附加书不可用」。摘要只取前 300 字。
 // 插件模式与 scrapbook.mjs 一致（app/plugins.mjs 的 P.TCWb；没加载时 markers.mjs 调用处带守卫）。
-import { esc, post } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
+import { post } from './app/protocol-stamp.mjs';
 import { busOn } from './app/bus.mjs';
 import { register } from './app/plugins.mjs';
 

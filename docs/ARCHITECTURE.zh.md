@@ -38,7 +38,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 - **`map/core` 不指向任何别处。** 不许有离开 `map/core/` 的相对 import（看门狗检查 2），除登记的单一属主（`storage.mjs`、`logbuf.mjs`、`room-gallery-db.mjs`）外不许碰宿主全局。
 - **`map/tavern` 是宿主侧。** 只有 `mvu-bridge.mjs` 可以碰 `Mvu` / `SillyTavern` 全局；纯流水线（`context`、`msgtext`、`sanitize`、`preset`）完全不碰宿主全局。
-- **查看器外挂之间只经 `P` 互相找到。** app 模块显式 import `app/state.mjs` 与 `app/util.mjs` 里的共享状态；根目录外挂 import 同一份核心状态，彼此（以及不保证已加载的 app 模块）经 `app/plugins.mjs` 的 `P` 注册表相见；没加载的外挂是 `undefined`，调用方自己带守卫。查看器要用的纯 `tavern/` 模块（`events`、`characters`、`mvu`、`picker`、`compose`）和宿主用的是同一批文件，用按 `document.baseURI` 解析的动态 `import()` 加载，所以在 `srcdoc` 里也能用。
+- **查看器外挂之间只经 `P` 互相找到。** app 模块显式 import `app/state.mjs` 与它旁边的小工具模块（`dom-helpers.mjs`、`protocol-stamp.mjs`、`text-lookup.mjs` 等）里的共享状态；根目录外挂 import 同一份核心状态，彼此（以及不保证已加载的 app 模块）经 `app/plugins.mjs` 的 `P` 注册表相见；没加载的外挂是 `undefined`，调用方自己带守卫。查看器要用的纯 `tavern/` 模块（`events-parse`、`characters-parse`、`mvu-readers`、`picker`、`compose-templates`）和宿主用的是同一批文件，用按 `document.baseURI` 解析的动态 `import()` 加载，所以在 `srcdoc` 里也能用。
 - **包只是数据。** 卡的原名只原样出现在 `map/packs/**`、`map/data/**` 和 `tools/**` 下的构建工具里。
 - **`map/estate/**`、`map/props/*/**`、`map/vendor/**`、`map/packs/**`、`map/data/**` 不算引擎源码**，只减不增账本（§9）从不扫描它们；`map/estate/` 是第一个包的三维页。
 
@@ -53,9 +53,10 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
-| `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云。 |
+| `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
 | `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
+| `exploration-ledger.mjs` | 探索账本（迷雾探索：到过的地点）：对 `{ 地图 id: [地点名] }` 的 `norm` / `visit` / `known` / `count`，宿主与查看器共用。 |
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`describe()` 摘要。 |
@@ -103,9 +104,13 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `card-links.mjs` | 地点卡底部的链接（跨层通道、三维链接、图集入口）。 |
 | `clouds.mjs` | 漂移云与切层转场盖布。 |
 | `color-vision-mode.mjs` | 色觉模式：安全色板、类 / 属性开关、广播给子页。 |
+| `control-column.mjs` | 控制列：层切换条与缩放旁的 `#dock`、标注开关、设置首页的三个动作（上一级、当前位置、关闭地图）。 |
+| `coordinates.mjs` | 坐标换算：代码地图坐标（1600 × 1000）→ 底图归一化坐标（`toImg`）。 |
 | `current-pack.mjs` | 当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 |
 | `data-mapping-settings.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
 | `depth-haze.mjs` | 为当前纵深平面闭合「纵深 → 霾 → `depth-haze` 槽位 / 迷雾画布」这一环。 |
+| `dom-helpers.mjs` | DOM 小工具：`$`、`esc`、`ico`、`afterLoadIdle`。 |
+| `drawer-glue.mjs` | 唯一抽屉 / 右栏：层切换器落点、抽屉可见性、图例页、「地点」页空态、点地点卡时的开合。 |
 | `dzi-worker-src.mjs` | 瓦片解码线程的源码串（以文本导出，这样 `srcdoc` 里也能起 blob worker）。 |
 | `dzi-worker.mjs` | 瓦片解码线程的查看器侧客户端，失败时退回原生图片路径。 |
 | `extension-api.mjs` | 本机扩展接口 `window.EdenMap` 与聊天 id。 |
@@ -116,6 +121,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `hires-inset-tiles.mjs` | 放大到插图覆盖范围时叠加的高分辨率插图瓦片。 |
 | `host-messages.mjs` | 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。 |
 | `i18n.mjs` | 语言与主题：词典、`t` / `tr` / `nm`、`setLang`、`setTheme`。 |
+| `json-cache.mjs` | `getJSON`：数据文件只取一次，失败不缓存。 |
 | `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.TCLayers` 摘要。 |
 | `legacy-globals.mjs` | 兼容面：给浏览器探针用的旧全局名，挂在 `window` 上的只读 getter。 |
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
@@ -124,22 +130,28 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `map-switch.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
 | `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。 |
+| `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
+| `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `P`：app 模块与根目录外挂之间唯一的通道。 |
+| `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`PR`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
+| `quick-zoom.mjs` | 触屏单指缩放（双击后按住拖动）。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
+| `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
-| `shell.mjs` | 外壳：控制列、唯一抽屉 / 右栏胶水、通知层、状态点、单手模式、双击缩放。 |
 | `spot.mjs` | 一个已落点的地方对人物或行程端点画在哪里（三维页的平面替身地标、地标、节点自己的点、城区）；纯函数，查看器把它知道的递进去。 |
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
+| `status-dot.mjs` | 状态点：加载 / 档位状态的圆点与读屏标签。 |
 | `subpage3d-host.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
+| `text-lookup.mjs` | `tx`：字典有键时取字典文字，否则用兜底并代入变量。 |
 | `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic-view.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
-| `util.mjs` | 常量与工具：坐标换算、`$`、`esc`、`ico`、`post`（协议版本戳）、`getJSON`。 |
+| `viewport-mode.mjs` | 视口与设备标志：`narrow`（窄面板）、`coarse`（触屏或低内存设备）。 |
 | `visibility.mjs` | 视口可见性渲染节流：按原因引用计数的暂停开关。 |
 | `vision-view.mjs` | 视野锥与潜行的查看器侧：画视野，移动时报告最难的一次被目击。 |
 | `wander.mjs` | 由确定性时钟与日程表驱动的 NPC 漫游；走动的人禁止瞬移。 |

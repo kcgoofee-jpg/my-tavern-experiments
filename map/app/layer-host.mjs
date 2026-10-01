@@ -6,7 +6,8 @@
 // 外层固定 UI（顶栏 / 弹层 / 设置 / 控制列）走 --zu-* 阶梯，不进注册中心。
 import { LayerRegistry, SLOTS, slotZ } from '../core/layer-registry.mjs';
 import * as TCStore from '../core/storage.mjs';
-import { $, tx } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { tx } from './text-lookup.mjs';
 import { REG, cur } from './state.mjs';
 import { applyOverlayToggle, routeGaps } from './sharpness-tiers.mjs';
 import { ALT_KEY, swapBase } from './map-switch.mjs';

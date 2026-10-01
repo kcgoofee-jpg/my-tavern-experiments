@@ -1,4 +1,4 @@
-// FROZEN COPY of the first-pack constants that lived in the engine before S4-3 (head #184): the per-view theme CSS (map/ui/tokens.css), the legend (app/shell.mjs),
+// FROZEN COPY of the first-pack constants that lived in the engine before S4-3 (head #184): the per-view theme CSS (map/ui/tokens.css), the legend (app/drawer-glue.mjs),
 // the CVD palettes (app/color-vision-mode.mjs), the world-map word table (app/locate.mjs), the worldbook names (tavern/worldbook-sync.mjs), the tag examples and place prefix (tavern/interaction-modes.mjs),
 // the picker's tier table (tavern/picker.mjs) and the old predicates. Kept only so the S4-3 shadow tests can prove the pack data reproduces them, and so
 // tools/gen_eden_s43_data.mjs can derive that data. Do not edit; do not import from the engine.

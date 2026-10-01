@@ -1,11 +1,13 @@
 // 标记与地点卡：placeN、trackEl、marker、showCard / closeCard、世界图与点位图叠加。
 import { M, REG, aspect, cur, curData, ovData, depthData, viewer } from './state.mjs';
 import * as TCStore from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
-import { $, esc, narrow, toImg } from './util.mjs';
+import { $, esc } from './dom-helpers.mjs';
+import { narrow } from './viewport-mode.mjs';
+import { toImg } from './coordinates.mjs';
 import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { LANG, nm, t, tr } from './i18n.mjs';
-import { cardSheet } from './shell.mjs';
+import { cardSheet } from './drawer-glue.mjs';
 import { P } from './plugins.mjs';
 import { isScene } from './nodes-runtime.mjs';
 // ---------------- 标记 ----------------

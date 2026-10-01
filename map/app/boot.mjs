@@ -1,7 +1,13 @@
 // 启动：main / mainInner（并行取注册表、标记、派生数据、字典、core/protocol.mjs，建 OSD，发 ready）、启动失败出路。
 // 核心各块按原内联脚本的顺序求值（副作用：监听器、window.I18N / EdenMap / TCNotify…）；兼容面 legacy-globals.mjs 最后
 import './state.mjs';
-import './util.mjs';
+import './coordinates.mjs';
+import './dom-helpers.mjs';
+import './viewport-mode.mjs';
+import './protocol-stamp.mjs';
+import './screen-reader-announce.mjs';
+import './json-cache.mjs';
+import './text-lookup.mjs';
 import './sharpness-tiers.mjs';
 import './i18n.mjs';
 import './topbar.mjs';
@@ -12,7 +18,12 @@ import './markers.mjs';
 import './locate.mjs';
 import './settings.mjs';
 import './extension-api.mjs';
-import './shell.mjs';
+import './control-column.mjs';
+import './drawer-glue.mjs';
+import './notice-layer.mjs';
+import './status-dot.mjs';
+import './one-hand-mode.mjs';
+import './quick-zoom.mjs';
 import './host-messages.mjs';
 import './legacy-globals.mjs';
 import { initFpsMeter, suspendFpsMeter } from './fps.mjs';
@@ -26,7 +37,10 @@ import { registerWanderLayer } from './wander.mjs';   // Part 5-3：人物标记
 import { registerDepthHazeLayer } from './depth-haze.mjs';   // Part 8-3：纵深霾浓度 → 图层系统滤镜链（空气透视）
 import { M, REG, cur, pendingHome, setM, setPendingHome, setREG, setViewer, viewer } from './state.mjs';
 import { updateInsets } from './hires-inset-tiles.mjs';
-import { $, PR, PROTO, coarse, getJSON, jsonCache, narrow, post, setNarrow, setPR, SUB_ORIGIN } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { PR, PROTO, post, setPR, SUB_ORIGIN } from './protocol-stamp.mjs';
+import { coarse, narrow, setNarrow } from './viewport-mode.mjs';
+import { getJSON, jsonCache } from './json-cache.mjs';
 import { TIERS, autoTier, declutter, effTier, homeMode, initProgress, onOpen, refit, setTier } from './sharpness-tiers.mjs';
 import { DICT, LANG, applyI18n, postState, setDICT, setLANG, setLang, t } from './i18n.mjs';
 import { layoutHeader, warmOthers } from './topbar.mjs';
@@ -36,7 +50,9 @@ import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
-import { firstRunHint, initE7, initShell } from './shell.mjs';
+import { firstRunHint } from './notice-layer.mjs';
+import { initE7 } from './one-hand-mode.mjs';
+import { initShell } from './drawer-glue.mjs';
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu } from './layer-host.mjs';
 import { P } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase } from './current-pack.mjs';

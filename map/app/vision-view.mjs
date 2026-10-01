@@ -10,7 +10,7 @@ import { conePolygon, crossing, patrolCones } from '../core/vision.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { lean } from './sharpness-tiers.mjs';
-import { post } from './util.mjs';
+import { post } from './protocol-stamp.mjs';
 import { aspect, cur, curData, REG, viewer } from './state.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false, night = false, now = 0;

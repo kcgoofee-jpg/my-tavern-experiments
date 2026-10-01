@@ -5,7 +5,9 @@
 //   样式在本模块里注入（tavernhelper-settings.mjs 一个路子），viewer.html 不为这一层留 CSS。
 import { normStash, rows } from '../core/stash.mjs';
 import { registry } from './layer-host.mjs';
-import { esc, post, tx } from './util.mjs';
+import { esc } from './dom-helpers.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { aspect, cur, curData, viewer } from './state.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';

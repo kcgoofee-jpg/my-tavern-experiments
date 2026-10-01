@@ -1,10 +1,10 @@
-// S4-4 T2: app/util.mjs `tx(key, fallback, vars)` substitutes {vars} in the fallback too, as I18N.tx does: a dictionary that has not arrived (or lacks the key) must not show "{v}".
-// util.mjs touches matchMedia / self when it loads: a bare stub of each is enough.
+// S4-4 T2: app/text-lookup.mjs `tx(key, fallback, vars)` substitutes {vars} in the fallback too, as I18N.tx does: a dictionary that has not arrived (or lacks the key) must not show "{v}".
+// text-lookup.mjs reads only window.I18N (S5-2: split out of util.mjs, which also touched matchMedia / self at load).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-globalThis.window = globalThis; globalThis.self = { origin: 'http://localhost' }; globalThis.location = { origin: 'http://localhost' }; globalThis.matchMedia = () => ({ matches: false });
-const { tx } = await import('../map/app/util.mjs');
+globalThis.window = globalThis;
+const { tx } = await import('../map/app/text-lookup.mjs');
 
 test('tx: the dictionary value when the service has the key; else the fallback with the variables filled in', () => {
   delete window.I18N;

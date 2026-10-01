@@ -5,7 +5,7 @@
 // 线画在一个铺满两端外框的 SVG 叠加层里（OSD Rect 叠加层，随缩放伸缩；线宽、虚线用 non-scaling-stroke 保持屏幕像素）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { REG, aspect, cur, curData, viewer } from './app/state.mjs';
-import { esc } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
 import { registry } from './app/layer-host.mjs';
 import { showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, userMoved } from './app/locate.mjs';

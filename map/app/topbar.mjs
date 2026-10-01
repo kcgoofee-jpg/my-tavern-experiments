@@ -1,11 +1,14 @@
 // 顶栏布局、后台预热（另一版底图、其它地图）、版本编码。
 import { REG, cur, sleeping } from './state.mjs';
-import { $, getJSON, ico, post, tx } from './util.mjs';
+import { $, ico } from './dom-helpers.mjs';
+import { getJSON } from './json-cache.mjs';
+import { post } from './protocol-stamp.mjs';
+import { tx } from './text-lookup.mjs';
 import { autoKey, effTier, leanBg, tier } from './sharpness-tiers.mjs';
 import { t } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { renderAbout, showLay } from './settings.mjs';
-import { placeLayers } from './shell.mjs';
+import { placeLayers } from './drawer-glue.mjs';
 import { parentMap } from './nodes-runtime.mjs';
 // ---------------- 顶栏（UI v2 §2.1）：清晰度、语言、主题、版本号都在设置「显示 / 更新与版本」里，顶栏不再放 ----------------
 // 图层开关：桌面在「图层 ▾」弹层；手机（或桌面放不下：窄窗口、EN、放大 200%）进「⋯」设置首页的快捷区

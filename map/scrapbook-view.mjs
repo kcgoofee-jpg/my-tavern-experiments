@@ -7,7 +7,7 @@
 import * as SB from './core/scrapbook.mjs';
 import * as TCStore from './core/storage.mjs';
 import { chatId } from './app/extension-api.mjs';   // 当前聊天 id（let 活绑定：宿主换了聊天，键跟着换）
-import { esc } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
 import { register } from './app/plugins.mjs';
 
 const TCScrap = (() => {

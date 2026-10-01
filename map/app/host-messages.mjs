@@ -1,6 +1,7 @@
 // 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。
 import { REG, cur, setCur, setSleeping, sleeping, viewer } from './state.mjs';
-import { $, PR, SUB_ORIGIN } from './util.mjs';
+import { $ } from './dom-helpers.mjs';
+import { PR, SUB_ORIGIN } from './protocol-stamp.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { setLang } from './i18n.mjs';
 import { setSlowStop, slowStop, slowWarmAlt } from './topbar.mjs';
@@ -11,7 +12,8 @@ import { untrackAll } from './markers.mjs';
 import { hereRes, markHere, startInScene, userMoved } from './locate.mjs';
 import { TCSettings, setLine, about, renderAbout, renderSelfCheck, selfCheck, setAbout, setCardInfo, setSelfCheck, setUpdBusy, setUpdRes, updBusy, updRes, updSub } from './settings.mjs';
 import { emEmit, setChat } from './extension-api.mjs';
-import { flashOk, ntActs } from './shell.mjs';
+import { flashOk } from './status-dot.mjs';
+import { ntActs } from './notice-layer.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 // 嵌入酒馆（悬浮按钮面板）的消息接口：

@@ -2,7 +2,8 @@
 // 发给卡内脚本填进酒馆输入框——**只填不发**。只在嵌在酒馆里时显示。设置里「填入聊天的模板」可改（本机）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { nsStore } from './core/pack.mjs';
-import { esc, post } from './app/util.mjs';
+import { esc } from './app/dom-helpers.mjs';
+import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
 import { TCSettings } from './app/settings.mjs';
 import { P, register } from './app/plugins.mjs';

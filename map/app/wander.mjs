@@ -12,7 +12,7 @@ import { aspect, cur, curData, viewer } from './state.mjs';
 import { hereRes } from './locate.mjs';
 import { P } from './plugins.mjs';
 import { busOn } from './bus.mjs';
-import { getJSON } from './util.mjs';
+import { getJSON } from './json-cache.mjs';
 import { packData } from './current-pack.mjs';
 import { createWalker, tickClock, DEFAULT_DUR_MS, DEFAULT_ROUND_MS } from '../core/walk.mjs';
 import { normSchedule, placesAt } from '../core/routine.mjs';

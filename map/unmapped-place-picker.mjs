@@ -4,11 +4,13 @@
 //   存在聊天变量 eden_map.自定义（mvu-readers.mjs setCustom 的 alias / ignore；单独打开时存本机），存完立刻重建词表并跳过去。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。这里不过滤任何文字（textContent / esc）。
 import { M, REG } from './app/state.mjs';
-import { announce, esc, post } from './app/util.mjs';
+import { announce } from './app/screen-reader-announce.mjs';
+import { esc } from './app/dom-helpers.mjs';
+import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
 import { estPlan, hereIdx, jumpHere } from './app/locate.mjs';
 import { showSet } from './app/settings.mjs';
-import { sheetVis } from './app/shell.mjs';
+import { sheetVis } from './app/drawer-glue.mjs';
 import { P, register } from './app/plugins.mjs';
 const TCUnmapped = (() => {
   const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
