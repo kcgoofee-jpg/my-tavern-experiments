@@ -104,7 +104,7 @@ that script through the queue, fix there, re-export like the existing `map/props
 **basemap**: `audit` → compare the item spec with the last matching row in `logs/render_times.csv` and the DZI size
 (`map/art/<name>.dzi`); if already at spec, `skip` render and tiles with the evidence in `--note`. `render` → submit
 the command `next` prints (full PNG to `logs/campaign/full/`, git-ignored). `tiles` →
-`python3 tools/make_dzi.py <full.png> map/art/<name> --extent-m <w> <h> --verify` (extent from maps.json
+`python3 tools/make_dzi.py <full.png> map/art/<name> --extent-m <w> <h>` (it verifies itself; the standalone `--verify <prefix>` only checks an existing pyramid) (extent from maps.json
 `view.extent_m`). `verify` → open a mid-zoom crop and the whole image; check_maps passes. `ship` → ship-check, commit
 tiles, push. For `base:tc_upper`: repeat the island paste for every cutout id in `tc_islands.json` (see the hero
 lane's RESULT notes: body-only crop re-render + `tools/isles_into_upper.py`).

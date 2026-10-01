@@ -60,3 +60,5 @@ docs/drafts/props_u12_/
 
 # 浏览器探针输出（截图 / results.json / summary.md），不入库
 tools/browser/out-*/
+# 上层岛表落地（tools/upper_layout_land.py）的合成前备份与旧岛心存档：临时文件，落地提交后可删
+map/art/*.pre-v16C.*
