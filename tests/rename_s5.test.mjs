@@ -187,7 +187,9 @@ test('S5-3 dead hooks: the four read-only hooks are gone, the storage owners nam
   for (const o of owners) assert.ok(has('map/' + o) || has(o), `storage.mjs owner ${o} is not a file under map/`);
 });
 
-test('S5-3 codemod: idempotent — a second --globals run plans no edit', () => {
-  const out = execFileSync('node', ['tools/rename_s5.mjs', '--globals', 'tools/rename_s5_globals.json', '--dry-run'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+test('S5-3 codemod: idempotent — a second --globals run plans no edit', t => {
+  let out;
+  try { out = execFileSync('node', ['tools/rename_s5.mjs', '--globals', 'tools/rename_s5_globals.json', '--dry-run'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'pipe'] }); }
+  catch (e) { if (/no Babel found/.test(String(e.stderr || e.message))) return t.skip('the parser (Babel bundled with Playwright) is not installed here'); throw e; }
   assert.match(out, /dry run: 0 edit\(s\) in 0 file\(s\), 0 problem\(s\), 0 manual/, out.split('\n').slice(-6).join('\n'));
 });
