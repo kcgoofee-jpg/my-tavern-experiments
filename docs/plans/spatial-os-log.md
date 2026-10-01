@@ -1057,3 +1057,20 @@ blocker: none
 open: none
 cleanup: done (probe servers stopped by the probes; no background jobs of mine left; no .claude/launch.json entries; worktree s8-2 left for the orchestrator)
 === END ===
+
+=== RESULT S8-2 (scope additions) ===
+status: DONE
+items: (a) routes layer on by default and visible in the layer menu on the views that have routes ✓ · (b) the estate's barrier as a pack-declared area layer of the first pack, default off, edge from the depth `ward` channel ✓
+commits: (this commit) feat(pack): first pack estate ward layer, routes on by default (S8-2 scope additions); unfreeze   (SHAs may change on rebase)
+commits: 70ab2c42 chore: freeze maps.json for S8-2 scope additions   (pushed alone as head #229)
+pushed: yes (head #N in the chat report)
+tests: node 1162/1164 pass (2 skipped, environment-dependent as before; +4 tests of mine in tests/first_pack_additions.test.mjs, declared_layers pinned to the new first-pack fact; nothing removed) | smoke PASS | arch PASS | probes: pack_layers=PASS (first-pack block rewritten, 7 checks for the additions) layer_dump=PASS (see parity) p4_traffic=PASS pack_town=PASS s43_parity=only the pinned additions
+decision note: the old decision "routes and the barrier outline delayed (2026-09-27)" is void (decisions before 2026-09-30 no longer bind, brief N3); only the routes default changes: users who switched routes off keep it off (edenMapRoutes "0"); the old `barriers` outline toggle keeps its default (off)
+visible additions to the first pack (everything else identical): (1) the routes layer is on by default: on tc_upper the four route lines (lane dashes, patrol rings) show (the light streams already ran along them); (2) a new menu row "全域结界" / "Estate ward" (`lyr-estate_ward`, default off, shown on tc_upper only, hidden elsewhere); ticking it draws one closed area (the estate island rim grown 5 %, cold-light edge #8ce6ff, opacity 0.55 = ward channel near value, fill 0.06) and one legend group with a swatch; stored in `edenMapLayers`.
+parity: layer_dump first pack: exactly three differences, all pinned: `estate_ward` in the routes slot list, `routes` now first-active in activeLayers, row tgRoutes checked, plus the new row lyr-estate_ward (hidden at start); s43: 141 of 144 shots identical; map_tc_upper_dark and _light differ 0.74 % and 0.68 % (the visible route lines; noise alone is 0.2 % / 0.04 %) and settings_license differs 0.28 % as before (machine font drift); tests: first-pack layer list pinned in tests/first_pack_additions.test.mjs and tests/declared_layers.test.mjs
+files: map/packs/eden/overlay.v2.json (+ `layers` row, 48 outline points) · map/app/layer-host.mjs (one line: routes default) · tools/browser/pack_layers.mjs (first-pack block) · tests/first_pack_additions.test.mjs
+deviations: (1) the new layer sits in the `routes` slot (the slot of the lane and patrol lines, below the markers) rather than the barrier ring's own slot because the barriers ring is a base-overlay record; (2) the "ward channel tokens" were read as the channel's strength (near 0.55) and the cold-light edge colour (the old barriers ring stroke), as the depth design names them; (3) FREEZE_MAPS was committed and pushed alone as head #229 before the eden overlay edit and is deleted in this commit.
+blocker: none
+open: none
+cleanup: done
+=== END ===

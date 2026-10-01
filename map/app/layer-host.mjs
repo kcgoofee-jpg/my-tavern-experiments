@@ -53,12 +53,12 @@ window.LayerHostApi = { registry, describe: () => registry.describe(), slotZ, pr
 let coreDone = false;
 export function registerCoreLayers() {
   if (coreDone) return; coreDone = true;
-  // 岛屿结界轮廓（barriers）默认关（用户 2026-09-27，和航线一样；两者永久推迟，不再打磨），开了记在本机；世界图国界（dzi）照旧默认开
+  // 岛屿结界轮廓（barriers）默认关，开了记在本机；世界图国界（dzi）默认开；航线（routes）默认开（S8-2 用户范围追加：2026-09-27 的「航线推迟」决定作废），用户关掉的记在本机
   registry.register(declared('base-overlay', { initialVisible: true,
     setVisible: v => { if (mapRegistry.maps[currentMapId]?.overlay?.type === 'barriers') { try { storage.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } }));
   registry.register(declared('alt-base', { initialVisible: false,
     setVisible: v => { try { storage.set(ALT_KEY + currentMapId, v ? '1' : '0'); } catch (e) {} return swapBase(); } }));
-  const routesOn = storage.get('edenMapRoutes') === '1';
+  const routesOn = storage.get('edenMapRoutes') !== '0';
   registry.register(declared('routes', { initialVisible: routesOn,
     setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { storage.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } }));
   document.body.classList.toggle('noroutes', !routesOn);

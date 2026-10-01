@@ -2,7 +2,7 @@
 //   node tools/browser/pack_layers.mjs <out dir>
 // Desktop (zh, then ?lang=en) and one 375 px run. Checks: both menu rows with the pack's labels; on town_hill the patrol flow draws (path + dots on its canvas)
 // and the danger row does not apply; on town_harbour the danger polygon is drawn and the patrol row does not apply; the legend lists the layer rows with swatches;
-// unticking a row removes its drawing, is stored in tcp.town.Layers and survives a reload; the first pack has no declared layer, no `lyr-` row and an unchanged legend.
+// unticking a row removes its drawing, is stored in tcp.town.Layers and survives a reload; the first pack: the estate ward layer (off by default), the routes layer on by default, the legend pane unchanged.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -75,14 +75,29 @@ try {
     await shot(p, 'hill_en');
     await P.ctx.close();
   }
-  // the first pack: no declared layer, no lyr- row, the legend pane unchanged (no layer rows)
+  // the first pack (scope additions): the estate ward is its one declared layer, off by default; the routes layer is on by default; the legend pane is the old markup
   {
     const P = await B.newPage('desktop', { lang: 'zh', tier: 'save', scheme: 'dark' }); const p = P.page;
     await p.goto(B.BASE + 'viewer.html', { waitUntil: 'commit' }); await ready(p);
-    const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().length, lyr: document.querySelectorAll('#layList > label[id^="lyr-"]').length, rows: document.querySelectorAll('#layList > label').length,
+    const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().map(d => d.id), lyr: [...document.querySelectorAll('#layList > label[id^="lyr-"]')].map(l => l.id), rows: document.querySelectorAll('#layList > label').length,
       legendKids: [...(document.getElementById('legendPane')?.children || [])].map(c => c.tagName), canvases: document.querySelectorAll('canvas.lyr-cv').length, svgs: document.querySelectorAll('svg.lyr-svg').length }));
-    rep.check('first pack: no declared layer, no lyr- row, 14 menu rows, no layer canvas / svg', e.declared === 0 && e.lyr === 0 && e.rows === 14 && !e.canvases && !e.svgs, JSON.stringify(e));
+    rep.check('first pack (world): the one declared layer is estate_ward; its row is there and hidden; 15 menu rows; nothing drawn', e.declared?.join() === 'estate_ward' && e.lyr.join() === 'lyr-estate_ward' && e.rows === 15 && !e.canvases && !e.svgs, JSON.stringify(e));
     rep.check('first pack: the legend pane markup is the old one (heading and one list)', e.legendKids.join() === 'H3,DL', JSON.stringify(e.legendKids));
+    await p.evaluate(() => ViewerDebug.go('tc_upper')); await B.wait(3500);
+    const u = await p.evaluate(() => { const r = document.getElementById('tgRoutes'), w = document.getElementById('lyr-estate_ward'), svg = document.querySelector('svg.routes');
+      return { routesRow: r ? { hidden: r.hidden, checked: !!document.getElementById('tgRoutesBox')?.checked } : null, noroutes: document.body.classList.contains('noroutes'), svgVis: svg ? getComputedStyle(svg).visibility : null, paths: svg?.querySelectorAll('path').length || 0,
+        stored: localStorage.getItem('edenMapRoutes'), ward: w ? { hidden: w.hidden, checked: !!document.getElementById('lyrBox-estate_ward')?.checked, text: w.querySelector('span')?.textContent } : null,
+        wardSvg: document.querySelectorAll('svg.lyr-svg[data-layer="estate_ward"] path').length, legendHeads: [...document.querySelectorAll('#legendPane h4')].map(h => h.textContent) }; });
+    rep.check('first pack, tc_upper: the routes row shows, is ticked by default, the route lines are visible (nothing stored)', u.routesRow && !u.routesRow.hidden && u.routesRow.checked && !u.noroutes && u.svgVis === 'visible' && u.paths > 0 && u.stored === null, JSON.stringify(u));
+    rep.check('first pack, tc_upper: the estate ward row shows ("全域结界"), unticked, nothing drawn, no legend heading', u.ward && !u.ward.hidden && !u.ward.checked && u.ward.text === '全域结界' && u.wardSvg === 0 && !u.legendHeads.length, JSON.stringify(u));
+    await shot(p, 'upper_routes_on');
+    await p.evaluate(() => document.getElementById('lyrBox-estate_ward').click()); await B.wait(700);
+    const w = await p.evaluate(() => ({ svg: document.querySelectorAll('svg.lyr-svg[data-layer="estate_ward"] path').length, closed: /Z$/.test(document.querySelector('svg.lyr-svg[data-layer="estate_ward"] path.fill')?.getAttribute('d') || ''), stored: localStorage.getItem('edenMapLayers'), heads: [...document.querySelectorAll('#legendPane h4')].map(h => h.textContent), sw: document.querySelectorAll('#legendPane .lgsw').length }));
+    rep.check('first pack, tc_upper: ticking the estate ward draws one closed area and lists it in the legend with a swatch; stored', w.svg === 1 && w.closed && /"estate_ward":"1"/.test(w.stored || '') && w.heads.join() === '全域结界' && w.sw === 1, JSON.stringify(w));
+    await shot(p, 'upper_ward_on');
+    await p.evaluate(() => document.getElementById('tgRoutesBox').click()); await B.wait(500);
+    const off = await p.evaluate(() => ({ noroutes: document.body.classList.contains('noroutes'), svgVis: getComputedStyle(document.querySelector('svg.routes')).visibility, stored: localStorage.getItem('edenMapRoutes') }));
+    rep.check('first pack, tc_upper: unticking routes hides the lines and is stored ("0")', off.noroutes && off.svgVis === 'hidden' && off.stored === '0', JSON.stringify(off));
     rep.check('first pack: no page errors', !P.errors.length, P.errors.join(' | '));
     await P.ctx.close();
   }

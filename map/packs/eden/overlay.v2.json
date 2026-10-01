@@ -429,5 +429,25 @@
       }
     ],
     "x-event-level": "tc_mid"
-  }
+  },
+  "layers": [
+    {
+      "_note": "The estate's barrier (the card's whole-domain ward) as a pack-declared area layer, off by default. Outline = the island 'eden' of data/tc_upper.json grown 5 % like the old barriers ring; edge look = the depth ward channel of data/upper_depth.json (strength near 0.55, cold-light edge).",
+      "id": "estate_ward", "type": "area", "slot": "routes", "source": "inline",
+      "applies": { "views": ["tc_upper"] },
+      "style": { "color": "#8ce6ff", "opacity": 0.55, "fill_opacity": 0.06, "width": 1.2 },
+      "data": { "features": [ { "view": "tc_upper", "pts": [
+            [0.6255, 0.5], [0.6223, 0.4743], [0.6153, 0.4505], [0.6011, 0.433], [0.5899, 0.4169], [0.5808, 0.4008],
+            [0.5708, 0.3868], [0.5571, 0.381], [0.5458, 0.3731], [0.5347, 0.3662], [0.5228, 0.3639], [0.5109, 0.367],
+            [0.5, 0.3697], [0.489, 0.3664], [0.4774, 0.3655], [0.4652, 0.3658], [0.4535, 0.3711], [0.4391, 0.373],
+            [0.428, 0.3847], [0.4163, 0.3973], [0.4075, 0.4146], [0.3967, 0.4315], [0.3916, 0.4536], [0.3865, 0.4761],
+            [0.3909, 0.5], [0.391, 0.523], [0.3927, 0.546], [0.3926, 0.5712], [0.4034, 0.5892], [0.4166, 0.6024],
+            [0.43, 0.612], [0.4405, 0.6241], [0.4531, 0.6302], [0.4654, 0.6338], [0.4768, 0.6385], [0.488, 0.6457],
+            [0.5, 0.6547], [0.512, 0.6452], [0.5234, 0.64], [0.5345, 0.6333], [0.5462, 0.628], [0.555, 0.6148],
+            [0.5664, 0.6063], [0.5803, 0.5986], [0.5977, 0.5902], [0.605, 0.5696], [0.6132, 0.5485], [0.6175, 0.5248]
+          ] } ] },
+      "menu": {"label": "全域结界", "title": "覆盖整座庄园岛的外层结界（冷光细边），默认关闭", "default": false, "i18n": {"en": {"label": "Estate ward", "title": "The outer ward over the whole estate island (thin cold-light edge); off by default"}}},
+      "legend": [{"label": "全域结界", "desc": "庄园岛缘外扩一圈的冷光细边", "i18n": {"en": {"label": "Estate ward", "desc": "A thin cold-light edge just outside the estate island's rim"}}}]
+    }
+  ]
 }
