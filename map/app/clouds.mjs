@@ -15,6 +15,7 @@ import { altOn, go, setGo } from './map-switch.mjs';
 import { viewField } from './nodes-runtime.mjs';   // 包说哪些图有漂移云：视图上的 x-clouds（K-R70）
 import { artUrl } from './current-pack.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重复先摘旧的，卸载可一把摘净）
+import { visibilityGuard } from './visibility.mjs';
 (() => {
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
   const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
@@ -70,7 +71,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
     if (!box.classList.contains('fade') && (Math.abs(acc.near[0]) > vw * .6 || Math.abs(acc.near[1]) > vh * .6)) reset(true);
   }
   function reset(soft) {
-    const apply = () => { acc = { far: [0, 0], near: [0, 0] }; last = null; for (const id in lay) lay[id].style.transform = ''; if (shown) build(); box.classList.remove('fade'); };
+    const apply = () => { acc = { far: [0, 0], near: [0, 0] }; last = null; for (const id in lay) lay[id].style.transform = ''; if (shown) build(); if (visibilityGuard.isPaused()) anims.forEach(a => a.pause()); box.classList.remove('fade'); };
     if (soft) { box.classList.add('fade'); setTimeout(apply, 300); } else apply();
   }
   function hide() { shown = false; anims.forEach(a => a.cancel()); anims = []; if (box) { for (const id in lay) lay[id].replaceChildren(); box.hidden = true; } }
@@ -87,7 +88,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
   new MutationObserver(() => setTimeout(sync, 0)).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
   busOn({ key: 'clouds.altToggle', target: document, type: 'change', fn: e => { if (e.target?.id === 'tgAltBox') setTimeout(sync, 0); } });
   RMq.addEventListener?.('change', sync);
-  busOn({ key: 'clouds.visibility', target: document, type: 'visibilitychange', fn: () => anims.forEach(a => document.hidden ? a.pause() : a.play()) });
+  visibilityGuard.subscribe(paused => anims.forEach(a => { try { paused ? a.pause() : a.play(); } catch (e) {} }));   // S7-2: page hidden, panel closed, 3D open: the drift stops (docs/ui-refactor.md 4)
 
   // ---------- 切层转场（v0.9.6：短的升 / 降，替换原来的大云团扫屏）----------
   // 用户实测 v0.9.5：「✓ 已加载」之后大团模糊云还停在中层 / 下层上面——Web Animations 的 finished 在 WKWebView 里可能一直不 resolve，

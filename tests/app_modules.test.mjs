@@ -38,7 +38,7 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
 test('调试面 viewer-debug.mjs 的名单固定（window.ViewerDebug.<名>，只读 getter）', () => {
   const body = rd('app/viewer-debug.mjs'), names = [...body.slice(body.indexOf('const G = {'), body.indexOf('const debug')).matchAll(/(\w+): \(\) => /g)].map(m => m[1]).sort();
   assert.deepEqual(names, ['LANG', 'aspect', 'chatId', 'closeCard', 'currentMapData', 'currentMapId', 'esc', 'estFocus', 'fadeAway', 'go', 'hereRes',
-    'jsonCache', 'jumpHere', 'lean', 'localName', 'main', 'mapRegistry', 'openEstate', 'osdViewer', 'packStorage', 'post', 'renderAbout', 'setEstFail', 'setTheme',
+    'jsonCache', 'jumpHere', 'lean', 'localName', 'main', 'mapRegistry', 'openEstate', 'osdViewer', 'packStorage', 'post', 'raf', 'renderAbout', 'setEstFail', 'setTheme',
     'showCard', 'showLay', 'showSet', 'sleeping', 'subpageSession', 'tabs', 'tier', 'toImg', 'uiText', 'worldData'].sort());
 });
 

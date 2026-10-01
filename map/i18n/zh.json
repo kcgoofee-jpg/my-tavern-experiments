@@ -825,5 +825,17 @@
   "fc.nav.p_deepseek": "DeepSeek",
   "fc.nav.p_custom": "自定义兼容端点",
   "s.glass_clock": "昼夜界面",
-  "s.glass_clock_d": "界面按游戏内时间变亮 / 变暗（清晨、白天亮，黄昏、夜间暗），会盖过系统的亮 / 暗设置；主题选「跟随系统」时才起作用"
+  "s.glass_clock_d": "界面按游戏内时间变亮 / 变暗（清晨、白天亮，黄昏、夜间暗），会盖过系统的亮 / 暗设置；主题选「跟随系统」时才起作用",
+  "lyr.na": "此处不适用",
+  "lyr.remember": "已记住：{where}，到时生效",
+  "lyr.only_view": "只在 {x} 视图",
+  "lyr.only_in": "只在 {x} 及其下级",
+  "lyr.only_type": "只在特定类型的地点",
+  "lyr.only_period": "只在 {x}",
+  "lyr.only_night": "只在夜间",
+  "lyr.only_day": "只在白天",
+  "lyr.only_state": "仅在特定状态下",
+  "lyr.generic_view": "特定",
+  "lyr.generic_place": "特定地点",
+  "lyr.generic_period": "特定时段"
 }

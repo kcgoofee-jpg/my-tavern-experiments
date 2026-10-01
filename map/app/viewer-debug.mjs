@@ -17,13 +17,14 @@ import { hereRes, jumpHere } from './locate.mjs';
 import { renderAbout, showLay, showSet } from './settings.mjs';
 import { packStorage, chatId } from './extension-api.mjs';
 import { describeTabs } from './tabs.mjs';
+import { raf } from './raf-probe.mjs';
 const G = {
   toImg: () => toImg, osdViewer: () => osdViewer, aspect: () => aspect, worldData: () => worldData, mapRegistry: () => mapRegistry, currentMapId: () => currentMapId,
   currentMapData: () => currentMapData, tier: () => tier, sleeping: () => sleeping, esc: () => esc, post: () => post, jsonCache: () => jsonCache,
   LANG: () => LANG, localName: () => localName, uiText: () => uiText, setTheme: () => setTheme, main: () => main, fadeAway: () => fadeAway, go: () => go,
   subpageSession: () => subpageSession, setEstFail: () => setEstFail, openEstate: () => openEstate, estFocus: () => estFocus, closeCard: () => closeCard,
   showCard: () => showCard, hereRes: () => hereRes, jumpHere: () => jumpHere, showSet: () => showSet, showLay: () => showLay,
-  chatId: () => chatId, packStorage: () => packStorage, renderAbout: () => renderAbout, lean: () => lean, tabs: () => describeTabs,
+  chatId: () => chatId, packStorage: () => packStorage, renderAbout: () => renderAbout, lean: () => lean, tabs: () => describeTabs, raf: () => raf,
 };
 const debug = {};
 for (const [k, g] of Object.entries(G)) Object.defineProperty(debug, k, { get: g, enumerable: true });

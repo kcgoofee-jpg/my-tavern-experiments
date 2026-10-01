@@ -11,7 +11,7 @@
 import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; import './pack-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
-import { createLife, takeOver, mount, install } from './host-lifecycle.mjs';
+import { createLife, takeOver, mount, install, watchVisible } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
 import { createLlmFlow } from './llm-flow.mjs';
 import { createRouteFlow } from './route-flow.mjs';
@@ -225,13 +225,13 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (!alive) return unloadViewer();
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
-  const post = msg => { if (!life.dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, v: PROTO, t: HOST_TOKEN }, '*'); } };   // srcdoc 换页后属性会丢，每次发消息前补一次
+  const post = msg => { if (!life.dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, v: PROTO, t: HOST_TOKEN }, '*'); } }; const resendVisible = watchVisible(panel, frame, on => post({ type: 'eden-map:visible', on }));   // srcdoc 换页后属性会丢，每次发消息前补一次；S7-2：面板开关 / 滚出视口告诉查看器
   let flyQ = null, tileSwitchAt = 0;   // EdenMap.flyTo 在地图就绪前调用时排队；tileSwitchAt：上次自动换线的时间（N13）
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (protocolModule && !protocolModule.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; CF.resetLayerSent(); LL.sendOps(true); RF.onReady(); HA.replayLayers(); knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); resendVisible(); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; CF.resetLayerSent(); LL.sendOps(true); RF.onReady(); HA.replayLayers(); knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && CK.setQ) { const q = CK.setQ; CK.setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);

@@ -9,8 +9,8 @@
 //                        环境里没有对应 API 就安静跳过（旧 WebKit / iframe 里都不是错误）。
 // 谁被暂停由调用方决定（effects）——本模块只知道「现在该不该跑」。
 
-/** 挂起原因：page = 标签页 / 窗口不可见；viewport = 元素滚出视口；manual = 面板自己按下的（关闭中） */
-export const REASONS = ['page', 'viewport', 'manual'];
+/** 挂起原因：page = 标签页 / 窗口不可见；viewport = 元素滚出视口；manual = 面板自己按下的（关闭中）；panel / covered：见下 */
+export const REASONS = ['page', 'viewport', 'manual', 'panel', 'covered', 'rm'];   // panel = the host says the tavern panel is closed / docked / scrolled out (eden-map:visible); covered = a 3D view is open over the map
 
 export function createPauseSwitch({ onChange } = {}) {
   const on = new Set(), subs = new Set();
@@ -50,6 +50,12 @@ export function installVisibilityGuard(guard, { doc, win, target } = {}) {
   if (w) {
     w.addEventListener('pagehide', hide); w.addEventListener('pageshow', show);
     offs.push(() => { w.removeEventListener('pagehide', hide); w.removeEventListener('pageshow', show); });
+  }
+  // 减少动态效果（系统设置或设置「显示 · 减少动态」→ html.rm）：所有动画图层的循环停下（S7-2，docs/ui-refactor.md 6）
+  if (w?.matchMedia) {
+    const mq = w.matchMedia('(prefers-reduced-motion: reduce)'), rm = () => guard.set('rm', mq.matches || d.documentElement?.classList.contains('rm'));
+    rm(); mq.addEventListener?.('change', rm); offs.push(() => mq.removeEventListener?.('change', rm));
+    if (typeof MutationObserver === 'function' && d.documentElement) { const mo = new MutationObserver(rm); mo.observe(d.documentElement, { attributes: true, attributeFilter: ['class'] }); offs.push(() => mo.disconnect()); }
   }
   // 元素滚出视口（宿主页里面板被别的卡片盖住 / 查看器 iframe 被滚走）
   if (target && typeof IntersectionObserver === 'function') {

@@ -19,6 +19,7 @@ import { busOn } from './bus.mjs';
 import { validate2, withDefaults } from '../core/pack-v2.mjs';
 import { swapPack } from './pack-live.mjs';
 import { syncGlassClock } from './theme.mjs';
+import { visibilityGuard } from './visibility.mjs';
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
 //   酒馆 → 地图：eden-map:here {value}（当前地点）、eden-map:open {map}（直接打开某张地图）
 //   地图 → 酒馆：eden-map:ready（可以撤掉加载遮罩）、eden-map:state {map, title}（当前地图，用于面板标题）
@@ -81,6 +82,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:custom') plugins.CustomNamesView.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:inv' && typeof plugins.StashView !== 'undefined') plugins.StashView.fromHost(e.data);   // 空间化背包（Part 5-1）：地点卡「存放」行
     if (e.data?.type === 'eden-map:media' && typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.fromHost(e.data);   // K-R106: the pack's media source (a card's picture table + the chat's tags)
+    if (e.data?.type === 'eden-map:visible') visibilityGuard.set('panel', e.data.on === false);
     if (e.data?.type === 'eden-map:clock') { plugins.CustomNamesView.setClock(e.data); applyPeriod(); syncGlassClock(e.data); }   // 世界时间 → 夜色 / 多时段底图
     if (e.data?.type === 'eden-map:outfit') plugins.CustomNamesView.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') plugins.CustomNamesView.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)

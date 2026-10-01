@@ -12,6 +12,7 @@ import { aspect, currentMapId, currentMapData, osdViewer } from './state.mjs';
 import { hereRes } from './locate.mjs';
 import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
+import { visibilityGuard } from './visibility.mjs';
 import { getJSON } from './json-cache.mjs';
 import { packData } from './current-pack.mjs';
 import { createWalker, tickClock, DEFAULT_DUR_MS, DEFAULT_ROUND_MS } from '../core/walk.mjs';
@@ -76,7 +77,7 @@ function loop(now) {
   const t = typeof now === 'number' ? now : performance.now();
   const { moving } = walker.step(t);
   applyWalk(t);
-  if (moving && on) raf = requestAnimationFrame(loop);
+  if (moving && on && !visibilityGuard.isPaused()) raf = requestAnimationFrame(loop);
 }
 /** 把插值坐标写到人物标记上：一枚标记上可能挂着好几个人，取其中正在走的那个 */
 function applyWalk(now) {
@@ -138,7 +139,7 @@ export function registerWanderLayer() {
     mount: () => {
       on = true;
       if (!t0) t0 = performance.now();
-      if (!timer) timer = setInterval(tick, Math.min(15000, DEFAULT_ROUND_MS));   // 时钟节拍：到点才推，中间不空转
+      if (!timer && !visibilityGuard.isPaused()) timer = setInterval(tick, Math.min(15000, DEFAULT_ROUND_MS));   // 时钟节拍：到点才推，中间不空转；面板 / 页面不可见、被三维盖住时不跑（S7-2）
       try {
         const host = osdViewer?.drawer?.canvas?.parentNode || document.querySelector('.openseadragon-canvas');
         if (host && !obs) { obs = new MutationObserver(() => setTimeout(scanWander, 0)); obs.observe(host, { childList: true, subtree: true }); }
@@ -148,6 +149,8 @@ export function registerWanderLayer() {
     unmount: () => { on = false; stop(); try { obs?.disconnect(); } catch (e) {} obs = null; last.clear(); walker.clear(); },
     setVisible: v => { on = !!v && !lean() && !rmq()?.matches; if (on && !t0) t0 = performance.now(); if (!on) stop(); if (on) tick(); },
   }));
+  // S7-2: the pause (docs/ui-refactor.md 4): hidden document, closed / docked panel, or a 3D view over the map -> no timer, no frame; back -> the timer and a tick
+  visibilityGuard.subscribe(paused => { if (paused) stop(); else if (obs && on && !timer) { timer = setInterval(tick, Math.min(15000, DEFAULT_ROUND_MS)); tick(); } });
   // 省流档与「减少动态效果」：不滑（标记照常更新位置）
   on = !lean() && !rmq()?.matches;
   busOn({ key: 'wander.hostMsg', type: 'message', fn: e => {

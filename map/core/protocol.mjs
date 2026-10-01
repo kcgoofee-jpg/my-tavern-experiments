@@ -62,6 +62,7 @@ export const SCHEMA = {
   'eden-map:stash': [HOST_TO_VIEWER, { items: 'array?' }],   // 世界藏物表（Part 5-1）：设定包自带的藏物（带地图 / 标记 / 暗格），查看器据此画发光拾取物
   'eden-map:routine': [HOST_TO_VIEWER, { schedule: 'object?' }],   // Part 8-2：NPC 日程表（包数据 routine.json 原样推来，查看器按确定性时钟自己挪人）
   'eden-map:clock': [HOST_TO_VIEWER, {}],
+  'eden-map:visible': [HOST_TO_VIEWER, { on: 'boolean' }],   // S7-2: the map panel is shown (true) or closed / docked / scrolled out (false); the viewer pauses its animation layers while false
   'eden-map:layer-data': [HOST_TO_VIEWER, { values: 'object' }],   // S8-3 K-R86：宿主按包的图层声明读的卡变量值（只读，已限长；viewer 的 mvu: 来源与 applies.mvu 用）
   'eden-map:ops': [HOST_TO_VIEWER, { clues: 'array', markers: 'array', routes: 'array?' }],   // S8-3 K-R86：领航员的 OP_CLUE / OP_MARKER（盖楼层与地图章，会话级；viewer 的 nav-ops 图层画）；S8-4b K-R113：+ routes（建议路线，最多 3 条；旧查看器忽略这个字段）
   'eden-map:route': [HOST_TO_VIEWER, { plan: 'object?' }],   // S8-4b K-R111: the plan the host holds (after checkPlan), or null

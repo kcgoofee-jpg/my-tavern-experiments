@@ -825,5 +825,17 @@
   "fc.nav.p_deepseek": "DeepSeek",
   "fc.nav.p_custom": "Custom compatible endpoint",
   "s.glass_clock": "Day / night interface",
-  "s.glass_clock_d": "The interface follows the in-game time (light at dawn and day, dark at dusk and night). It overrides the system light / dark choice and only applies while the theme is set to follow the system."
+  "s.glass_clock_d": "The interface follows the in-game time (light at dawn and day, dark at dusk and night). It overrides the system light / dark choice and only applies while the theme is set to follow the system.",
+  "lyr.na": "Not here",
+  "lyr.remember": "Remembered: {where}; it applies then",
+  "lyr.only_view": "Only in the {x} view",
+  "lyr.only_in": "Only in {x} and below",
+  "lyr.only_type": "Only at certain kinds of place",
+  "lyr.only_period": "Only at {x}",
+  "lyr.only_night": "Only at night",
+  "lyr.only_day": "Only by day",
+  "lyr.only_state": "Only in a certain state",
+  "lyr.generic_view": "a certain",
+  "lyr.generic_place": "a certain place",
+  "lyr.generic_period": "a certain time"
 }

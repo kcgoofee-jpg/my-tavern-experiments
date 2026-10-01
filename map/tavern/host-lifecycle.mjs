@@ -208,6 +208,18 @@ export function mount(pdoc, ID, scriptOwner) {
   return root;
 }
 
+/** The panel's visibility for the viewer (S7-2, docs/ui-refactor.md 4): `document.hidden` stays false while the panel is closed or docked, so the host says it:
+ *  send(on) when the panel opens / closes (or is a background ghost) and when the frame scrolls out of view. */
+export function watchVisible(panel, frame, send) {
+  let shown = true, seen = true, last = null;
+  const push = () => { const on = shown && seen; if (on !== last) { last = on; send(on); } };
+  const calc = () => { shown = !panel.hidden && !panel.classList.contains('em-ghost'); push(); };
+  new MutationObserver(calc).observe(panel, { attributes: true, attributeFilter: ['hidden', 'class'] });
+  if (typeof IntersectionObserver === 'function') new IntersectionObserver(es => { for (const e of es) seen = e.isIntersecting; push(); }, { threshold: 0 }).observe(frame);
+  calc();
+  return () => { last = null; push(); };   // resend (the viewer just became ready)
+}
+
 /** 登记清理钩子：下一次注入会先调它；pagehide（非 bfcache）时也清 */
 export function install(cleanup) {
   window.parent.__edenMapCleanup = cleanup;

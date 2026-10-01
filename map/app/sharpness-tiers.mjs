@@ -1,4 +1,5 @@
 // 清晰度档位、省流判断、加载进度、叠加层与标注避让（原内联主脚本「清晰度上限」「加载进度」两区 + 档位常量）。
+import { visibilityGuard } from './visibility.mjs';
 import { loadingProgress } from './load-progress.mjs';
 import { mapRegistry, aspect, currentMapId, pendingFocus, setAspect, setCurrentMapId, setPendingFocus, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
@@ -51,19 +52,21 @@ export function initProgress() {
     // 当前地图首屏瓦片都到了：告诉酒馆（后台预加载据此收尾）
     if (!busy && done && !firstLoaded) { firstLoaded = true; post({ type: 'eden-map:loaded' }); }
     // 在 100% 停一下再淡出；期间换了地图（例如跳去主场景）就不撤，免得撤掉主场景的遮罩（E4 N08）
-    clearTimeout(hideT); if (!busy) { if (done) { const at = currentMapId; setTimeout(() => { if (currentMapId === at && mapRegistry.maps[currentMapId]?.kind !== 'estate') $('#loading').classList.add('done'); }, 350); } hideT = setTimeout(() => { done = ok = bad = 0; $('#prog').hidden = true; }, 200); }
+    clearTimeout(hideT); if (!busy) { if (done) { const at = currentMapId; setTimeout(() => { if (currentMapId === at && mapRegistry.maps[currentMapId]?.kind !== 'estate') { $('#loading').classList.add('done'); loadingProgress().done(); } }, 350); } hideT = setTimeout(() => { done = ok = bad = 0; $('#prog').hidden = true; }, 200); }
   };
   osdViewer.addHandler('open', () => { done = ok = bad = 0; tileActs(false); if (mapRegistry.maps[currentMapId]?.kind !== 'estate') loadingProgress().reset(); upd(); });
   osdViewer.addHandler('tile-loaded', () => { done++; ok++; lastTile = Date.now(); tileActs(false); upd(); });
   // 卡住提示：还有图块在加载，但 8 秒没有新图块到达 → 网络慢；20 秒 → 可点击重试（重新请求当前地图的图块）
   let lastTile = Date.now();
-  setInterval(() => {
+  const stuckTick = () => {
     let busy = 0; for (let i = 0; i < osdViewer.world.getItemCount(); i++) busy += osdViewer.world.getItemAt(i)._tilesLoading || 0;
     const idle = (Date.now() - lastTile) / 1000;
     if (!busy) { lastTile = Date.now(); return; }
     if (idle > 20) { ts.textContent = uiText('stuck'); ts.className = 'busy stuck'; }
     else if (idle > 8 && !ts.classList.contains('stuck')) { ts.textContent = uiText('slow', { pct: ts.textContent.match(/\d+%/)?.[0] || '' }); }
-  }, 1000);
+  };
+  let stuckT = 0;   // S7-2: the 1 s watcher runs only while the map can be seen (docs/ui-refactor.md 4): no timer for a closed panel, a hidden document or a 3D view over the map
+  visibilityGuard.subscribe(paused => { clearInterval(stuckT); stuckT = paused ? 0 : setInterval(stuckTick, 1000); });
   ts.addEventListener('click', () => { if (!ts.classList.contains('stuck')) return; if (!$('#tileRetry').hidden) return retryTiles(); ts.className = 'busy'; lastTile = Date.now();
     osdViewer.world.resetItems(); for (let i = 0; i < osdViewer.world.getItemCount(); i++) osdViewer.world.getItemAt(i)._needsUpdate = true; osdViewer.forceRedraw(); });
   osdViewer.addHandler('tile-load-failed', () => { done++; bad++; upd(); });

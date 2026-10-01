@@ -110,9 +110,10 @@ function normMenu(m, kernel, problems) {
   const out = {}, label = text(m.label, 60);
   if (label) out.label = label; else if (!kernel) { problems.push({ code: 'menu-incomplete' }); return undefined; }
   const title = typeof m.title === 'string' && cpLen(m.title) <= 200 ? m.title : undefined; if (title) out.title = title;
+  const when = typeof m.when === 'string' && cpLen(m.when) <= 80 && !/[\/\\<>]/.test(m.when) ? m.when.trim() : undefined; if (when) out.when = when;   // S7-2: the plain-words reason shown on a greyed row (docs/ui-refactor.md 3.3)
   if (typeof m.order === 'number' && Number.isFinite(m.order)) out.order = m.order;
   for (const k of ['default', 'hidden']) if (typeof m[k] === 'boolean') out[k] = m[k];
-  if (isObj(m.i18n)) { const o = {}; for (const [l, v] of Object.entries(m.i18n)) { if (!LANG.test(l) || !isObj(v)) continue; const e = {}; const a = text(v.label, 60); if (a) e.label = a; if (typeof v.title === 'string' && cpLen(v.title) <= 200) e.title = v.title; if (Object.keys(e).length) o[l] = e; } if (Object.keys(o).length) out.i18n = o; }
+  if (isObj(m.i18n)) { const o = {}; for (const [l, v] of Object.entries(m.i18n)) { if (!LANG.test(l) || !isObj(v)) continue; const e = {}; const a = text(v.label, 60); if (a) e.label = a; if (typeof v.title === 'string' && cpLen(v.title) <= 200) e.title = v.title; if (typeof v.when === 'string' && cpLen(v.when) <= 80 && !/[\/\\<>]/.test(v.when)) e.when = v.when.trim(); if (Object.keys(e).length) o[l] = e; } if (Object.keys(o).length) out.i18n = o; }
   return out;
 }
 function normLegend(l, problems) {

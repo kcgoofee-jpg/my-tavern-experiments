@@ -19,6 +19,7 @@ import { busOn } from './bus.mjs';
 import { chatId } from './extension-api.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { standIn, zoneChildren } from './nodes-runtime.mjs';
+import { visibilityGuard } from './visibility.mjs';
 import { trimTileCache } from './dzi-worker.mjs';   // Part 3 §5：吃紧时收紧 OSD 解码瓦片缓存
 let lastTileCache = 1e9;   // 只减不增：三维页报的目标张数单调收紧，避免来回抖
 // ---------------- 主场景剖面（kind=estate） ----------------
@@ -109,7 +110,7 @@ export function estatePlan() {   // 看平面图：回上层并聚焦主场景�
   const s = estateStandIn(currentMapId); if (!s) return; setEstFail(true); setPendingFocus(s.marker); go(s.map);
 }
 export async function openEstate(id, m, hadPrev) {
-  document.body.classList.add('estate'); document.documentElement.classList.add('view3d'); renderNav();
+  document.body.classList.add('estate'); document.documentElement.classList.add('view3d'); visibilityGuard.set('covered', true); renderNav();
   if (estParked?.id === id) {   // 从休眠里接回来：取消隐藏、恢复渲染，走一遍 ready 之后的同步
     subpageSession = estParked; estParked = null; const f = subpageSession.frame; f.style.visibility = ''; live3d = 1;
     $('#loading').classList.add('done'); estateActs('');
@@ -166,7 +167,7 @@ function onEstateReady() {
 }
 // 离开主场景：返回 iframe，由调用方在新底图画出来后淡出移除
 export function leaveEstate() {
-  document.body.classList.remove('estate'); document.documentElement.classList.remove('view3d'); estateActs('');
+  document.body.classList.remove('estate'); document.documentElement.classList.remove('view3d'); visibilityGuard.set('covered', false); estateActs('');
   try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!subpageSession) return null;
   stopTileTo3d(false);

@@ -7,7 +7,11 @@
 // `EdenMap.addLayer` (K-R87: the same declaration, trust "local", id `local-…`, session scoped, at most 16).
 import * as storage from '../core/storage.mjs';
 import { initialVisible, legendRowsOf, flowKinds, flowRoutes, styleFor, cssToRgb } from '../core/layer-geometry.mjs';
-import { registry, packLayers, renderLayerMenu } from './layer-host.mjs';
+import { registry, packLayers, renderLayerMenu, setRowPass } from './layer-host.mjs';
+import { appliesHint } from '../core/applies-hint.mjs';
+import { announce } from './screen-reader-announce.mjs';
+import { uiTextOr } from './text-lookup.mjs';
+import { mapRegistry } from './state.mjs';
 import { canvasLayer, drawFlow, drawParticles, drawTint, toScreen } from './block-canvas.mjs';
 import { drawOverlay, cssColor, ensureCss } from './block-overlay.mjs';
 import { loadFile, viewFeatures, forgetFiles, setValues, hostValues, soundData } from './declared-sources.mjs';
@@ -16,10 +20,10 @@ import { normLayer, normFeature, LIMITS } from '../core/layer-spec.mjs';
 import { currentMapId, aspect, osdViewer } from './state.mjs';
 import { RT } from './nodes-runtime.mjs';
 import { PACK } from './current-pack.mjs';
-import { LANG } from './i18n.mjs';
+import { LANG, localName } from './i18n.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { busOn } from './bus.mjs';
-import { normClock, periodOf } from '../core/clock.mjs';
+import { normClock, periodOf, PERIODS } from '../core/clock.mjs';
 
 const KEY = 'edenMapLayers', CANVAS = ['flow', 'particles', 'tint'], OVERLAY = ['point', 'line', 'area', 'label'];
 const locals = new Set();   // ids of the local layers (K-R87)
@@ -54,6 +58,40 @@ function frameOf(st) {
   };
 }
 
+/** the names `appliesHint` needs, all through i18n: views by title, nodes by name, periods by band label, kinds by a fixed word */
+const KIND_WORDS = { tiles: ['平面地图', 'map'], image: ['图片', 'image'], schematic: ['示意图', 'schematic'], model3d: ['三维', '3D'] };
+const hintNames = () => ({
+  view: v => { const m = mapRegistry?.maps?.[v]; return m ? localName(m, 'title') : null; },
+  node: n => { const x = RT?.tree?.get?.(n); return x?.name || null; },
+  period: p => { const x = PERIODS.find(e => e.id === p); return x ? (LANG === 'en' ? x.label_en : x.label) : null; },
+  kind: k => (KIND_WORDS[k] ? KIND_WORDS[k][LANG === 'en' ? 1 : 0] : null),
+  t: (k, v) => { const r = uiTextOr(k, ''); return r && r !== k ? r.replace(/\{(\w+)\}/g, (_, n) => v?.[n] ?? '') : null; },
+});
+/** the one applicability pass over every menu row (kernel and pack): applicable -> normal; only `data` failing -> hidden; else greyed after the others in a labelled group with its reason (docs/ui-refactor.md 3.3) */
+export function applyRows() {
+  const list = document.getElementById('layList'); if (!list) return;
+  for (const g of list.querySelectorAll('.lyna')) list.append(...g.children);   // take the rows out of the previous group before it goes
+  list.querySelectorAll('.lyh, .lyna').forEach(e => e.remove());
+  const na = [], names = hintNames();
+  for (const row of list.querySelectorAll('label.tg[data-layer]')) {
+    const id = row.dataset.layer, rec = registry.get(id); if (!rec) continue;
+    row.classList.remove('na'); row.querySelector('.lyw')?.remove(); row.querySelector('input')?.removeAttribute('aria-describedby');
+    const st = states.get(id), app = registry.applicable(id, layerContext(st ? st.count : undefined));
+    if (app) { row.hidden = !!rec.menu?.hidden || (rec.countNow ? !rec.countNow() : false); continue; }
+    const when = rec.menu?.i18n?.[LANG]?.when ?? rec.menu?.when, hint = when || appliesHint(rec.applies, layerContext(st ? st.count : undefined), names);
+    if (hint === null || rec.menu?.hidden) { row.hidden = true; continue; }
+    row.hidden = false; row.classList.add('na');
+    const w = document.createElement('small'); w.className = 'lyw'; w.id = 'lyw-' + id; w.textContent = hint; w.title = hint; row.querySelector('.lyt')?.append(w);
+    row.querySelector('input')?.setAttribute('aria-describedby', w.id);
+    na.push(row);
+  }
+  if (!na.length) return;
+  const h = document.createElement('div'); h.className = 'lyh'; h.id = 'lynaH'; h.textContent = uiTextOr('lyr.na', '此处不适用');
+  const g = document.createElement('div'); g.className = 'lyna'; g.setAttribute('role', 'group'); g.setAttribute('aria-labelledby', 'lynaH'); g.append(...na);
+  list.append(h, g);
+  for (const row of na) { const box = row.querySelector('input'); if (box && !box.dataset.naWired) { box.dataset.naWired = '1'; box.addEventListener('change', () => announce(uiTextOr('lyr.remember', '已记住：{where}', { where: row.querySelector('.lyw')?.textContent || '' }))); } }
+}
+setRowPass(applyRows);
 /** one pass: features for the open view, applicability, then draw / clear; hides the menu row of an inapplicable layer; tells the legend */
 export function refreshDeclared() {
   for (const [id, st] of states) {
@@ -66,8 +104,8 @@ export function refreshDeclared() {
     if (st.cl) st.cl.setVisible(on);
     else if (st.snd) st.snd.live(on);
     else { st.h?.remove(); st.h = null; if (on && feats.length && osdViewer?.world?.getItemCount?.()) st.h = drawOverlay({ viewer: osdViewer, layer: st.layer, features: feats, aspect, lang: LANG }); }
-    const row = document.getElementById('lyr-' + id); if (row) row.hidden = !!rec.menu?.hidden || !app;
   }
+  applyRows();
   for (const fn of listeners) { try { fn(); } catch (e) {} }
 }
 const later = () => { clearTimeout(timer); timer = setTimeout(refreshDeclared, 0); };

@@ -67,12 +67,15 @@ export function registerCoreLayers() {
   registry.register(declared('markers', { initialVisible: true,
     setVisible: v => document.body.classList.toggle('nomarkers', !v) }));
 }
+var rowPass = null;   // var + a function declaration: declared-layers.mjs registers during the import cycle
+/** the applicability pass over the menu rows (greying with a reason, S7-2 T4); registered by declared-layers.mjs, run after every render of the menu */
+export function setRowPass(fn) { rowPass = fn; }
 /** 渲染 #layList：行 = 菜单描述符（menu.order → 注册先后），勾选态来自 registry（存储键与默认值不变） */
 export function renderLayerMenu() {
   const list = $('#layList'); if (!list) return;
-  if (!document.getElementById('lyDescCss')) { const st = document.createElement('style'); st.id = 'lyDescCss'; st.textContent = '.tg .lyt{display:flex;flex-direction:column;min-width:0}#layPop .tg .lyt small,#setPop .tg .lyt small{margin:0;color:var(--muted);font-size:var(--fs-micro);line-height:1.35}'; document.head.appendChild(st); }
+  if (!document.getElementById('lyDescCss')) { const st = document.createElement('style'); st.id = 'lyDescCss'; st.textContent = '.tg .lyt{display:flex;flex-direction:column;min-width:0}#layPop .tg .lyt small,#setPop .tg .lyt small{margin:0;color:var(--muted);font-size:var(--fs-micro);line-height:1.35}#layList .lyh{margin:var(--sp-4) 0 var(--sp-2);font:600 var(--fs-small)/1.4 var(--font-ui);color:var(--ink-2)}#layList .lyna .tg{min-height:44px}#layList .tg.na>.lyt>span{color:var(--muted)}#layList .tg.na .lyw{display:block;margin:0;color:var(--muted);font-size:var(--fs-micro);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'; document.head.appendChild(st); }
   list.replaceChildren(...registry.menuRows().map(rec => {
-    const m = rec.menu, lab = document.createElement('label'); lab.className = 'tg';
+    const m = rec.menu, lab = document.createElement('label'); lab.className = 'tg'; lab.dataset.layer = rec.id;
     if (m.id) lab.id = m.id;
     const tx = m.i18n?.[LANG]?.title ?? m.title;   // 设定包的行文字优先（K-R83）；内核行仍走字典
     if (tx) lab.title = m.titleKey && !m.i18n?.[LANG]?.title ? uiTextOr(m.titleKey, tx) : tx;
@@ -91,4 +94,5 @@ export function renderLayerMenu() {
     box.addEventListener('change', () => registry.setVisible(rec.id, box.checked));
     return lab;
   }));
+  rowPass?.();
 }
