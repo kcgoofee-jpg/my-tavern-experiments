@@ -54,7 +54,7 @@ try {
       if (want('10')) {
         await closeSet(vf);
         await vf.evaluate(() => showNotice({ key: 's7n', level: 1, title: '有新构建', lines: ['刷新酒馆页面即可使用'], actions: [{ label: '更新说明' }, { label: '稍后' }, { label: '立即刷新', primary: true }] })); await B.wait(900);
-        await snap('10', 'notice-p1'); await vf.evaluate(() => { try { showNotice.dismiss?.('s7n'); } catch (e) {} });
+        await snap('10', 'notice-p1'); await vf.evaluate(() => { try { showNotice.dismiss?.('s7n'); } catch (e) {} document.querySelectorAll('.nt-p1 .nt-x').forEach(b => b.click()); }); await B.wait(300);
       }
       if (want('11')) {   // the estate page (exterior, then the B1 section) and the generic props viewer, in the shell
         await closeSet(vf); await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(7000); await snap('11', 'estate-exterior');

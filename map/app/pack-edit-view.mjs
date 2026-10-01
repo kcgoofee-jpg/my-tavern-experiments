@@ -133,7 +133,7 @@ function bar() {
   const n = el('div'); n.id = 'editNote'; n.setAttribute('role', 'status'); n.textContent = isV2() ? T('edit.hint', '拖动图钉调整位置；点开地点卡可以改上级、加叫法、加图片。') : T('edit.hint_fixed', '这张地图的版面是固定的；点开地点卡可以加图片。'); b.append(n);
   document.body.append(b);
   // E-12 (U-20): on a phone with the drawer at half / full the bar folds into a header button (the same actions, a menu): no overlap with the drawer
-  const more = btn(T('edit.more', '编辑 ⋯'), () => { const o = b.classList.toggle('open'); more.setAttribute('aria-expanded', o ? 'true' : 'false'); }); more.id = 'editMore'; more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false');
+  const more = btn('⋯', () => { const o = b.classList.toggle('open'); more.setAttribute('aria-expanded', o ? 'true' : 'false'); }); more.id = 'editMore'; more.setAttribute('aria-label', T('edit.more', '编辑 ⋯')); more.title = more.getAttribute('aria-label'); more.setAttribute('aria-haspopup', 'true'); more.setAttribute('aria-expanded', 'false');
   $('#setBtn')?.before(more);
 }
 export async function setEdit(on) {
