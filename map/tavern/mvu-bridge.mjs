@@ -138,6 +138,7 @@ export class MVUBridge {
    * 三级都拿不到返回 null，由调用方显示安全占位：面板读不到卡信息**不等于**「未接入酒馆」，
    * 绝不报那种虚假错误（旧版 settings.mjs 直接读 window.SillyTavern，嵌在 iframe 里 100% 误报）。
    */
+  cardTried = [];
   async cardInfo() {
     const pick = (c, src) => {
       const d = c?.data && typeof c.data === 'object' ? c.data : (c && typeof c === 'object' ? c : {});
@@ -146,11 +147,12 @@ export class MVUBridge {
       return { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
         tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src };
     };
-    try { const r = pick(await thFn('getCharData')?.('current'), 'getCharData'); if (r) return r; } catch (e) {}
-    try { const c = this.stContext(); const r = pick(c?.characters?.[c.characterId], 'context'); if (r) return r; } catch (e) {}
+    const tried = this.cardTried = [];   // 试过哪几档（有接口才算试过）：bridge = 酒馆助手，context = 酒馆上下文（含父窗口）；全空 = 一档也没有接口
+    try { const g = thFn('getCharData'); if (g) tried.push('bridge'); const r = pick(await g?.('current'), 'getCharData'); if (r) return r; } catch (e) {}
+    try { const c = this.stContext(); if (c) tried.push('context'); const r = pick(c?.characters?.[c.characterId], 'context'); if (r) return r; } catch (e) {}
     const p = this.#parent();
-    try { const g = p?.TavernHelper?.getCharData; const r = typeof g === 'function' ? pick(await g('current'), 'parent-th') : null; if (r) return r; } catch (e) {}
-    try { const c = p?.SillyTavern?.getContext?.(); const r = pick(c?.characters?.[c.characterId], 'parent-st'); if (r) return r; } catch (e) {}
+    try { const g = p?.TavernHelper?.getCharData; if (typeof g === 'function' && !tried.includes('bridge')) tried.push('bridge'); const r = typeof g === 'function' ? pick(await g('current'), 'parent-th') : null; if (r) return r; } catch (e) {}
+    try { const c = p?.SillyTavern?.getContext?.(); if (c && !tried.includes('context')) tried.push('context'); const r = pick(c?.characters?.[c.characterId], 'parent-st'); if (r) return r; } catch (e) {}
     return null;
   }
 
