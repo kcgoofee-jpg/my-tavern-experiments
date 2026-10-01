@@ -25,7 +25,7 @@ const trackedSet = new Set(tracked);
 // ---- scope ---------------------------------------------------------------------------------------------------------
 const TEXT_EXT = new Set(['.mjs', '.js', '.html', '.json', '.py', '.sh', '.md', '.css', '.txt', '.yml', '.yaml']);
 const SKIP_DIR = /^(map\/(vendor|estate\/vendor|shots|art|_proto)\/|tools\/browser\/node_modules\/|node_modules\/)/;
-const SELF_FILES = new Set(['tools/rename_s5.mjs', 'tools/rename_s5_extract.py', 'tools/rename_s5_map.json', 'tools/rename_s5_globals.mjs', 'tools/rename_s5_globals_extract.py', 'tools/rename_s5_globals.json', 'tests/rename_s5.test.mjs']);
+const SELF_FILES = new Set(['tools/rename_s5.mjs', 'tools/rename_s5_extract.py', 'tools/rename_s5_map.json', 'tools/rename_s5_globals.mjs', 'tools/rename_s5_globals_extract.py', 'tools/rename_s5_globals.json', 'tools/test_architecture_gate.py', 'tests/rename_s5.test.mjs']);   // the gate test feeds old names as samples
 const inScope = f => {
   if (SELF_FILES.has(f) || SKIP_DIR.test(f) || !TEXT_EXT.has(path.extname(f))) return false;
   if (/^docs\/naming(\.zh)?\.md$/.test(f)) return false;   // the rename map keeps old names as its "Current" column; rows are marked, not rewritten

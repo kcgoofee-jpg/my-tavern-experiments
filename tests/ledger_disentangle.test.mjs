@@ -18,7 +18,7 @@ test('四域与槽位：域 → LayerRegistry 槽位一一对应，槽位互不�
   for (const s of slots) { assert.ok(LY.SLOTS.includes(s)); LY.slotZ(s); }   // 写错的槽位名在加载期就会炸
   assert.equal(L.slotOf('assets'), 'markers');
   assert.equal(L.slotOf('nope'), null);
-  assert.deepEqual(L.OPS, ['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT']);
+  assert.deepEqual(L.LEDGER_OPS, ['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT']);
   assert.equal(L.domainOf('OP_LOOT'), 'assets');
   assert.equal(L.domainOf('OP_DEPTH'), null);   // 景深环境没有指令形
 });

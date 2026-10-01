@@ -18,7 +18,7 @@ import { DEFAULT_EVENTS, DEFAULT_CLOSED, DEFAULT_TAG } from '../core/events-defa
 const KERNEL_EXAMPLES = ['⌖类别｜地点｜等级｜一句话｜发布方'];   // 语法示意行（K-R48）：模型原样复述时不上图
 const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 let TAX = null, SRC, SRC_TAG, CLOSED = null, TAG = DEFAULT_TAG, EXAMPLES = new Set(KERNEL_EXAMPLES);
-export const AGE = { live: 7, after: 20, fade: 40 };        // 楼层差：≤live 活跃、≤after 余波、>after 淡出（只在列表）；已解除 / 被新事件接替的 >fade 丢弃（事件块的 life，K-R54）
+export const EVENT_AGE_MSGS = { live: 7, after: 20, fade: 40 };        // 楼层差：≤live 活跃、≤after 余波、>after 淡出（只在列表）；已解除 / 被新事件接替的 >fade 丢弃（事件块的 life，K-R54）
 let LIFE = { merge: 15, per_msg: 3 };                         // merge：同一类型 + 同一节点在这么多楼内再次出现 = 同一事件的更新；per_msg：一楼最多几条
 export const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
 
@@ -34,7 +34,7 @@ export function configure(events, tag) {
   CLOSED = new RegExp(words.map(reEsc).join('|'));
   TAG = typeof tag === 'string' && tag ? tag : DEFAULT_TAG;
   EXAMPLES = new Set([...TAX.examples, ...KERNEL_EXAMPLES]);
-  Object.assign(AGE, { live: TAX.life.live, after: TAX.life.after, fade: TAX.life.fade }); LIFE = { merge: TAX.life.merge, per_msg: TAX.life.per_msg };
+  Object.assign(EVENT_AGE_MSGS, { live: TAX.life.live, after: TAX.life.after, fade: TAX.life.fade }); LIFE = { merge: TAX.life.merge, per_msg: TAX.life.per_msg };
 }
 export const taxonomy = () => TAX;                                                        // 装好的事件块（withDefaults 之后，只读）
 export const legend = () => TAX.groups.filter(g => g.id !== 'other');                     // 图例里的大类，按块里的顺序（「其他」只在有事件时才出现）
@@ -134,7 +134,7 @@ export function collect(msgs, now) {
 }
 // ended = 已解除，或被同类同地点的新事件接替。未结束的事件永远不返回 ''（窗口由调用方给的楼层决定）。life = 这个类型自己的寿命（没有 = 事件块的）
 export function tierOf(age, ended, life) {
-  const A = life ? { ...AGE, ...life } : AGE;
+  const A = life ? { ...EVENT_AGE_MSGS, ...life } : EVENT_AGE_MSGS;
   if (ended) return age > A.fade ? '' : age <= A.after ? 'after' : 'fade';
   return age <= A.live ? 'live' : age <= A.after ? 'after' : 'fade';
 }

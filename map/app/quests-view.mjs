@@ -7,8 +7,8 @@ import { dispatch, tick } from '../core/quests.mjs';
 import { seedOf } from '../core/rng.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
-import { aspect, cur, curData, M, REG, viewer } from './state.mjs';
-import { P } from './plugins.mjs';
+import { aspect, currentMapId, currentMapData, worldData, mapRegistry, osdViewer } from './state.mjs';
+import { plugins } from './plugins.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false;
 let list = [], day = 0, lastCalc = 0;
@@ -22,12 +22,12 @@ function size() {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-const toScreen = (nx, ny) => { try { const p = viewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
+const toScreen = (nx, ny) => { try { const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
 
 /** 当前图的地点：标记名（有 meta 就用 meta 的） + 归一化坐标 */
 function placesNow() {
-  const m = REG.maps[cur], meta = m?.markers || {};
-  return (curData?.markers || []).map(k => ({ name: meta[k.id]?.name || k.name || k.id, nx: k.nx ?? k.ax, ny: k.ny ?? k.ay }))
+  const m = mapRegistry.maps[currentMapId], meta = m?.markers || {};
+  return (currentMapData?.markers || []).map(k => ({ name: meta[k.id]?.name || k.name || k.id, nx: k.nx ?? k.ax, ny: k.ny ?? k.ay }))
     .filter(p => p.name && Number.isFinite(p.nx) && Number.isFinite(p.ny));
 }
 /** 世界日期 → 天序号（时钟没给日期时按会话内推进：同一份事态不会天天重排） */
@@ -37,12 +37,12 @@ export function questDay(clock) { const s = String(clock?.date || clock?.full ||
 function recalc() {
   const t = Date.now(); if (t - lastCalc < 2000) return;   // 事态不是每帧都变，2 s 一次够了
   lastCalc = t;
-  const events = (() => { try { return P.EventsView?.events || []; } catch (e) { return []; } })();
+  const events = (() => { try { return plugins.EventsView?.events || []; } catch (e) { return []; } })();
   const places = placesNow();
-  const floor = Number(curData?.floor ?? 0) || 0;
+  const floor = Number(currentMapData?.floor ?? 0) || 0;
   let topFloor = floor;
   for (const e of events) if (Number.isFinite(Number(e.floor))) topFloor = Math.max(topFloor, Number(e.floor));
-  list = tick(list, { events, places, floor: topFloor, day, seed: seedOf(String(cur || ''), places.length) }).quests;
+  list = tick(list, { events, places, floor: topFloor, day, seed: seedOf(String(currentMapId || ''), places.length) }).quests;
 }
 
 function frame(ts) {

@@ -16,7 +16,7 @@ function mk(over = {}) {
   const d = {
     cdnFetch: async (url, opt) => { calls.push(url); if (over.fetch) return over.fetch(url, opt); return json(url); },
     post: m => calls.push(m), base: () => 'https://cdn.example/gh/r@preview/map/', REPO: 'o/r',
-    SELF: 'https://cdn.example/gh/o/r@preview/map/', VER: null, tagOf: v => 'map-v' + v, LINES, swappable: true,
+    scriptBase: 'https://cdn.example/gh/o/r@preview/map/', VER: null, tagOf: v => 'map-v' + v, LINES, swappable: true,
     SCRIPT: {}, lineKey: () => 'auto', lang: () => 'zh',
     followHead: async () => over.head ?? null, followNewer: h => !!over.newer?.(h),
     loadSelfcheck: async () => over.SC ?? null, loadSources: async () => SRC,
@@ -34,7 +34,7 @@ test('channel：标签版 / 跟随分支 / 本地三种口径', () => {
 
 test('refOf 从脚本地址里取钉住的 ref', () => {
   assert.equal(mk().ab.refOf(), 'preview');
-  assert.equal(mk({ deps: { SELF: 'file:///tmp/map/' } }).ab.refOf(), '');
+  assert.equal(mk({ deps: { scriptBase: 'file:///tmp/map/' } }).ab.refOf(), '');
 });
 
 test('buildNow 只取一次（后续复用同一个 Promise）', async () => {

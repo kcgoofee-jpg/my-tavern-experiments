@@ -25,17 +25,17 @@ export function createLife() {
 }
 
 /** 幂等：脚本被重复注入（换卡、热重载）时先清掉上一份的元素和全部监听，只留一个悬浮按钮、一套监听 */
-export function takeOver(pdoc, ID, OWNER) {
+export function takeOver(pdoc, ID, scriptOwner) {
   try { window.parent.__edenMapCleanup?.(); } catch (e) {}
   pdoc.getElementById(ID)?.remove();
   // 地基 A2：父页面上的节点都打 data-eden-owner；启动时清掉不属于本实例的（子 iframe 被异常移除、pagehide 没派发时留下的孤儿）
-  try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') !== OWNER || el.id === ID) el.remove(); } catch (e) {}
+  try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') !== scriptOwner || el.id === ID) el.remove(); } catch (e) {}
 }
 
 /** 注入宿主页：悬浮按钮 + 面板（样式内联：宿主页里不另发请求）。返回根节点。 */
-export function mount(pdoc, ID, OWNER) {
+export function mount(pdoc, ID, scriptOwner) {
   const root = pdoc.createElement('div');
-  root.id = ID; root.setAttribute('data-eden-owner', OWNER);
+  root.id = ID; root.setAttribute('data-eden-owner', scriptOwner);
   root.innerHTML = `
 <style>
   /* 设计令牌（map/ui/tokens.css 的同名值；宿主页里不另发请求，所以内联一份）：唯一的金 #e6c36a、唯一的红 #ff5a5a；面板跟随地图的深 / 浅主题（E5） */

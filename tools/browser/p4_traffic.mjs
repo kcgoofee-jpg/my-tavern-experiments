@@ -25,13 +25,13 @@ try {
   await B.openViewer(D);
 
   await step('切到有路线的图：车流 canvas 挂上并在画', async () => {
-    const has = await p.evaluate(() => !!window.REG?.maps.tc_upper);
-    if (has) await p.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    const has = await p.evaluate(() => !!window.ViewerDebug?.mapRegistry?.maps.tc_upper);
+    if (has) await p.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(1600);
     const st = await p.evaluate(() => {
       const d = window.LayerHostApi?.describe?.() || {};
       const fx = d.slots?.find(s => s.id === 'fx') || { layers: [] };
-      return { fx: fx.layers, box: !!document.getElementById('tgTraffic'), cars: window.TrafficApi?.cars?.() ?? -1, routes: (window.curData?.routes || []).length };
+      return { fx: fx.layers, box: !!document.getElementById('tgTraffic'), cars: window.TrafficApi?.cars?.() ?? -1, routes: (window.ViewerDebug?.currentMapData?.routes || []).length };
     });
     rep.metric('state', st);
     rep.check('fx 槽位有 weather + traffic 两层', st.fx.includes('traffic') && st.fx.includes('weather'), JSON.stringify(st.fx));
@@ -57,15 +57,15 @@ try {
 
   await step('没路线的图：一帧不画（不空转）', async () => {
     // 挑一张真没路线的「点位图」（庄园是另一套渲染流程，切过去不代表路线清空）
-    const noRoute = await p.evaluate(() => Object.keys(window.REG?.maps || {}).find(id => {
-      const d = window.REG.maps[id];
-      return d.status !== 'planned' && d.kind === 'points' && !(window.REG.maps[id].data || '').includes('tc_upper');
+    const noRoute = await p.evaluate(() => Object.keys(window.ViewerDebug?.mapRegistry?.maps || {}).find(id => {
+      const d = window.ViewerDebug?.mapRegistry.maps[id];
+      return d.status !== 'planned' && d.kind === 'points' && !(window.ViewerDebug?.mapRegistry.maps[id].data || '').includes('tc_upper');
     }));
-    await p.evaluate(id => { try { window.go?.(id); } catch (e) {} }, noRoute);
+    await p.evaluate(id => { try { window.ViewerDebug?.go?.(id); } catch (e) {} }, noRoute);
     await B.wait(1800);
     const r = await painted(p);
-    const cur = await p.evaluate(() => window.cur);
-    const nr = await p.evaluate(() => (window.curData?.routes || []).length);
+    const cur = await p.evaluate(() => window.ViewerDebug?.currentMapId);
+    const nr = await p.evaluate(() => (window.ViewerDebug?.currentMapData?.routes || []).length);
     rep.metric('noroute', { map: noRoute, cur, routes: nr, ...r });
     rep.check(`切到无路线图（${noRoute}）后画面清空`, cur === noRoute && nr === 0 && (!r.ok || r.painted === 0), JSON.stringify({ cur, nr, r }));
   });

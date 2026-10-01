@@ -13,7 +13,7 @@
 import { classify, getGeo, isExample } from './events-parse.mjs';
 import { seedOf } from '../core/rng.mjs';
 
-export const OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST'];
+export const PLANNER_OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST'];
 export const MAX_OPS = 3;
 export const MAX_TEXT = 120;
 

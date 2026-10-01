@@ -20,9 +20,9 @@ export function probeVerdict(bytes, ms, minBytes = PROBE_MIN_BYTES) {
 /** 引擎自己的仓库（gh 线路的默认）；包的清单 cdn.repo 写了别的就用它。不是任何卡的名字。 */
 export const ENGINE_REPO = 'kcgoofee-jpg/my-tavern-experiments';
 
-/** SELF = 宿主脚本所在的 .../map/；PACK_IN = 设定包注入（可空）；manifest = 包清单（对象或 Promise，内置的第一个包由宿主取来；没有 = 只剩 gh 线路）
+/** scriptBase = 宿主脚本所在的 .../map/；PACK_IN = 设定包注入（可空）；manifest = 包清单（对象或 Promise，内置的第一个包由宿主取来；没有 = 只剩 gh 线路）
  *  线路名来自清单 cdn：repo（gh 线路，缺省 = 引擎自己的仓库）、npm（npm 线路；没写 = 这条线路关着、版本也不从 npm 路径识别） */
-export function createRoutes({ SELF, PACK_IN, manifest }) {
+export function createRoutes({ scriptBase, PACK_IN, manifest }) {
   // 线路：地图的图片和数据可以走不同的 CDN 节点。gh 线路路径格式相同，只换域名；npm 线路路径不同（包名 / 版本 / files/map/），单独拼。本地测试地址不换
   const cdn = PACK_IN?.manifest?.cdn || (manifest && typeof manifest.then !== 'function' ? manifest.cdn : null), PKG = cdn?.npm || '', REPO = cdn?.repo || ENGINE_REPO;
   const LINES = [
@@ -37,18 +37,18 @@ export function createRoutes({ SELF, PACK_IN, manifest }) {
     { key: 'npm', name: 'npm 镜像', sub: '国内 · npmmirror', enabled: false, url: v => `https://registry.npmmirror.com/${PKG}/${v}/files/map/` },
   ].filter(l => l.enabled !== false);
   const LINE_KEY = 'edenMapLine';
-  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(SELF).host);
+  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(scriptBase).host);
   // 当前版本：gh 标签 map-v<版本>（系列 1）或 map-s<n>-v<版本>（系列 ≥ 2，版本写成 'S2:0.1.0'），或 npm 路径里的版本号；标签规则见 docs/versioning.md（selfcheck.mjs tagOf 同一套）
-  const VER = (() => { const m = SELF.match(/@map-(?:s(\d+)-)?v([\d.]+)\//); if (m) return m[1] && +m[1] > 1 ? `S${+m[1]}:${m[2]}` : m[2];
-    return PKG ? (SELF.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null : null; })();
+  const VER = (() => { const m = scriptBase.match(/@map-(?:s(\d+)-)?v([\d.]+)\//); if (m) return m[1] && +m[1] > 1 ? `S${+m[1]}:${m[2]}` : m[2];
+    return PKG ? (scriptBase.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null : null; })();
   const tagOf = v => { const m = /^S(\d+):(.+)$/.exec(v); return m && +m[1] > 1 ? `map-s${+m[1]}-v${m[2]}` : 'map-v' + (m ? m[2] : v); };
   const plainVer = v => (v ? String(v).replace(/^S\d+:/, '') : v);
   const baseFor = key => {
-    if (!swappable || !key) return SELF;
+    if (!swappable || !key) return scriptBase;
     const l = LINES.find(x => x.key === key);
-    if (l.url) return VER ? l.url(plainVer(VER)) : SELF;                    // npm 线路：需要知道版本号
+    if (l.url) return VER ? l.url(plainVer(VER)) : scriptBase;                    // npm 线路：需要知道版本号
     if (VER) return `https://${l.host}/gh/${REPO}@${tagOf(VER)}/map/`;
-    const u = new URL(SELF); u.host = l.host; return u.href;     // 不知道版本（例如指向分支）：只换域名
+    const u = new URL(scriptBase); u.host = l.host; return u.href;     // 不知道版本（例如指向分支）：只换域名
   };
   // ---- 测速（2026-09-29 重做）----
   // 老实现：所有线路同时取 data/build.json（约 400 B，还带 ?probe= 绕缓存），**谁先答完谁胜出**，

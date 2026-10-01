@@ -3,11 +3,11 @@ import { depthData } from './state.mjs';
 import { $, esc } from './dom-helpers.mjs';
 import { announce } from './screen-reader-announce.mjs';
 import { post } from './protocol-stamp.mjs';
-import { tx } from './text-lookup.mjs';
+import { uiTextOr } from './text-lookup.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { LANG } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
-import { P } from './plugins.mjs';
+import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { RT } from './nodes-runtime.mjs';
 import { initLabelToggle, makeDock } from './control-column.mjs';
@@ -26,7 +26,7 @@ export function sheetVis() {
   const estate = document.body.classList.contains('estate'), ev = !S.button('ev').hidden, ch = !S.button('ch').hidden, card = !$('#card').hidden;
   const layChip = narrowNow() && !$('#layers').hidden;
   // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
-  const um = typeof P.UnmappedPlacePicker !== 'undefined' ? P.UnmappedPlacePicker.name : null; placeEmpty(um);
+  const um = typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null; placeEmpty(um);
   S.hide(estate || !(ev || ch || card || layChip || um));
   S.showTab('pl', ev || ch || card || !!um);
   // U18：图例只在配了纵深数据的层出现，且包里写了图例条目（条目照 docs/upper-setting.md §4 图例）
@@ -39,7 +39,7 @@ const legendItems = () => (Array.isArray(RT?.ui?.legend) ? RT.ui.legend : []).fi
 const lgText = (e, k) => (LANG === 'en' && e.i18n?.en?.[k]) || e[k] || '';
 function legendEl() {
   const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane';
-  const h = document.createElement('h3'); h.textContent = tx('s.legend', '图例'); box.appendChild(h);
+  const h = document.createElement('h3'); h.textContent = uiTextOr('s.legend', '图例'); box.appendChild(h);
   const dl = document.createElement('dl');
   for (const e of legendItems()) {
     const dt = document.createElement('dt'); dt.textContent = lgText(e, 'label');
@@ -50,10 +50,10 @@ function legendEl() {
 
 export function placeEmpty(um) {
   const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
-  if (!um) { e.textContent = ''; e.textContent = tx('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
+  if (!um) { e.textContent = ''; e.textContent = uiTextOr('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
   let s = e.querySelector('span.umq'), b = e.querySelector('button');
-  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => P.UnmappedPlacePicker.open(); e.append(s, ' ', b); announce(tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
-  s.textContent = tx('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + tx('um.empty_sub', '放一次，这个聊天之后都会记住。'); b.textContent = tx('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
+  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => plugins.UnmappedPlacePicker.open(); e.append(s, ' ', b); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
+  s.textContent = uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + uiTextOr('um.empty_sub', '放一次，这个聊天之后都会记住。'); b.textContent = uiTextOr('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
 }
 
 export function cardSheet(open) {
@@ -68,7 +68,7 @@ export function initShell() {
   const empty = document.createElement('p'); empty.id = 'cardEmpty'; place.append(empty);
   const S = window.ViewerDrawer = UISheet.create({ host: $('#stage'), id: 'evbar', railKey: 'edenMapRailW',
     tabs: [{ id: 'ev', btnClass: 'evtab', icon: 'bell' }, { id: 'ch', btnClass: 'chtab', icon: 'users' }, { id: 'pl', btnClass: 'pltab', icon: 'pin', panel: place }, { id: 'lg', btnClass: 'lgtab', icon: 'info', panel: legendEl() }],
-    freshText: n => tx('ev.bar_new', '{n} 条新', { n }),
+    freshText: n => uiTextOr('ev.bar_new', '{n} 条新', { n }),
     onState: ({ state, tab, mode, h }) => {
       S.el.dataset.open = state === 'peek' ? '0' : '1'; S.el.dataset.tab = tab || ''; document.body.classList.toggle('evopen', state !== 'peek');
       document.body.classList.toggle('sheetfull', state === 'full' && mode === 'sheet'); dock.inert = state === 'full' && mode === 'sheet';
@@ -76,10 +76,10 @@ export function initShell() {
       const st = $('#stage').getBoundingClientRect(); dock.classList.remove('row');
       if (mode === 'sheet' && state === 'half' && h + dock.offsetHeight + 12 > st.height * .5 + 1) dock.classList.add('row');
       declutter();   // 控制列换了位置 / 排法：重新避让地名
-      if (tab === 'ch' || tab === 'ev') P.EventsView.renderBar();
+      if (tab === 'ch' || tab === 'ev') plugins.EventsView.renderBar();
       post({ type: 'eden-map:chrome', bottom: h, top: $('header').offsetHeight }); noticeRefresh();
     } });
-  S.label('pl', esc(tx('s.place', '地点')), {}); S.label('lg', esc(tx('s.legend', '图例')), {});
+  S.label('pl', esc(uiTextOr('s.place', '地点')), {}); S.label('lg', esc(uiTextOr('s.legend', '图例')), {});
   S.showTab('ev', false); S.showTab('ch', false); S.showTab('lg', false); S.hide(true);
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
   let tp = null;

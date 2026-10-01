@@ -22,7 +22,7 @@ try {
   const vf = await H.viewer();
 
   await step('设置里切成「填输入框」后，卡片上出现入口', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(2500);
     const r = await vf.evaluate(() => {
       document.querySelector('.mk')?._open?.();

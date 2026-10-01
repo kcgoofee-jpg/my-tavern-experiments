@@ -8,7 +8,7 @@
 // 幂等由调用方的 {floor, hash} 水位保证。纯模块：不碰酒馆全局 / DOM / 存储 / 网络。tests/worldbook-jit.test.mjs。
 import { seedOf } from '../core/rng.mjs';
 
-export const KEY = 'edenMapWbJit';
+export const WORLDBOOK_JIT_STORAGE_KEY = 'edenMapWbJit';
 
 const norm = s => String(s || '').replace(/\s+/g, '').trim();
 

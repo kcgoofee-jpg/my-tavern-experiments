@@ -204,6 +204,11 @@ export function runGlobals({ ROOT, tracked, inScope, DRY, mapFile, verbose, only
       const n = p.node, key = dbg.get(n.name); if (!key || !p.isReferencedIdentifier() || p.scope.getBinding(n.name)) return;
       const par = p.parent; if (par.type === 'ObjectProperty' && par.key === n && !par.shorthand) return;
       addEdit(u.file, n.start, n.end, par.type === 'ObjectProperty' && par.shorthand ? `${n.name}: ViewerDebug.${key}` : `ViewerDebug.${key}`, `${n.name} -> ViewerDebug.${key}`);
+    },
+    // `window.go?.('x')`, `window.REG?.maps`: the member form of the same getters (kept null-safe: ViewerDebug may not be there yet)
+    'MemberExpression|OptionalMemberExpression'(p) {
+      const n = p.node, key = !n.computed && n.property.type === 'Identifier' && n.object.type === 'Identifier' && n.object.name === 'window' ? dbg.get(n.property.name) : null;
+      if (key) addEdit(u.file, n.property.start, n.property.end, `ViewerDebug?.${key}`, `window.${n.property.name} -> window.ViewerDebug?.${key}`);
     } });
   }
 

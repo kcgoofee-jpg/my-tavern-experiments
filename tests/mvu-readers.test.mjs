@@ -10,8 +10,8 @@ useEden();   // the first pack's variable and roster declarations (its overlay b
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
 
 t('[值, 说明] 旧格式也认', () => {
-  assert.equal(V.get({ 世界: { 当前时刻: ['08:00', '说明'] } }, '世界.当前时刻'), '08:00');
-  assert.equal(V.get({}, '世界.当前时刻'), undefined); assert.equal(V.get(null, 'a'), undefined);
+  assert.equal(V.getByPath({ 世界: { 当前时刻: ['08:00', '说明'] } }, '世界.当前时刻'), '08:00');
+  assert.equal(V.getByPath({}, '世界.当前时刻'), undefined); assert.equal(V.getByPath(null, 'a'), undefined);
 });
 t('在场人物：对象表（位置字段）、字符串值、数组、逗号串', () => {
   assert.deepEqual(V.presentList({ 在场人物: { 甲: { 身份: '向导', 位置: '中层·霓虹街' }, 乙: { 身份: '司机' } } }), [{ name: '甲', place: '中层·霓虹街' }, { name: '乙', place: '' }]);

@@ -10,13 +10,13 @@ import { createWbAuto, createPrefs, fnOk, thFn } from '../map/tavern/host-tavern
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
 test('host-routes：版本推断、换线路地址（与拆分前同一规则）', () => {
-  const R = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/', PACK_IN: null });
+  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/', PACK_IN: null });
   assert.equal(R.VER, '0.9.5'); assert.ok(R.swappable); assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);
   assert.equal(R.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/');
   assert.equal(R.tagOf('S2:0.1.0'), 'map-s2-v0.1.0'); assert.equal(R.plainVer('S2:0.1.0'), '0.1.0');
-  const B = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
+  const B = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
   assert.equal(B.VER, null); assert.equal(B.REPO, 'x/y'); assert.equal(B.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/o/r@preview/map/');
-  const L = createRoutes({ SELF: 'http://localhost:8080/map/', PACK_IN: null }); assert.ok(!L.swappable); assert.equal(L.baseFor('cn'), 'http://localhost:8080/map/');
+  const L = createRoutes({ scriptBase: 'http://localhost:8080/map/', PACK_IN: null }); assert.ok(!L.swappable); assert.equal(L.baseFor('cn'), 'http://localhost:8080/map/');
 });
 
 test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测量（2026-09-29 重做）', () => {
@@ -39,12 +39,12 @@ test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测�
 
 test('线路清单与换线门槛：npm 线路仍禁用；测的是清单 data.maps（105 KB 级）而不是小文件', async () => {
   const man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
-  const R = createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null, manifest: Promise.resolve(man) });
+  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null, manifest: Promise.resolve(man) });
   assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);   // npm（enabled:false）仍在禁用状态
   assert.equal(await R.probePath(), 'data/maps.json');         // 第一个包的路径读自它的清单
-  assert.equal(await createRoutes({ SELF: 'http://x/map/', PACK_IN: { id: 'p', manifest: { data: { maps: 'maps.json' } } } }).probePath(), 'packs/p/maps.json');
-  assert.equal(await createRoutes({ SELF: 'http://x/map/', PACK_IN: null }).probePath(), 'i18n/en.json');   // 没有清单：引擎自己的词典（够大）
-  assert.equal(createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: man }).PKG, man.cdn.npm); assert.equal(createRoutes({ SELF: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: { cdn: { repo: 'x/y' } } }).PKG, '');   // 清单不写 npm = 没有 npm 线路，也不从 npm 路径认版本
+  assert.equal(await createRoutes({ scriptBase: 'http://x/map/', PACK_IN: { id: 'p', manifest: { data: { maps: 'maps.json' } } } }).probePath(), 'packs/p/maps.json');
+  assert.equal(await createRoutes({ scriptBase: 'http://x/map/', PACK_IN: null }).probePath(), 'i18n/en.json');   // 没有清单：引擎自己的词典（够大）
+  assert.equal(createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: man }).PKG, man.cdn.npm); assert.equal(createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: { cdn: { repo: 'x/y' } } }).PKG, '');   // 清单不写 npm = 没有 npm 线路，也不从 npm 路径认版本
   assert.equal(R.PROBE_MARGIN, 1.3);                          // 没快 30% 以上不换线
   assert.equal(typeof R.measure, 'function');
   assert.equal(typeof R.race, 'function');
@@ -65,7 +65,7 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   const ls = new Map(), LS = { getItem: k => ls.get(k) ?? null, setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k) };
   const lsGet = k => LS.getItem(k), lsSet = (k, v) => LS.setItem(k, v);
   const posts = [], life = createLife(); let injected = 0, macros = null, synced = 0;
-  const W = createWbAuto({ SELF: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, UL: () => 'zh', thBtns: () => null,
+  const W = createWbAuto({ scriptBase: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, uiLang: () => 'zh', thBtns: () => null,
     chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++ });
   await W.onTh({ op: 'state' });
   assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, spatial: false, wbJit: false, wbXtal: false, nav: false, navCfg: false });
@@ -74,7 +74,7 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   assert.equal(macros, true); assert.equal(injected, 1); assert.equal(synced, 1); assert.equal(ls.get('edenMapWbOn'), '0');
   assert.equal(await W.wbAuto(), null, '总开关关着：不自动建');
   const n = posts.length; const dead = createLife(); dead.kill();
-  const W2 = createWbAuto({ SELF: '', LS, lsGet, lsSet, life: dead, base: () => '', alive: () => false, UL: () => 'en', thBtns: () => null, chatId: () => '', cardKey: () => '', post: m => posts.push(m), hostToast: () => null, stateInject() {}, macroSet() {}, prefSync() {} });
+  const W2 = createWbAuto({ scriptBase: '', LS, lsGet, lsSet, life: dead, base: () => '', alive: () => false, uiLang: () => 'en', thBtns: () => null, chatId: () => '', cardKey: () => '', post: m => posts.push(m), hostToast: () => null, stateInject() {}, macroSet() {}, prefSync() {} });
   await W2.sendTh(); assert.equal(posts.length, n, '面板没开不发');
 });
 
@@ -100,12 +100,12 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 // ---------------------------------------------------------------------------------------------------------------------
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
-  'llm-flow': ['createLlmFlow', 'jitRound opEvents WBJm WBSm xtalRound'],
-  'loot-flow': ['createLootFlow', 'changedInv FRm frState gate gateFlush injectAction inv INVm ledgerSync LEDm lootFacts scanPickups sendInv settleCarry settleState slot SSK stealthCheck takeLoot'],
-  'chars-flow': ['createCharsFlow', 'BR cardKey chatId clock computeTrips CTX getHere MV mvuStat outfitNow pushMvu readVars refreshVarMap RTm rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser TRm userName'],
-  'timeline-flow': ['createTimelineFlow', 'KFm kfReset kfView tlBtn tlCache tlEl tlExit TLm tlOn tlWalk'],
-  'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs THm transitMod wbAuto'],
-  'root-store': ['createRootStore', 'BG budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
+  'llm-flow': ['createLlmFlow', 'jitRound opEvents worldbookJitModule WBSm xtalRound'],
+  'loot-flow': ['createLootFlow', 'changedInv FRm frState gate gateFlush injectAction inv stashStoreModule ledgerSync ledgerModule lootFacts scanPickups sendInv settleCarry settleState slot SSK stealthCheck takeLoot'],
+  'chars-flow': ['createCharsFlow', 'mvuBridge cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
+  'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
+  'host-api': ['createHostApi', 'api cardId emit emitMoved exposed inner knowRooms onTh scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
+  'root-store': ['createRootStore', 'storageBudget budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
   'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
   'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
 };
@@ -145,7 +145,7 @@ test('S5-1 flow 模块在桩依赖下能创建、返回约定接口；缺键就�
   try {
     for (const [f, [factory, api]] of Object.entries(FLOWS)) {
       const M = await mod(f);
-      const host = Object.fromEntries(M.DEPS.map(k => [k, anyStub])); host.MAN = Promise.resolve(null); host.SELF = 'file:///nonexistent/map/'; host.entryUrl = 'file:///nonexistent/map/tavern/eden-map.js';
+      const host = Object.fromEntries(M.DEPS.map(k => [k, anyStub])); host.MAN = Promise.resolve(null); host.scriptBase = 'file:///nonexistent/map/'; host.entryUrl = 'file:///nonexistent/map/tavern/eden-map.js';
       const r = M[factory](host);
       assert.deepEqual(Object.keys(r).sort(), api.split(' ').sort(), f + ' 接口');
       assert.throws(() => M[factory]({}), new RegExp(f + ': missing dep'), f + ' 缺键报错');

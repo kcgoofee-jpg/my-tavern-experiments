@@ -11,7 +11,7 @@ import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { post } from './protocol-stamp.mjs';
-import { aspect, cur, curData, REG, viewer } from './state.mjs';
+import { aspect, currentMapId, currentMapData, mapRegistry, osdViewer } from './state.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false, night = false, now = 0;
 let lastId = null, walls = [];
@@ -26,26 +26,26 @@ function size() {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-const toScreen = (nx, ny) => { try { const p = viewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
+const toScreen = (nx, ny) => { try { const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
 
 /** 此刻的岗哨：没有巡逻环的图一个都不出（多数地图一帧不画） */
-export const conesNow = t => patrolCones(curData?.routes, { t, quality: quality() });
+export const conesNow = t => patrolCones(currentMapData?.routes, { t, quality: quality() });
 
 /** 标记 id → 归一化坐标（当前图的小表，切图整份换） */
 const xyCache = new Map();
 export function markerXY(id) {
   if (xyCache.has(id)) return xyCache.get(id);
-  const k = (curData?.markers || []).find(q => q.id === id);
+  const k = (currentMapData?.markers || []).find(q => q.id === id);
   const v = k && Number.isFinite(k.nx) ? { x: k.nx, y: k.ny } : null;
   xyCache.set(id, v); return v;
 }
-export const nameOf = id => REG?.maps?.[cur]?.markers?.[id]?.name || id || '';
+export const nameOf = id => mapRegistry?.maps?.[currentMapId]?.markers?.[id]?.name || id || '';
 
 /** 站在哪个地标上：当前地点字符串 → 本图的标记（id 或地主名字互相涵盖都认，与 locate.mjs 的 markHere 同一比对） */
 export function markerOf(here) {
   const v = String(here || '').trim(); if (!v) return null;
-  const meta = REG?.maps?.[cur]?.markers || {};
-  for (const k of curData?.markers || []) {
+  const meta = mapRegistry?.maps?.[currentMapId]?.markers || {};
+  for (const k of currentMapData?.markers || []) {
     if (!k.id) continue;
     if (v.includes(k.id)) return k;                                    // 地点里直接写了标记 id（机兵 / 哨位这类）
     const nm = meta[k.id]?.name;
@@ -71,7 +71,7 @@ function frame(ts) {
   if (!t0) t0 = ts;
   now = (ts - t0) / 1000;
   cx.clearRect(0, 0, W, H);
-  if (viewer?.viewport && curData?.routes?.length) {
+  if (osdViewer?.viewport && currentMapData?.routes?.length) {
     cx.lineWidth = 1;
     for (const c of conesNow(now)) {
       const poly = conePolygon(c, walls, 20); if (poly.length < 3) continue;

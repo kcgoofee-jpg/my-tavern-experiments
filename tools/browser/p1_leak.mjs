@@ -15,8 +15,8 @@ const snap = page => page.evaluate(() => ({
   bus: window.__listenerBus?.describe?.().count ?? -1,
   nodes: document.getElementsByTagName('*').length,
   heap: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : -1,
-  items: window.viewer?.world?.getItemCount?.() ?? -1,
-  tiles: (() => { try { let n = 0; for (let i = 0; i < window.viewer.world.getItemCount(); i++) n += window.viewer.world.getItemAt(i).tilesMatrix ? 1 : 0; return n; } catch (e) { return -1; } })(),
+  items: window.ViewerDebug?.osdViewer?.world?.getItemCount?.() ?? -1,
+  tiles: (() => { try { let n = 0; for (let i = 0; i < window.ViewerDebug?.osdViewer.world.getItemCount(); i++) n += window.ViewerDebug?.osdViewer.world.getItemAt(i).tilesMatrix ? 1 : 0; return n; } catch (e) { return -1; } })(),
 }));
 
 try {
@@ -25,17 +25,17 @@ try {
   const r0 = await B.openViewer(D);
   rep.metric('first', r0);
   const maps = ['tc_upper', 'tc_mid', 'tc_low', 'world'];
-  const usable = await p.evaluate(ms => ms.filter(m => !!window.REG?.maps[m] && window.REG.maps[m].status !== 'planned'), maps);
+  const usable = await p.evaluate(ms => ms.filter(m => !!window.ViewerDebug?.mapRegistry?.maps[m] && window.ViewerDebug?.mapRegistry.maps[m].status !== 'planned'), maps);
   rep.check('至少有两张图可来回切（切图循环才有意义）', usable.length >= 2, JSON.stringify(usable));
 
-  await p.evaluate(() => window.go?.(window.REG.start));
+  await p.evaluate(() => window.ViewerDebug?.go?.(window.ViewerDebug?.mapRegistry.start));
   await B.wait(1200);
   const a = await snap(p);
   rep.metric('before', a);
 
   for (let i = 0; i < ROUNDS; i++) {
     const m = usable[i % usable.length];
-    await p.evaluate(id => { try { window.go?.(id); } catch (e) {} }, m);
+    await p.evaluate(id => { try { window.ViewerDebug?.go?.(id); } catch (e) {} }, m);
     await B.wait(350);
   }
   await B.wait(2500);

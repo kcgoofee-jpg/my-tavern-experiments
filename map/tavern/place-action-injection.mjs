@@ -4,10 +4,10 @@
 //   compose —— 填进输入框，接在已有草稿后面，**永不自动发送**（与 v0.9.6 的「去这里」同一条底线）
 //   sys     —— 以系统指令静默注入（走酒馆助手 triggerSlash('/sys …')），不在输入框里停留
 // 纯模块：不碰酒馆全局、不发消息、不读存储（get 由宿主注入）；node 单测 tests/place-action-injection.test.mjs。
-export const KEY = 'edenMapInject';
+export const PLACE_ACTION_INJECTION_STORAGE_KEY = 'edenMapInject';
 export const TPL_KEY = 'edenMapActionTpl';
 export const MODES = ['off', 'compose', 'sys'];
-export const MAX = 300;
+export const MAX_TEMPLATE_CHARS = 300;
 
 /** 默认模板：{name} = 地点 / 事件 / 人物名；{item} = 拾到的东西（loot）、{dc} = 检定难度（stealth）、
  *  {what} = 失手缘由（fail，W2 检定失败环：掷骰开着时由宿主填「搜刮失手 / 潜行被目击」） */
@@ -22,7 +22,7 @@ export const cleanName = n => clip(String(n ?? '').replace(/[\r\n\t]+/g, ' ').re
 
 /** 设置项 → 模式；乱值一律 off（宁可不注入，不可猜着注入） */
 export function modeOf(get) {
-  try { const v = String(get?.(KEY) ?? '').trim(); return MODES.includes(v) ? v : 'off'; } catch (e) { return 'off'; }
+  try { const v = String(get?.(PLACE_ACTION_INJECTION_STORAGE_KEY) ?? '').trim(); return MODES.includes(v) ? v : 'off'; } catch (e) { return 'off'; }
 }
 
 /** 本机模板（用户改过的优先；空串 = 用默认）；kinds 之外的 key 一律忽略 */
@@ -46,7 +46,7 @@ export function fill(tpl, name, vars) {
     const ph = '{' + k + '}';
     out = out.includes(ph) ? out.split(ph).join(s) : out.replace(/([。.!？?]?)$/, (m, p) => s + p);
   }
-  return clip(out.replace(/[\r\n]+/g, ' '), MAX).trim();
+  return clip(out.replace(/[\r\n]+/g, ' '), MAX_TEMPLATE_CHARS).trim();
 }
 
 /**
@@ -70,7 +70,7 @@ export function buildAction({ mode, kind = 'go', name, map, tpls, lang = 'zh', i
 /** sys 模式下真正要执行的斜杠命令（宿主拿去 triggerSlash）；compose / off 都是 '' */
 export function slashOf(action, mode) {
   if (mode !== 'sys' || !action?.text) return '';
-  return '/sys ' + String(action.text).replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|').slice(0, MAX);
+  return '/sys ' + String(action.text).replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|').slice(0, MAX_TEMPLATE_CHARS);
 }
 
 /** 摘要（自检 / 设置页显示）：{ mode, kinds } */

@@ -3,7 +3,7 @@
 // 真正读写都在卡内脚本（tavern/eden-map.js onTh）；这里只发 eden-map:th 请求、画 eden-map:th-state。单独打开（不在酒馆里）时整栏不显示。
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
-import { tx } from './text-lookup.mjs';
+import { uiTextOr } from './text-lookup.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 
 const W = { global: ['th.wb_global', '全局'], char: ['th.wb_char', '当前角色的附加世界书'], chat: ['th.wb_chat', '当前聊天'] };
@@ -20,38 +20,38 @@ const list = (a, n = 6) => (a || []).slice(0, n).map(esc).join('、') + ((a || [
 
 function renderWb() {
   const box = sec('data', 'thWb', 5), w = S.wb, P = S.prefs || {}, L = S.last;
-  let h = `<h3>${esc(tx('th.wb', '世界书附加条目'))}</h3>`
-    + `<label class="row"><input type="checkbox" id="wbOn" ${P.wbOn !== false ? 'checked' : ''}> ${esc(tx('th.wb_on', '自动管理地图世界书（总开关）'))}</label>`
-    + `<small>${esc(tx('th.wb_on_hint', '开着时：打开地图自动建好这本书并挂到当前角色的附加世界书，地图更新后静默同步（每个版本只提示一次）。关掉 = 全部不自动做。'))}</small>`;
-  if (P.wbOn !== false && P.wbTomb) h += `<small>${esc(tx('th.wb_tomb', '你删过这本书，所以不会再自动建；想要回来就点下面的「写入世界书」'))}</small>`;
-  if (!w) h += `<div class="hrow"><span>${esc(tx('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbLook">${esc(tx('th.wb_look', '检查'))}</button></div>`;
-  else if (!w.api) h += `<small>${esc(tx('th.wb_noapi', '这个酒馆助手版本没有世界书写入接口：请照旧手动导入「世界书附加条目」文件'))}</small>`;
+  let h = `<h3>${esc(uiTextOr('th.wb', '世界书附加条目'))}</h3>`
+    + `<label class="row"><input type="checkbox" id="wbOn" ${P.wbOn !== false ? 'checked' : ''}> ${esc(uiTextOr('th.wb_on', '自动管理地图世界书（总开关）'))}</label>`
+    + `<small>${esc(uiTextOr('th.wb_on_hint', '开着时：打开地图自动建好这本书并挂到当前角色的附加世界书，地图更新后静默同步（每个版本只提示一次）。关掉 = 全部不自动做。'))}</small>`;
+  if (P.wbOn !== false && P.wbTomb) h += `<small>${esc(uiTextOr('th.wb_tomb', '你删过这本书，所以不会再自动建；想要回来就点下面的「写入世界书」'))}</small>`;
+  if (!w) h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbLook">${esc(uiTextOr('th.wb_look', '检查'))}</button></div>`;
+  else if (!w.api) h += `<small>${esc(uiTextOr('th.wb_noapi', '这个酒馆助手版本没有世界书写入接口：请照旧手动导入「世界书附加条目」文件'))}</small>`;
   else {
-    const st = w.exists ? (w.plan && !w.plan.changed ? tx('th.wb_uptodate', '已是最新 {v}', { v: w.plan.to }) : tx('th.wb_old', '已安装 {v}，可更新到 {to}', { v: w.plan?.from || '?', to: w.plan?.to || '?' })) : tx('th.wb_none', '还没写入');
+    const st = w.exists ? (w.plan && !w.plan.changed ? uiTextOr('th.wb_uptodate', '已是最新 {v}', { v: w.plan.to }) : uiTextOr('th.wb_old', '已安装 {v}，可更新到 {to}', { v: w.plan?.from || '?', to: w.plan?.to || '?' })) : uiTextOr('th.wb_none', '还没写入');
     h += `<div class="hrow"><span>${esc(w.book || '')}</span><span>${esc(st)}</span></div>`;
-    if (w.exists) h += `<div class="hrow"><span>${esc(tx('th.wb_bound', '绑定'))}</span><span>${esc(w.where ? tx(...W[w.where]) : tx('th.wb_unbound', '没绑定（不会生效）'))}</span></div>`;
-    if (L?.at) h += `<small>${esc(tx('th.wb_last', '上次同步 {t} · {v}', { t: when(L.at), v: L.ver || '?' }))}${L.auto ? ' · ' + esc(tx('th.wb_auto_tag', '自动')) : ''}</small>`;
-    if (w.offline) h += `<small>${esc(tx('th.wb_offline', '取不到 CDN 上的条目（离线？）：稍后再试，或照旧手动导入'))}</small>`;
+    if (w.exists) h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_bound', '绑定'))}</span><span>${esc(w.where ? uiTextOr(...W[w.where]) : uiTextOr('th.wb_unbound', '没绑定（不会生效）'))}</span></div>`;
+    if (L?.at) h += `<small>${esc(uiTextOr('th.wb_last', '上次同步 {t} · {v}', { t: when(L.at), v: L.ver || '?' }))}${L.auto ? ' · ' + esc(uiTextOr('th.wb_auto_tag', '自动')) : ''}</small>`;
+    if (w.offline) h += `<small>${esc(uiTextOr('th.wb_offline', '取不到 CDN 上的条目（离线？）：稍后再试，或照旧手动导入'))}</small>`;
     const p = w.plan;
     if (p && diffShown) {
-      h += `<div class="thdiff" role="status"><b>${esc(tx('th.wb_diff', '将要写入'))}</b>`
-        + (p.first ? `<div>${esc(tx('th.wb_new_book', '新建一本书，{n} 条', { n: p.add.length }))}</div>` : '')
-        + (!p.first && p.add.length ? `<div>${esc(tx('th.wb_add', '新增 {n}', { n: p.add.length }))}：${list(p.add)}</div>` : '')
-        + (p.update.length ? `<div>${esc(tx('th.wb_upd', '更新 {n}', { n: p.update.length }))}：${list(p.update)}</div>` : '')
-        + (p.keep.length ? `<div>${esc(tx('th.wb_keep', '你改过的 {n} 条保留不动', { n: p.keep.length }))}：${list(p.keep)}</div>` : '')
-        + (p.conflict?.length ? `<div>${esc(tx('th.wb_conflict', '你改过，上游也改了 {n} 条（保留你的，上游新内容记在条目里）', { n: p.conflict.length }))}：${list(p.conflict)}</div>` : '')
-        + (p.retire.length ? `<div>${esc(tx('th.wb_retire', '新版不再用的 {n} 条降为最低优先级（不删）', { n: p.retire.length }))}：${list(p.retire)}</div>` : '')
-        + (p.user ? `<div>${esc(tx('th.wb_user', '你自己加的 {n} 条原样保留', { n: p.user }))}</div>` : '')
-        + (!p.changed ? `<div>${esc(tx('th.wb_nochange', '没有变化'))}</div>` : '')
-        + `<small>${esc(tx('th.wb_only', '只写这一本书，不碰其它世界书和角色卡'))}</small></div>`;
+      h += `<div class="thdiff" role="status"><b>${esc(uiTextOr('th.wb_diff', '将要写入'))}</b>`
+        + (p.first ? `<div>${esc(uiTextOr('th.wb_new_book', '新建一本书，{n} 条', { n: p.add.length }))}</div>` : '')
+        + (!p.first && p.add.length ? `<div>${esc(uiTextOr('th.wb_add', '新增 {n}', { n: p.add.length }))}：${list(p.add)}</div>` : '')
+        + (p.update.length ? `<div>${esc(uiTextOr('th.wb_upd', '更新 {n}', { n: p.update.length }))}：${list(p.update)}</div>` : '')
+        + (p.keep.length ? `<div>${esc(uiTextOr('th.wb_keep', '你改过的 {n} 条保留不动', { n: p.keep.length }))}：${list(p.keep)}</div>` : '')
+        + (p.conflict?.length ? `<div>${esc(uiTextOr('th.wb_conflict', '你改过，上游也改了 {n} 条（保留你的，上游新内容记在条目里）', { n: p.conflict.length }))}：${list(p.conflict)}</div>` : '')
+        + (p.retire.length ? `<div>${esc(uiTextOr('th.wb_retire', '新版不再用的 {n} 条降为最低优先级（不删）', { n: p.retire.length }))}：${list(p.retire)}</div>` : '')
+        + (p.user ? `<div>${esc(uiTextOr('th.wb_user', '你自己加的 {n} 条原样保留', { n: p.user }))}</div>` : '')
+        + (!p.changed ? `<div>${esc(uiTextOr('th.wb_nochange', '没有变化'))}</div>` : '')
+        + `<small>${esc(uiTextOr('th.wb_only', '只写这一本书，不碰其它世界书和角色卡'))}</small></div>`;
       const def = P.wbWhere || w.where || 'char';
-      h += `<fieldset class="thwhere"><legend>${esc(w.where ? tx('th.wb_rebind_to', '改绑定到') : tx('th.wb_where', '写完绑定到'))}</legend>` + ['char', 'chat', 'global'].map(k => `<label><input type="radio" name="wbWhere" value="${k}" ${k === def ? 'checked' : ''}> ${esc(tx(...W[k]))}</label>`).join('') + `</fieldset>`;
-      if (w.legacy?.length) h += `<label class="row"><input type="checkbox" id="wbMig" checked> ${esc(tx('th.wb_mig', '把旧书「{n}」的绑定换成新书（旧书留着）', { n: w.legacy[0] }))}</label>`;
-      h += `<div class="hrow"><span></span><button type="button" class="btn primary" id="wbGo">${esc(armed ? tx('th.wb_confirm', '再点一次确认写入') : w.exists ? tx('th.wb_rebind_go', '改绑定') : tx('th.wb_write', '写入世界书'))}</button></div>`;
-    } else h += `<div class="hrow"><span>${esc(tx('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbDiff">${esc(tx('th.wb_preview', '看差异'))}</button></div>`;
-    if (S.result) h += `<small role="status">${esc(S.result.ok ? (S.result.reason === 'deleted' ? tx('th.wb_deleted', '已撤销（删除了这本书）') : tx('th.wb_done', '已写入')) : tx('th.wb_fail', '没写成（{r}）：可以照旧手动导入', { r: S.result.reason || '?' }))}</small>`;
-    if (w.exists) h += `<div class="hrow"><span></span><button type="button" class="btn" id="wbUndo">${esc(delArmed === '__book__' ? tx('th.wb_undo_confirm', '再点一次：撤销（删除这本书，不能撤销）') : tx('th.wb_undo', '撤销（删除这本书）'))}</button></div>`;
-    for (const n of w.legacy || []) h += `<div class="hrow"><span>${esc(tx('th.wb_legacy', '旧书 {n}', { n }))}</span><button type="button" class="btn" data-del="${esc(n)}">${esc(delArmed === n ? tx('th.wb_del_confirm', '再点一次：删除（不能撤销）') : tx('th.wb_del', '删除旧书'))}</button></div>`;
+      h += `<fieldset class="thwhere"><legend>${esc(w.where ? uiTextOr('th.wb_rebind_to', '改绑定到') : uiTextOr('th.wb_where', '写完绑定到'))}</legend>` + ['char', 'chat', 'global'].map(k => `<label><input type="radio" name="wbWhere" value="${k}" ${k === def ? 'checked' : ''}> ${esc(uiTextOr(...W[k]))}</label>`).join('') + `</fieldset>`;
+      if (w.legacy?.length) h += `<label class="row"><input type="checkbox" id="wbMig" checked> ${esc(uiTextOr('th.wb_mig', '把旧书「{n}」的绑定换成新书（旧书留着）', { n: w.legacy[0] }))}</label>`;
+      h += `<div class="hrow"><span></span><button type="button" class="btn primary" id="wbGo">${esc(armed ? uiTextOr('th.wb_confirm', '再点一次确认写入') : w.exists ? uiTextOr('th.wb_rebind_go', '改绑定') : uiTextOr('th.wb_write', '写入世界书'))}</button></div>`;
+    } else h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbDiff">${esc(uiTextOr('th.wb_preview', '看差异'))}</button></div>`;
+    if (S.result) h += `<small role="status">${esc(S.result.ok ? (S.result.reason === 'deleted' ? uiTextOr('th.wb_deleted', '已撤销（删除了这本书）') : uiTextOr('th.wb_done', '已写入')) : uiTextOr('th.wb_fail', '没写成（{r}）：可以照旧手动导入', { r: S.result.reason || '?' }))}</small>`;
+    if (w.exists) h += `<div class="hrow"><span></span><button type="button" class="btn" id="wbUndo">${esc(delArmed === '__book__' ? uiTextOr('th.wb_undo_confirm', '再点一次：撤销（删除这本书，不能撤销）') : uiTextOr('th.wb_undo', '撤销（删除这本书）'))}</button></div>`;
+    for (const n of w.legacy || []) h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_legacy', '旧书 {n}', { n }))}</span><button type="button" class="btn" data-del="${esc(n)}">${esc(delArmed === n ? uiTextOr('th.wb_del_confirm', '再点一次：删除（不能撤销）') : uiTextOr('th.wb_del', '删除旧书'))}</button></div>`;
   }
   box.innerHTML = h;
   $('#wbLook')?.addEventListener('click', () => { diffShown = true; S.result = null; post({ type: 'eden-map:th', op: 'wb-inspect' }); });
@@ -68,16 +68,16 @@ function renderWb() {
 
 function renderInj() {
   const box = sec('data', 'thInj', 6), P = S.prefs || {}, A = S.api || {};
-  box.innerHTML = `<h3>${esc(tx('th.inj', '状态注入'))}</h3>`
-    + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(tx('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
-    + `<small>${esc(tx('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`
-    + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(tx('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(tx('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(tx('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thWbJit" ${P.wbJit ? 'checked' : ''}> ${esc(tx('th.wbjit', '世界书 JIT 水合：人在哪只挂载哪儿的条目（离开自动卸载）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(tx('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
-    + `<label class="row"><input type="checkbox" id="thNav" ${P.nav ? 'checked' : ''}> ${esc(tx('th.nav', '地图领航员（后台调用你配置的私有 API 推演态势建议，默认关）'))}</label>`
-    + `<div class="hrow"><span></span><button type="button" class="btn" id="thNavCfg">${esc(tx('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'))}</button></div>`;
+  box.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
+    + `<label class="row"><input type="checkbox" id="thInjOn" ${P.inj !== false ? 'checked' : ''} ${A.inject === false ? 'disabled' : ''}> ${esc(uiTextOr('th.inj_on', '每次生成前注入一行当前状态（地点、在场、时间、行程）'))}</label>`
+    + `<small>${esc(uiTextOr('th.inj_note', '约 150 token；卡的提示词里已有的字段自动跳过；数据还没确认时标「未确认」。深度和上限在「高级」'))}</small>`
+    + `<label class="row"><input type="checkbox" id="thMacro" ${P.macros ? 'checked' : ''} ${A.macros === false ? 'disabled' : ''}> ${esc(uiTextOr('th.macros', '提供宏 {{eden_here}} / {{eden_route}}（给卡或预设作者引用）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thDice" ${P.dice ? 'checked' : ''}> ${esc(uiTextOr('th.dice', '检定真掷骰：搜刮 / 潜行失手会真的失败并出失败报告（默认关 = 只提示不判定）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thSpatial" ${P.spatial ? 'checked' : ''}> ${esc(uiTextOr('th.spatial', '向模型注入空间坐标契约（≤120 token 的坐标 JSON，取代方位散文）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thWbJit" ${P.wbJit ? 'checked' : ''}> ${esc(uiTextOr('th.wbjit', '世界书 JIT 水合：人在哪只挂载哪儿的条目（离开自动卸载）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thWbXtal" ${P.wbXtal ? 'checked' : ''}> ${esc(uiTextOr('th.wbxtal', '剧情事实结晶：⌖事实 标签自动沉淀为附加书条目（LRU 上限，可在书里删）'))}</label>`
+    + `<label class="row"><input type="checkbox" id="thNav" ${P.nav ? 'checked' : ''}> ${esc(uiTextOr('th.nav', '地图领航员（后台调用你配置的私有 API 推演态势建议，默认关）'))}</label>`
+    + `<div class="hrow"><span></span><button type="button" class="btn" id="thNavCfg">${esc(uiTextOr('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'))}</button></div>`;
   $('#thInjOn').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { inj: e.target.checked } });
   $('#thMacro').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { macros: e.target.checked } });
   $('#thDice').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { dice: e.target.checked } });
@@ -86,13 +86,13 @@ function renderInj() {
   $('#thWbXtal').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { wbXtal: e.target.checked } });
   $('#thNav').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { nav: e.target.checked } });
   $('#thNavCfg')?.addEventListener('click', () => {
-    const cur = prompt(tx('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'), JSON.stringify({ provider: 'openai', key: '', base: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }));
+    const cur = prompt(uiTextOr('th.nav_cfg', '配置端点（JSON：provider / key / base / model）'), JSON.stringify({ provider: 'openai', key: '', base: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }));
     if (cur && cur.trim()) post({ type: 'eden-map:th', op: 'prefs', prefs: { navCfg: cur } });
   });
   const adv = sec('adv', 'thAdv', 80);
-  adv.innerHTML = `<h3>${esc(tx('th.inj', '状态注入'))}</h3>`
-    + `<div class="hrow"><label for="thDepth">${esc(tx('th.depth', '注入深度（楼层，0 = 最后）'))}</label><input id="thDepth" type="number" min="0" max="20" step="1" value="${+P.depth || 2}"></div>`
-    + `<div class="hrow"><label for="thBudget">${esc(tx('th.budget', 'token 上限'))}</label><input id="thBudget" type="number" min="40" max="400" step="10" value="${+P.budget || 150}"></div>`;
+  adv.innerHTML = `<h3>${esc(uiTextOr('th.inj', '状态注入'))}</h3>`
+    + `<div class="hrow"><label for="thDepth">${esc(uiTextOr('th.depth', '注入深度（楼层，0 = 最后）'))}</label><input id="thDepth" type="number" min="0" max="20" step="1" value="${+P.depth || 2}"></div>`
+    + `<div class="hrow"><label for="thBudget">${esc(uiTextOr('th.budget', 'token 上限'))}</label><input id="thBudget" type="number" min="40" max="400" step="10" value="${+P.budget || 150}"></div>`;
   $('#thDepth').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { depth: +e.target.value } });
   $('#thBudget').onchange = e => post({ type: 'eden-map:th', op: 'prefs', prefs: { budget: +e.target.value } });
 }

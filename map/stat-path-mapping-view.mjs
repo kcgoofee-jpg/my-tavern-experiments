@@ -7,8 +7,8 @@ import { LANG } from './app/i18n.mjs';
 import { SettingsApi } from './app/settings.mjs';
 import { tableRows } from './core/people.mjs';
 import { register } from './app/plugins.mjs';
+import { uiTextOr } from './app/text-lookup.mjs';
 const StatPathMappingView = (() => {
-  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let d = null, open = false;
   const F = [['location', '当前地点', 'Location'], ['time', '时刻', 'Time'], ['period', '时段', 'Period'], ['date', '日期', 'Date'], ['outfit', '主角着装', 'Outfit'],
     ['present', '在场人物表', 'Present table'], ['members', '成员表', 'Members table'], ['targets', '目标表', 'Targets table'], ['reputation', '声望', 'Reputation'], ['stageField', '阶段字段名', 'Stage field'],
@@ -19,7 +19,7 @@ const StatPathMappingView = (() => {
   const en = () => (typeof LANG !== 'undefined' && LANG === 'en');
   const L = r => (en() ? r[2] : r[1]);
   const rowsF = () => F.flatMap(f => (f[0] === 'present' ? tableRows(d?.groups) : f[0] === 'members' || f[0] === 'targets' ? [] : [f]));   // 三张表的行按包的名册组逐组列（S4-4）
-  const lab = f => (f[0] === 'knownField' ? T('vm.known', L(f)) : L(f));   // 这一项的名字由包文案定（词典 vm.known）
+  const lab = f => (f[0] === 'knownField' ? uiTextOr('vm.known', L(f)) : L(f));   // 这一项的名字由包文案定（词典 vm.known）
   const MODE_T = { mvu: ['vm.mode_mvu', 'MVU'], 'mvu-partial': ['vm.mode_partial', 'MVU（没找到地点字段）'], tags: ['vm.mode_tags', '聊天标签（没有 MVU）'] };
   function render() {
     const pop = document.getElementById('setPop'); if (!pop) return;
@@ -30,15 +30,15 @@ const StatPathMappingView = (() => {
     box.open = open;
     const opt = (p, cur) => `<option value="${esc(p.path)}" ${p.path === cur ? 'selected' : ''}>${esc(p.path)}</option>`;
     const kw = d.user?.keywords || null;
-    box.innerHTML = `<summary><h3>${esc(T('vm.title', '变量映射'))}</h3><small>${esc(T(...(MODE_T[d.mode] || MODE_T.tags)))}</small></summary>`
-      + `<small>${esc(T('vm.hint', '换了别的角色卡、字段名不一样时，在这里指定地图读哪个变量。按角色卡存在本机；「自动」= 默认或自动找到的'))}</small>`
+    box.innerHTML = `<summary><h3>${esc(uiTextOr('vm.title', '变量映射'))}</h3><small>${esc(uiTextOr(...(MODE_T[d.mode] || MODE_T.tags)))}</small></summary>`
+      + `<small>${esc(uiTextOr('vm.hint', '换了别的角色卡、字段名不一样时，在这里指定地图读哪个变量。按角色卡存在本机；「自动」= 默认或自动找到的'))}</small>`
       + rowsF().map(f => { const u = d.user?.[f[0]] || '', auto = d.detected?.[f[0]] || '';
-        if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(T('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
-        return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(T('vm.auto', '自动：{p}', { p: auto || T('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
-      + `<h4>${esc(T('vm.kw', '交通方式关键词（顿号或逗号分隔）'))}</h4>`
+        if (/Field$/.test(f[0]) && f[0] !== 'stageField') return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(uiTextOr('vm.auto', '自动：{p}', { p: auto || uiTextOr('vm.none', '无') }))}</option><option value="-" ${u === '-' ? 'selected' : ''}>${esc(uiTextOr('vm.off', '关闭'))}</option>${(d.fields || []).map(k => `<option value="${esc(k)}" ${k === u ? 'selected' : ''}>${esc(k)}</option>`).join('')}</select></label>`;
+        return `<label class="vm-row"><span>${esc(lab(f))}</span><select data-f="${f[0]}"><option value="">${esc(uiTextOr('vm.auto', '自动：{p}', { p: auto || uiTextOr('vm.none', '无') }))}</option>${(d.paths || []).map(p => opt(p, u)).join('')}</select></label>`; }).join('')
+      + `<h4>${esc(uiTextOr('vm.kw', '交通方式关键词（顿号或逗号分隔）'))}</h4>`
       + MODES.map(m => `<label class="vm-row vm-kw"><span>${esc(L(m))}</span><input type="text" data-kw="${m[0]}" value="${esc((kw?.[m[0]] || (kw ? [] : null))?.join?.('、') ?? DEF_KW[m[0]])}"></label>`).join('')
-      + `<label><span>${esc(T('vm.fantasy', '加上通用奇幻词（飞行法宝、御剑、遁地、传送阵、瞬移、传送）'))}</span><input type="checkbox" role="switch" id="vmFantasy" ${d.user?.fantasy ? 'checked' : ''}></label>`
-      + `<button type="button" class="btn" data-vmreset="1">${esc(T('vm.reset', '全部恢复自动'))}</button>`;
+      + `<label><span>${esc(uiTextOr('vm.fantasy', '加上通用奇幻词（飞行法宝、御剑、遁地、传送阵、瞬移、传送）'))}</span><input type="checkbox" role="switch" id="vmFantasy" ${d.user?.fantasy ? 'checked' : ''}></label>`
+      + `<button type="button" class="btn" data-vmreset="1">${esc(uiTextOr('vm.reset', '全部恢复自动'))}</button>`;
   }
   function collect() {
     const box = document.getElementById('vmBox'), u = {};

@@ -4,12 +4,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { KEY, DEFAULT_MS, MIN_MS, MAX_MS, MAX_FLOORS, intervalOf, plan, pick, ledger, describe } from '../map/tavern/background-scan-scheduler.mjs';
+import { BACKGROUND_SCAN_STORAGE_KEY, DEFAULT_MS, MIN_MS, MAX_MS, MAX_FLOORS, intervalOf, plan, pick, ledger, describe } from '../map/tavern/background-scan-scheduler.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('间隔：合法值夹在 15 s–5 min 之间，0 / 负数 / 乱值 = 关', () => {
-  const g = v => (k => (k === KEY ? v : null));
+  const g = v => (k => (k === BACKGROUND_SCAN_STORAGE_KEY ? v : null));
   assert.equal(intervalOf(g('60000')), 60000);
   assert.equal(intervalOf(g('1000')), MIN_MS, '太急会被抬到 15 s');
   assert.equal(intervalOf(g('99999999')), MAX_MS, '再慢也不超过 5 min');
@@ -56,8 +56,8 @@ test('记账：跑了几轮、最后一次耗时与楼层数', () => {
 });
 
 test('摘要与纯度：不碰酒馆全局 / DOM / 定时器', () => {
-  const d = describe(k => (k === KEY ? '30000' : null), { runs: 2, lastN: 3 });
-  assert.equal(d.intervalMs, 30000); assert.equal(d.key, KEY);
+  const d = describe(k => (k === BACKGROUND_SCAN_STORAGE_KEY ? '30000' : null), { runs: 2, lastN: 3 });
+  assert.equal(d.intervalMs, 30000); assert.equal(d.key, BACKGROUND_SCAN_STORAGE_KEY);
   const src = readFileSync(join(ROOT, 'map/tavern/background-scan-scheduler.mjs'), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'setInterval', 'setTimeout']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);

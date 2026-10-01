@@ -7,7 +7,7 @@ import { trafficField, routeList, pathMetrics, trailOf } from '../core/traffic.m
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { lean } from './sharpness-tiers.mjs';
-import { aspect, curData, viewer } from './state.mjs';
+import { aspect, currentMapData, osdViewer } from './state.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false, night = false, seed = 7;
 const quality = () => (lean() ? .5 : 1);
@@ -25,7 +25,7 @@ function size() {
 /** 图坐标（nx, ny*aspect）→ 视口像素；OSD 没就绪返回 null（画布还没挂上就别算） */
 function toScreen(nx, ny) {
   try {
-    const p = viewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
+    const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
     return p?.x != null && Number.isFinite(p.x) ? p : null;
   } catch (e) { return null; }
 }
@@ -35,8 +35,8 @@ function frame(ts) {
   if (!t0) t0 = ts;
   const t = (ts - t0) / 1000;
   cx.clearRect(0, 0, W, H);
-  const routes = curData?.routes;
-  if (routes?.length && viewer?.viewport) {
+  const routes = currentMapData?.routes;
+  if (routes?.length && osdViewer?.viewport) {
     const list = routeList(routes);   // 与核心同一过滤顺序，车上的 ri 才对得上度量
     const mets = list.map(r => pathMetrics(r.pts));
     const cars = trafficField(routes, { t, seed, quality: quality(), night });
@@ -84,6 +84,6 @@ export function registerTrafficLayer() {
   busOn({ key: 'traffic.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'traffic.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') night = !!e.data.night; } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('traffic') ? start() : null); });
-  window.TrafficApi = { running: trafficRunning, night: trafficNight, describe: () => ({ cars: trafficField(routeList(curData?.routes), { t: 0, seed, quality: quality(), night }).length, night }) };
+  window.TrafficApi = { running: trafficRunning, night: trafficNight, describe: () => ({ cars: trafficField(routeList(currentMapData?.routes), { t: 0, seed, quality: quality(), night }).length, night }) };
   return true;
 }

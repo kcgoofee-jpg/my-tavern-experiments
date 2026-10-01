@@ -25,7 +25,7 @@ export function hueBucket(hex, m) {
 export const CHAR_HUES_CVD = { rg: [35, 200, 210, 280, 340, 15, 55], by: [15, 340, 200, 45, 280, 5, 165] };
 
 export function mode() { try { const v = storage.get('edenMapCvd'); return MODES.includes(v) ? v : '0'; } catch (e) { return '0'; } }
-export function on() { return mode() !== '0'; }
+export function isEnabled() { return mode() !== '0'; }
 export function setMode(v) { try { storage.set('edenMapCvd', MODES.includes(v) ? v : '0'); } catch (e) {} if (typeof document !== 'undefined') apply(); }
 
 const listeners = new Set();

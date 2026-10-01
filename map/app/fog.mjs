@@ -4,7 +4,7 @@
 // 从 viewer.html 拆出的模块（arch-v2 §6）：核心状态与工具从 state / util 显式 import；存储统一走 core/storage.mjs 适配器
 // （P3-A 收口：FOG_KEY / FOG_LOCAL_KEY 只在 core/storage.mjs 定义，这里不再写死键名；直连适配器后 get 套登记默认值——
 //   用户从没动过开关时 on() 按登记的 def '1' 生效，与设置页默认勾选、KEYS 登记一致，原先镜像不套默认值导致默认开悄悄失效）。
-import { REG, cur, viewer } from './state.mjs';
+import { mapRegistry, currentMapId, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { registry } from './layer-host.mjs';
@@ -24,34 +24,34 @@ function setHaze(chain) {
   hazeChain = Array.isArray(chain) ? chain : [];
   const cv = document.getElementById('fogCv'); if (cv) cv.style.filter = hazeCss();
 }
-const eligible = () => { const m = REG?.maps?.[cur]; return !!m && m.kind === 'points' && m.status !== 'planned'; };
+const eligible = () => { const m = mapRegistry?.maps?.[currentMapId]; return !!m && m.kind === 'points' && m.status !== 'planned'; };
 function paint() {
   document.getElementById('fogCv')?.remove();
-  const act = on() && eligible() && !!viewer?.world?.getItemCount();
+  const act = on() && eligible() && !!osdViewer?.world?.getItemCount();
   document.body.classList.toggle('fogon', act);
   const mks = [...document.querySelectorAll('.mk')];
-  for (const e of mks) e.classList.toggle('fogged', act && !known(ex, cur, e.dataset.name) && !e.classList.contains('here'));
+  for (const e of mks) e.classList.toggle('fogged', act && !known(ex, currentMapId, e.dataset.name) && !e.classList.contains('here'));
   if (!act) return;
-  const b = viewer.world.getItemAt(0).getBounds(), W = 512, H = Math.max(1, Math.round(W * b.height / b.width));
+  const b = osdViewer.world.getItemAt(0).getBounds(), W = 512, H = Math.max(1, Math.round(W * b.height / b.width));
   const cv = document.createElement('canvas'); cv.id = 'fogCv'; cv.width = W; cv.height = H; cv.setAttribute('aria-hidden', 'true');
   const g = cv.getContext('2d'); if (!g) return;
   g.fillStyle = document.documentElement.classList.contains('light') ? 'rgba(239,234,224,.55)' : 'rgba(8,10,14,.55)'; g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out'; const R = W * .07;
-  for (const e of mks) { if (e.classList.contains('fogged')) continue; const p = viewer.getOverlayById(e)?.location; if (!p) continue;
+  for (const e of mks) { if (e.classList.contains('fogged')) continue; const p = osdViewer.getOverlayById(e)?.location; if (!p) continue;
     const x = (p.x - b.x) / b.width * W, y = (p.y - b.y) / b.height * H, gr = g.createRadialGradient(x, y, 0, x, y, R);
     gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.6, 'rgba(0,0,0,.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, 2 * R, 2 * R); }
   cv.style.pointerEvents = 'none';
   cv.style.filter = hazeCss();   // Part 8-3：与 depth-haze 槽同一条滤镜链（空气透视）
-  viewer.addOverlay({ element: cv, location: b });   // 层叠归 #fogCv 的 --zv-fog 槽位常量（fog 槽，在标记之下），不再 prepend 抢 DOM 顺序
+  osdViewer.addOverlay({ element: cv, location: b });   // 层叠归 #fogCv 的 --zv-fog 槽位常量（fog 槽，在标记之下），不再 prepend 抢 DOM 顺序
 }
 /** markHere 解析出落点后调用：r = hereRes() 的结果 */
 let mute = false;   // 时间轴回放（Part 5-4）：重放过去楼层时不把过去的地点记成「到访」
 function here(r) {
   if (mute || !on() || !r?.map || !r.marker) return;
-  const name = REG?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
+  const name = mapRegistry?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
   const v = visit(ex, r.map, name); if (!v.changed) return; ex = v.ex;
   if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else storage.set(FOG_LOCAL_KEY, JSON.stringify(ex));
-  if (r.map === cur) paint();
+  if (r.map === currentMapId) paint();
 }
 const setFog = v => { storage.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
 registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度

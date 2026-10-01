@@ -6,12 +6,12 @@ import { esc } from './app/dom-helpers.mjs';
 import { post } from './app/protocol-stamp.mjs';
 import { LANG } from './app/i18n.mjs';
 import { SettingsApi } from './app/settings.mjs';
-import { P, register } from './app/plugins.mjs';
+import { plugins, register } from './app/plugins.mjs';
+import { uiTextOr } from './app/text-lookup.mjs';
 const ComposeView = (() => {
-  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let CM = null, open = false;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/compose-templates.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
-  const embedded = () => window.top !== window || !!window.__composeTest;
+  const embedded = () => window.top !== window;
   const lang = () => (typeof LANG !== 'undefined' && LANG === 'en' ? 'en' : 'zh');
   const st = () => { try { return nsStore(localStorage, window.__packId); } catch (e) { return null; } };
   /** 卡片底部的按钮行：o = { go: 地点名（可空）, ask: 主题名（可空） }；o 为空 = 去掉 */
@@ -21,8 +21,8 @@ const ComposeView = (() => {
     if (!o || !embedded() || (!o.go && !o.ask)) return;
     const row = document.createElement('div'); row.className = 'cmp';
     const b = (k, lbl, name) => { if (!name) return; const e = document.createElement('button'); e.type = 'button'; e.className = 'btn'; e.dataset.cmp = k; e.dataset.name = name; e.textContent = lbl;
-      e.title = T('cmp.tip', '填进聊天输入框（不会发送）'); row.appendChild(e); };
-    b('go', T('cmp.go', '去这里'), o.go); b('ask', T('cmp.ask', '追问这件事'), o.ask);
+      e.title = uiTextOr('cmp.tip', '填进聊天输入框（不会发送）'); row.appendChild(e); };
+    b('go', uiTextOr('cmp.go', '去这里'), o.go); b('ask', uiTextOr('cmp.ask', '追问这件事'), o.ask);
     c.appendChild(row);
   }
   async function onClick(e) {
@@ -34,7 +34,7 @@ const ComposeView = (() => {
   document.addEventListener('click', onClick);
   // 卡内脚本回话：填进去了没有
   addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__isFromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
-    if (typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.toast([e.data.ok ? T('cmp.done', '已填入聊天输入框（未发送）') : T('cmp.fail', '没找到酒馆输入框')]); });
+    if (typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.toast([e.data.ok ? uiTextOr('cmp.done', '已填入聊天输入框（未发送）') : uiTextOr('cmp.fail', '没找到酒馆输入框')]); });
   // ---------- 设置：填入聊天的模板 ----------
   async function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
@@ -46,23 +46,23 @@ const ComposeView = (() => {
       box.addEventListener('input', preview); }
     box.open = open;
     const cur = M.read(st(), lang()), d = M.DEFAULTS[lang()];
-    box.innerHTML = `<summary><h3>${esc(T('cmp.title', '填入聊天的模板'))}</h3></summary>`
-      + `<small>${esc(T('cmp.hint', '卡片上的「去这里」「追问这件事」把这句话填进酒馆输入框，不会自动发送。{name} = 地点 / 事件 / 人物名'))}</small>`
-      + `<dl class="cmp-ph"><dt><code>{name}</code></dt><dd>${esc(T('cmp.ph_name', '卡片上的名字（地点 / 事件 / 人物）；模板里没写 {name} 时，名字接在句尾'))}</dd></dl>`
-      + `<div class="cmp-ex" role="group" aria-label="${esc(T('cmp.ex', '示例（点一下套用）'))}"><small>${esc(T('cmp.ex', '示例（点一下套用）'))}</small>${EX[lang()].map((x, i) => `<button type="button" class="btn" data-cmpex="${i}" title="${esc(x.go + ' / ' + x.ask)}">${esc(x.label)}</button>`).join('')}</div>`
-      + `<label class="vm-row"><span>${esc(T('cmp.go', '去这里'))}</span><input type="text" data-cmpk="go" maxlength="120" placeholder="${esc(d.go)}" value="${esc(cur.go === d.go ? '' : cur.go)}"></label>`
-      + `<label class="vm-row"><span>${esc(T('cmp.ask', '追问这件事'))}</span><input type="text" data-cmpk="ask" maxlength="120" placeholder="${esc(d.ask)}" value="${esc(cur.ask === d.ask ? '' : cur.ask)}"></label>`
+    box.innerHTML = `<summary><h3>${esc(uiTextOr('cmp.title', '填入聊天的模板'))}</h3></summary>`
+      + `<small>${esc(uiTextOr('cmp.hint', '卡片上的「去这里」「追问这件事」把这句话填进酒馆输入框，不会自动发送。{name} = 地点 / 事件 / 人物名'))}</small>`
+      + `<dl class="cmp-ph"><dt><code>{name}</code></dt><dd>${esc(uiTextOr('cmp.ph_name', '卡片上的名字（地点 / 事件 / 人物）；模板里没写 {name} 时，名字接在句尾'))}</dd></dl>`
+      + `<div class="cmp-ex" role="group" aria-label="${esc(uiTextOr('cmp.ex', '示例（点一下套用）'))}"><small>${esc(uiTextOr('cmp.ex', '示例（点一下套用）'))}</small>${EX[lang()].map((x, i) => `<button type="button" class="btn" data-cmpex="${i}" title="${esc(x.go + ' / ' + x.ask)}">${esc(x.label)}</button>`).join('')}</div>`
+      + `<label class="vm-row"><span>${esc(uiTextOr('cmp.go', '去这里'))}</span><input type="text" data-cmpk="go" maxlength="120" placeholder="${esc(d.go)}" value="${esc(cur.go === d.go ? '' : cur.go)}"></label>`
+      + `<label class="vm-row"><span>${esc(uiTextOr('cmp.ask', '追问这件事'))}</span><input type="text" data-cmpk="ask" maxlength="120" placeholder="${esc(d.ask)}" value="${esc(cur.ask === d.ask ? '' : cur.ask)}"></label>`
       + `<div class="cmp-pv" aria-live="polite"></div>`
-      + `<button type="button" class="btn" data-cmpreset="1">${esc(T('cmp.reset', '恢复默认'))}</button>`;
+      + `<button type="button" class="btn" data-cmpreset="1">${esc(uiTextOr('cmp.reset', '恢复默认'))}</button>`;
     preview();
   }
   // fix3（用户 2026-09-28）：示例模板（点一下套用）+ 实时预览（按示例名字「示例地点」填出来的句子）
   const EX = { zh: [{ label: '默认', go: '前往{name}。', ask: '关于{name}，' }, { label: '第一人称', go: '我动身前往{name}。', ask: '我想多了解一下{name}：' }, { label: '旁白提示', go: '（场景切换到{name}）', ask: '（请详细描写{name}的情况）' }],
     en: [{ label: 'Default', go: 'Go to {name}. ', ask: 'About {name}, ' }, { label: 'First person', go: 'I head to {name}. ', ask: 'I want to know more about {name}: ' }, { label: 'Narrator cue', go: '(Scene moves to {name}) ', ask: '(Describe {name} in detail) ' }] };
   function preview() {
-    const pv = document.querySelector('#cmpBox .cmp-pv'); if (!pv || !CM) return; const d = CM.DEFAULTS[lang()], name = T('cmp.pv_name', '示例地点');
+    const pv = document.querySelector('#cmpBox .cmp-pv'); if (!pv || !CM) return; const d = CM.DEFAULTS[lang()], name = uiTextOr('cmp.pv_name', '示例地点');
     const v = k => document.querySelector(`#cmpBox input[data-cmpk="${k}"]`)?.value.trim() || d[k];
-    pv.innerHTML = `<small>${esc(T('cmp.pv', '预览（名字 = {name}）', { name }))}</small>` + ['go', 'ask'].map(k => `<div><b>${esc(k === 'go' ? T('cmp.go', '去这里') : T('cmp.ask', '追问这件事'))}</b><q>${esc(CM.fill(v(k), name))}</q></div>`).join('');
+    pv.innerHTML = `<small>${esc(uiTextOr('cmp.pv', '预览（名字 = {name}）', { name }))}</small>` + ['go', 'ask'].map(k => `<div><b>${esc(k === 'go' ? uiTextOr('cmp.go', '去这里') : uiTextOr('cmp.ask', '追问这件事'))}</b><q>${esc(CM.fill(v(k), name))}</q></div>`).join('');
   }
   function onChange(e) { e.stopPropagation(); if (!CM) return; const o = {}; for (const i of document.querySelectorAll('#cmpBox input[data-cmpk]')) o[i.dataset.cmpk] = i.value; CM.write(st(), o); preview(); }
   const css = `

@@ -7,7 +7,7 @@
 // node 单测 tests/planner-gateway.test.mjs。
 import { plan as yieldPlan } from './background-scan-scheduler.mjs';
 
-export const KEY = 'edenMapNav';                 // 开关 / 节奏：'' 缺省=关（默认不开）、'1'=默认节奏、数字=毫秒
+export const PLANNER_GATEWAY_STORAGE_KEY = 'edenMapNav';                 // 开关 / 节奏：'' 缺省=关（默认不开）、'1'=默认节奏、数字=毫秒
 export const CFG_KEY = 'edenMapNavCfg';          // 配置 JSON：{ provider, key, base, model }（llm.checkConfig 的形状）
 export const CONSENT_KEY = 'edenMapNavConsent';  // 首跑同意水位：'1' = 用户已点头
 export const DEFAULT_MS = 120000;
@@ -17,7 +17,7 @@ export const MAX_MS = 600000;
 /** 设置项 → 间隔（毫秒）。'' / '0' / 乱值 = 关（默认不开——领航员要花用户的钱，必须显式打开） */
 export function intervalOf(get) {
   try {
-    const s = String(get?.(KEY) ?? '').trim();
+    const s = String(get?.(PLANNER_GATEWAY_STORAGE_KEY) ?? '').trim();
     if (!s || s === '0') return 0;
     if (s === '1') return DEFAULT_MS;
     const v = Number(s);

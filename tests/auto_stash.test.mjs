@@ -114,7 +114,7 @@ test('幂等与水位：同一件只补一次；再用一轮同一件不会重�
 // ---------------- ③ 宿主接线（源码级守卫：接线断了这条测试先红） ----------------
 test('宿主接线：正文扫描接在本轮结算之前，且有界、按 id 去重、失败静默', () => {
   const src = HOST_SRC;   // S5-1：拾取流搬进了 loot-flow.mjs
-  assert.match(src, /import\(SELF \+ 'core\/pickup\.mjs'\)/, '探测模块随宿主一起加载');
+  assert.match(src, /import\(scriptBase \+ 'core\/pickup\.mjs'\)/, '探测模块随宿主一起加载');
   assert.match(src, /scanPickups\(msgs, hereNow\);\s*\/\/[^\n]*\n\s*gate\(\)\?\.request\('sync', ledgerSync\)/, '先入账再放行结算闸门（读取期间不写变量）');
   assert.match(src, /lootFacts\.some\(x => x\?\.id === f\.id\)/, '同一件不重复入账');
   assert.match(src, /lootFacts\.length > 40/, '会话事实有界（长会话不涨内存）');

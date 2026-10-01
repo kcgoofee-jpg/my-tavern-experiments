@@ -19,7 +19,7 @@ test('summarize 与 v0.9.6 形状兼容，另加 list', () => {
   assert.equal(summarize().location, 'none');
 });
 test('接线：宿主 sources() 走注册表；设置页显示在读的来源；i18n 有每个来源的名字', () => {
-  assert.match(HOST_SRC, /SRCm\.summarize\(ctx\)/);
+  assert.match(HOST_SRC, /dataSourceRegistryModule\.summarize\(ctx\)/);
   assert.match(readFileSync(new URL('../map/app/data-mapping-settings.mjs', import.meta.url), 'utf8'), /s\.src_list/);
   for (const l of ['zh', 'en']) { const d = JSON.parse(readFileSync(new URL(`../map/i18n/${l}.json`, import.meta.url), 'utf8')); for (const s of SOURCES) assert.ok(d['s.src_' + s.id], l + ' ' + s.id); }
 });

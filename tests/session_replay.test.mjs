@@ -11,7 +11,7 @@ import { ContextPipeline, exportSessionSnapshot, validateSessionSnapshot, perFlo
 import { parseText } from '../map/tavern/msgtext.mjs';
 import * as EVM from '../map/tavern/events-parse.mjs';
 import * as CHM from '../map/tavern/characters-parse.mjs';
-import * as TRm from '../map/tavern/trips-parse.mjs';
+import * as tripsParseModule from '../map/tavern/trips-parse.mjs';
 import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu-readers.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
@@ -64,8 +64,8 @@ test('fromSnapshot：一键恢复流水线；事件 / 人物提取两次独立�
 
 test('computeTrips 回放：每楼变量表驱动，签名去重后重复计算不变', () => {
   const { pipeline, msgs } = ContextPipeline.fromSnapshot(A());
-  const d = { TRm, CHM, perFloorStat: perFloorStatOf(A()), mvuGet: (s, p) => s?.世界?.当前地点,
-    varMap: { location: '世界.当前地点', time: '世界.当前时刻' }, keywords: TRm.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null };
+  const d = { tripsParseModule, CHM, perFloorStat: perFloorStatOf(A()), mvuGet: (s, p) => s?.世界?.当前地点,
+    varMap: { location: '世界.当前地点', time: '世界.当前时刻' }, keywords: tripsParseModule.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null };
   const r1 = pipeline.computeTrips(msgs, d);
   assert.equal(r1.changed, true);
   assert.ok(r1.trips.some(t => !t.who && t.from === '伊甸庄园·书房' && t.to === '中层·霓虹街'), '玩家行程：书房 → 霓虹街（每楼变量表）');
@@ -178,6 +178,6 @@ test('纯度：回放全程零宿主全局依赖——裸 node 里 window / Mvu 
     seen: -1, wbState: '', hasReg: false, hasCHM: true, hasMV: true, hasTRm: true, hasHereMod: false, hereNow: '中层·霓虹街', collect: EVM.collect,
     charsDeps: { mvuChars: [], known: ['沈青', '白薇'], dbCharacters: [], collectChars: CHM.collectChars, rosters: mvuRosters(A().mvu.stat), reputation: null, presentKey: '' } });
   assert.equal(r.changed, true);
-  assert.equal(pipeline.computeTrips(msgs, { TRm, CHM, perFloorStat: perFloorStatOf(A()), mvuGet: (s, p) => s?.世界?.当前地点,
-    varMap: { location: '世界.当前地点', time: '世界.当前时刻' }, keywords: TRm.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null }).changed, true);
+  assert.equal(pipeline.computeTrips(msgs, { tripsParseModule, CHM, perFloorStat: perFloorStatOf(A()), mvuGet: (s, p) => s?.世界?.当前地点,
+    varMap: { location: '世界.当前地点', time: '世界.当前时刻' }, keywords: tripsParseModule.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null }).changed, true);
 });

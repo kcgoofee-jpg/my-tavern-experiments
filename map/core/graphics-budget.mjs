@@ -21,7 +21,7 @@ export function budgetFor(h = {}) {
   return { deviceClass: cls, limitBytes: limitFor(cls, h.limitMB) };
 }
 
-export const MB = 1048576;
+export const BYTES_PER_MB = 1048576;
 export const DEFAULT_LIMIT_MB = 512;
 /** Device classes: 'low' (phone / ≤4 GB), 'mid' (integrated GPU), 'high' (discrete / unknown desktop). */
 export const DEVICE_LIMITS_MB = { low: 256, mid: 512, high: 1024 };
@@ -45,8 +45,8 @@ export function deviceClass(h = {}) {
 
 export function limitFor(cls, overrideMB) {
   const mb = num(overrideMB, 0);
-  if (mb > 0) return Math.round(mb * MB);
-  return (DEVICE_LIMITS_MB[cls] || DEFAULT_LIMIT_MB) * MB;
+  if (mb > 0) return Math.round(mb * BYTES_PER_MB);
+  return (DEVICE_LIMITS_MB[cls] || DEFAULT_LIMIT_MB) * BYTES_PER_MB;
 }
 
 /** RGBA bytes for one texture, mipmaps included (×4/3 for the full mip chain). */
@@ -86,7 +86,7 @@ const priorityOf = r => {
 
 /** Pressure state with hysteresis: evict above the high-water mark until below the low-water mark. */
 export function pressure(usedBytes, limitBytes, state = {}) {
-  const limit = Math.max(1, num(limitBytes, DEFAULT_LIMIT_MB * MB));
+  const limit = Math.max(1, num(limitBytes, DEFAULT_LIMIT_MB * BYTES_PER_MB));
   const used = Math.max(0, num(usedBytes, 0));
   const ratio = used / limit;
   const evicting = !!state.evicting;
@@ -151,4 +151,4 @@ export function describe(s = {}) {
   };
 }
 
-export const Budget = { MB, DEFAULT_LIMIT_MB, DEVICE_LIMITS_MB, HIGH_WATER, LOW_WATER, PRIORITY, deviceClass, limitFor, hintsFrom, budgetFor, estimateTexture, estimateGeometry, estimateAll, pressure, evictOrder, plan, tileCacheCount, describe };
+export const Budget = { MB: BYTES_PER_MB, DEFAULT_LIMIT_MB, DEVICE_LIMITS_MB, HIGH_WATER, LOW_WATER, PRIORITY, deviceClass, limitFor, hintsFrom, budgetFor, estimateTexture, estimateGeometry, estimateAll, pressure, evictOrder, plan, tileCacheCount, describe };

@@ -8,7 +8,7 @@ import { safeColor, NEUTRAL } from '../map/app/color-vision-mode.mjs';
 const src = f => readFileSync(new URL('../map/' + f, import.meta.url), 'utf8');
 const esc = new Function(`${src('app/dom-helpers.mjs').match(/^export const (esc = .*)$/m)[1]}; return esc;`)();   // the viewer's own escape helper (dom-helpers.mjs needs a browser to import)
 test('I-09 (1) wbpeek: the capsule label goes through esc() before it reaches innerHTML', () => {
-  const s = src('worldbook-peek-view.mjs'); assert.match(s, /\$\{esc\(T\('wb\.capsule'/); assert.doesNotMatch(s, /innerHTML = `[^`]*\$\{T\(/);
+  const s = src('worldbook-peek-view.mjs'); assert.match(s, /\$\{esc\(uiTextOr\('wb\.capsule'/); assert.doesNotMatch(s, /innerHTML = `[^`]*\$\{uiTextOr\(/);
   for (const bad of ['</button><img src=x onerror=alert(1)>', '<script>1</script>', '"><b>']) assert.doesNotMatch(esc(bad), /[<>"]/);
 });
 test('I-09 (2) events: colours (pack group colour, e.color from the chat script, CVD palette) only reach style as #rrggbb, else the neutral group colour', () => {

@@ -10,7 +10,7 @@ import * as N from '../map/tavern/planner-gateway.mjs';
 import * as LLM from '../map/tavern/llm-gateway.mjs';
 
 test('intervalOf：默认关（空串与 0 与乱值）；空串缺省≠tick 的默认开——领航员要花用户的钱必须显式打开', () => {
-  const g = v => (k => (k === N.KEY ? v : null));
+  const g = v => (k => (k === N.PLANNER_GATEWAY_STORAGE_KEY ? v : null));
   assert.equal(N.intervalOf(g('')), 0);
   assert.equal(N.intervalOf(g('0')), 0);
   assert.equal(N.intervalOf(g('junk')), 0);

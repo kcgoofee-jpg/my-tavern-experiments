@@ -3,7 +3,7 @@
 // SecurityError；blob: 地址继承创建者的源，srcdoc / file:// / blob 子页都能起。所以源码随模块走，起 worker 时用 blob。
 // 拿不到 Worker / createImageBitmap、或者解码失败 → 一律退回 OpenSeadragon 原来的 new Image() 路径
 // （installWorkerTiles 里留着原实现兜底），不让它变成「瓦片永远加载不出来」。
-import { viewer } from './state.mjs';
+import { osdViewer } from './state.mjs';
 import { WORKER_SRC } from './dzi-worker-src.mjs';
 
 export const DECODE_TIMEOUT_MS = 20000;
@@ -134,7 +134,7 @@ export function disposeWorker() { kill(); reset(); jobs.clear(); }
  * 只包一层——OSD 的 addJob / finish 回调与 tile-loaded / tile-load-failed / _tilesLoading 全部照旧，
  * 所以 app/sharpness-tiers.mjs 的进度与「卡住了？重试」不受影响。任何一个钩子缺失 / worker 不可用 → 原路径（new Image）。
  */
-export function installWorkerTiles(v = viewer) {
+export function installWorkerTiles(v = osdViewer) {
   const patch = src => {
     if (!src || seen.has(src)) return false;
     if (typeof src.downloadTileStart !== 'function' || typeof src.downloadTileAbort !== 'function') return false;
@@ -165,7 +165,7 @@ export function installWorkerTiles(v = viewer) {
  * OSD 的缓存按张数算（maxImageCacheCount 在建 TileCache 时就固定了），所以这里直接从最大的那层开始
  * unload 到目标张数为止——被摘的瓦片若是我们自己解码的 ImageBitmap，destroyTileCache 会 close 掉。
  */
-export function trimTileCache(maxTiles, v = viewer) {
+export function trimTileCache(maxTiles, v = osdViewer) {
   const n = Math.max(4, maxTiles | 0);
   const cache = v?.tileCache || v?._tileCache;
   const list = cache?._tilesLoaded;

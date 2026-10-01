@@ -26,7 +26,7 @@ try {
   const toViewer = async msg => { await D.page.evaluate(m => { document.querySelector('#eden-map-root .em-frame')?.contentWindow?.postMessage(m, '*'); }, msg); await B.wait(500); };
 
   await step('三个新图层都注册进 LayerRegistry（菜单里有开关）', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_mid'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_mid'); } catch (e) {} });
     await B.wait(2500);
     const r = await vf.evaluate(() => ({
       ids: window.LayerHostApi?.registry?.ordered?.().map(x => x.id) || [],
@@ -62,7 +62,7 @@ try {
   });
 
   await step('② 上层巡逻环 → 视野锥在动；穿过锥的直线判得出难度', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(2800);
     const r = await vf.evaluate(() => {
       const a = window.VisionApi?.cones?.(0) || [], b = window.VisionApi?.cones?.(6) || [];
@@ -83,7 +83,7 @@ try {
   });
 
   await step('④ 见闻录：钉一条手记，地点卡里翻得到', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_mid'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_mid'); } catch (e) {} });
     await B.wait(2200);
     const pinned = await vf.evaluate(async () => { await window.ScrapbookView?.pinNote?.('天城执法局总局', '探针：门口换了新锁');
       return { count: window.ScrapbookView?.count?.('天城执法局总局'), key: window.ScrapbookView?.key?.(), raw: (window.LocalStore?.get?.(window.ScrapbookView?.key?.()) || '').slice(0, 120), desc: window.ScrapbookView?.describe?.() }; });

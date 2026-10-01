@@ -75,7 +75,7 @@ test('the injected event lines of both session fixtures are byte-identical', () 
 });
 
 test('the other taxonomy values: life defaults, the glitch preset and the default-off type come from the block', () => {
-  assert.deepEqual(NEW.AGE, OLD.AGE);
+  assert.deepEqual(NEW.EVENT_AGE_MSGS, OLD.AGE);
   const tx = NEW.taxonomy();
   assert.deepEqual(tx.life, { live: 7, after: 20, fade: 40, merge: 15, per_msg: 3 });
   assert.deepEqual(NEW.defaultOff(), ['降雨']);

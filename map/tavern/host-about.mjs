@@ -8,11 +8,11 @@
 //   followUpdate() → { status, follow: true, ... } 跟随分支头指针比对
 // 取不到 / 超时一律降级为 { status: 'fail' }，不抛——检查更新不是主流程。
 
-/** deps：{ cdnFetch, post, base(), REPO, SELF, VER, tagOf, LINES, swappable, SCRIPT,
+/** deps：{ cdnFetch, post, base(), REPO, scriptBase, VER, tagOf, LINES, swappable, SCRIPT,
  *    lineKey(), lang(), followHead(), followNewer(h), loadSelfcheck(), loadSources() } */
 export function createAbout(d = {}) {
   const {
-    cdnFetch = async () => null, post = () => {}, base = () => '', REPO = '', SELF = '', VER = null,
+    cdnFetch = async () => null, post = () => {}, base = () => '', REPO = '', scriptBase = '', VER = null,
     tagOf = (v => v), LINES = [], swappable = false, SCRIPT = {},
     lineKey = () => '', lang = () => 'zh',
     followHead = async () => null, followNewer = () => false,
@@ -20,7 +20,7 @@ export function createAbout(d = {}) {
   } = d;
 
   /** 脚本地址里钉的 ref（@<ref>/map/）；正式版脚本按烘焙信息走，这里只作兜底 */
-  const refOf = () => (String(SELF).match(/@([^/]+)\/map\/$/) || [])[1] || '';
+  const refOf = () => (String(scriptBase).match(/@([^/]+)\/map\/$/) || [])[1] || '';
   /** tag = 正式版标签；ref = 跟随分支（可换线路）；local = 本地 / 旧脚本 */
   const channel = () => SCRIPT.channel || (VER ? 'tag' : swappable ? 'ref' : 'local');
 
@@ -30,15 +30,15 @@ export function createAbout(d = {}) {
 
   async function sendAbout() {
     const b = await buildNow(), l = LINES.find(x => x.key === lineKey());
-    const SRCm = await loadSources().catch(() => null);
-    const br = SRCm ? (SRCm.branchOf(SCRIPT.ref) || SRCm.branchOf(refOf()) || (VER ? 'main' : null)) : null;
+    const dataSourceRegistryModule = await loadSources().catch(() => null);
+    const br = dataSourceRegistryModule ? (dataSourceRegistryModule.branchOf(SCRIPT.ref) || dataSourceRegistryModule.branchOf(refOf()) || (VER ? 'main' : null)) : null;
     const en = lang() === 'en';
     post({
       type: 'eden-map:about', version: b?.version || SCRIPT.version || VER || null, code: b?.code || SCRIPT.code || null,
       channel: channel(), ref: SCRIPT.ref || (VER ? tagOf(VER) : refOf()), sha: SCRIPT.sha || null,
       build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, source: SCRIPT.source || null, locked: !!SCRIPT.locked,
-      line: l ? (en && l.name_en) || l.name : '', branch: br, branches: SRCm ? SRCm.BRANCHES : [],
-      branchSw: !!SRCm?.branchUrl(SELF || '', 'main'),
+      line: l ? (en && l.name_en) || l.name : '', branch: br, branches: dataSourceRegistryModule ? dataSourceRegistryModule.BRANCHES : [],
+      branchSw: !!dataSourceRegistryModule?.branchUrl(scriptBase || '', 'main'),
     });
   }
 

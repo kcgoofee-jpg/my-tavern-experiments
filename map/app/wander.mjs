@@ -8,9 +8,9 @@
 // 本模块不认识任何人，只看「这枚标记该在哪儿」。
 import { registry } from './layer-host.mjs';
 import { lean } from './sharpness-tiers.mjs';
-import { aspect, cur, curData, viewer } from './state.mjs';
+import { aspect, currentMapId, currentMapData, osdViewer } from './state.mjs';
 import { hereRes } from './locate.mjs';
-import { P } from './plugins.mjs';
+import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { getJSON } from './json-cache.mjs';
 import { packData } from './current-pack.mjs';
@@ -44,8 +44,8 @@ const reduced = () => !!rmq()?.matches;
 function coordsOf(place) {
   try {
     const r = typeof hereRes === 'function' ? hereRes(place) : null;
-    if (!r || r.map !== cur || !r.marker) return null;
-    const k = (curData?.markers || []).find(x => x.id === r.marker);
+    if (!r || r.map !== currentMapId || !r.marker) return null;
+    const k = (currentMapData?.markers || []).find(x => x.id === r.marker);
     return k && Number.isFinite(k.nx) ? [k.nx, k.ny * aspect] : null;
   } catch (e) { return null; }
 }
@@ -62,7 +62,7 @@ function tick() {
 /** 日程表 → 目标坐标：聊天写过位置的人（known）不动，认不出坐标的（在别的图 / 没解析出来）不动 */
 function retarget() {
   const now = performance.now();
-  const known = (P.CharactersView?.items || []).filter(c => c.src && c.src !== 'routine').map(c => c.name);
+  const known = (plugins.CharactersView?.items || []).filter(c => c.src && c.src !== 'routine').map(c => c.name);
   let started = false;
   for (const { name, place } of placesAt(sched, clock, known)) {
     const p = coordsOf(place); if (!p) continue;
@@ -80,12 +80,12 @@ function loop(now) {
 }
 /** 把插值坐标写到人物标记上：一枚标记上可能挂着好几个人，取其中正在走的那个 */
 function applyWalk(now) {
-  if (!viewer?.updateOverlay) return;
+  if (!osdViewer?.updateOverlay) return;
   for (const el of document.querySelectorAll('.chm')) {
     const name = (el.dataset?.chars || '').split('|').find(n => walker.has(n));
     if (!name) continue;
     const p = walker.at(name, now); if (!p || p.length < 2) continue;
-    try { viewer.updateOverlay(el, new OpenSeadragon.Point(p[0], p[1])); } catch (e) {}
+    try { osdViewer.updateOverlay(el, new OpenSeadragon.Point(p[0], p[1])); } catch (e) {}
   }
 }
 /** 日程表 / 起点时钟（宿主推来；没推就按开局零点，时刻照样确定性推进） */
@@ -139,7 +139,7 @@ export function registerWanderLayer() {
       if (!t0) t0 = performance.now();
       if (!timer) timer = setInterval(tick, Math.min(15000, DEFAULT_ROUND_MS));   // 时钟节拍：到点才推，中间不空转
       try {
-        const host = viewer?.drawer?.canvas?.parentNode || document.querySelector('.openseadragon-canvas');
+        const host = osdViewer?.drawer?.canvas?.parentNode || document.querySelector('.openseadragon-canvas');
         if (host && !obs) { obs = new MutationObserver(() => setTimeout(scanWander, 0)); obs.observe(host, { childList: true, subtree: true }); }
       } catch (e) {}
       return true;
@@ -167,4 +167,4 @@ function stop() {
   if (timer) { clearInterval(timer); timer = 0; }
   if (raf) { cancelAnimationFrame(raf); raf = 0; }
 }
-export const wanderOn = () => on && !!cur;
+export const wanderOn = () => on && !!currentMapId;

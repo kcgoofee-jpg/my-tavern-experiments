@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { ContextPipeline, hashText } from '../map/tavern/context.mjs';
 import * as EVM from '../map/tavern/events-parse.mjs';
 import * as CHM from '../map/tavern/characters-parse.mjs';
-import * as TRm from '../map/tavern/trips-parse.mjs';
+import * as tripsParseModule from '../map/tavern/trips-parse.mjs';
 import { readFileSync } from 'node:fs';
 import { normCustom, rosters as mvuRosters } from '../map/tavern/mvu-readers.mjs';
 // 保底名册（通用化 v1）是包级数据：调用侧按参数传（宿主从 manifest.data.roster 载入）——这里载入 eden 的保底名册
@@ -102,8 +102,8 @@ test('computeTrips：变量地点优先、JSONPatch 兜底、缓存与签名去�
     F(1, '走了一段'), F(2, '到达'),
   ], 2);
   const perFloorStat = f => (f >= 1 ? { 世界: { 当前地点: f === 1 ? '中层·霓虹街' : '伊甸庄园' } } : null);   // 桥的 perFloorStat 返回的就是解包后的 stat_data
-  const d = { TRm, CHM, perFloorStat, mvuGet: (s, p) => s?.世界?.当前地点, varMap: { location: '世界.当前地点', time: '世界.当前时刻' },
-    keywords: TRm.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null };
+  const d = { tripsParseModule, CHM, perFloorStat, mvuGet: (s, p) => s?.世界?.当前地点, varMap: { location: '世界.当前地点', time: '世界.当前时刻' },
+    keywords: tripsParseModule.DEFAULT_KEYWORDS, fantasy: false, parseTransit: () => null };
   const r1 = P.computeTrips(msgs, d);
   assert.equal(r1.changed, true);
   const player = r1.trips.filter(t => !t.who);

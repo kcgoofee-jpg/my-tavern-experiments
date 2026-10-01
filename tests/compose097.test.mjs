@@ -14,15 +14,15 @@ test('默认模板与填充', () => {
   assert.equal(C.fill(t.go, ''), '');
   assert.equal(C.fill(t.go, 'a\nb'), '前往a b。');
   assert.equal(C.fill(t.go, '{{user}} 的公寓'), '前往的公寓。');
-  assert.ok([...C.fill('{name}'.repeat(10), 'x'.repeat(80))].length <= C.MAX);
+  assert.ok([...C.fill('{name}'.repeat(10), 'x'.repeat(80))].length <= C.MAX_TEMPLATE_CHARS);
 });
 
 test('本机模板：改过的覆盖默认，清空删键', () => {
   const st = mem();
   assert.ok(C.write(st, { go: '我们去{name}吧。', ask: '' }));
   assert.deepEqual(C.read(st, 'zh'), { go: '我们去{name}吧。', ask: '关于{name}，', custom: true });
-  C.write(st, { go: ' ', ask: '' }); assert.equal(st.m.has(C.KEY), false);
-  assert.equal(C.read(mem({ [C.KEY]: 'bad json' })).go, '前往{name}。');
+  C.write(st, { go: ' ', ask: '' }); assert.equal(st.m.has(C.COMPOSE_TEMPLATES_STORAGE_KEY), false);
+  assert.equal(C.read(mem({ [C.COMPOSE_TEMPLATES_STORAGE_KEY]: 'bad json' })).go, '前往{name}。');
 });
 
 test('insert：有 #send_textarea 时接在草稿后面并派发 input，不发送', () => {

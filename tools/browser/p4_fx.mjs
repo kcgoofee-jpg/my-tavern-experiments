@@ -77,7 +77,7 @@ try {
   await step('离线降级：断网切图后仍有明确出路，不是白屏', async () => {
     await p.evaluate(() => window.WeatherApi?.set('clear'));
     await D.ctx.setOffline(true);
-    await p.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    await p.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(25000);   // 卡住判定：8 s 提示网络慢、20 s 出「重试」（tools/browser 的卡住提示节奏）
     const r = await p.evaluate(() => ({
       alive: !!document.getElementById('osd') && !!document.getElementById('loading'),

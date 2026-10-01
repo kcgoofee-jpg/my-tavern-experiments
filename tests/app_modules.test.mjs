@@ -30,8 +30,8 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
     await import('../map/app/boot.mjs');
     for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'stat-path-mapping-view', 'compose-view', 'security']) await import(`../map/${f}.mjs`);
     for (const f of ['card-links', 'clouds', 'fog', 'data-mapping-settings', 'scale-handoff']) await import(`../map/app/${f}.mjs`);
-    const { P } = await import('../map/app/plugins.mjs');
-    assert.deepEqual(Object.keys(P).sort(), ['CharactersView', 'ComposeView', 'CustomNamesView', 'EventsView', 'FogApi', 'SecurityView', 'TripsView', 'UnmappedPlacePicker', 'StatPathMappingView'].sort());
+    const { plugins } = await import('../map/app/plugins.mjs');
+    assert.deepEqual(Object.keys(plugins).sort(), ['CharactersView', 'ComposeView', 'CustomNamesView', 'EventsView', 'FogApi', 'SecurityView', 'TripsView', 'UnmappedPlacePicker', 'StatPathMappingView'].sort());
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
 });
 

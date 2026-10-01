@@ -3,10 +3,10 @@
 import { buildReportText, buildIssueLink } from './feedback-report.mjs';
 import * as logbuf from '../core/logbuf.mjs';
 import { $, esc } from './dom-helpers.mjs';
-import { tx } from './text-lookup.mjs';
+import { uiTextOr } from './text-lookup.mjs';
 import { about, selfCheck } from './settings.mjs';
 import { buildInfo } from './topbar.mjs';
-import { REG, cur } from './state.mjs';
+import { mapRegistry, currentMapId } from './state.mjs';
 import { PACK } from './current-pack.mjs';
 
 logbuf.install();
@@ -14,25 +14,19 @@ logbuf.install();
 function gatherInfo() {
   const a = about || {}, b = buildInfo || {};
   let th = null, st = null;
-  try { const hv = window.__edenHostVersions; if (hv) { th = hv.th; st = hv.st; } } catch (e) {}
-  // __edenHostVersions 目前没有写入方（历史洞）：从自检的 host 条目解析同一份数据，报告里宿主版本不再空着
-  if (th == null && st == null) {
-    const h = (selfCheck?.items || []).find(x => x && x.id === 'host');
+  // 宿主版本：从自检的 host 条目解析（报告里宿主版本不再空着）
+  { const h = (selfCheck?.items || []).find(x => x && x.id === 'host');
     const m = h && `${h.zh || ''} ${h.en || ''}`.match(/(?:酒馆助手|TavernHelper)\s+([\d][\w.+-]*)\s*·\s*(?:酒馆|SillyTavern)\s+([\d][\w.+-]*)/);
-    if (m) { th = m[1]; st = m[2]; }
-  }
-  let mvu = null; try { mvu = window.__edenMvuSnapshotStatus || null; } catch (e) {}
+    if (m) { th = m[1]; st = m[2]; } }
   return {
-    title: tx('app.report', '=== 空间地图反馈报告 / Spatial Map feedback report ==='),
+    title: uiTextOr('app.report', '=== 空间地图反馈报告 / Spatial Map feedback report ==='),
     time: new Date().toISOString(),
     version: a.version || b.version || '',
     build: a.build != null ? a.build : (b.build || ''),
     channel: a.channel || (window.top === window ? 'local' : ''),
     selfCheckItems: selfCheck?.items || [],
-    mapId: cur || '',
-    layer: (REG?.maps?.[cur]?.group) || '',
-    location: (typeof window.__edenHereText === 'string' ? window.__edenHereText : '') || '',
-    mvuSnapshotStatus: mvu,
+    mapId: currentMapId || '',
+    layer: (mapRegistry?.maps?.[currentMapId]?.group) || '',
     thVersion: th,
     stVersion: st,
     viewport: `${innerWidth}x${innerHeight}`,
@@ -53,24 +47,24 @@ export function openFeedback() {
   let dlg = document.getElementById('fbDlg');
   if (!dlg) {
     dlg = document.createElement('dialog'); dlg.id = 'fbDlg'; dlg.className = 'fbdlg';
-    dlg.innerHTML = `<b>${esc(tx('feedback.title', '反馈报告预览'))}</b><p><small>${esc(tx('feedback.note', '只含地图版本 / 自检 / 位置 / 日志等状态，不含聊天内容'))}</small></p>
+    dlg.innerHTML = `<b>${esc(uiTextOr('feedback.title', '反馈报告预览'))}</b><p><small>${esc(uiTextOr('feedback.note', '只含地图版本 / 自检 / 位置 / 日志等状态，不含聊天内容'))}</small></p>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px">
-        <label>${esc(tx('feedback.sess', '日志来源'))}&nbsp;<select id="fbSess" class="btn" style="font:inherit"></select></label>
+        <label>${esc(uiTextOr('feedback.sess', '日志来源'))}&nbsp;<select id="fbSess" class="btn" style="font:inherit"></select></label>
       </div>
       <textarea id="fbText" readonly rows="14" style="width:100%;font-family:var(--font-mono, monospace)"></textarea>
       <div class="row" style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
-        <button type="button" class="btn" id="fbGh" title="${esc(tx('feedback.gh_title', '打开 GitHub 并自动填好标题与正文'))}">${esc(tx('feedback.gh', '到 GitHub 建 issue'))}</button>
+        <button type="button" class="btn" id="fbGh" title="${esc(uiTextOr('feedback.gh_title', '打开 GitHub 并自动填好标题与正文'))}">${esc(uiTextOr('feedback.gh', '到 GitHub 建 issue'))}</button>
         <input id="fbLink" readonly class="btn" style="flex:1;min-width:0;font-size:12px" hidden>
-        <button type="button" class="btn" id="fbDownload">${esc(tx('feedback.download', '下载 .txt'))}</button>
-        <button type="button" class="btn" id="fbCopy">${esc(tx('feedback.copy', '复制'))}</button>
-        <button type="button" class="btn" id="fbClose">${esc(tx('feedback.close', '关闭'))}</button>
+        <button type="button" class="btn" id="fbDownload">${esc(uiTextOr('feedback.download', '下载 .txt'))}</button>
+        <button type="button" class="btn" id="fbCopy">${esc(uiTextOr('feedback.copy', '复制'))}</button>
+        <button type="button" class="btn" id="fbClose">${esc(uiTextOr('feedback.close', '关闭'))}</button>
       </div>`;
     document.body.appendChild(dlg);
     dlg.querySelector('#fbClose').onclick = () => dlg.close();
     dlg.querySelector('#fbDownload').onclick = () => download(dlg.querySelector('#fbText').value);
     dlg.querySelector('#fbCopy').onclick = () => {
       const t = dlg.querySelector('#fbText').value, b = dlg.querySelector('#fbCopy');
-      const done = () => { b.textContent = tx('feedback.copied', '已复制'); setTimeout(() => b.textContent = tx('feedback.copy', '复制'), 1500); };
+      const done = () => { b.textContent = uiTextOr('feedback.copied', '已复制'); setTimeout(() => b.textContent = uiTextOr('feedback.copy', '复制'), 1500); };
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(done).catch(() => download(t));
     };
   }
@@ -80,11 +74,11 @@ export function openFeedback() {
   const opts = all.map((s, i) => {
     const op = document.createElement('option'); op.value = String(i);
     const d = s.lines[0] && s.lines[0].t ? new Date(s.lines[0].t) : null;
-    const label = i === 0 ? tx('feedback.cur', '本次打开') : `${tx('feedback.prev', '上次打开')} #${all.length - i}`;
+    const label = i === 0 ? uiTextOr('feedback.cur', '本次打开') : `${uiTextOr('feedback.prev', '上次打开')} #${all.length - i}`;
     op.textContent = `${label} · ${s.lines.length}行${d ? ` · ${d.getMonth() + 1}/${d.getDate()}` : ''}`;
     return op;
   });
-  if (!opts.length) { const op = document.createElement('option'); op.textContent = tx('feedback.nolog', '（无日志）'); opts.push(op); }
+  if (!opts.length) { const op = document.createElement('option'); op.textContent = uiTextOr('feedback.nolog', '（无日志）'); opts.push(op); }
   sess.replaceChildren(...opts);
   const show = () => { const i = +sess.value || 0; ta.value = i === 0 ? baseText : buildReportText({ ...info, logLines: all[i].lines, logSessions: [] }); };
   sess.onchange = show; show();
@@ -101,7 +95,7 @@ export function openFeedback() {
 export function mountFeedbackButton(container) {
   if (!container || container.querySelector('.fb-open')) return;
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn fb-open';
-  btn.textContent = tx('feedback.btn', '反馈');
+  btn.textContent = uiTextOr('feedback.btn', '反馈');
   btn.onclick = () => openFeedback();
   container.appendChild(btn);
 }

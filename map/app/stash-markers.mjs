@@ -7,9 +7,9 @@ import { normStash, rows } from '../core/stash.mjs';
 import { registry } from './layer-host.mjs';
 import { esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
-import { tx } from './text-lookup.mjs';
-import { aspect, cur, curData, viewer } from './state.mjs';
-import { P } from './plugins.mjs';
+import { uiTextOr } from './text-lookup.mjs';
+import { aspect, currentMapId, currentMapData, osdViewer } from './state.mjs';
+import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { hereRes } from './locate.mjs';
 
@@ -34,8 +34,8 @@ const CSS = `
 function css() { if (document.getElementById(CSS_ID)) return;
   const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS; document.head.appendChild(s); }
 
-const markerXY = id => (curData?.markers || []).find(k => k.id === id) || null;
-const takenIds = () => { try { return new Set((P.StashView?.rows || []).map(r => r.id).filter(Boolean)); } catch (e) { return new Set(); } };
+const markerXY = id => (currentMapData?.markers || []).find(k => k.id === id) || null;
+const takenIds = () => { try { return new Set((plugins.StashView?.rows || []).map(r => r.id).filter(Boolean)); } catch (e) { return new Set(); } };
 // the landmark the current location places the player at (the node tree's answer, not the highlighted label): a hidden compartment shows only there
 const hereNow = () => { try { return hereRes(String(document.getElementById('here')?.value || '').replace('{{user}}', ''))?.marker || ''; } catch (e) { return ''; } };
 
@@ -44,20 +44,20 @@ export function setLootStash(raw) { stash = normStash(raw); rebuildLoot(); }
 
 /** 当前图上该画出来的藏物：不看第十二层rif过滤之外的东西；暗格的只在「人就在这儿」时出现 */
 export function lootRows() {
-  if (!stash || !cur) return [];
+  if (!stash || !currentMapId) return [];
   const here = hereNow(), taken = takenIds();
-  return rows(stash, { map: cur, taken }).filter(r => !!markerXY(r.marker) && (!r.hidden || here === r.marker));
+  return rows(stash, { map: currentMapId, taken }).filter(r => !!markerXY(r.marker) && (!r.hidden || here === r.marker));
 }
 
 function clearLoot() {
-  for (const el of els) { try { viewer?.removeOverlay?.(el); } catch (e) {} try { el.remove(); } catch (e) {} }
+  for (const el of els) { try { osdViewer?.removeOverlay?.(el); } catch (e) {} try { el.remove(); } catch (e) {} }
   els = [];
 }
 
 /** 重画：切图 / 来新数据 / 当前地点变了都跑一遍（点数很少，整清整画最省心，不用逐个 diff） */
 export function rebuildLoot() {
   clearLoot();
-  if (!stash || !viewer?.world?.getItemCount || !viewer.world.getItemCount()) return 0;
+  if (!stash || !osdViewer?.world?.getItemCount || !osdViewer.world.getItemCount()) return 0;
   if (!registry.has('loot') || !registry.isVisible('loot')) return 0;
   for (const r of lootRows()) {
     const k = markerXY(r.marker); if (!k) continue;
@@ -66,15 +66,15 @@ export function rebuildLoot() {
     const dot = document.createElement('i'); dot.className = 'ld';
     el.append(lab, dot);
     el.dataset.id = r.id; el.dataset.place = esc(r.place || '');
-    const where = r.hidden ? `（${tx('loot.hidden', '暗格')}：${r.hidden}）` : '';
-    el.title = tx('loot.pick', '拾取') + '：' + r.name + where;
+    const where = r.hidden ? `（${uiTextOr('loot.hidden', '暗格')}：${r.hidden}）` : '';
+    el.title = uiTextOr('loot.pick', '拾取') + '：' + r.name + where;
     el.setAttribute('role', 'button'); el.tabIndex = 0; el.setAttribute('aria-label', el.title);
     const take = ev => { try { ev?.preventDefault?.(); ev?.stopPropagation?.(); } catch (e) {}
       el.classList.add('got');   // 先按下：等背包数据回来时会被重建，中间这半秒不重复点
-      post({ type: 'eden-map:loot', id: r.id, name: r.name, map: r.map || cur, place: r.place || '', hidden: !!r.hidden }); };
+      post({ type: 'eden-map:loot', id: r.id, name: r.name, map: r.map || currentMapId, place: r.place || '', hidden: !!r.hidden }); };
     el.addEventListener('click', take);
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') take(e); });
-    try { viewer.addOverlay({ element: el, location: new OpenSeadragon.Point(k.nx, k.ny * aspect), placement: OpenSeadragon.Placement.CENTER }); els.push(el); }
+    try { osdViewer.addOverlay({ element: el, location: new OpenSeadragon.Point(k.nx, k.ny * aspect), placement: OpenSeadragon.Placement.CENTER }); els.push(el); }
     catch (e) {}
   }
   return els.length;

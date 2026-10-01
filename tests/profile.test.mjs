@@ -79,7 +79,7 @@ test('a pack with its own paths and fields: the variable map, the clock, the out
     const m = AD.detect(STAT);
     assert.equal(m.location, 'state.where'); assert.equal(m.time, 'state.clock'); assert.equal(m.date, 'state.day'); assert.equal(m.outfit, 'hero.wear'); assert.equal(m.here, 'who_is_here'); assert.equal(m.crew, 'crew');
     assert.equal(m.gradeField, 'rank'); assert.equal(m.coreField, 'xp'); assert.equal(m.codeField, 'nick'); assert.equal(m.tierField, '', 'a scanning ladder has no field name');
-    assert.equal(AD.get(STAT, m.location), 'Dock');
+    assert.equal(AD.getByPath(STAT, m.location), 'Dock');
     const w = MV.worldTime(STAT, m);
     assert.deepEqual(w, { date: 'Day 2', time: '21:30', period: '' }); assert.equal(MV.todPhase(w), 'n'); assert.equal(MV.isNight(w), true); assert.equal(MV.todPhase({ period: 'Morning', time: '23:00' }), 'm');
     assert.deepEqual(MV.outfit(STAT, m.outfit), { top: 'coat', bottom: 'denim', shoes: 'boots' }); assert.equal(MV.outfitText(MV.outfit(STAT, m.outfit)), 'coat / denim / boots');

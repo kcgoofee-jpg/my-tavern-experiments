@@ -165,7 +165,7 @@ export function evaluate(f) {
 
 // ---------------- 正式版更新检查（只对钉了标签 map-vX.Y.Z 的正式版脚本；跟分支的预览脚本不查） ----------------
 export const UPDATE_API = repo => `https://data.jsdelivr.com/v1/packages/gh/${repo}`;
-export const DAY = 24 * 3600 * 1000;
+export const MS_PER_DAY = 24 * 3600 * 1000;
 /** 版本号：X.Y.Z，或带第 4 段小修补丁 X.Y.Z.P（0.9.6 < 0.9.6.1 < 0.9.7）；系列（构建编码的 S<n>）≥ 2 时写成 'S2:0.1.0'（不带前缀 = S1）。
  *  排序按（系列, 版本）：S2:0.1.0 > 0.9.9。标签：S1 = map-vX.Y.Z[.P]（沿用），S≥2 = map-s<n>-vX.Y.Z[.P]（不和 map-v0.x 撞）。见 docs/versioning.md */
 export const VER_RE = /^(?:S\d+:)?\d+\.\d+\.\d+(?:\.\d+)?$/;
@@ -202,7 +202,7 @@ export function latestTag(json) {
   return best;
 }
 /** 距上次检查（不论成败）满一天才再查 */
-export const dueCheck = (lastAt, now) => !(lastAt > 0) || now - lastAt >= DAY || now < lastAt;
+export const dueCheck = (lastAt, now) => !(lastAt > 0) || now - lastAt >= MS_PER_DAY || now < lastAt;
 /** 脚本地址换成另一个正式版（只认 gh 标签地址，两种标签；npm / 分支地址返回 null） */
 export function swapVer(url, to) {
   const m = String(url).match(/@(map-(?:s\d+-)?v\d+\.\d+\.\d+(?:\.\d+)?)\//);

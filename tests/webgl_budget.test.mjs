@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as B from '../map/core/graphics-budget.mjs';
 
-const MB = B.MB;
+const MB = B.BYTES_PER_MB;
 
 test('deviceClass：手机 / ≤4 GB 走 low，集显 / 少核走 mid，其余 high（可由 grade 强制）', () => {
   assert.equal(B.deviceClass({ coarse: true, deviceMemory: 4 }), 'low');

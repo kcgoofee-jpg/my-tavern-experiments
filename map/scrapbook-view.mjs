@@ -9,9 +9,9 @@ import * as storage from './core/storage.mjs';
 import { chatId } from './app/extension-api.mjs';   // 当前聊天 id（let 活绑定：宿主换了聊天，键跟着换）
 import { esc } from './app/dom-helpers.mjs';
 import { register } from './app/plugins.mjs';
+import { uiTextOr } from './app/text-lookup.mjs';
 
 const ScrapbookView = (() => {
-  const T = (k, zh) => window.I18N.tx(k, zh);   // 共享 i18n 服务（viewer.html window.I18N）
   let db = null, meta = SB.norm(null), openPlace = '';
 
   const cid = () => (typeof chatId === 'string' ? chatId : '');   // extapi 的 chatId 是字符串（活绑定），不是函数
@@ -73,21 +73,21 @@ const ScrapbookView = (() => {
     const box = document.createElement('div'); box.className = 'cu-sb';
     const cnt = SB.countOf(meta, place);
     const notes = SB.byPlace(meta, place).filter(r => r.kind === 'note');
-    box.innerHTML = `<p class="sb-h"><b>${esc(T('sb.title', '见闻录'))}</b> <small>${esc(String(cnt.images))} ${esc(T('sb.imgs', '图'))} · ${esc(String(cnt.notes))} ${esc(T('sb.notes', '手记'))}</small>`
-      + `<span class="sb-acts"><button type="button" class="sb-pin" data-act="image">${esc(T('sb.pin_img', '钉一张图'))}</button>`
-      + `<button type="button" class="sb-note" data-act="note">${esc(T('sb.pin_note', '写手记'))}</button></span></p><div class="sb-list"></div>`;
+    box.innerHTML = `<p class="sb-h"><b>${esc(uiTextOr('sb.title', '见闻录'))}</b> <small>${esc(String(cnt.images))} ${esc(uiTextOr('sb.imgs', '图'))} · ${esc(String(cnt.notes))} ${esc(uiTextOr('sb.notes', '手记'))}</small>`
+      + `<span class="sb-acts"><button type="button" class="sb-pin" data-act="image">${esc(uiTextOr('sb.pin_img', '钉一张图'))}</button>`
+      + `<button type="button" class="sb-note" data-act="note">${esc(uiTextOr('sb.pin_note', '写手记'))}</button></span></p><div class="sb-list"></div>`;
     const list = box.querySelector('.sb-list');
     imagesOf(place).then(imgs => {
       for (const im of imgs) {
         const f = document.createElement('figure');
-        f.innerHTML = `<img alt="" src="${esc(im.url)}"><figcaption>${esc(im.text || '')}</figcaption><button type="button" class="sb-del" data-id="${esc(im.id)}" aria-label="${esc(T('sb.del', '摘掉'))}">×</button>`;
+        f.innerHTML = `<img alt="" src="${esc(im.url)}"><figcaption>${esc(im.text || '')}</figcaption><button type="button" class="sb-del" data-id="${esc(im.id)}" aria-label="${esc(uiTextOr('sb.del', '摘掉'))}">×</button>`;
         list.appendChild(f);
       }
-      if (!imgs.length && !notes.length) list.innerHTML = `<p class="sb-empty">${esc(T('sb.empty', '这里还什么都没留下——把插画粘过来（Ctrl+V）或点「钉一张图」。'))}</p>`;
+      if (!imgs.length && !notes.length) list.innerHTML = `<p class="sb-empty">${esc(uiTextOr('sb.empty', '这里还什么都没留下——把插画粘过来（Ctrl+V）或点「钉一张图」。'))}</p>`;
     }).catch(() => {});
     for (const n of notes) {
       const p = document.createElement('p'); p.className = 'sb-note-row';
-      p.innerHTML = `<span>${esc(n.text || '')}</span><button type="button" class="sb-del" data-id="${esc(n.id)}" aria-label="${esc(T('sb.del', '摘掉'))}">×</button>`;
+      p.innerHTML = `<span>${esc(n.text || '')}</span><button type="button" class="sb-del" data-id="${esc(n.id)}" aria-label="${esc(uiTextOr('sb.del', '摘掉'))}">×</button>`;
       list.appendChild(p);
     }
     box.addEventListener('click', async e => {
@@ -95,13 +95,13 @@ const ScrapbookView = (() => {
       if (del) { await unpin(del.dataset.id); render(place); return; }
       const act = e.target.closest?.('[data-act]'); if (!act) return;
       if (act.dataset.act === 'image') { const inp = box.querySelector('.sb-file') || (() => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.className = 'sb-file'; i.hidden = true; box.appendChild(i); i.addEventListener('change', async () => { const f = i.files?.[0]; i.value = ''; if (f) { const r = await pinImage(place, f); if (!r.ok) toast(r.reason); } render(place); }); return i; })(); inp.click(); }
-      if (act.dataset.act === 'note') { const t = window.prompt(T('sb.note_ask', '写点什么钉在这里（≤500 字）'), ''); if (t && t.trim()) pinNote(place, t); render(place); }
+      if (act.dataset.act === 'note') { const t = window.prompt(uiTextOr('sb.note_ask', '写点什么钉在这里（≤500 字）'), ''); if (t && t.trim()) pinNote(place, t); render(place); }
     });
     ex.appendChild(box);
     openPlace = place;
   }
   function render(place) { const c = document.getElementById('card'); if (c && !c.hidden) decorate(null, place || openPlace); }
-  const toast = why => { try { window.showNotice?.toast?.(T('sb.fail', '没钉上：{w}', { w: why || '' })); } catch (e) {} };
+  const toast = why => { try { window.showNotice?.toast?.(uiTextOr('sb.fail', '没钉上：{w}', { w: why || '' })); } catch (e) {} };
 
   // 粘贴：卡片开着就把剪贴板里的图钉到当前地点（生图插件的图多数是直接复制出来的）
   if (typeof window !== 'undefined') window.addEventListener('paste', async e => {

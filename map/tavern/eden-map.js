@@ -23,17 +23,17 @@ import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
 import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => {
-  const SELF = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
+  const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
-  const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(SELF); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
+  const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(scriptBase); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
   const life = createLife(), { listen } = life;   // 监听登记与「死亡」标记（host-lifecycle.mjs）
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
-  const PROTO = 2; let PRm = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
-  import(SELF + 'core/protocol.mjs').then(m => { PRm = m; }).catch(() => {});
-  let FOGm = null, explored = {}; import(SELF + 'core/exploration-ledger.mjs').then(m => { FOGm = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
-  let SRCm = null; import(SELF + 'tavern/data-source-registry.mjs').then(m => { SRCm = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
+  const PROTO = 2; let protocolModule = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
+  import(scriptBase + 'core/protocol.mjs').then(m => { protocolModule = m; }).catch(() => {});
+  let explorationLedgerModule = null, explored = {}; import(scriptBase + 'core/exploration-ledger.mjs').then(m => { explorationLedgerModule = m; explored = m.norm(explored); }).catch(() => {});   // 迷雾探索（eden_map.探索）
+  let dataSourceRegistryModule = null; import(scriptBase + 'tavern/data-source-registry.mjs').then(m => { dataSourceRegistryModule = m; }).catch(() => {});   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
-  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ SELF, PACK_IN, manifest: MAN });
+  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ scriptBase, PACK_IN, manifest: MAN });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) {}
   if (!LINES.some(l => l.key === line)) line = null;
   let BASE = baseFor(line);
@@ -43,15 +43,15 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const oldStyle = !!pdoc.getElementById('eden-map-root') && !window.parent.__edenMapCleanup;
   const switchedFrom = window.parent.__edenMapSwitch || null;
   // 地基 A3：多实例身份用 getScriptId()（同一脚本换版本 / 重载 id 不变，不再误报「另一个地图脚本」）；没有这个接口时退回脚本地址。登记在 __edenMapIds { 身份: 地址 }
-  const OWNER = (() => { try { const id = thFn('getScriptId')?.(); if (typeof id === 'string' && id) return 's:' + id; } catch (e) {} return 'u:' + SELF; })();
-  try { (window.parent.__edenMapIds ||= {})[OWNER] = SELF; } catch (e) {}
+  const scriptOwner = (() => { try { const id = thFn('getScriptId')?.(); if (typeof id === 'string' && id) return 's:' + id; } catch (e) {} return 'u:' + scriptBase; })();
+  try { (window.parent.__edenMapIds ||= {})[scriptOwner] = scriptBase; } catch (e) {}
   // 地基 A4：偏好存脚本变量（host-tavernhelper.mjs createPrefs；键表 = core/storage.mjs SCRIPT_KEYS）
   const prefs = createPrefs(LS), prefSync = prefs.sync, onStorage = prefs.onStorage;
   { const pl = prefs.obj()?.edenMapLine; if (pl && pl !== line && LINES.some(l => l.key === pl)) { line = pl; BASE = baseFor(line); } }   // 线路在上面已按本机读过：脚本变量优先
   window.addEventListener('storage', onStorage);
-  takeOver(pdoc, ID, OWNER);   // 幂等：先清掉上一份（host-lifecycle.mjs）
+  takeOver(pdoc, ID, scriptOwner);   // 幂等：先清掉上一份（host-lifecycle.mjs）
 
-  const root = mount(pdoc, ID, OWNER);   // 悬浮按钮 + 面板（样式与结构在 host-lifecycle.mjs）
+  const root = mount(pdoc, ID, scriptOwner);   // 悬浮按钮 + 面板（样式与结构在 host-lifecycle.mjs）
 
   const fab = root.querySelector('.em-fab'), panel = root.querySelector('.em-panel'), frame = root.querySelector('.em-frame');
   const hereEl = root.querySelector('.em-here'), loadEl = root.querySelector('.em-load'), titleEl = root.querySelector('.em-title');
@@ -60,8 +60,8 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
   const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐' },
     en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended' } };
-  let UL = 'zh', mapTitle = ''; try { UL = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
-  const U = k => UI[UL][k];
+  let uiLang = 'zh', mapTitle = ''; try { uiLang = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {}
+  const U = k => UI[uiLang][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
   const themeMq = window.parent.matchMedia?.('(prefers-color-scheme: light)');
   const hostTheme = th => root.classList.toggle('em-light', th === 'light' || (th === 'auto' && !!themeMq?.matches));
@@ -70,8 +70,8 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const onThemeMq = () => { if (storedTheme() === 'auto') hostTheme('auto'); };
   themeMq?.addEventListener?.('change', onThemeMq);
   // v0.9.6：线路按钮只写短名（「有梯子」/「Global」），完整说明放 title；以前「线路：没梯子」在手机上截成「线路：…」、英文「Route: C…」
-  const showLine = () => { const l = LINES.find(x => x.key === line), full = l ? (UL === 'en' && l.name_en) || l.name : U('unset');
-    lineBtn.textContent = '⇄ ' + (l ? (UL === 'en' ? l.short_en || l.name_en : l.name) : U('unset')); lineBtn.title = U('line') + full; lineBtn.setAttribute('aria-label', U('line') + full); };
+  const showLine = () => { const l = LINES.find(x => x.key === line), full = l ? (uiLang === 'en' && l.name_en) || l.name : U('unset');
+    lineBtn.textContent = '⇄ ' + (l ? (uiLang === 'en' ? l.short_en || l.name_en : l.name) : U('unset')); lineBtn.title = U('line') + full; lineBtn.setAttribute('aria-label', U('line') + full); };
   // v0.9.2：标题只写纪年，层名只在地图的面包屑里出现一次
   const showTitle = () => { titleEl.textContent = U('title'); root.querySelector('.em-close').setAttribute('aria-label', U('close'));
     fab.setAttribute('aria-label', U('open')); if (!fab.classList.contains('prep') && !fab.classList.contains('fail')) fab.title = U('fab'); };
@@ -227,15 +227,15 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   let flyQ = null;   // EdenMap.flyTo 在地图就绪前调用时排队
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
-    if (e.source !== frame.contentWindow || (PRm && !PRm.accept(e.data, '（查看器 → 宿主）'))) return;
+    if (e.source !== frame.contentWindow || (protocolModule && !protocolModule.accept(e.data, '（查看器 → 宿主）'))) return;
     if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
-    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: UL }); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); BR.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
+    if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && CK.setQ) { const q = CK.setQ; CK.setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
     if (e.data?.type === 'eden-map:progress' && !loadEl.hidden) setProg(50 + e.data.pct / 2);
     if (e.data?.type === 'eden-map:loaded') { endProg(); if (ghost) endGhost(true); }
     if (e.data?.type === 'eden-map:state') {
-      if (e.data.lang && e.data.lang !== UL && UI[e.data.lang]) { UL = e.data.lang; try { (LS || localStorage).setItem('edenMapLang', UL); } catch (x) {} prefSync(); showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
+      if (e.data.lang && e.data.lang !== uiLang && UI[e.data.lang]) { uiLang = e.data.lang; try { (LS || localStorage).setItem('edenMapLang', uiLang); } catch (x) {} prefSync(); showLine(); push(); }   // 地图里切了语言：标题栏跟着换并记下（两边只有一个设置）
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
@@ -243,11 +243,11 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     if (e.data?.type === 'eden-map:line-pick') showPicker();
     if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
       (async () => { let cleaned = null; const st = store();
-        if (e.data.type === 'eden-map:storage-clean' && RS.BG && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
-          try { cleaned = RS.BG.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
+        if (e.data.type === 'eden-map:storage-clean' && RS.storageBudget && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
+          try { cleaned = RS.storageBudget.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
         else if (e.data.type === 'eden-map:storage-clean') cleaned = { limited: true, dropped: [], freed: 0, wait: Math.max(1, Math.ceil((10000 - (Date.now() - (window.__edenCleanAt || 0))) / 1000)) };   // 10 秒内再点：明确回「请稍后再试」，不再无声无息
         const [s, src] = await Promise.all([api.storage().catch(() => null), api.sources().catch(() => null)]);
-        let cleanable = null; try { if (RS.BG && st) { const c = chatId(); cleanable = Math.max(0, RS.BG.chatsByAge(st, c).length + (c ? 1 : 0) - 5); } } catch (x) {}   // 与 sweep 同一算法，确认文案里的数字 = 实际会清的个数
+        let cleanable = null; try { if (RS.storageBudget && st) { const c = chatId(); cleanable = Math.max(0, RS.storageBudget.chatsByAge(st, c).length + (c ? 1 : 0) - 5); } } catch (x) {}   // 与 sweep 同一算法，确认文案里的数字 = 实际会清的个数
         post({ type: 'eden-map:storage-result', cleanable, storage: s && { total: s.total, ours: s.ours, avatars: s.avatars, chats: Object.keys(s.chats || {}).length }, sources: src, cleaned: cleaned && { n: cleaned.dropped.length, bytes: cleaned.freed, error: !!cleaned.error, limited: !!cleaned.limited, wait: cleaned.wait || 0 } }); })(); }   // UI v2：线路选择在地图设置「高级」
     if (e.data?.type === 'eden-map:chrome') { chromeAt = { top: +e.data.top || 44, bottom: +e.data.bottom || 0 }; NT?.refresh(); }   // 抽屉高度：P2 提示放在它上方
     if (e.data?.type === 'eden-map:formbusy') { formBusy = !!e.data.on; NT?.refresh(); }
@@ -260,7 +260,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
-    if (e.data?.type === 'eden-map:explore' && FOGm && RS.custom) { const r = FOGm.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发
+    if (e.data?.type === 'eden-map:explore' && explorationLedgerModule && RS.custom) { const r = explorationLedgerModule.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发
     if (e.data?.type === 'eden-map:explore-reset' && RS.custom) { explored = {}; saveRoot(); post({ type: 'eden-map:fog', explored }); }
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
@@ -278,12 +278,12 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const sendBar = () => { post({ type: 'eden-map:hostbar', w: Math.ceil(hbarEl.getBoundingClientRect().width), side: panel.classList.contains('em-left') ? 'left' : 'right' }); post(lineMsg()); };
   // fix3：设置「高级 · 加载线路」显示当前线路，以及是自动测速选的还是手动选的
   function lineMsg() { let manual = false; try { manual = (LS || localStorage).getItem(LINE_KEY + 'Manual') === '1'; } catch (e) {} const l = LINES.find(x => x.key === line);
-    return { type: 'eden-map:line', swappable, name: l ? (UL === 'en' && l.name_en) || l.name : '', manual }; }
+    return { type: 'eden-map:line', swappable, name: l ? (uiLang === 'en' && l.name_en) || l.name : '', manual }; }
   let barRO = null; try { barRO = new ResizeObserver(() => { if (alive && !life.dead) sendBar(); }); barRO.observe(hbarEl); } catch (e) {}
   // ---------------- UI v2 唯一通知层（ui/notice.mjs，spec §3）：P0 强制更新 / P1 更新、自检、存储 / P2 新事态、查看器转来的提示 ----------------
   let NT = null, chromeAt = { top: 44, bottom: 0 }, formBusy = false;
-  const ntReady = import(SELF + 'ui/notice.mjs').then(m => {
-    NT = m.createNotices({ doc: pdoc, mount: root, root: '#' + ID, baseCls: 'em-ctoast', en: UL === 'en', busy: () => formBusy && !panel.hidden, inertEls: () => [frame, hbarEl],
+  const ntReady = import(scriptBase + 'ui/notice.mjs').then(m => {
+    NT = m.createNotices({ doc: pdoc, mount: root, root: '#' + ID, baseCls: 'em-ctoast', en: uiLang === 'en', busy: () => formBusy && !panel.hidden, inertEls: () => [frame, hbarEl],
       anchor: () => { if (panel.hidden || ghost) return null; const r = panel.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height, top0: chromeAt.top, bottom0: chromeAt.bottom, modal: true }; } });
     return NT; }).catch(e => { console.warn('[eden-map] 通知层加载失败', e); return null; });
   // 查看器发来的通知（嵌入时它不自己画）：按钮点了回传 eden-map:notice-act
@@ -301,10 +301,10 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   let LKF = null;   // 在下面的 thReady 里装配（tavernhelper-api.mjs 只加载一次）
   const leakSweep = id => { try { return LKF ? LKF.sweep(id) : 0; } catch (e) { return 0; } };
 
-  let CPm = null;
+  let composeTemplatesModule = null;
   async function composeIn(text) {
-    try { CPm ??= await import(SELF + 'tavern/compose-templates.mjs'); } catch (e) { return; }
-    const how = CPm.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
+    try { composeTemplatesModule ??= await import(scriptBase + 'tavern/compose-templates.mjs'); } catch (e) { return; }
+    const how = composeTemplatesModule.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
     post({ type: 'eden-map:compose-done', ok: !!how, how });
   }
   // ---------------- Part 6-2 后台静默推演 ----------------
@@ -321,7 +321,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     try {
       if (win.n > 0 && typeof getChatMessages === 'function') {
         const list = getChatMessages(`${win.from}-${win.to}`, { role: 'assistant' });
-        CTX.readMsgs(list, floorNow);   // 只读：只喂缓存，不 recompute、不发消息、不写变量
+        contextPipeline.readMsgs(list, floorNow);   // 只读：只喂缓存，不 recompute、不发消息、不写变量
       }
     } catch (e) {}
     tickLed = TICK.ledger(tickLed, { now: Date.now(), floorNow, ms: performance.now() - t0, n: win.n });
@@ -329,45 +329,45 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     return 'ran';
   }
   async function startTick() {
-    try { TICK ??= await import(SELF + 'tavern/background-scan-scheduler.mjs'); } catch (e) { TICK = null; return; }
+    try { TICK ??= await import(scriptBase + 'tavern/background-scan-scheduler.mjs'); } catch (e) { TICK = null; return; }
     clearInterval(tickT);
     tickT = setInterval(() => { tickOnce().catch(() => {}); }, 15000);   // 心跳 15 s，跑不跑由 plan() 决定
   }
 
   // 依赖袋（S5-1）：拆出去的 flow 模块经它取宿主的变量 / 函数；活的变量是取存器，函数是晚绑定转发（模块先于定义被创建时也不会撞暂时性死区）
   const host = { entryUrl: import.meta.url,
-    get alive() { return alive; }, get BASE() { return BASE; }, get BG() { return RS.BG; }, get BR() { return CF.BR; }, buildNow: (...a) => buildNow(...a),
+    get alive() { return alive; }, get BASE() { return BASE; }, get storageBudget() { return RS.storageBudget; }, get mvuBridge() { return CF.mvuBridge; }, buildNow: (...a) => buildNow(...a),
     get cardId() { return HA.cardId; }, set cardId(v) { HA.cardId = v; }, cardKey: (...a) => CF.cardKey(...a), changedInv: (...a) => LF.changedInv(...a),
     channel: (...a) => channel(...a), get chars() { return chars; }, chatId: (...a) => CF.chatId(...a), get checkAt() { return CK.checkAt; },
     get checkItems() { return CK.checkItems; }, get checkP() { return CK.checkP; }, set checkP(v) { CK.checkP = v; }, checkpointResume: (...a) => MO.checkpointResume(...a),
     checkUpdate: (...a) => checkUpdate(...a), get CHM() { return CHM; }, get clock() { return CF.clock; }, get clockEl() { return clockEl; },
     composeIn: (...a) => composeIn(...a), conflictsNow: (...a) => MO.conflictsNow(...a), get cp() { return MO.cp; }, set cp(v) { MO.cp = v; },
-    get cpResume() { return MO.cpResume; }, get CTX() { return CF.CTX; }, get custom() { return RS.custom; }, set custom(v) { RS.custom = v; },
+    get cpResume() { return MO.cpResume; }, get contextPipeline() { return CF.contextPipeline; }, get custom() { return RS.custom; }, set custom(v) { RS.custom = v; },
     customChanged: (...a) => RS.customChanged(...a), get customChat() { return RS.customChat; }, get custVer() { return custVer; }, set custVer(v) { custVer = v; },
     emit: (...a) => HA.emit(...a), endGhost: (...a) => endGhost(...a), get events() { return events; },
     get explored() { return explored; }, set explored(v) { explored = v; }, eventsSummary: () => (EVM ? EVM.summarize(events, EVM.layerOf(getHere())) : ''), get fab() { return fab; }, fallbackToast: (...a) => fallbackToast(...a),
-    fetchHtml: (...a) => fetchHtml(...a), get floorNow() { return floorNow; }, get flyQ() { return flyQ; }, set flyQ(v) { flyQ = v; }, get FOGm() { return FOGm; },
+    fetchHtml: (...a) => fetchHtml(...a), get floorNow() { return floorNow; }, get flyQ() { return flyQ; }, set flyQ(v) { flyQ = v; }, get explorationLedgerModule() { return explorationLedgerModule; },
     get frame() { return frame; }, get FRm() { return LF.FRm; }, get frState() { return LF.frState; }, get GEN() { return GEN; }, get ghost() { return ghost; },
     get here() { return here; }, hostToast: (...a) => CK.hostToast(...a), HS: (...a) => HS(...a), get html() { return html; }, get ID() { return ID; },
-    get inv() { return LF.inv; }, set inv(v) { LF.inv = v; }, get INVm() { return LF.INVm; }, get KFm() { return TL.KFm; }, kfReset: (...a) => TL.kfReset(...a),
-    get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a), get LEDm() { return LF.LEDm; },
+    get inv() { return LF.inv; }, set inv(v) { LF.inv = v; }, get stashStoreModule() { return LF.stashStoreModule; }, get keyframesModule() { return TL.keyframesModule; }, kfReset: (...a) => TL.kfReset(...a),
+    get kfView() { return TL.kfView; }, set kfView(v) { TL.kfView = v; }, kindOf: (...a) => RS.kindOf(...a), lean: (...a) => lean(...a), get ledgerModule() { return LF.ledgerModule; },
     get life() { return life; }, get line() { return line; }, get lineP() { return lineP; }, get LINES() { return LINES; }, get listen() { return listen; },
     get LKF() { return LKF; }, set LKF(v) { LKF = v; }, loadCustom: (...a) => RS.loadCustom(...a), loadViewer: (...a) => loadViewer(...a), get LS() { return LS; },
-    get lsGet() { return lsGet; }, get lsSet() { return lsSet; }, macroSet: (...a) => macroSet(...a), get MAN() { return MAN; }, get MV() { return CF.MV; },
+    get lsGet() { return lsGet; }, get lsSet() { return lsSet; }, macroSet: (...a) => macroSet(...a), get MAN() { return MAN; }, get mvuReaders() { return CF.mvuReaders; },
     mvuStat: (...a) => CF.mvuStat(...a), get NT() { return NT; }, get ntReady() { return ntReady; }, get oldStyle() { return oldStyle; },
-    openSettings: (...a) => CK.openSettings(...a), get outfitNow() { return CF.outfitNow; }, get OWNER() { return OWNER; }, get PACK_ID() { return PACK_ID; },
+    openSettings: (...a) => CK.openSettings(...a), get outfitNow() { return CF.outfitNow; }, get scriptOwner() { return scriptOwner; }, get PACK_ID() { return PACK_ID; },
     get PACK_IN() { return PACK_IN; }, get panel() { return panel; }, get pdoc() { return pdoc; }, get plainVer() { return plainVer; },
     pointsFor: (...a) => MO.pointsFor(...a), post: (...a) => post(...a), get prefSync() { return prefSync; }, preload: (...a) => preload(...a), get preP() { return preP; },
     push: (...a) => push(...a), pushSoon: (...a) => pushSoon(...a), readVars: (...a) => CF.readVars(...a), recomputeSoon: (...a) => recomputeSoon(...a),
     refreshVarMap: (...a) => CF.refreshVarMap(...a), refOf: (...a) => AB.refOf(...a), reg: (...a) => RS.reg(...a), get regNow() { return RS.regNow; }, get rep() { return rep; }, get REPO() { return REPO; },
     get root() { return root; }, get roster() { return roster; }, runCheck: (...a) => CK.runCheck(...a), saveRoot: (...a) => RS.saveRoot(...a),
-    get SCRIPT() { return SCRIPT; }, scriptInfo: (...a) => HA.scriptInfo(...a), get SELF() { return SELF; }, sendEvents: (...a) => sendEvents(...a),
+    get SCRIPT() { return SCRIPT; }, scriptInfo: (...a) => HA.scriptInfo(...a), get scriptBase() { return scriptBase; }, sendEvents: (...a) => sendEvents(...a),
     sendTrips: (...a) => CF.sendTrips(...a), showSplash: (...a) => CK.showSplash(...a), get slot() { return LF.slot; }, set slot(v) { LF.slot = v; },
-    get SpatialM() { return MO.SpatialM; }, get spatialNow() { return MO.spatialNow; }, get SRCm() { return SRCm; }, set SRCm(v) { SRCm = v; },
+    get SpatialM() { return MO.SpatialM; }, get spatialNow() { return MO.spatialNow; }, get dataSourceRegistryModule() { return dataSourceRegistryModule; }, set dataSourceRegistryModule(v) { dataSourceRegistryModule = v; },
     stateInject: (...a) => MO.stateInject(...a), get statSig() { return statSig; }, set statSig(v) { statSig = v; }, store: (...a) => RS.store(...a),
-    storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get THm() { return HA.THm; },
-    get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get TRm() { return CF.TRm; }, get UI() { return UI; },
-    get UL() { return UL; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get WBJm() { return LL.WBJm; },
+    storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
+    get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get tripsParseModule() { return CF.tripsParseModule; }, get UI() { return UI; },
+    get uiLang() { return uiLang; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get worldbookJitModule() { return LL.worldbookJitModule; },
     get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; },
   };
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL;
@@ -380,9 +380,9 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   let flyFloor = -1;
   function flyScan() {
     if (!MO.SpatialM || life.dead || floorNow <= flyFloor) return;
-    const raw = CTX.msgCache.get(floorNow)?.m?.raw || '';
-    if (!HA.THm?.flyTarget) return;                  // th 模块还没到：不消费水位，下一轮 recompute 再试
-    const place = HA.THm.flyTarget(raw);
+    const raw = contextPipeline.msgCache.get(floorNow)?.m?.raw || '';
+    if (!HA.tavernhelperApiModule?.flyTarget) return;                  // th 模块还没到：不消费水位，下一轮 recompute 再试
+    const place = HA.tavernhelperApiModule.flyTarget(raw);
     if (!place) { flyFloor = floorNow; return; }   // 没标记：水位直接前进
     // 注册表 / 落点还没就绪：不消费水位，下一轮 recompute 再试（异步飞跃守卫）；认不出落点才安静放弃
     if (!RS.regNow) return;
@@ -401,17 +401,17 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   // 版本信息：预览 / 正式脚本在 import 前写 window.__edenMapScript = { version, code, channel: tag | follow | ref, ref, sha }（tools/build_preview_script.py 烘进去）；
   // 没有（旧脚本、本地）时按脚本地址判定，版本号与构建号取当前线路的 data/build.json。
   const SCRIPT = (() => { try { return window.__edenMapScript || window.parent.__edenMapScript || {}; } catch (e) { return {}; } })();
-  const AB = createAbout({ cdnFetch, post, base: () => BASE, REPO, SELF, VER, tagOf, LINES, swappable, SCRIPT,
-    lineKey: () => line, lang: () => (UL === 'en' ? 'en' : 'zh'), followHead: () => followHead(),
+  const AB = createAbout({ cdnFetch, post, base: () => BASE, REPO, scriptBase, VER, tagOf, LINES, swappable, SCRIPT,
+    lineKey: () => line, lang: () => (uiLang === 'en' ? 'en' : 'zh'), followHead: () => followHead(),
     followNewer: h => followNewer(h),   // 包一层：followNewer 是下面的 const，直接传绑定会在装配时就撞 TDZ
-    loadSelfcheck: async () => (CK.SC ??= await import(SELF + 'tavern/selfcheck.mjs')),
-    loadSources: async () => (SRCm ??= await import(SELF + 'tavern/data-source-registry.mjs')) });
+    loadSelfcheck: async () => (CK.SC ??= await import(scriptBase + 'tavern/selfcheck.mjs')),
+    loadSources: async () => (dataSourceRegistryModule ??= await import(scriptBase + 'tavern/data-source-registry.mjs')) });
   const sendAbout = () => AB.sendAbout(), checkUpdate = () => AB.checkUpdate(), followUpdate = () => AB.followUpdate();
   // 任务四：版权申明页的角色卡信息由这里（经桥的三级降级）取，推给查看器——面板不再自己摸 window.SillyTavern
   // （嵌在 iframe 里那个全局 100% 读不到，旧版于是永远报「未接入酒馆」的假错）。
-  const sendCardInfo = () => { BR.cardInfo().then(card => { if (!life.dead) post({ type: 'eden-map:cardinfo', card: card || null }); }).catch(() => {}); };
+  const sendCardInfo = () => { mvuBridge.cardInfo().then(card => { if (!life.dead) post({ type: 'eden-map:cardinfo', card: card || null }); }).catch(() => {}); };
   const channel = () => AB.channel(), buildNow = () => AB.buildNow();   // 自检页与强制更新判断要用同一个口径
-  const CF = createCharsFlow(host), { BR, CTX, chatId, computeTrips, getHere, mvuStat, pushMvu, refreshVarMap, sendChars, sendRoutine, sendTrips, setVarUser, userName } = CF;
+  const CF = createCharsFlow(host), { mvuBridge, contextPipeline, chatId, computeTrips, getHere, mvuStat, pushMvu, refreshVarMap, sendChars, sendRoutine, sendTrips, setVarUser, userName } = CF;
   // MVU 变量在流式输出时会连续更新：合并成一次，地点没变就不打扰地图
   function push() {
     if (life.dead) return;
@@ -419,12 +419,12 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     { const h = getHere(); if (h !== here) unm = null; here = h; }   // 地点变了：等地图重新判断是否上图
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
-    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], UL === 'en') || parts[0]; hereEl.append(a); }
-    hereEl.classList.toggle('em-unsure', BR.snapState !== 'ok' && BR.snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
+    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], uiLang === 'en') || parts[0]; hereEl.append(a); }
+    hereEl.classList.toggle('em-unsure', mvuBridge.snapState !== 'ok' && mvuBridge.snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
     hereEl.classList.toggle('em-unm', !!unm && !!parts[0]); if (unm && parts[0]) { hereEl.setAttribute('role', 'button'); hereEl.tabIndex = 0; } else { hereEl.removeAttribute('role'); hereEl.removeAttribute('tabindex'); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';
     if (full) hereEl.setAttribute('aria-label', unm ? U('unm') + userName(unm) + ' · ' + U('unm_tip') : U('here') + full); else hereEl.removeAttribute('aria-label');
-    if (full && hereEl.classList.contains('em-unsure')) { const t = U(BR.snapState === 'pending' ? 'pend' : 'stale'); hereEl.title += ' · ' + t; hereEl.setAttribute('aria-label', hereEl.getAttribute('aria-label') + ' · ' + t); }
+    if (full && hereEl.classList.contains('em-unsure')) { const t = U(mvuBridge.snapState === 'pending' ? 'pend' : 'stale'); hereEl.title += ' · ' + t; hereEl.setAttribute('aria-label', hereEl.getAttribute('aria-label') + ' · ' + t); }
     if (here !== hereShown) { hereShown = here; hereEl.classList.remove('em-full'); }   // 地点没变就别把用户刚点开的长胶囊收回去（接手 review P2）
     fab.classList.toggle('here', !!here);
     // bg：后台预加载中（面板不可见），地图据此不自动进庄园（E4 N03）
@@ -450,7 +450,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
 
   // ---------------- 事态 ----------------
   // 聊天记录是唯一真相：每次从最近 SCAN 楼原文重算（swipe / 删楼 / 编辑后自然一致），不另存状态
-  const INJECT_ID = 'eden-map-events';   // 窗口楼数（80，E6）在流水线里（CTX.SCAN）：未解除的事件在窗口内一直列出（events.mjs tierOf）
+  const INJECT_ID = 'eden-map-events';   // 窗口楼数（80，E6）在流水线里（contextPipeline.SCAN）：未解除的事件在窗口内一直列出（events.mjs tierOf）
   const badge = root.querySelector('.em-badge');
   let events = [], floorNow = -1, seen = -1, injected = '', EVM = null;
   // 事态模块单独加载：加载失败只是没有事态功能，地图照常可用
@@ -466,8 +466,8 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   const perf = (k, ms) => { const P = window.parent.__perfSamples; if (P) (P[k] ||= []).push(ms); };
   function readMsgs() {
     let list = null;
-    try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - CTX.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
-    return CTX.readMsgs(list, floorNow);
+    try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
+    return contextPipeline.readMsgs(list, floorNow);
   }
   function recompute(lite = false) {
     if (!EVM || life.dead) return;
@@ -476,37 +476,37 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     const msgs = readMsgs(), st = mvuStat(), hereNow = getHere();
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) {}
     // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
-    const r = CTX.round({ floorNow, msgs, stSig, dbSig: BR.dbSig(), varSig: BR.varSig, custVer, customChat: RS.customChat, chatId: chatId(), seen, wbState: RS.wbState,
-      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.MV, hasTRm: !!CF.TRm, hasHereMod: !!HA.transitMod, hereNow, collect: EVM.collect,
+    const r = contextPipeline.round({ floorNow, msgs, stSig, dbSig: mvuBridge.dbSig(), varSig: mvuBridge.varSig, custVer, customChat: RS.customChat, chatId: chatId(), seen, wbState: RS.wbState,
+      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.mvuReaders, hasTRm: !!CF.tripsParseModule, hasHereMod: !!HA.transitMod, hereNow, collect: EVM.collect,
       charsDeps: CHM ? {
-        mvuChars: CHM.mvuChars(st, hereNow, BR.varMap.present),
-        known: BR.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）
-        dbCharacters: BR.dbCharacters(),
+        mvuChars: CHM.mvuChars(st, hereNow, mvuBridge.varMap.present),
+        known: mvuBridge.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）
+        dbCharacters: mvuBridge.dbCharacters(),
         collectChars: CHM.collectChars,
-        rosters: CF.MV ? BR.rosters(st) : null, reputation: CF.MV ? BR.reputation(st) : null,
-        presentKey: BR.varMap.present ? String(BR.varMap.present).split('.').pop() : '',
+        rosters: CF.mvuReaders ? mvuBridge.rosters(st) : null, reputation: CF.mvuReaders ? mvuBridge.reputation(st) : null,
+        presentKey: mvuBridge.varMap.present ? String(mvuBridge.varMap.present).split('.').pop() : '',
       } : null });
     if (!r.changed) { if (!lite && restDue) restNow(); gateFlush('round'); return; }
     events = r.events;
     if (r.chars) { chars = r.chars;
       // 日程漫游（Part 5-3）：聊天 / MVU 没接管的人物按世界时刻补位（不覆盖已有位置）
-      if (CF.RTm && CF.rtSched) { const minute = CF.RTm.minuteOf(CF.clock?.time || ''); if (minute != null) for (const w of CF.RTm.whoWhere(CF.rtSched, minute, chars.map(c => c.name))) chars.push({ name: w.name, place: w.place, floor: floorNow, src: 'routine' }); }
-      if (CF.MV) { roster = r.roster; rep = r.rep; BR.stageOrderFor(roster); BR.portraitsFor(); }
-      const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(BR.portraits).length + rep + (BR.stageOrder || []).join();
+      if (CF.routineModule && CF.rtSched) { const minute = CF.routineModule.minuteOf(CF.clock?.time || ''); if (minute != null) for (const w of CF.routineModule.whoWhere(CF.rtSched, minute, chars.map(c => c.name))) chars.push({ name: w.name, place: w.place, floor: floorNow, src: 'routine' }); }
+      if (CF.mvuReaders) { roster = r.roster; rep = r.rep; mvuBridge.stageOrderFor(roster); mvuBridge.portraitsFor(); }
+      const sig = floorNow + '|' + chars.map(c => c.name + '@' + c.place + '#' + c.floor).join() + '|' + JSON.stringify(roster) + Object.keys(mvuBridge.portraits).length + rep + (mvuBridge.stageOrder || []).join();
       if (sig !== charSig) { charSig = sig; if (alive) sendChars(); emit('characters', { items: chars.map(c => ({ ...c })), floor: floorNow }); } }   // 名册无条件发：面板关着时查看器也要靠它决定人物栏显隐（兜底名册 2026-09-29）
     const fresh = r.fresh;
     badge.hidden = !fresh; badge.textContent = fresh > 9 ? '9+' : fresh;
     if (fresh) tipOnce();
-    if (TL.TLm && floorNow >= 1) tlBtn.hidden = false;   // 有历史可回放：标题栏出现时间轴按钮（Part 5-4）
+    if (TL.timelineModule && floorNow >= 1) tlBtn.hidden = false;   // 有历史可回放：标题栏出现时间轴按钮（Part 5-4）
     restDue = true;
     if (!lite) restNow();   // 标签改名、行程；发送路径上推迟到空闲
     else { clearTimeout(restT); restT = setTimeout(() => (window.parent.requestIdleCallback || (f => f()))(() => { if (!life.dead && restDue) restNow(); }, { timeout: 1500 }), 0); }
     const frLine = LF.FRm ? LF.FRm.digest(frState) : '';   // W2：未注入过的失败报告追加一行（注入后置水位，不重复）
     // W11：待结算跨轮携带（上一轮没结完的域）并进同一行——不开新通道，也不新增注入 id
-    const carryLine = LF.LEDm ? LF.LEDm.carryLine(settleCarry) : '';
+    const carryLine = LF.ledgerModule ? LF.ledgerModule.carryLine(settleCarry) : '';
     // W12：虚拟账本槽位声明（任务一）——本卡变量里有没有背包栏、地图账上现记几件，一并回注成已知事实
-    const slotMsg = LF.LEDm ? LF.LEDm.slotLine(LF.slot) : '';
-    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', CF.MV && RS.custom && !(RS.custom.同步世界书 && RS.wbState === 'bound') ? CF.MV.summarizeCustom(RS.custom) : '', LF.INVm && lsGet('edenMapInvInj') !== '0' ? LF.INVm.digestLine(LF.inv, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
+    const slotMsg = LF.ledgerModule ? LF.ledgerModule.slotLine(LF.slot) : '';
+    inject([summarize(events, layerOf(hereNow)), CHM ? CHM.summarizeChars(chars, 8, 160, floorNow) : '', CF.mvuReaders && RS.custom && !(RS.custom.同步世界书 && RS.wbState === 'bound') ? CF.mvuReaders.summarizeCustom(RS.custom) : '', LF.stashStoreModule && lsGet('edenMapInvInj') !== '0' ? LF.stashStoreModule.digestLine(LF.inv, 150) : '', slotMsg, frLine, carryLine].filter(Boolean).join('\n'));
     if (frLine) LF.FRm.markInjected(frState);
     scanPickups(msgs, hereNow);   // 任务一：本轮正文里的客观获取动作先入账，下面的结算闸门放行时一并补发（漏写变量也丢不了）
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
@@ -517,7 +517,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     gateFlush('round');   // W11：本轮收尾才放行结算写入（MVU 在场时这一拍排在 VARIABLE_UPDATE_ENDED 处理器的尾部）
     perf(lite ? 'lite' : 'core', performance.now() - t0);
   }
-  function restNow() { restDue = false; const t0 = performance.now(); customTags(CTX.lastMsgs); computeTrips(CTX.lastMsgs); perf('rest', performance.now() - t0); }
+  function restNow() { restDue = false; const t0 = performance.now(); customTags(contextPipeline.lastMsgs); computeTrips(contextPipeline.lastMsgs); perf('rest', performance.now() - t0); }
   function inject(text) {
     if (life.dead) return;
     if (text === injected) return; injected = text;
@@ -543,7 +543,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   let tipShown = false; try { tipShown = !!(LS || localStorage).getItem('edenMapEvTip'); } catch (e) {}
   function tipOnce() {
     if (tipShown || !panel.hidden) return; tipShown = true; try { (LS || localStorage).setItem('edenMapEvTip', '1'); } catch (e) {}
-    MAN.then(() => hostToast(HS('ev.toast', UL === 'en'), [], 10000, null, false, { key: 'newev', level: 2, actions: [{ label: UL === 'en' ? 'View' : '查看', primary: true, run: () => fab.click() }] }));   // UI v2：P2，不再挂在悬浮按钮上
+    MAN.then(() => hostToast(HS('ev.toast', uiLang === 'en'), [], 10000, null, false, { key: 'newev', level: 2, actions: [{ label: uiLang === 'en' ? 'View' : '查看', primary: true, run: () => fab.click() }] }));   // UI v2：P2，不再挂在悬浮按钮上
   }
   let evT = 0;
   const recomputeSoon = (ms = 250) => { clearTimeout(evT); evT = setTimeout(recompute, ms); };
@@ -561,7 +561,7 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     const t = pdoc.createElement('div'); t.className = 'em-ctoast'; t.setAttribute('role', o.level === 0 ? 'alertdialog' : 'status');
     t.style.cssText = 'position:fixed;left:50vw;top:12px;transform:translateX(-50%);z-index:30003;max-width:min(420px,92vw);box-sizing:border-box;padding:10px 14px;border-radius:12px;background:var(--em-bg);color:var(--em-ink);border:1px solid var(--em-line-2);font:13px/1.5 var(--em-font)';
     const b = pdoc.createElement('b'); b.textContent = title; t.append(b); for (const l of lines || []) { const d = pdoc.createElement('div'); d.textContent = l; t.append(d); }
-    if (o.level !== 0) { const x = pdoc.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', UI[UL].close); x.onclick = () => t.remove(); t.append(x); }
+    if (o.level !== 0) { const x = pdoc.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', UI[uiLang].close); x.onclick = () => t.remove(); t.append(x); }
     extra?.(t); root.appendChild(t); return t;
   }
 
@@ -570,14 +570,14 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   let macroOff = null;
   // B9 类宏（默认关）：{{eden_here}} 当前地点、{{eden_route}} 最近一段行程、{{eden_fly 地点}}（W8）展开成隐藏 fly 标记；卡 / 预设作者自己引用
   function macroSet(on) {
-    macroOff?.(); macroOff = null; if (!on || !HA.THm || life.dead) return;
-    macroOff = HA.THm.registerMacros(thFn, (k, m) => {
+    macroOff?.(); macroOff = null; if (!on || !HA.tavernhelperApiModule || life.dead) return;
+    macroOff = HA.tavernhelperApiModule.registerMacros(thFn, (k, m) => {
       if (k === 'eden_here') return userName(here);
       if (k === 'eden_fly') {
         const place = String(m?.[1] || '').trim() || here;
         return `<span style="display:none" data-eden-fly="${place.replace(/"/g, '')}"></span>${userName(place)}`;
       }
-      const t = (CTX.trips || []).filter(x => !x.who).at(-1);
+      const t = (contextPipeline.trips || []).filter(x => !x.who).at(-1);
       return t ? `${t.from} → ${t.to}` : '';
     });
   }
@@ -642,11 +642,11 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
     // W11 变量更新生命周期（顺序即契约）：作废快照 + 落代数 → 推送 → 重算 → 本轮末尾放行结算。
     // 地图侧的写入排在 VARIABLE_UPDATE_ENDED 收尾之后，绝不落在这个更新窗口里（tests/mvu_lifecycle.test.mjs）。
     // 第三个参数 true = 排在所有同事件处理器之后（eventMakeLast）：结算必须晚于宿主 / 卡内状态引擎的写
-    try { BR.whenMvu().then(() => { const ev = BR.varUpdateEvent(); if (ev) listen(ev, () => { BR.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }, true); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
+    try { mvuBridge.whenMvu().then(() => { const ev = mvuBridge.varUpdateEvent(); if (ev) listen(ev, () => { mvuBridge.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }, true); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { RS.BG?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; CTX.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; LF.slot = null; LF.SSK?.reset(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
+    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); settleState.claimed = []; settleState.floor = null; settleState.branch = null; settleCarry.domains = []; settleCarry.floor = null; lootFacts.length = 0; LF.slot = null; LF.SSK?.reset(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
@@ -665,11 +665,11 @@ import { hostStr } from './host-strings.mjs';   // P2 解耦：版本信息与�
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); clearInterval(tickT); cgObs.disconnect(); acuObs.disconnect(); try { BR.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); clearInterval(tickT); cgObs.disconnect(); acuObs.disconnect(); try { mvuBridge.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === exposed) delete window.parent.EdenMap; CK.toastEl?.remove(); CK.updEl?.remove(); CK.splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
-    try { const R = window.parent.__edenMapIds; if (R && R[OWNER] === SELF) delete R[OWNER]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
-    try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === OWNER) el.remove(); } catch (e) {}
+    try { const R = window.parent.__edenMapIds; if (R && R[scriptOwner] === scriptBase) delete R[scriptOwner]; } catch (e) {}   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
+    try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === scriptOwner) el.remove(); } catch (e) {}
     prefs.stop(); window.removeEventListener('storage', onStorage); try { macroOff?.(); } catch (e) {} try { MDm?.applyState(thFn, '', 0); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   install(cleanup);   // __edenMapCleanup + pagehide（host-lifecycle.mjs）
 })();

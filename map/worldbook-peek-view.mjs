@@ -7,15 +7,15 @@ import { esc } from './app/dom-helpers.mjs';
 import { post } from './app/protocol-stamp.mjs';
 import { busOn } from './app/bus.mjs';
 import { register } from './app/plugins.mjs';
+import { uiTextOr } from './app/text-lookup.mjs';
 
 const TRIM = 300;
-const T = (k, zh) => { try { return window.I18N.tx(k, zh); } catch (e) { return zh; } };   // 共享 i18n 服务（viewer.html window.I18N）
 const WorldbookPeekView = (() => {
   let openPlace = null, box = null;
 
   function render(items, name) {
     if (!box || openPlace !== name) return;   // 用户已经换了卡
-    if (!Array.isArray(items) || !items.length) { box.querySelector('.wb-out').textContent = T('wb.none', '附加书里没有这个地点的条目。'); return; }
+    if (!Array.isArray(items) || !items.length) { box.querySelector('.wb-out').textContent = uiTextOr('wb.none', '附加书里没有这个地点的条目。'); return; }
     box.querySelector('.wb-out').innerHTML = items.map(it =>
       `<div class="wb-item"><b>${esc(it.name)}</b><p>${esc(String(it.summary || '').slice(0, TRIM))}</p></div>`).join('');
   }
@@ -27,10 +27,10 @@ const WorldbookPeekView = (() => {
     if (!place) return;
     ex.querySelectorAll('.cu-wb').forEach(n => n.remove());
     box = document.createElement('div'); box.className = 'cu-wb';
-    box.innerHTML = `<button type="button" class="wb-go">📚 ${esc(T('wb.capsule', '世界书档案'))}</button><div class="wb-out" hidden></div>`;
+    box.innerHTML = `<button type="button" class="wb-go">📚 ${esc(uiTextOr('wb.capsule', '世界书档案'))}</button><div class="wb-out" hidden></div>`;
     box.querySelector('.wb-go').addEventListener('click', () => {
       const out = box.querySelector('.wb-out');
-      out.hidden = false; out.textContent = T('wb.peeking', '查看中…');
+      out.hidden = false; out.textContent = uiTextOr('wb.peeking', '查看中…');
       openPlace = place;
       post({ type: 'eden-map:th', op: 'wb-peek', name: place });
     });

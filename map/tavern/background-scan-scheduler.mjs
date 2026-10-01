@@ -3,7 +3,7 @@
 // 三条底线：① 只读（不写变量、不注入、不发消息给查看器）；② 生成期间与面板开着时一律让路；
 // ③ 每次只扫增量楼层，且有上限——长会话不能越跑越久。
 // 纯模块：不碰酒馆全局 / DOM / 定时器（时间由调用方注入）；node 单测 tests/background-scan-scheduler.test.mjs。
-export const KEY = 'edenMapTick';
+export const BACKGROUND_SCAN_STORAGE_KEY = 'edenMapTick';
 export const DEFAULT_MS = 60000;        // 默认 60 s 一次
 export const MIN_MS = 15000;            // 再急也不许低于 15 s（后台推演不该抢聊天首屏的算力）
 export const MAX_FLOORS = 60;           // 一次最多扫这么多新楼层
@@ -12,7 +12,7 @@ export const MAX_MS = 300000;
 /** 设置项 → 间隔（毫秒）。0 / 负值 / 乱值 = 关（不跑） */
 export function intervalOf(get) {
   try {
-    const raw = get?.(KEY);
+    const raw = get?.(BACKGROUND_SCAN_STORAGE_KEY);
     const s = String(raw ?? '').trim();
     if (!s) return DEFAULT_MS;                       // 没设过 = 默认 60 s（后台推演默认开）
     if (s === '1') return DEFAULT_MS;                // 设置里的开关：开 = 默认间隔
@@ -62,4 +62,4 @@ export function ledger(prev, { now, floorNow, ms = 0, n = 0 } = {}) {
 }
 
 /** 摘要（自检用） */
-export const describe = (get, led) => ({ intervalMs: intervalOf(get), ...led, key: KEY });
+export const describe = (get, led) => ({ intervalMs: intervalOf(get), ...led, key: BACKGROUND_SCAN_STORAGE_KEY });

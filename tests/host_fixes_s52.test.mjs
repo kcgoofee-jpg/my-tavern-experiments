@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createLlmFlow, DEPS as LLM_DEPS } from '../map/tavern/llm-flow.mjs';
 import { createHostChecks, DEPS as CHECK_DEPS } from '../map/tavern/host-checks.mjs';
 
-const SELF = new URL('../map/', import.meta.url).href;
+const scriptBase = new URL('../map/', import.meta.url).href;
 const later = () => new Promise(r => setImmediate(r));
 const anyStub = (() => { const f = function () {}; const p = new Proxy(f, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : k === Symbol.iterator ? function* () {} : k === 'then' ? undefined : p), apply: () => p, construct: () => p, set: () => true, has: () => true }); return p; })();
 
@@ -35,7 +35,7 @@ test('I-10：领航员一轮在桩依赖下不抛，请求形状是预期的（�
   try {
     const calls = { summary: 0 };
     const host = Object.fromEntries(LLM_DEPS.map(k => [k, anyStub]));
-    Object.assign(host, { SELF, life: { dead: false }, panel: { hidden: true }, GEN: { generating: false }, UL: 'zh', lsGet: k => ls.get(k) ?? null, lsSet: (k, v) => ls.set(k, String(v)),
+    Object.assign(host, { scriptBase, life: { dead: false }, panel: { hidden: true }, GEN: { generating: false }, uiLang: 'zh', lsGet: k => ls.get(k) ?? null, lsSet: (k, v) => ls.set(k, String(v)),
       here: '某地·某屋', floorNow: 7, spatialNow: '', FRm: null, hostToast: () => {}, sendEvents: () => {}, eventsSummary: () => { calls.summary++; return '事态摘要 X'; } });
     createLlmFlow(host);
     for (let i = 0; i < 20 && !timers.length; i++) await later();   // 模块动态 import 完成后 navSchedule 才排上计时器
@@ -61,7 +61,7 @@ test('I-11：开场卡在没有分支 ref（正式版 / 本地构建）时能打
   try {
     const root = fakeNode(), pdoc = fakeNode(); let refCalls = 0;
     const host = Object.fromEntries(CHECK_DEPS.map(k => [k, anyStub]));
-    Object.assign(host, { SELF, SCRIPT: {}, VER: null, UL: 'zh', ID: 'eden-map-root', root, pdoc, panel: { hidden: true }, ghost: false, alive: false, MAN: Promise.resolve(null), BASE: 'http://127.0.0.1:9/map/',
+    Object.assign(host, { scriptBase, SCRIPT: {}, VER: null, uiLang: 'zh', ID: 'eden-map-root', root, pdoc, panel: { hidden: true }, ghost: false, alive: false, MAN: Promise.resolve(null), BASE: 'http://127.0.0.1:9/map/',
       lean: () => false, lineP: null, html: null, swappable: false, channel: () => 'ref', buildNow: async () => null, HS: () => '空间地图', runCheck: async () => {}, preload: async () => {}, refOf: () => { refCalls++; return ''; } });
     const C = createHostChecks(host);
     assert.equal(await C.showSplash(), true, 'showSplash 没抛、打开了卡');

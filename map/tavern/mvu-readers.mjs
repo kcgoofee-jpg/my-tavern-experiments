@@ -13,7 +13,7 @@ import * as VOC from '../core/vocab.mjs';
 /** MVU 旧格式的值可能是 [值, 说明]；新格式直接是值 */
 export const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
 /** 按路径（a.b.c）取值，每一级都拆 [值, 说明] */
-export function get(obj, path) {
+export function getByPath(obj, path) {
   let v = val(obj);
   for (const k of path.split('.')) { if (v == null || typeof v !== 'object' || !(k in v)) return undefined; v = val(v[k]); }
   return v;
@@ -33,7 +33,7 @@ const nameOf = x => { for (const k of VOC.exactWords('name')) { const n = str(va
 export function presentList(stat, path = '') {
   if (!stat || typeof stat !== 'object') return null;
   const declared = getProfile().tables[getProfile().presentId], key = path || (declared && declared in stat ? declared : VOC.exactKey('presentKey', stat)); if (!key) return null;
-  const t0 = path ? get(stat, path) : stat[key]; if (t0 === undefined) return null;
+  const t0 = path ? getByPath(stat, path) : stat[key]; if (t0 === undefined) return null;
   const t = val(t0), out = [], add = (n, p) => { n = clean(n); if (n && [...n].length <= 40 && !out.some(o => o.name === n)) out.push({ name: n, place: clean(p) }); };
   if (typeof t === 'string') { for (const n of t.split(/[、,，;；\/]/)) add(n, ''); return out; }
   if (Array.isArray(t)) {
@@ -54,7 +54,7 @@ export function presentList(stat, path = '') {
 // ---------------- 4 世界时间 ----------------
 /** stat_data → { date, time, period }（缺的是 ''）；路径来自变量映射（adapter.effective），没有路径的项读不到 */
 export function worldTime(stat, m = {}) {
-  const at = p => (p ? str(get(stat, p)) : '');
+  const at = p => (p ? str(getByPath(stat, p)) : '');
   return { date: at(m.date), time: at(m.time), period: at(m.period) };
 }
 const hourOf = t => { const m = String(t || '').match(/(\d{1,2})\s*[:：时]\s*(\d{0,2})/); return m ? +m[1] + (+m[2] || 0) / 60 : null; };
@@ -82,7 +82,7 @@ export function timeKey(s) {
 // ---------------- 5 着装 ----------------
 /** stat_data → { 衣服, 裤子, 鞋子, … }（只收字符串，空和「待初始化」不算）；没有着装（或没有路径）返回 null */
 export function outfit(stat, path = '') {
-  const o = path ? get(stat, path) : undefined; if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const o = path ? getByPath(stat, path) : undefined; if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
   const r = {}; for (const [k, v] of Object.entries(o)) { const s = str(val(v)); if (s && !VOC.isEmptyValue(s)) r[k] = s; }
   return Object.keys(r).length ? r : null;
 }
@@ -298,7 +298,7 @@ export function rosters(stat, map = {}, fallback = []) {
 export function reputation(stat, path = '') {
   if (!plain(stat)) return null;
   let v;
-  if (path) v = val(get(stat, path));
+  if (path) v = val(getByPath(stat, path));
   else {
     const walk = (o, d) => { const hits = [], sub = [];
       for (const [k, raw] of Object.entries(o)) { const x = val(raw); if (k.startsWith('$')) continue; if (plain(x)) { if (d < 3) sub.push(x); } else if (typeof x === 'number' && VOC.hasWord('reputation', k)) hits.push(x); }

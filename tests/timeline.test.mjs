@@ -86,7 +86,7 @@ test('hasState / 接线：有地点或有人或有时钟就算有；宿主按本
   assert.equal(hasState(null), false);
   const host = HOST_SRC;
   assert.match(host, /tavern\/timeline\.mjs/, '宿主从 core 之外的 tavern/ 取本模块');
-  assert.match(host, /TLm\.floorState\(/, '宿主按 floorState(f, deps) 调用');
+  assert.match(host, /timelineModule\.floorState\(/, '宿主按 floorState(f, deps) 调用');
   const src = readFileSync(new URL('../map/tavern/timeline.mjs', import.meta.url), 'utf8').replace(/\/\/[^\n]*/g, '');
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'postMessage']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);

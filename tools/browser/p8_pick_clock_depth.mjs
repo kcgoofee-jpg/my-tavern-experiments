@@ -25,7 +25,7 @@ try {
 
   /* ---------------- ③ 纵深 → 图层滤镜链 ---------------- */
   await step('③ 空气透视：depth-haze 槽在册，滤镜链随当前纵深平面变', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(3000);
     const base = await vf.evaluate(() => ({
       ids: window.LayerHostApi?.registry?.ordered?.().map(x => x.id) || [],
@@ -87,7 +87,7 @@ try {
 
   /* ---------------- ① 庄园三维里的发光拾取物 ---------------- */
   await step('① 三维藏物：藏物表推下去 → 道具落进房间 → 点一下 → 宿主收到 eden-map:loot', async () => {
-    await vf.evaluate(() => { try { window.go?.('eden_estate'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('eden_estate'); } catch (e) {} });
     await B.wait(2000);
     const fr = await (async () => { const h = await vf.$('#estate'); return h ? await h.contentFrame() : null; })();
     rep.check('庄园三维页起来了', !!fr, String(!!fr));

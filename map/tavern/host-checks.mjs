@@ -3,14 +3,14 @@
 import { cdnFetch, fnOk, hostFn, thFn } from './host-tavernhelper.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
 export const DEPS = [
-  'BR', 'HS', 'ID', 'LINES', 'LS', 'MAN', 'OWNER', 'PACK_ID', 'REPO', 'SCRIPT', 'SELF', 'VER', 'buildNow', 'channel', 'checkUpdate', 'conflictsNow',
+  'mvuBridge', 'HS', 'ID', 'LINES', 'LS', 'MAN', 'scriptOwner', 'PACK_ID', 'REPO', 'SCRIPT', 'scriptBase', 'VER', 'buildNow', 'channel', 'checkUpdate', 'conflictsNow',
   'endGhost', 'fab', 'fallbackToast', 'fetchHtml', 'lean', 'life', 'loadViewer', 'lsGet', 'lsSet', 'ntReady', 'oldStyle', 'panel', 'pdoc', 'plainVer',
-  'post', 'preP', 'preload', 'refreshVarMap', 'root', 'scriptInfo', 'swappable', 'switchedFrom', 'varsOk', 'BASE', 'MV', 'NT', 'SRCm', 'THm', 'UL',
+  'post', 'preP', 'preload', 'refreshVarMap', 'root', 'scriptInfo', 'swappable', 'switchedFrom', 'varsOk', 'BASE', 'mvuReaders', 'NT', 'dataSourceRegistryModule', 'tavernhelperApiModule', 'uiLang',
   'alive', 'cardId', 'cpResume', 'ghost', 'html', 'line', 'lineP', 'refOf',
 ];
 export function createHostChecks(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('host-checks: missing dep ' + k);
-  const { BR, HS, ID, LINES, LS, MAN, OWNER, PACK_ID, REPO, SCRIPT, SELF, VER, buildNow, channel, checkUpdate, conflictsNow, endGhost, fab, fallbackToast, fetchHtml, lean, life, loadViewer, lsGet, lsSet, ntReady, oldStyle, panel, pdoc, plainVer, post, preP, preload, refreshVarMap, root, scriptInfo, swappable, switchedFrom, varsOk } = host;
+  const { mvuBridge, HS, ID, LINES, LS, MAN, scriptOwner, PACK_ID, REPO, SCRIPT, scriptBase, VER, buildNow, channel, checkUpdate, conflictsNow, endGhost, fab, fallbackToast, fetchHtml, lean, life, loadViewer, lsGet, lsSet, ntReady, oldStyle, panel, pdoc, plainVer, post, preP, preload, refreshVarMap, root, scriptInfo, swappable, switchedFrom, varsOk } = host;
   // ---------------- 启动自检（E6；判定逻辑在 selfcheck.mjs，node 单测） ----------------
   // 每次页面加载空闲时跑一次：酒馆助手接口、MVU 的当前地点变量、重复的地图脚本、线路（复用测速结果）、世界书附加条目（查得到才查）、脚本与地图版本。
   // 结果：地图设置里的「自检」一栏（✓ / ⚠，中 / EN）；有 ⚠ 时弹一次小提示（同一组警告只提示一次，不按聊天重复）；EdenMap.selfcheck() 取结果。
@@ -19,7 +19,7 @@ export function createHostChecks(host) {
   let SC = null, checkP = null, checkFacts = null, checkItems = [], checkAt = 0, viewerVer = null, updInfo = null, toastEl = null;
   const UPD_KEY = 'edenMapUpdate', AUTO_UPD_KEY = 'edenMapAutoUpdate', TOAST_KEY = 'edenMapCheckToast';
   async function wbFacts() { try { return await SC.collectWorldbook(hostFn); } catch (e) { return null; } }
-  const wbBook = async () => { try { const man = await MAN, m = await import(SELF + 'tavern/worldbook-sync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
+  const wbBook = async () => { try { const man = await MAN, m = await import(scriptBase + 'tavern/worldbook-sync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(host.entryUrl, VER)) return null;
     let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) {}
@@ -34,25 +34,25 @@ export function createHostChecks(host) {
   }
   function runCheck() {
     return checkP ??= (async () => {
-      SC = await import(SELF + 'tavern/selfcheck.mjs');
-      try { await Promise.race([BR.whenMvu(), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
+      SC = await import(scriptBase + 'tavern/selfcheck.mjs');
+      try { await Promise.race([mvuBridge.whenMvu(), new Promise(r => setTimeout(r, 3000))]); } catch (e) {}
       let mvu = null;
-      try { if (BR.mvuUsable()) { const st = BR.rawLatestStat();
-        refreshVarMap(); const hp = BR.varMap.location || '';
+      try { if (mvuBridge.mvuUsable()) { const st = mvuBridge.rawLatestStat();
+        refreshVarMap(); const hp = mvuBridge.varMap.location || '';
         mvu = { stat: !!st && typeof st === 'object', path: hp, here: !!st && SC.getPath(st, hp) !== undefined, candidates: st ? SC.findPaths(st).filter(p => p !== hp) : [],
-          fields: st && host.MV ? { present: !!host.MV.presentList(st, BR.varMap.present), clock: !!host.MV.worldTime(st, BR.varMap).time, outfit: !!BR.varMap.outfit && host.MV.get(st, BR.varMap.outfit) !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
-      const varmode = BR.varmode(BR.mvuUsable());
-      const loads = [...new Set(Object.entries(window.parent.__edenMapIds || {}).filter(([k, u]) => k !== OWNER && u !== switchedFrom).map(([, u]) => u))];   // A3：按脚本身份，不按地址
+          fields: st && host.mvuReaders ? { present: !!host.mvuReaders.presentList(st, mvuBridge.varMap.present), clock: !!host.mvuReaders.worldTime(st, mvuBridge.varMap).time, outfit: !!mvuBridge.varMap.outfit && host.mvuReaders.getByPath(st, mvuBridge.varMap.outfit) !== undefined } : null }; } } catch (e) { mvu = { stat: false }; }
+      const varmode = mvuBridge.varmode(mvuBridge.mvuUsable());
+      const loads = [...new Set(Object.entries(window.parent.__edenMapIds || {}).filter(([k, u]) => k !== scriptOwner && u !== switchedFrom).map(([, u]) => u))];   // A3：按脚本身份，不按地址
       const ln = { swappable, name: (LINES.find(l => l.key === host.line) || {}).name || '',
         ok: !swappable ? null : host.lineP ? await host.lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : host.html ? await host.html.then(() => true, () => false) : null };
       checkFacts = {
         api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
-        db: BR.dbFacts(true),
+        db: mvuBridge.dbFacts(true),
         mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), wbBook: await wbBook(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
         // B3 卡身份（getCharData，旧办法回退）、B4 宿主版本（只报告）、B7 角色卡正则（只读）
-        card: host.THm ? await host.THm.cardIdentity(thFn, () => BR.stContext()).catch(() => null) : null, host: host.THm ? host.THm.hostVersions(thFn) : null,
-        regex: host.THm && thFn('getTavernRegexes') ? await Promise.resolve(thFn('getTavernRegexes')({ type: 'character', name: 'current' })).then(l => host.THm.regexFacts(l), () => null) : null,
+        card: host.tavernhelperApiModule ? await host.tavernhelperApiModule.cardIdentity(thFn, () => mvuBridge.stContext()).catch(() => null) : null, host: host.tavernhelperApiModule ? host.tavernhelperApiModule.hostVersions(thFn) : null,
+        regex: host.tavernhelperApiModule && thFn('getTavernRegexes') ? await Promise.resolve(thFn('getTavernRegexes')({ type: 'character', name: 'current' })).then(l => host.tavernhelperApiModule.regexFacts(l), () => null) : null,
       };
       checkFacts.conflicts = conflictsNow(); checkFacts.checkpoint = host.cpResume;   // (d)(e)
       host.cardId = checkFacts.card;
@@ -70,13 +70,13 @@ export function createHostChecks(host) {
   }
   function sendCheck() { if (host.alive && checkItems.length) post({ type: 'eden-map:selfcheck', items: checkItems, canUpdate: channel() !== 'latest' && !!(VER && swappable && SC?.swapVer(host.entryUrl, VER)), autoUpdate: lsGet(AUTO_UPD_KEY) === '1' }); }
   // ---------------- v0.9.5 开场自检卡（tavern/splash.mjs）：导入后 / 换版本后第一次打开聊天时显示；不挡聊天 ----------------
-  let SPm = null, splash = null;
+  let splashModule = null, splash = null;
   const splashDue = () => { try { return (LS || localStorage).getItem('edenMapSplashSeen') !== String(VER || 'dev'); } catch (e) { return false; } };
   async function showSplash() {
-    SPm ??= await import(SELF + 'tavern/splash.mjs').catch(() => null); if (!SPm) return false;
+    splashModule ??= await import(scriptBase + 'tavern/splash.mjs').catch(() => null); if (!splashModule) return false;
     const lite = lean(), get = f => cdnFetch(host.BASE + f, { cache: 'force-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
     const bi = await buildNow(); await MAN;
-    splash = SPm.openSplash({ root, id: ID, pdoc, ver: VER, en: host.UL === 'en', name: HS('app.name', host.UL === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__splashCap || 25,
+    splash = splashModule.openSplash({ root, id: ID, pdoc, ver: VER, en: host.uiLang === 'en', name: HS('app.name', host.uiLang === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__splashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
         { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !host.alive && !host.ghost) preload().catch(() => {}); return preP; } },
@@ -95,9 +95,9 @@ export function createHostChecks(host) {
     if (!panel.hidden && !host.ghost) { toastWait = true; return; }
     toastWait = false; lsSet(TOAST_KEY, key);
     // UI v2：P1 横幅「自检发现 N 项需要注意」→「查看」打开地图设置「更新与版本」（同一版本、同一组警告只出一次）
-    const warns = checkItems.filter(i => i.status === 'warn'), L = host.UL === 'en' ? 'en' : 'zh';
-    hostToast(host.UL === 'en' ? `Map self-check: ${warns.length} item(s) need attention` : `地图自检发现 ${warns.length} 项需要注意`, warns.map(w => '⚠ ' + w[L]), 0, null, false,
-      { key: 'selfcheck', actions: [{ label: host.UL === 'en' ? 'View' : '查看', primary: true, run: () => openSettings('update') }] });
+    const warns = checkItems.filter(i => i.status === 'warn'), L = host.uiLang === 'en' ? 'en' : 'zh';
+    hostToast(host.uiLang === 'en' ? `Map self-check: ${warns.length} item(s) need attention` : `地图自检发现 ${warns.length} 项需要注意`, warns.map(w => '⚠ ' + w[L]), 0, null, false,
+      { key: 'selfcheck', actions: [{ label: host.uiLang === 'en' ? 'View' : '查看', primary: true, run: () => openSettings('update') }] });
   }
   let setQ = null;   // 面板还没就绪时排队，eden-map:ready 后发（和 flyQ 一样）
   function openSettings(page) { if (host.alive && !panel.hidden && !host.ghost) { post({ type: 'eden-map:settings', page }); return; } setQ = page; if (panel.hidden || host.ghost) fab.click(); }
@@ -127,7 +127,7 @@ export function createHostChecks(host) {
   const fwGet = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
     try { const r = await cdnFetch(u, { cache: 'no-store', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   async function followHead() {
-    FW ??= await import(SELF + 'tavern/branch-follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
+    FW ??= await import(scriptBase + 'tavern/branch-follow.mjs').catch(() => null); if (!FW || !SCRIPT.ref) return null;
     return FW.resolveFollow(REPO, SCRIPT.ref, fwGet, null).catch(() => null);
   }
   // 比加载的新：有构建号比构建号；老加载器（没有构建号）比提交号
@@ -135,13 +135,13 @@ export function createHostChecks(host) {
   async function followCheck() {
     if (life.dead || channel() !== 'follow' || !SCRIPT.ref) return;
     const h = await followHead(); if (!followNewer(h) || h.sha === followSeen || life.dead) return;
-    followSeen = h.sha; const en = host.UL === 'en';
+    followSeen = h.sha; const en = host.uiLang === 'en';
     hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? `Latest build #${h.build} · ` : `分支最新构建 #${h.build} · `) + String(h.sha).slice(0, 7)], 0, t => {
       t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts nt-acts'; b.className = 'nt-pri';
       b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => window.parent.location.reload(); acts.append(b); t.append(acts); }, true);
   }
   async function autoCheck() {
-    SC ??= await import(SELF + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || life.dead) return;
+    SC ??= await import(scriptBase + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || life.dead) return;
     let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) {}   // 挂在宿主页上：换版本 / 重注入脚本不重复查
     if (SC.autoCheckPlan({ enabled: lsGet(AUTO_CHECK_KEY) !== '0', channel: channel(), lastAt, now: Date.now() }) === 'skip') return;
     try { window.parent.__edenMapCheckAt = Date.now(); } catch (e) {}
@@ -161,7 +161,7 @@ export function createHostChecks(host) {
     if (splash || (!panel.hidden && !host.ghost)) { updWait = true; return; }   // 不盖住开着的面板 / 表单
     updWait = false; const u = updPrompt; updPrompt = null;
     if (u.force) {
-      const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, host.UL === 'en', { script: HS('app.script', host.UL === 'en') });
+      const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, host.uiLang === 'en', { script: HS('app.script', host.uiLang === 'en') });
       return hostToast(F.title, F.lines, 0, t => {
         t.classList.add('em-upd', 'em-force'); t.__upd = u;
         const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
@@ -171,7 +171,7 @@ export function createHostChecks(host) {
         acts.append(cl); t.append(acts);
       }, true, { level: 0, key: 'upd' });   // P0：没有 ×，只有「本次关闭」（次按钮）
     }
-    const T = SC.updatePromptText(u.latest, updChannel(), host.UL === 'en', { script: HS('app.script', host.UL === 'en') });
+    const T = SC.updatePromptText(u.latest, updChannel(), host.uiLang === 'en', { script: HS('app.script', host.uiLang === 'en') });
     hostToast(T.title + (u.code ? ` · ${u.code}` : ''), [T.how], 0, t => {
       t.classList.add('em-upd'); t.__upd = u;
       const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
@@ -186,14 +186,14 @@ export function createHostChecks(host) {
   function switchVersion() {   // 本次会话换成新正式版：加载新标签的同一个脚本，它会清掉这一份（要长期用，重新导入新版脚本）
     const nv = updInfo?.latest, url = nv && SC?.swapVer(host.entryUrl, nv);
     if (!url || SC.cmpVer(nv, VER) <= 0) return;
-    window.parent.__edenMapSwitch = SELF;
+    window.parent.__edenMapSwitch = scriptBase;
     import(url).catch(e => { console.warn('[eden-map] 切换到新版本失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
   async function switchBranch(br) {   // 设置「更新与版本」→ 版本分支（main / preview 双轨）：本次会话从目标分支重载同一个脚本，新实例 takeOver 接管这一份；长期使用请重新导入该分支的脚本
-    if (!host.SRCm) { try { host.SRCm = await import(SELF + 'tavern/data-source-registry.mjs'); } catch (e) {} }
-    const url = host.SRCm ? host.SRCm.branchUrl(host.entryUrl, br) : null;
+    if (!host.dataSourceRegistryModule) { try { host.dataSourceRegistryModule = await import(scriptBase + 'tavern/data-source-registry.mjs'); } catch (e) {} }
+    const url = host.dataSourceRegistryModule ? host.dataSourceRegistryModule.branchUrl(host.entryUrl, br) : null;
     if (!url || life.dead) return;
-    window.parent.__edenMapSwitch = SELF;
+    window.parent.__edenMapSwitch = scriptBase;
     import(url).catch(e => { console.warn('[eden-map] 切换分支失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
   return {

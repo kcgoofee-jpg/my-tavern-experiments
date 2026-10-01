@@ -24,7 +24,7 @@ export function fnGuard(name, fn, minArity = 0) {
 }
 
 /** 设定包命名空间（通用化，core/pack.mjs）。在入口里调用一次（读 window.__tcPack，与以前在脚本开头读同一时刻）。 */
-export function packNs(SELF = '') {
+export function packNs(scriptBase = '') {
   // 设定包（通用化，core/pack.mjs）：tools/build_preview_script.py --pack <id> 生成的脚本在导入前写 window.__tcPack = { id, manifest, events }（解析好的清单与事件分类，同步可用）。
   // 没有 = 内置 eden：存储键、聊天变量、世界书名、事件分类都和以前一样（老用户的数据原样可读）。NS / LS 与 core/pack.mjs nsKey / nsStore 同一规则（tests/pack.test.mjs 对照）。
   const PACK_IN = (() => { const p = window.__tcPack; return p && typeof p === 'object' && /^[a-z][a-z0-9_-]{1,31}$/.test(p.id || '') && p.id !== 'eden' ? p : null; })();
@@ -34,8 +34,8 @@ export function packNs(SELF = '') {
   const LS = PACK_IN ? wrapLS(() => localStorage) : null;   // eden：下面的 LS 调用走原生 localStorage（同一对象，行为不变）
   // lsGet 的别名回退与 core/storage.mjs get 同一规则：包命名空间空着时读 edenMap* 历史档（只读不写回）
   const lsGet = k => { try { return (LS || localStorage).getItem(k) ?? (PACK_IN ? localStorage.getItem(k) : null); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
-  // 包清单（Promise）：注入包自带；内置的第一个包按路径取（SELF = .../map/）。取不到 = null，各处按「包没声明」静默处理
-  const MAN = PACK_IN?.manifest ? Promise.resolve(PACK_IN.manifest) : SELF ? cdnFetch(SELF + 'packs/' + PACK_ID + '/manifest.json').then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null);
+  // 包清单（Promise）：注入包自带；内置的第一个包按路径取（scriptBase = .../map/）。取不到 = null，各处按「包没声明」静默处理
+  const MAN = PACK_IN?.manifest ? Promise.resolve(PACK_IN.manifest) : scriptBase ? cdnFetch(scriptBase + 'packs/' + PACK_ID + '/manifest.json').then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null);
   return { PACK_IN, PACK_ID, MAN, NS, wrapLS, LS, lsGet, lsSet };
 }
 
@@ -60,18 +60,18 @@ export function createPrefs(LS) {
 
 /**
  * B1 世界书附加条目：写入 / 自动同步（tavern/worldbook-sync.mjs）+ 全自动（用户 2026-09-28）+ 每聊天版本提醒 + 设置「数据与映射」「高级」的 eden-map:th 消息。
- * deps = { SELF, LS, lsGet, lsSet, life, base(), alive(), UL(), thBtns(), chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync }
+ * deps = { scriptBase, LS, lsGet, lsSet, life, base(), alive(), uiLang(), thBtns(), chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync }
  */
 export function createWbAuto(deps) {
-  const { SELF, LS, lsGet, lsSet, life, chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync } = deps;
+  const { scriptBase, LS, lsGet, lsSet, life, chatId, cardKey, post, hostToast, stateInject, macroSet, prefSync } = deps;
   let WBm = null;
   // B1 世界书附加条目：写入 / 自动同步（tavern/worldbook-sync.mjs）。只动我们自己的一本书；写前给差异；用户点了（或同意过自动同步）才写
   let shipP = null, wbLast = null;
   // 随地图发布的条目文件：路径读自包清单 data.worldbook_addon（包没声明 = 没有附加条目，静默）
   const wbShip = () => (shipP ??= Promise.resolve(deps.manifest).then(man => (man?.data?.worldbook_addon ? cdnFetch(deps.base() + (deps.packId === 'eden' ? '' : 'packs/' + deps.packId + '/') + man.data.worldbook_addon, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)) : null)).catch(() => null).then(j => { if (!j) shipP = null; return j; }));
-  const wbMod = async () => (WBm ??= await import(SELF + 'tavern/worldbook-sync.mjs').then(async m => { const man = await deps.manifest; if (!man) return null; m.setPrefix(worldbookPrefix(man, deps.packId)); return m; }).catch(() => null));   // 书名前缀来自包清单；取不到清单 = 不碰世界书（宁可不写，不猜一个名字）
+  const wbMod = async () => (WBm ??= await import(scriptBase + 'tavern/worldbook-sync.mjs').then(async m => { const man = await deps.manifest; if (!man) return null; m.setPrefix(worldbookPrefix(man, deps.packId)); return m; }).catch(() => null));   // 书名前缀来自包清单；取不到清单 = 不碰世界书（宁可不写，不猜一个名字）
   let JITm = null;
-  const wbJit = async () => (JITm ??= await import(SELF + 'tavern/worldbook-jit.mjs').catch(() => null));
+  const wbJit = async () => (JITm ??= await import(scriptBase + 'tavern/worldbook-jit.mjs').catch(() => null));
   /** 静默绑定代理（任务二，纯判定在 wb_jit.bindPlan）：书在那儿却没挂任何一处 = 条目不会生效。
    *  自己按「聊天 > 角色附加书 > 全局」找一档挂上，只在开发日志留 trace——不再让玩家进世界书设置手动勾。 */
   async function wbEnsureBound(W) {
@@ -128,7 +128,7 @@ export function createWbAuto(deps) {
       const v = r.plan?.to;
       if (v && lsGet('edenMapWbNoticeVer') !== v && gvar('eden_wb_notice') !== v) {   // 只有真正写了的那个标签页、写成功后才提示；每个版本一次
         lsSet('edenMapWbNoticeVer', v); gset('eden_wb_notice', v); toasted = true;
-        const p = r.plan, en = deps.UL() === 'en';
+        const p = r.plan, en = deps.uiLang() === 'en';
         hostToast(r.action === 'sync' ? (en ? 'Map worldbook add-on updated' : '地图世界书附加条目已更新') : (en ? 'Map worldbook add-on installed' : '已自动装好地图世界书附加条目'),
           [en ? `${p.from || '—'} → ${p.to}` : `${p.from || '—'} → ${p.to}（新增 ${p.add.length}、更新 ${p.update.length}、保留你改过的 ${p.keep.length + p.conflict.length}）`,
            ...(p.conflict.length ? [en ? `${p.conflict.length} entries you edited also changed upstream (kept yours)` : `你改过，上游也改了：${p.conflict.slice(0, 4).join('、')}${p.conflict.length > 4 ? ' …' : ''}（保留你的）`] : []),
@@ -145,7 +145,7 @@ export function createWbAuto(deps) {
     let prev; try { prev = thFn('getVariables')({ type: 'chat' })?.eden_wb_ver; } catch (e) { return; }
     if (prev === cur) return;
     const W = await wbMod(); if (id !== chatId() || life.dead) return;
-    if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.UL() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.UL() === 'en' ? `${prev} → ${cur}. Old places / names still work; retired entries were only lowered in priority.` : `${prev} → ${cur}。旧地名照样认；新版不再用的条目只降了优先级，没删。`], 8000); }, late ? 9500 : 0);
+    if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.uiLang() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.uiLang() === 'en' ? `${prev} → ${cur}. Old places / names still work; retired entries were only lowered in priority.` : `${prev} → ${cur}。旧地名照样认；新版不再用的条目只降了优先级，没删。`], 8000); }, late ? 9500 : 0);
     try { await thFn('insertOrAssignVariables')({ eden_wb_ver: cur }, { type: 'chat' }); } catch (e) {}
   }
   function thPrefs() { return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,

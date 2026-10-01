@@ -3,7 +3,7 @@
 // 与事态区分：事态 = 大类形状的小方块 / 图形 + 类型字；人物 = 圆形头像框 + 名字首字（或本机头像），颜色按名字哈希、避开事态大类色。
 // 开关和头像只存本机 localStorage（按聊天分开）；不发请求（头像是用户自己给的 data: / http 地址时由浏览器加载那张图）。
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
-import { REG, aspect, cur, curData, pendingFocus, setPendingFocus, viewer } from './app/state.mjs';
+import { mapRegistry, aspect, currentMapId, currentMapData, pendingFocus, setPendingFocus, osdViewer } from './app/state.mjs';
 import { packOverlay } from './app/current-pack.mjs';
 import { everyone, groupLabel, groupList, paneModel } from './core/people.mjs';   // 人物页的分组：包声明几组就画几节（S4-4）
 import { afterLoadIdle, esc } from './app/dom-helpers.mjs';
@@ -13,15 +13,15 @@ import { LANG } from './app/i18n.mjs';
 import { go } from './app/map-switch.mjs';
 import { closeCard, placeN, showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, setUserMoved, userMoved } from './app/locate.mjs';
-import { LS, chatId } from './app/extension-api.mjs';
-import { P, register } from './app/plugins.mjs';
+import { packStorage, chatId } from './app/extension-api.mjs';
+import { plugins, register } from './app/plugins.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
+import { uiTextOr } from './app/text-lookup.mjs';
 const CharactersView = (() => {
-  const T = (k, zh, v) => window.I18N.tx(k, zh, v);   // 共享 i18n 服务（viewer.html window.I18N）
   let portraits = {}, rosters = null, groups = null, rep = null, stageOrder = null, items = [], floor = 0, CM = null, prefs = { show: true, off: [] }, avatars = {}, els = [], flyName = null;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/characters-parse.mjs', document.baseURI).href).then(m => { CM = m; loadPrefs(); return m; }).catch(() => null);   // 首屏不取：页面 load 后空闲时预取，或第一次用到（有人物 / 改头像）时取；取到就读本机偏好
   const chat = () => (typeof chatId === 'string' ? chatId : '');
-  const store = () => (typeof LS !== 'undefined' ? LS : null);
+  const store = () => (typeof packStorage !== 'undefined' ? packStorage : null);
   function loadPrefs() { if (!CM) return; prefs = CM.readCharPrefs(store(), chat()); avatars = CM.readAvatars(store(), chat()); }
   const savePrefs = () => CM?.writeCharPrefs(store(), chat(), prefs);
   // 色觉模式（E7）：颜色只用来分组、不代表状态，但换一套色相表更容易在红绿 / 蓝黄色弱下彼此分开；每个框本来就有首字/头像做第二线索
@@ -38,53 +38,53 @@ const CharactersView = (() => {
   const avImg = n => { const u = avOf(n); return u ? `<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(u)}" data-i="${esc(ini(n))}" onerror="this.replaceWith(this.dataset.i)">` : ''; };
   const visible = c => prefs.show && !prefs.off.includes(c.name);
   // v0.9.3：显示名（自定义，custom.js）与位置来源：MVU（在场人物的位置字段）/ 标签（聊天里的人物标签）/ 同处（在场但没写位置，默认和你同处）
-  const dn = n => (typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.name(n) : n);
-  const srcOf = c => c.src === 'mvu' ? T('ch.src_mvu', 'MVU') : c.src === 'tag' ? T('ch.src_tag', '标签') : c.src === 'routine' ? T('ch.src_routine', '日程') : T('ch.src_infer', '同处');
+  const dn = n => (typeof plugins.CustomNamesView !== 'undefined' ? plugins.CustomNamesView.name(n) : n);
+  const srcOf = c => c.src === 'mvu' ? uiTextOr('ch.src_mvu', 'MVU') : c.src === 'tag' ? uiTextOr('ch.src_tag', '标签') : c.src === 'routine' ? uiTextOr('ch.src_routine', '日程') : uiTextOr('ch.src_infer', '同处');
   // 2026-09-28 待查 1/2/6：开局前不按「和你在一起」显示；在场表久未变降级为未知；「同处」加悬停说明来源和楼层
-  const when = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ev.floor', '第 {n} 楼', { n: c.floor });
-  const lastSeen = c => c.prelude ? T('ch.pre', '开局前 · 卡初始值') : c.stale ? T('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? T('ch.with_you', '和你在一起') : T('ch.floor', '聊天第 {n} 楼', { n: c.floor });
+  const when = c => c.prelude ? uiTextOr('ch.pre', '开局前 · 卡初始值') : c.stale ? uiTextOr('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? uiTextOr('ch.with_you', '和你在一起') : uiTextOr('ev.floor', '第 {n} 楼', { n: c.floor });
+  const lastSeen = c => c.prelude ? uiTextOr('ch.pre', '开局前 · 卡初始值') : c.stale ? uiTextOr('ch.stale', '未知 · 在场表 {n} 楼未变', { n: c.stale }) : c.present ? uiTextOr('ch.with_you', '和你在一起') : uiTextOr('ch.floor', '聊天第 {n} 楼', { n: c.floor });
   const srcTip = c => {
     if (c.src !== 'infer' && !c.stale) return '';
-    const s = c.prelude ? T('ch.infer_pre', '剧情还没开始：这是卡的初始在场表，开始后按聊天标签 / MVU 更新')
-      : c.stale ? T('ch.infer_stale', '在场表 {n} 楼没变，不再按同处显示；上次明确位置在第 {f} 楼', { n: c.stale, f: c.floor })
-      : T('ch.infer_hint', '人在在场表里但没写位置，默认和你同处');
+    const s = c.prelude ? uiTextOr('ch.infer_pre', '剧情还没开始：这是卡的初始在场表，开始后按聊天标签 / MVU 更新')
+      : c.stale ? uiTextOr('ch.infer_stale', '在场表 {n} 楼没变，不再按同处显示；上次明确位置在第 {f} 楼', { n: c.stale, f: c.floor })
+      : uiTextOr('ch.infer_hint', '人在在场表里但没写位置，默认和你同处');
     return ` title="${esc(s)}"`;
   };
 
   // 地点 → { map, nx, ny } / { map }（只知道层）/ null
-  const markerXY = async (map, id) => { const m = REG.maps[map]; if (!m?.data) return null; const d = map === cur ? curData : await getJSON(m.data);
+  const markerXY = async (map, id) => { const m = mapRegistry.maps[map]; if (!m?.data) return null; const d = map === currentMapId ? currentMapData : await getJSON(m.data);
     const k = d?.markers?.find(x => x.id === id); return k ? { nx: k.ax ?? k.nx, ny: k.ay ?? k.ny } : null; };
   async function where(c) {
     const d = drawnAt(hereRes(c.place), c.place); if (!d?.marker) return d;   // the node tree places it (app/spot.mjs); only a landmark needs its point from the map's data
     const p = await markerXY(d.map, d.marker); return p ? { map: d.map, ...p } : { map: d.map };
   }
 
-  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && cur) fly(flyName); }
+  async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl) && typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.renderUI(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && currentMapId) fly(flyName); }
   let seq = 0;
   async function render() {
-    for (const el of els) { if (typeof untrack === 'function') untrack(el); viewer?.removeOverlay(el); } els = [];
-    if (!viewer || !cur || !viewer.world.getItemCount() || REG.maps[cur]?.kind === 'estate' || !CM) return;
+    for (const el of els) { if (typeof untrack === 'function') untrack(el); osdViewer?.removeOverlay(el); } els = [];
+    if (!osdViewer || !currentMapId || !osdViewer.world.getItemCount() || mapRegistry.maps[currentMapId]?.kind === 'estate' || !CM) return;
     const my = ++seq, groups = new Map();
-    for (const c of items.filter(visible)) { const w = await where(c); if (my !== seq) return; if (!w || w.map !== cur || w.nx == null) continue;
+    for (const c of items.filter(visible)) { const w = await where(c); if (my !== seq) return; if (!w || w.map !== currentMapId || w.nx == null) continue;
       const k = w.nx.toFixed(3) + ',' + w.ny.toFixed(3); if (!groups.has(k)) groups.set(k, { w, list: [] }); groups.get(k).list.push(c); }
     for (const { w, list } of groups.values()) {
       const el = document.createElement('div'); el.className = 'chm' + (w.approx ? ' approx' : ''); el.dataset.chars = list.map(c => c.name).join('|');
       el.innerHTML = '<span class="chg">' + list.slice(0, 3).map((c, i) => `<i class="av" style="--c:${color(c.name)};z-index:${3 - i}">${avImg(c.name) || esc(ini(c.name))}</i>`).join('')
-        + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(dn(list[0].name))}${list.length > 1 ? ' ' + esc(T('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
+        + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(dn(list[0].name))}${list.length > 1 ? ' ' + esc(uiTextOr('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
       const label = list.map(c => `${dn(c.name)}（${c.place}）`).join('、');
-      if (typeof trackEl === 'function') trackEl(el, () => card(list), T('ch.aria', '人物：{s}', { s: label }));
+      if (typeof trackEl === 'function') trackEl(el, () => card(list), uiTextOr('ch.aria', '人物：{s}', { s: label }));
       placeN(el, w.nx, w.ny, OpenSeadragon.Placement.CENTER); els.push(el);
     }
     if (typeof declutter === 'function') declutter();
   }
   function card(list) {
     showCard(null, list.map(c => dn(c.name)).join('、'), '', '', list[0].place);
-    if (typeof P.ComposeView !== 'undefined') P.ComposeView.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
-    const tg = document.querySelector('#card .tag'); tg.textContent = T('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
+    if (typeof plugins.ComposeView !== 'undefined') plugins.ComposeView.attach({ go: list[0].place || '', ask: list.length === 1 ? dn(list[0].name) : '' });   // v0.9.6 地图 → 聊天
+    const tg = document.querySelector('#card .tag'); tg.textContent = uiTextOr('ch.tag', '人物'); tg.className = 'tag data'; tg.style.background = color(list[0].name);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;
-    const note = c => { const e = typeof P.CustomNamesView !== 'undefined' && P.CustomNamesView.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
+    const note = c => { const e = typeof plugins.CustomNamesView !== 'undefined' && plugins.CustomNamesView.entry(c.name); return e?.用途 ? ` · ${e.用途}` : ''; };
     if (list.length === 1) { const c = list[0]; const id = identity(c.name), it = rosterItem(c.name);
-      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(T('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(T('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(T('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(T('ch.last', '最后出现'))}</dt><dd>${esc(lastSeen(c))}</dd><dt>${esc(T('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
+      sv.innerHTML = `<dl class="fields">${id ? `<dt>${esc(uiTextOr('ch.identity', '身份'))}</dt><dd>${esc(id)}</dd>` : ''}${it?.tier ? `<dt>${esc(uiTextOr('ch.tier', '战力'))}</dt><dd><span class="chtier">${esc(it.tier)}</span></dd>` : ''}${c.roster ? (c.place ? `<dt>${esc(uiTextOr('ev.k_place', '地点'))}</dt><dd>${esc(c.place)}</dd>` : '') : `<dt>${esc(uiTextOr('ch.last', '最后出现'))}</dt><dd>${esc(lastSeen(c))}</dd><dt>${esc(uiTextOr('ch.src', '来源'))}</dt><dd>${esc(srcOf(c) + note(c))}</dd>`}</dl>${moreHtml(it, id)}`;
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
       sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { LocalStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       return; }
@@ -94,9 +94,9 @@ const CharactersView = (() => {
   async function fly(name) {
     const c = items.find(x => x.name === name); flyName = null; if (!c) return;
     const w = await where(c); if (!w) { card([c]); return; }
-    if (w.map !== cur) { flyName = name; if (typeof closeCard === 'function') closeCard(); setPendingFocus(null); go(w.map); return; }
+    if (w.map !== currentMapId) { flyName = name; if (typeof closeCard === 'function') closeCard(); setPendingFocus(null); go(w.map); return; }
     if (w.nx == null) { card([c]); return; }
-    setUserMoved(true); const vp = viewer.viewport, b = vp.getBounds(true), wd = Math.min(b.width, .25), h = wd * b.height / b.width;
+    setUserMoved(true); const vp = osdViewer.viewport, b = vp.getBounds(true), wd = Math.min(b.width, .25), h = wd * b.height / b.width;
     vp.fitBounds(new OpenSeadragon.Rect(w.nx - wd / 2, w.ny * aspect - h / 2, wd, h));
     setTimeout(() => card(items.filter(x => x.place === c.place && visible(x)).length ? items.filter(x => x.place === c.place) : [c]), 650);
   }
@@ -108,7 +108,7 @@ const CharactersView = (() => {
   const glist = () => groupList({ groups, rosters, declared: packOverlay?.entities?.groups });   // 分组：宿主发来的 groups 优先；旧宿主只发 rosters 时按包声明的组
   const glabel = g => groupLabel(g, LANG, k => window.I18N.t(k));
   const count = () => everyone(glist(), items).size;   // fix3：同一人只算一次
-  function bar() { if (typeof P.EventsView !== 'undefined') P.EventsView.renderBar?.(); }
+  function bar() { if (typeof plugins.EventsView !== 'undefined') plugins.EventsView.renderBar?.(); }
   // v0.9.5 名册（只读，卡内脚本按表的位置发现）：身份、阶段；分组可折叠（折叠状态存本机）
   const identity = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it?.identity) return it.identity; } return ''; };
   const rosterItem = n => { for (const g of glist()) { const it = g.items.find(i => i.name === n); if (it) return it; } return null; };
@@ -121,33 +121,33 @@ const CharactersView = (() => {
   function moreRows(it, id = '') {
     const m = it?.more; if (!m) return [];
     const r = [], hw = [m.height != null && m.height !== '' ? (typeof m.height === 'number' ? m.height + ' cm' : m.height) : '', m.weight != null && m.weight !== '' ? (typeof m.weight === 'number' ? m.weight + ' kg' : m.weight) : ''].filter(Boolean).join(' · ');
-    if (m.code) r.push([T('ch.m_code', '代号'), m.code]);
-    if (m.social && m.social !== id) r.push([T('ch.m_social', '社会身份'), m.social]);
-    if (hw) r.push([T('ch.m_hw', '身高 / 体重'), hw]);
-    if (m.known != null) r.push([slotLabel('known') || T('ch.m_known', '知情度'), m.known === true || m.known === '是' || m.known === 'true' ? T('ch.m_yes', '知情') : m.known === false || m.known === '否' || m.known === 'false' ? T('ch.m_no', '不知情') : String(m.known)]);
-    if (m.accessory) r.push([T('ch.m_acc', '饰物'), m.accessory]);
+    if (m.code) r.push([uiTextOr('ch.m_code', '代号'), m.code]);
+    if (m.social && m.social !== id) r.push([uiTextOr('ch.m_social', '社会身份'), m.social]);
+    if (hw) r.push([uiTextOr('ch.m_hw', '身高 / 体重'), hw]);
+    if (m.known != null) r.push([slotLabel('known') || uiTextOr('ch.m_known', '知情度'), m.known === true || m.known === '是' || m.known === 'true' ? uiTextOr('ch.m_yes', '知情') : m.known === false || m.known === '否' || m.known === 'false' ? uiTextOr('ch.m_no', '不知情') : String(m.known)]);
+    if (m.accessory) r.push([uiTextOr('ch.m_acc', '饰物'), m.accessory]);
     return r;
   }
   const moreHtml = (it, id) => { if (!moreOn()) return ''; const r = moreRows(it, id); if (!r.length) return '';
-    return `<details class="chmore" ${moreOpen() ? 'open' : ''}><summary>${esc(T('ch.more_h', '更多资料'))}</summary><dl class="fields">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`; };
+    return `<details class="chmore" ${moreOpen() ? 'open' : ''}><summary>${esc(uiTextOr('ch.more_h', '更多资料'))}</summary><dl class="fields">${r.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>`; };
   const GK = 'edenMapChGroups', closed = (() => { try { return new Set(JSON.parse(LocalStore.get(GK) || '[]')); } catch (e) { return new Set(); } })();
   const stageChip = s => { if (!s) return ''; const i = stageOrder ? stageOrder.indexOf(s) : -1, n = stageOrder?.length || 0;
-    return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(T('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
+    return `<span class="chstage" ${i >= 0 ? `style="--p:${(i + 1) / n}" title="${esc(uiTextOr('ch.stage_of', '第 {i} / {n} 步', { i: i + 1, n }))}"` : ''}>${i >= 0 ? `<i aria-hidden="true">${Array.from({ length: n }, (_, k) => `<b class="${k <= i ? 'on' : ''}"></b>`).join('')}</i>` : ''}${esc(s)}</span>`; };
   function row(c) {
     const id = identity(c.name), it = rosterItem(c.name);
-    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}${c.present ? `<s class="avb" title="${esc(T('ch.with_you', '和你在一起'))}"></s>` : ''}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}"${srcTip(c)}>${esc(srcOf(c))}</span> ${esc(when(c))}${it ? stageChip(it.stage) + statChip(it) + tierChip(it) : ''}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
-      + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(T('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
+    return `<li><button type="button" class="chgo" data-n="${esc(c.name)}"><i class="av" style="--c:${color(c.name)}">${avImg(c.name) || esc(ini(c.name))}${c.present ? `<s class="avb" title="${esc(uiTextOr('ch.with_you', '和你在一起'))}"></s>` : ''}</i><b>${esc(dn(c.name))}</b><em><span class="chsrc src-${esc(c.src || 'infer')}"${srcTip(c)}>${esc(srcOf(c))}</span> ${esc(when(c))}${it ? stageChip(it.stage) + statChip(it) + tierChip(it) : ''}</em><small>${esc((id ? id + ' · ' : '') + c.place)}</small></button>`
+      + `<label class="chsw"><input type="checkbox" role="switch" data-n="${esc(c.name)}" aria-label="${esc(uiTextOr('ch.toggle_one', '在地图上显示 {n}', { n: c.name }))}" ${prefs.off.includes(c.name) ? '' : 'checked'} ${prefs.show ? '' : 'disabled'}></label></li>`;
   }
   // v0.9.6（E2 / E13）：名册行的等级、核心数值与档位名（字段名由变量映射定，只读）；设置「人物栏显示数值」关掉就不显示（本机 edenMapCharStats，默认开）
   const statsOn = () => { try { return LocalStore.get('edenMapCharStats') !== '0'; } catch (e) { return true; } };
   const statChip = it => { if (!statsOn() || (!it.grade && it.core == null)) return '';
     const t = [it.grade, it.core != null ? `${it.coreStage ? it.coreStage + ' ' : ''}${it.core}` : ''].filter(Boolean).join(' · ');
-    return `<span class="chstat" title="${esc([it.grade ? T('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
+    return `<span class="chstat" title="${esc([it.grade ? uiTextOr('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
   // v0.9.6 E1 战力小签（只读，卡里写明才有）
-  const tierChip = it => it?.tier ? `<span class="chtier" title="${esc(T('ch.tier', '战力'))}">${esc(it.tier)}</span>` : '';
+  const tierChip = it => it?.tier ? `<span class="chtier" title="${esc(uiTextOr('ch.tier', '战力'))}">${esc(it.tier)}</span>` : '';
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
-    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${it.src ? ' · ' + esc(T('ch.from_card', '设定')) : ''}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${it.src ? ' · ' + esc(uiTextOr('ch.from_card', '设定')) : ''}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner) {
@@ -157,13 +157,13 @@ const CharactersView = (() => {
     // fix3（用户 2026-09-28）：同一人既在场又在名册里时只列在「在场」一次（在场行带名册的阶段 / 数值），名册组只列不在场的，组名后注明「另 N 人在场」
     // S4-4：分节来自包声明的名册组（core/people.mjs），不再是写死的在场 / 成员 / 目标三节
     const M = paneModel(glist(), items, glabel), extra = M.present.extra;
-    const also = n => n ? ' · ' + T('ch.also_here', '另 {n} 人在场', { n }) : '';
-    const ck = typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.clock : null, of = typeof P.CustomNamesView !== 'undefined' ? P.CustomNamesView.outfit : null;
+    const also = n => n ? ' · ' + uiTextOr('ch.also_here', '另 {n} 人在场', { n }) : '';
+    const ck = typeof plugins.CustomNamesView !== 'undefined' ? plugins.CustomNamesView.clock : null, of = typeof plugins.CustomNamesView !== 'undefined' ? plugins.CustomNamesView.outfit : null;
     // fix3：还没选开局（聊天只有开场白那一楼）时，人物 / 时间 / 地点都来自卡的 MVU 初始值，明确标出来
-    const pre = ck?.pre ? `<p class="chpre" role="note">${esc(T('ch.pre', '开局前 · 卡初始值'))}<small>${esc(T('ch.pre_tip', '还没选开局：下面是卡的 MVU 初始变量，选了开局后按剧情更新'))}</small></p>` : '';
+    const pre = ck?.pre ? `<p class="chpre" role="note">${esc(uiTextOr('ch.pre', '开局前 · 卡初始值'))}<small>${esc(uiTextOr('ch.pre_tip', '还没选开局：下面是卡的 MVU 初始变量，选了开局后按剧情更新'))}</small></p>` : '';
     // fix3（用户 2026-09-28）：着装属于人（主角），放在人物页顶部「你」这一行，不再挂在地点卡上
-    const me = of?.text ? `<div class="chme"><i class="av me" aria-hidden="true">${esc(T('ch.me_i', '你'))}</i><b>${esc(T('ch.me', '你（主角）'))}</b><small title="${esc(of.items ? Object.entries(of.items).map(([k, v]) => `${k}：${v}`).join('\n') : of.text)}">${esc(T('cu.outfit', '着装：{s}', { s: of.text }))}</small></div>` : '';
-    el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(T('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
+    const me = of?.text ? `<div class="chme"><i class="av me" aria-hidden="true">${esc(uiTextOr('ch.me_i', '你'))}</i><b>${esc(uiTextOr('ch.me', '你（主角）'))}</b><small title="${esc(of.items ? Object.entries(of.items).map(([k, v]) => `${k}：${v}`).join('\n') : of.text)}">${esc(uiTextOr('cu.outfit', '着装：{s}', { s: of.text }))}</small></div>` : '';
+    el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(uiTextOr('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
       + group(M.present.id, M.present.label, items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join(''))
       + M.others.map(g => group(g.id, g.label, g.rest.length + also(g.also), g.rest.map(rosterRow).join(''))).join('') + '</div>';
     for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { LocalStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
@@ -175,7 +175,7 @@ const CharactersView = (() => {
       else { const n = inp.dataset.n; prefs.off = inp.checked ? prefs.off.filter(x => x !== n) : [...prefs.off, n]; }
       savePrefs(); render(); bar(); return;
     }
-    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof P.EventsView !== 'undefined') P.EventsView.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
+    const b = e.type === 'click' && e.target.closest('button.chgo'); if (b) { if (typeof plugins.EventsView !== 'undefined') plugins.EventsView.collapse(); if (b.dataset.card) cardOf(b.dataset.card); else fly(b.dataset.n); }
   }
   // 本机头像（EdenMap.setAvatar / removeAvatar 转到这里）
   // data URL 头像先压到 160 px 的 webp / jpeg（和状态栏共用 localStorage 额度，通读 R3）
@@ -187,7 +187,7 @@ const CharactersView = (() => {
   }
   async function setAvatar(name, src) { src = await shrink(src); const C = await mod(); if (!C || !store()) return false;
     const r = C.setAvatarEx ? C.setAvatarEx(store(), chat(), name, src) : { ok: C.setAvatar(store(), chat(), name, src) }, ok = r.ok;
-    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof P.CustomNamesView !== 'undefined') P.CustomNamesView.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
+    if (!ok && C.warnText && (r.reason === 'cap' || r.reason === 'quota') && typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.toast([C.warnText(r.reason, typeof LANG !== 'undefined' && LANG === 'en')]);   // A-13：满了要说，不悄悄失败
     if (ok) { loadPrefs(); render(); bar(); } return ok; }
   async function removeAvatar(name) { const C = await mod(); const ok = !!C && !!store() && C.removeAvatar(store(), chat(), name); if (ok) { loadPrefs(); render(); bar(); } return ok; }
   function chatChanged() { loadPrefs(); render(); bar(); }

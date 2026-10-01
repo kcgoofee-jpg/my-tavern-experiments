@@ -1,6 +1,6 @@
 // node tests/selfcheck.test.mjs —— 卡内脚本启动自检（map/tavern/selfcheck.mjs）的判定逻辑
 import assert from 'node:assert/strict';
-import { evaluate, findPaths, getPath, wbMissing, warnSig, cmpVer, latestTag, dueCheck, swapVer, DAY } from '../map/tavern/selfcheck.mjs';
+import { evaluate, findPaths, getPath, wbMissing, warnSig, cmpVer, latestTag, dueCheck, swapVer, MS_PER_DAY } from '../map/tavern/selfcheck.mjs';
 
 const HERE_PATH = '世界.当前地点';
 let n = 0; const t = (name, f) => { f(); n++; console.log('ok', name); };
@@ -65,7 +65,7 @@ t('更新检查：最新标签、版本比较、一天一次、换标签地址',
   assert.equal(latestTag({ versions: [{ version: 'map-v0.6.1' }, { version: 'map-v0.10.0' }, { version: 'main' }, { version: 'map-v0.9.1' }] }), '0.10.0');
   assert.equal(latestTag({ versions: ['map-v0.6.1', 'map-v0.6.0', 'v9.9.9'] }), '0.6.1');
   assert.equal(latestTag({}), null); assert.equal(latestTag(null), null);
-  const now = 1e12; assert.equal(dueCheck(null, now), true); assert.equal(dueCheck(now - DAY + 1000, now), false); assert.equal(dueCheck(now - DAY, now), true); assert.equal(dueCheck(now + 5000, now), true);
+  const now = 1e12; assert.equal(dueCheck(null, now), true); assert.equal(dueCheck(now - MS_PER_DAY + 1000, now), false); assert.equal(dueCheck(now - MS_PER_DAY, now), true); assert.equal(dueCheck(now + 5000, now), true);
   const u = 'https://cdn.jsdmirror.com/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.1/map/tavern/eden-map.js';
   assert.equal(swapVer(u, '0.9.2'), u.replace('map-v0.9.1', 'map-v0.9.2'));
   assert.equal(swapVer('https://cdn.jsdelivr.net/gh/x/y@preview/map/tavern/eden-map.js', '0.9.2'), null);   // 跟分支：不换

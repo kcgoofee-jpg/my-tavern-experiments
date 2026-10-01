@@ -9,7 +9,7 @@ import { describe as depthDescribe, island as depthIsland } from '../core/depth.
 import * as Haze from '../core/haze.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
 import { registry, slotEl } from './layer-host.mjs';
-import { REG, cur, curData, depthData } from './state.mjs';
+import { mapRegistry, currentMapId, currentMapData, depthData } from './state.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { busOn } from './bus.mjs';
 
@@ -26,7 +26,7 @@ function css() { if (document.getElementById(CSS_ID)) return;
 /** 当前纵深：当前地点（.mk.here）所在岛的 d；认不出 / 没配纵深数据 = 0（近处） */
 export function currentDepth() {
   const name = document.querySelector('.mk.here')?.dataset?.name;
-  const metas = REG?.maps?.[cur]?.markers;
+  const metas = mapRegistry?.maps?.[currentMapId]?.markers;
   if (!name || !metas || !depthData?.islands) return 0;
   for (const m of Object.values(metas)) {
     if (m?.name !== name || !m.island || !depthData.islands[m.island]) continue;
@@ -38,7 +38,7 @@ export function currentDepth() {
 /** 纵深系统标准化摘要（core/depth.mjs 的 describe）：maxDepth / currentHaze / exploredRatio / fogEnabled */
 export function depthSummary() {
   return depthDescribe(depthData, {
-    depth: d, map: cur, markers: curData?.markers?.length || 0,
+    depth: d, map: currentMapId, markers: currentMapData?.markers?.length || 0,
     explored: window.FogApi?.raw?.() || {}, fogEnabled: window.FogApi?.on?.(),
   });
 }

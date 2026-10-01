@@ -24,7 +24,7 @@ export const DOMAINS = ['assets', 'npc', 'events', 'depth'];
 /** 域 → LayerRegistry 槽位（P3-C 契约；写错在模块加载时就炸，不留到运行期） */
 export const SLOT_OF = Object.freeze({ assets: 'markers', npc: 'labels', events: 'events', depth: 'depth-haze' });
 /** 受限 DSL：v1 就这三个（第四个域没有指令形） */
-export const OPS = ['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT'];
+export const LEDGER_OPS = ['OP_LOOT', 'OP_ROUTINE', 'OP_EVENT'];
 export const MAX_OPS = 3;         // 一拍最多解卷几个指令（多出来的丢弃并计数）
 export const MAX_TEXT = 40;       // 名字 / 房间名截断
 const MAX_ARG = 400;              // 一条指令的参数区最长扫描长度（防拖尾噪声连坐）
@@ -374,6 +374,6 @@ export function describe(plan, state = null, carryState = null) {
   };
 }
 
-export const Ledger = { DOMAINS, SLOT_OF, DOMAIN_LABEL, OPS, MAX_OPS, EVENT_TYPES, AUTHORITY, AUTHORITY_DEFAULT, promotable,
+export const Ledger = { DOMAINS, SLOT_OF, DOMAIN_LABEL, OPS: LEDGER_OPS, MAX_OPS, EVENT_TYPES, AUTHORITY, AUTHORITY_DEFAULT, promotable,
   domainOf, slotOf, unmarshal, envEntry, dispatch, factKey, audit, stripWhy, carry, carryLine, claim, describe,
   SLOT_ROOT, SLOT_KEYS, slotProbe, slotDeclare, slotPut, slotLine, slotSave };

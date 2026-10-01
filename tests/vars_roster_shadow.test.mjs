@@ -73,8 +73,8 @@ test('present list, world time, clock text, outfit, reputation: identical', () =
     assert.deepEqual(o, OV.outfit(st, om.outfit), name); assert.equal(NV.outfitText(o), OV.outfitText(OV.outfit(st, om.outfit)), name);
     assert.equal(NV.reputation(st, nm.reputation), OV.reputation(st, om.reputation), name);
     assert.equal(NV.reputation(st), OV.reputation(st), name + ' (no path)');
-    assert.equal(NAD.mode(true, st, nm), OAD.mode(true, st, om)); if (nm.location) assert.equal(NAD.get(st, nm.location), OAD.get(st, om.location), name + ' location');
-    assert.equal(NAD.get(st, ''), undefined, 'an empty path reads nothing (v1 returned the whole tree)');
+    assert.equal(NAD.mode(true, st, nm), OAD.mode(true, st, om)); if (nm.location) assert.equal(NAD.getByPath(st, nm.location), OAD.get(st, om.location), name + ' location');
+    assert.equal(NAD.getByPath(st, ''), undefined, 'an empty path reads nothing (v1 returned the whole tree)');
   }
 });
 
@@ -109,7 +109,7 @@ test('recorded sessions: location, clock, outfit, roster and the people line for
   let states = 0;
   for (const f of ['session_a', 'session_b']) for (const [name, st] of entries.filter(([k]) => k === f || k.startsWith(f + '_f'))) {
     const nm = NAD.detect(st), om = OAD.detect(st);
-    assert.equal(NAD.get(st, nm.location), OAD.get(st, om.location), name); assert.equal(nm.location, om.location);
+    assert.equal(NAD.getByPath(st, nm.location), OAD.get(st, om.location), name); assert.equal(nm.location, om.location);
     assert.deepEqual(NV.worldTime(st, nm), OV.worldTime(st, om)); assert.equal(NV.todPhase(NV.worldTime(st, nm)), OV.todPhase(OV.worldTime(st, om)));
     assert.equal(J(NV.rosters(st, nm, FALLBACK)), J(oldRosters(OV.rosters(st, om, FALLBACK)))); states++;
   }

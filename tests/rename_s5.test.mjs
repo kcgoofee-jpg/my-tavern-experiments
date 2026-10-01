@@ -11,6 +11,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MAP = JSON.parse(readFileSync(path.join(ROOT, 'tools/rename_s5_map.json'), 'utf8'));
 const has = p => existsSync(path.join(ROOT, p));
+const GLOBALS = JSON.parse(readFileSync(path.join(ROOT, 'tools/rename_s5_globals.json'), 'utf8'));
+/** the S5-3 name of an export that the S5-2 split lists under its old name */
+const renamedTo = (mod, name) => GLOBALS.entries.find(e => e.kind === 'ident' && e.scope?.module === mod && e.from === name)?.to ?? name;
 
 const RETIRED = new Set(['map/app/legacy-globals.mjs']);   // renamed in S5-2, retired in S5-3 (its getters became window.ViewerDebug, app/viewer-debug.mjs)
 
@@ -65,7 +68,7 @@ test('S5-2 split: every job module exists, carries its listed exports, stays und
     assert.equal(has(sp.from), !!sp.keep, sp.from + (sp.keep ? ' stays (gives up only the listed exports)' : ' is gone'));
     for (const [t, names] of Object.entries(sp.to)) {
       assert.ok(has(t), t); assert.ok(rd(t).split('\n').length <= 401, t + ' <= 400 lines');
-      const ex = exportsOf(t); for (const n of names) assert.ok(ex.has(n), `${t} exports ${n}`);
+      const ex = exportsOf(t); for (const n of names) assert.ok(ex.has(renamedTo(t, n)), `${t} exports ${renamedTo(t, n)}`);
       assert.doesNotMatch(rd(t), /z-index\s*:\s*\d|zIndex\s*:\s*\d/, t + ': no bare z-index');
     }
   }
@@ -96,4 +99,95 @@ test('S5-2 split: boot.mjs pulls in every shell job module at the old slot, view
   for (const t of shellMods) { const i = boot.indexOf(`import './${path.posix.basename(t)}';`, at); assert.ok(i > at, `${t} imported (bare) after extension-api, in order`); at = i; }
   assert.ok(boot.indexOf("import './host-messages.mjs';") > at, 'host-messages stays after the shell block');
   for (const sp of MAP.splits) for (const t of Object.keys(sp.to)) assert.ok(html.includes(`<link rel="modulepreload" href="${t.replace(/^map\//, '')}">`), t + ' preloaded');
+});
+
+// ---- S5-3: window globals, plugin names, short identifiers, the ViewerDebug namespace, dead hooks ------------------------------------
+const tracked = execFileSync('git', ['ls-files', '-z', 'map', 'tests', 'tools', 'skills'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 }).split('\0').filter(f => has(f));
+const sourceFiles = d => tracked.filter(f => f.startsWith(d) && /\.(mjs|js|html)$/.test(f) && !/^map\/(vendor|estate\/vendor|art|shots|_proto)\//.test(f));
+const globalsOf = kinds => GLOBALS.entries.filter(e => kinds.includes(e.kind));
+/** every exported name, including each declarator of `export let a, b = 1, c;` (split at top level, not inside brackets) */
+const exportNames = f => {
+  const out = exportsOf(f);
+  for (const m of rd(f).matchAll(/export\s+(?:const|let|var)\s+([^;\n]*)/g)) {
+    let depth = 0, start = 0; const parts = [];
+    for (let i = 0; i <= m[1].length; i++) { const c = m[1][i]; if ('([{'.includes(c)) depth++; else if (')]}'.includes(c)) depth--; else if ((c === ',' && !depth) || i === m[1].length) { parts.push(m[1].slice(start, i)); start = i + 1; } }
+    for (const d of parts) { const n = d.trim().match(/^([\w$]+)\s*(?:=|$)/); if (n) out.add(n[1]); }
+  }
+  return out;
+};
+const SHIMS = [];   // old window names kept as read-only aliases in map/app/legacy-globals.mjs (S5-3 found none that something outside the repo could call)
+
+test('S5-3 map: the Wave-S5 rows of tables C and D are all in the globals map, and the map is what the extractor writes', () => {
+  const out = execFileSync('python3', ['tools/rename_s5_globals_extract.py', '--check'], { cwd: ROOT, encoding: 'utf8' });
+  assert.match(out, /^\d+ entries: /);
+  assert.ok(globalsOf(['global', 'plugin']).length >= 50, 'the 18 TC* globals, the 11 plugins and the __ hooks');
+  assert.ok(globalsOf(['ident']).length >= 70, 'the table D identifiers');
+  assert.equal(globalsOf(['debug']).length, 33);
+});
+
+test('S5-3 globals: no window.TC[A-Z] / P.TC[A-Z] left in map/ (except the listed shims), and no old global or plugin name is left anywhere in map/ tests/ tools/', () => {
+  const bad = [], oldNames = globalsOf(['global', 'plugin']).map(e => e.from).filter(n => !SHIMS.includes(n));
+  const re = new RegExp(`(?<![\\w$])(?:${oldNames.join('|')})(?![\\w$])`), tc = /\b(?:window|parent|globalThis|P)\.TC[A-Z]/;
+  for (const f of tracked) {
+    if (!/\.(mjs|js|html|py|sh)$/.test(f) || /^(tools\/(rename_s5|test_architecture_gate)|tests\/rename_s5|map\/(vendor|estate\/vendor|art|shots|_proto)\/)/.test(f)) continue;
+    const text = rd(f);
+    if (re.test(text)) bad.push(`${f}: ${text.match(re)[0]}`);
+    if (f.startsWith('map/') && tc.test(text)) bad.push(`${f}: ${text.match(tc)[0]}`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('S5-3 identifiers: every table D export is renamed (the old name is not exported, the new one is) and the importers name only exports that exist', () => {
+  for (const e of GLOBALS.entries.filter(x => x.kind === 'ident' && x.scope?.role === 'export')) {
+    const ex = exportNames(e.scope.module);
+    assert.ok(!ex.has(e.from), `${e.scope.module} still exports ${e.from}`);
+    assert.ok(ex.has(e.to), `${e.scope.module} does not export ${e.to}`);
+  }
+  const mods = new Map(GLOBALS.entries.filter(x => x.kind === 'ident' && x.scope?.module).map(e => [e.scope.module, exportNames(e.scope.module)])), bad = [];
+  for (const f of [...sourceFiles('map/'), ...sourceFiles('tests/'), ...sourceFiles('tools/')]) {
+    if (/^tests\/helpers\/.*frozen/.test(f)) continue;
+    for (const m of rd(f).matchAll(/import\s*\{([^}]*)\}\s*from\s*'(\.[^']+)'/g)) {
+      const t = path.posix.normalize(path.posix.join(path.posix.dirname(f), m[2])); if (!mods.has(t)) continue;
+      for (const item of m[1].split(',').map(x => x.trim().split(/\s+as\s+/)[0]).filter(Boolean)) if (!mods.get(t).has(item)) bad.push(`${f}: ${item} is not exported by ${t}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+  // the exports that keep their short name on purpose are not in the map
+  assert.ok(exportsOf('map/core/storage.mjs').has('get'), 'storage.get mirrors LocalStore.get and stays');
+});
+
+test('S5-3 host family: the deps-bag names are renamed together (keys, DEPS lists, uses): none of the old names is left in map/tavern', () => {
+  const fam = GLOBALS.entries.filter(e => e.kind === 'ident' && e.scope?.family), bad = [];
+  assert.ok(fam.length >= 28, 'BR, MV, CTX, BG, SELF, OWNER, UL and the 21 module handles');
+  for (const f of sourceFiles('map/tavern/')) {
+    const text = rd(f);
+    for (const e of fam) if (new RegExp(`(?<![\\w$])${e.from}(?![\\w$])`).test(text)) bad.push(`${f}: ${e.from}`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test('S5-3 ViewerDebug: it exposes every getter the probes read, nothing reads the old ad-hoc window getters, and legacy-globals.mjs is gone', () => {
+  assert.ok(!has('map/app/legacy-globals.mjs') && has('map/app/viewer-debug.mjs'));
+  const body = rd('map/app/viewer-debug.mjs'), exposed = new Set([...body.slice(body.indexOf('const G = {'), body.indexOf('const debug')).matchAll(/(\w+): \(\) => /g)].map(m => m[1]));
+  assert.deepEqual([...exposed].sort(), GLOBALS.entries.filter(e => e.kind === 'debug').map(e => e.to).sort(), 'the map and the module agree');
+  const used = new Set(); let n = 0;
+  for (const f of sourceFiles('tools/browser/')) for (const m of rd(f).matchAll(/\bViewerDebug\.(\w+)/g)) { used.add(m[1]); n++; }
+  assert.ok(n > 100 && used.size > 15, `probes read ViewerDebug (${n} reads, ${used.size} names)`);
+  for (const u of used) assert.ok(exposed.has(u), `probes read ViewerDebug.${u} which is not exposed`);
+  // product code never reads it (only tools/ and tests/ do)
+  for (const f of sourceFiles('map/')) if (f !== 'map/app/viewer-debug.mjs') assert.doesNotMatch(rd(f), /ViewerDebug/, f);
+  assert.match(rd('map/app/boot.mjs'), /import '\.\/viewer-debug\.mjs';/);
+  assert.match(rd('map/viewer.html'), /<link rel="modulepreload" href="app\/viewer-debug\.mjs">/);
+});
+
+test('S5-3 dead hooks: the four read-only hooks are gone, the storage owners name real files', () => {
+  for (const n of ['__edenHostVersions', '__edenHereText', '__edenMvuSnapshotStatus', '__composeTest']) for (const f of [...sourceFiles('map/'), ...sourceFiles('tools/browser/'), ...sourceFiles('tests/')].filter(f => f !== 'tests/rename_s5.test.mjs')) assert.ok(!rd(f).includes(n), `${f} still names ${n}`);
+  const st = rd('map/core/storage.mjs'), owners = [...st.matchAll(/owner: '([\w./-]+\.(?:mjs|js|html))'/g)].map(m => m[1]);
+  assert.ok(owners.length >= 15);
+  for (const o of owners) assert.ok(has('map/' + o) || has(o), `storage.mjs owner ${o} is not a file under map/`);
+});
+
+test('S5-3 codemod: idempotent — a second --globals run plans no edit', () => {
+  const out = execFileSync('node', ['tools/rename_s5.mjs', '--globals', 'tools/rename_s5_globals.json', '--dry-run'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.match(out, /dry run: 0 edit\(s\) in 0 file\(s\), 0 problem\(s\), 0 manual/, out.split('\n').slice(-6).join('\n'));
 });

@@ -50,7 +50,7 @@ test('A2 孤儿清扫：只清别的实例留下的节点，不碰没打标记�
   assert.deepEqual([...d.live].map(n => n.id).sort(), ['chat', 'eden-map-root']);
   assert.ok(d.live.has(mine));
   assert.equal(T.sweepOrphans(d, null), 1);   // cleanup：全清自己的
-  assert.ok(HOST.includes("root.setAttribute('data-eden-owner', OWNER)"), '宿主根节点打标记');
+  assert.ok(HOST.includes("root.setAttribute('data-eden-owner', scriptOwner)"), '宿主根节点打标记');
   assert.match(HOST, /querySelectorAll\('\[data-eden-owner\]'\)/);
 });
 

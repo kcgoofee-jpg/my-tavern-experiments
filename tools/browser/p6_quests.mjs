@@ -17,7 +17,7 @@ try {
   const vf = await H.viewer();
 
   await step('没事态时不画节点（不许硬造线索）', async () => {
-    await vf.evaluate(() => { try { window.go?.('tc_upper'); } catch (e) {} });
+    await vf.evaluate(() => { try { window.ViewerDebug?.go?.('tc_upper'); } catch (e) {} });
     await B.wait(2500);
     const r = await vf.evaluate(() => ({ n: window.QuestsApi?.now?.()?.length ?? -1, fx: (window.LayerHostApi?.describe?.()?.slots || []).find(s => s.id === 'fx')?.layers }));
     rep.metric('empty', r);
@@ -30,8 +30,8 @@ try {
     const r = await vf.evaluate(async () => {
       const P = window.P || {};
       const ev = window.TCEventsProbe || null;
-      const cur = window.cur;
-      const places = (window.curData?.markers || []).slice(0, 6).map(k => ({ name: (window.REG?.maps?.[cur]?.markers?.[k.id]?.name) || k.name || k.id, nx: k.nx, ny: k.ny })).filter(p => p.name && p.nx != null);
+      const cur = window.ViewerDebug?.currentMapId;
+      const places = (window.ViewerDebug?.currentMapData?.markers || []).slice(0, 6).map(k => ({ name: (window.ViewerDebug?.mapRegistry?.maps?.[cur]?.markers?.[k.id]?.name) || k.name || k.id, nx: k.nx, ny: k.ny })).filter(p => p.name && p.nx != null);
       const mod = await import(new URL('core/quests.mjs', document.baseURI).href);
       const events = places.slice(0, 2).map((p, i) => ({ grp: i ? '治安' : '灾害', place: p.name, floor: 10, title: p.name + '出事' }));
       const q = mod.dispatch({ events, places, floor: 10, day: 1, seed: 5, max: 3, min: 1.5 });

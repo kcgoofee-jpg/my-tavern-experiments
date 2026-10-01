@@ -1,14 +1,14 @@
 // 设置弹层：分页、SettingsApi.registerSection、搜索、initSettings、关于 / 检查更新、自检。
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
-import { tx } from './text-lookup.mjs';
+import { uiTextOr } from './text-lookup.mjs';
 import { LANG, paintSegs, setTheme } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
 import { estateLook, narrowNow } from './subpage3d-host.mjs';
 import { firstRunHint, noticeRefresh } from './notice-layer.mjs';
 import { setActs } from './control-column.mjs';
-import { P } from './plugins.mjs';
+import { plugins } from './plugins.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 import { setFpsMeter } from './fps.mjs';
 import { MAINTAINER_MODE_KEY } from '../core/room-gallery-logic.mjs';
@@ -22,11 +22,11 @@ const PAGES = { home: ['settings_title', '设置'], display: ['s.display', '显�
 export function setPage(pg, quiet) {
   if (!PAGES[pg]) pg = 'home'; setPageNow = pg;
   document.querySelectorAll('#setPop .spage').forEach(x => { x.hidden = x.dataset.page !== pg; });
-  $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = tx(...PAGES[pg]);
+  $('#setBack').hidden = pg === 'home'; $('#setTitle').textContent = uiTextOr(...PAGES[pg]);
   if (!quiet) { $('#setPop').scrollTop = 0; const f = pg === 'home' ? ($('#setQ')?.offsetParent ? $('#setQ') : $('#setPop .sgroups button')) : $('#setBack'); f?.focus({ preventScroll: true }); }
   if (pg === 'update') renderSelfCheck();
   if (pg === 'license') renderLicense();
-  if (pg === 'people') { const n = typeof P.CharactersView !== 'undefined' ? P.CharactersView.count() : 0; $('#chSrc').textContent = tx('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
+  if (pg === 'people') { const n = typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.count() : 0; $('#chSrc').textContent = uiTextOr('s.ch_src_n', `当前聊天 ${n} 人`, { n }); }
   if (pg === 'adv') renderLine();
   if (pg === 'display') tierAvail();
   if (pg === 'data') { if (window.top !== window) post({ type: 'eden-map:storage-info' }); else window.renderStorageSettings?.(null); }
@@ -60,25 +60,25 @@ function renderLicense() {
   const box = $('#licBox'); if (!box) return; box.innerHTML = '';
   const label = (t) => { const b = document.createElement('b'); b.textContent = t; b.style.cssText = 'display:block;margin:var(--sp-4) 0 var(--sp-2)'; box.appendChild(b); };
   const row = (k, v, warn) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<span${warn ? ' style="color:var(--warn,#c66)"' : ''}>${esc(k)}</span><code style="max-width:62%;text-align:right;word-break:break-all;white-space:normal">${esc(v)}</code>`; box.appendChild(r); };
-  label(tx('s.lic_card', '角色卡信息（自动读取）'));
+  label(uiTextOr('s.lic_card', '角色卡信息（自动读取）'));
   const d = cardOf();
-  if (!d) row(tx('s.lic_state', '状态'), tx('s.lic_no_tav', '面板还没读到卡片信息（不影响使用）：在酒馆里打开地图后自动显示'), false);
+  if (!d) row(uiTextOr('s.lic_state', '状态'), uiTextOr('s.lic_no_tav', '面板还没读到卡片信息（不影响使用）：在酒馆里打开地图后自动显示'), false);
   else {
-    if (d.name) row(tx('s.lic_name', '角色名'), d.name);
-    if (d.creator) row(tx('s.lic_creator', '作者'), d.creator);
-    if (d.version) row(tx('s.lic_ver', '版本'), d.version);
-    if (d.tags.length) row(tx('s.lic_tags', '标签'), d.tags.join('、'));
-    if (d.notes) row(tx('s.lic_notes', '作者注'), d.notes);
-    if (!d.creator && !d.version && !d.tags.length && !d.notes) row(tx('s.lic_state', '状态'), tx('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
+    if (d.name) row(uiTextOr('s.lic_name', '角色名'), d.name);
+    if (d.creator) row(uiTextOr('s.lic_creator', '作者'), d.creator);
+    if (d.version) row(uiTextOr('s.lic_ver', '版本'), d.version);
+    if (d.tags.length) row(uiTextOr('s.lic_tags', '标签'), d.tags.join('、'));
+    if (d.notes) row(uiTextOr('s.lic_notes', '作者注'), d.notes);
+    if (!d.creator && !d.version && !d.tags.length && !d.notes) row(uiTextOr('s.lic_state', '状态'), uiTextOr('s.lic_unknown', '未读到本卡的作者或来源信息：卡片可能经转卖、搬运，存在数据风险，也可能损害原作者权益。建议只从原作者或授权渠道获取卡片。'), true);
   }
-  label(tx('s.lic_map', '地图项目'));
+  label(uiTextOr('s.lic_map', '地图项目'));
   { const cr = PACK?.credits, pk = cr?.pack?.[0];   // 署名取自包清单的 credits（K-R70 随附）：仓库、地图作者、原作者；包没写就不出这一行
-    if (pk?.url) row(tx('s.lic_repo', '空间地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
-    if (pk?.name) row(tx('s.lic_map_by', '地图开发'), pk.name);
-    if (cr?.card?.creator) row(tx('s.lic_orig', '原作角色卡'), tx('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator })); }
-  label(tx('s.lic_disc', '免责声明'));
+    if (pk?.url) row(uiTextOr('s.lic_repo', '空间地图（开源）'), String(pk.url).replace(/^https:\/\//, ''));
+    if (pk?.name) row(uiTextOr('s.lic_map_by', '地图开发'), pk.name);
+    if (cr?.card?.creator) row(uiTextOr('s.lic_orig', '原作角色卡'), uiTextOr('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator })); }
+  label(uiTextOr('s.lic_disc', '免责声明'));
   const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
-  p.textContent = tx('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');
+  p.textContent = uiTextOr('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');
   box.appendChild(p);
 }
 
@@ -88,9 +88,9 @@ function setSearch(q) {
   const rows = []; for (const pg of document.querySelectorAll('#setPop .spage:not([data-page="home"])'))
     for (const r of pg.querySelectorAll(':scope > .row, :scope > .hrow, :scope > label, details > summary, #aboutBox > label, #branchBox > .hrow, #licBox > label, #selfCheck > b, #cuBox .cu-open, #cmpBox > summary')) {
       const txt = (r.textContent || '').trim(); if (txt && txt.toLowerCase().includes(q)) rows.push([pg.dataset.page, r, txt.slice(0, 40)]); }
-  if (!rows.length) { box.innerHTML = `<small>${esc(tx('s.no_hit', '没有找到'))}</small>`; return; }
+  if (!rows.length) { box.innerHTML = `<small>${esc(uiTextOr('s.no_hit', '没有找到'))}</small>`; return; }
   for (const [pg, r, txt] of rows.slice(0, 12)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
-    b.innerHTML = `${esc(txt)}<small>${esc(tx(...PAGES[pg]))}</small>`;
+    b.innerHTML = `${esc(txt)}<small>${esc(uiTextOr(...PAGES[pg]))}</small>`;
     b.onclick = () => { setPage(pg); r.closest('details')?.setAttribute('open', ''); r.scrollIntoView({ block: 'center' }); r.classList.add('found'); setTimeout(() => r.classList.remove('found'), 1600); (r.querySelector('input, button') || r).focus?.({ preventScroll: true }); };
     box.appendChild(b); }
 }
@@ -127,8 +127,8 @@ export function initSettings() {
   busOn({ key: 'settings.layerOutsideClick', target: document, type: 'click', fn: e => { if (!lp.hidden && !gone(e.target) && !lp.contains(e.target) && !lb.contains(e.target)) showLay(false); } });
   // 表单正在编辑时通知先不出（§3）
   pop.addEventListener('focusin', noticeRefresh); pop.addEventListener('focusout', () => setTimeout(noticeRefresh, 0));
-  { const cs = $('#optCharStats'); try { cs.checked = LocalStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => P.CharactersView.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
-  { const cm = $('#optCharMore'); try { cm.checked = LocalStore.get('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => P.CharactersView.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
+  { const cs = $('#optCharStats'); try { cs.checked = LocalStore.get('edenMapCharStats') !== '0'; } catch (e) {} cs.onchange = () => plugins.CharactersView.setStatsOn(cs.checked); }   // v0.9.6 E2 / E13
+  { const cm = $('#optCharMore'); try { cm.checked = LocalStore.get('edenMapCharMore') !== '0'; } catch (e) {} cm.onchange = () => plugins.CharactersView.setMoreOn(cm.checked); }   // v0.9.6 E13 其余字段
   // 关闭花屏特效：只停动画和滤镜，「⚠ 数据链路受扰」文字照常显示；系统开了「减少动态效果」时默认勾上（E4 N24）
   const fx = $('#optNoFx'); let nofx = matchMedia('(prefers-reduced-motion: reduce)').matches || rmPref() === 'on';
   try { const v = LocalStore.get('edenMapNoFx'); if (v !== null) nofx = v === '1'; } catch (e) {}
@@ -166,8 +166,8 @@ export function initSettings() {
 // 设置「数据与映射」→ app/data-mapping-settings.mjs（arch-v2 §6 第 6 步 settings-ui 的第一块）
 export function kbdHelp(on) {
   const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
-  const K = [['Esc', tx('k.esc', '关闭最上面一层 / 抽屉降一档')], ['[ ]  PgUp PgDn', tx('k.layer', '切换上下层')], ['L', tx('k.l', '标注开关')], ['+ −', tx('k.zoom', '缩放')], ['0', tx('k.home', '复位视野')],
-    ['/', tx('k.search', '设置搜索')], ['M', tx('k.m', '变量映射')], ['?', tx('k.help', '快捷键表')]];
+  const K = [['Esc', uiTextOr('k.esc', '关闭最上面一层 / 抽屉降一档')], ['[ ]  PgUp PgDn', uiTextOr('k.layer', '切换上下层')], ['L', uiTextOr('k.l', '标注开关')], ['+ −', uiTextOr('k.zoom', '缩放')], ['0', uiTextOr('k.home', '复位视野')],
+    ['/', uiTextOr('k.search', '设置搜索')], ['M', uiTextOr('k.m', '变量映射')], ['?', uiTextOr('k.help', '快捷键表')]];
   b.innerHTML = `<dl>${K.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
 }
 export let showSet = () => {}, showLay = () => {};
@@ -177,11 +177,11 @@ export function setLine(d) { lineInfo = d; renderLine(); }
 export function renderLine() {
   const b = $('#linePick'), n = $('#lineNow'); if (!b || !n) return;
   const emb = window.top !== window, d = lineInfo;
-  if (!emb) { b.disabled = true; n.textContent = tx('s.line_na_solo', '单独打开地图时不适用：线路由酒馆里的卡内脚本选择'); return; }
-  if (!d) { b.disabled = true; n.textContent = tx('s.line_wait', '等待卡内脚本报告线路…'); return; }
-  if (!d.swappable) { b.disabled = true; n.textContent = tx('s.line_na_fixed', '不可切换：当前脚本从固定地址加载（本地 / 预览），没有备用线路'); return; }
+  if (!emb) { b.disabled = true; n.textContent = uiTextOr('s.line_na_solo', '单独打开地图时不适用：线路由酒馆里的卡内脚本选择'); return; }
+  if (!d) { b.disabled = true; n.textContent = uiTextOr('s.line_wait', '等待卡内脚本报告线路…'); return; }
+  if (!d.swappable) { b.disabled = true; n.textContent = uiTextOr('s.line_na_fixed', '不可切换：当前脚本从固定地址加载（本地 / 预览），没有备用线路'); return; }
   b.disabled = false;
-  n.innerHTML = esc(tx('s.line_now', '当前：')) + `<b>${esc(d.name || tx('s.line_unset', '未选'))}</b> · ` + esc(d.manual ? tx('s.line_manual', '手动选择') : tx('s.line_auto', '自动测速选中（24 小时内有效）'));
+  n.innerHTML = esc(uiTextOr('s.line_now', '当前：')) + `<b>${esc(d.name || uiTextOr('s.line_unset', '未选'))}</b> · ` + esc(d.manual ? uiTextOr('s.line_manual', '手动选择') : uiTextOr('s.line_auto', '自动测速选中（24 小时内有效）'));
 }
 // v0.9.6「关于 / 检查更新」：卡内脚本发来 eden-map:about { version, code, channel: tag | follow | ref | local, ref, sha, line }；
 // 「检查更新」发 eden-map:check-update，卡内脚本查最新 map-v 标签的 build.json（走当前线路、绕缓存）后回 eden-map:update-result。不自动安装。
@@ -191,34 +191,34 @@ export let cardInfo = null;   // 任务四：卡内脚本推来的角色卡信�
 export function renderAbout() {
   const box = $('#aboutBox'); if (!box) return; const en = LANG === 'en';
   const a = about || {}, ver = a.version || buildInfo?.version || '', code = a.code || buildInfo?.code || '';
-  const ch = { tag: tx('about.ch_tag', `固定版本 ${a.ref || ''}`, { ref: a.ref || '' }), follow: tx('about.ch_follow', `跟随分支 ${a.ref || ''}（每次打开取最新提交）`, { ref: a.ref || '' }),
-    latest: a.locked ? tx('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : tx('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
-    ref: tx('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: tx('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
-  const SRC = { jsdmirror: 'jsdmirror', jsdelivr: 'jsDelivr', raw: 'GitHub raw', github: 'GitHub API', cache: tx('about.src_cache', '本机缓存'), baked: tx('about.src_baked', '脚本内置') };
+  const ch = { tag: uiTextOr('about.ch_tag', `固定版本 ${a.ref || ''}`, { ref: a.ref || '' }), follow: uiTextOr('about.ch_follow', `跟随分支 ${a.ref || ''}（每次打开取最新提交）`, { ref: a.ref || '' }),
+    latest: a.locked ? uiTextOr('about.ch_locked', `已锁定 ${a.ref || ''}`, { ref: a.ref || '' }) : uiTextOr('about.ch_latest', `自动用最新正式版（当前 ${a.ref || ''}）`, { ref: a.ref || '' }),
+    ref: uiTextOr('about.ch_ref', `预览提交 ${a.ref || ''}`, { ref: a.ref || '' }), local: uiTextOr('about.ch_local', '本地 / 单独打开') }[a.channel || (window.top === window ? 'local' : '')] || '';
+  const SRC = { jsdmirror: 'jsdmirror', jsdelivr: 'jsDelivr', raw: 'GitHub raw', github: 'GitHub API', cache: uiTextOr('about.src_cache', '本机缓存'), baked: uiTextOr('about.src_baked', '脚本内置') };
   // 跟随分支预览：标题直接说「跟随分支预览 · 构建 #N」，不挂正式版号（v0.9.5 之类），免得被当成已发版本（2026-09-28 修）
   let h = a.channel === 'follow' && a.build != null
-    ? `<b>${esc(tx('about.title_follow', '跟随分支预览'))}</b> · ${esc(tx('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
-    : `<b>${esc(tx('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
+    ? `<b>${esc(uiTextOr('about.title_follow', '跟随分支预览'))}</b> · ${esc(uiTextOr('about.follow_build', '构建 #{n} · 来源 {s}', { n: a.build, s: SRC[a.source] || a.source || '?' }))}`
+    : `<b>${esc(uiTextOr('about.title', '地图版本'))}</b> v${esc(ver || '?')}${code ? ` · <span style="font-family:var(--font-mono)">${esc(code)}</span>` : ''}`;
   if (ch) h += `<br>${esc(ch)}${a.sha ? ` · ${esc(String(a.sha).slice(0, 7))}` : ''}`;
-  if (a.line) h += `<br>${esc(tx('about.line', '线路：{l}', { l: a.line }))}`;
-  if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? tx('about.checking', '检查中…') : tx('about.check', '检查更新'))}</button>`;
+  if (a.line) h += `<br>${esc(uiTextOr('about.line', '线路：{l}', { l: a.line }))}`;
+  if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? uiTextOr('about.checking', '检查中…') : uiTextOr('about.check', '检查更新'))}</button>`;
   const r = updRes;
   if (r) {
-    const how = a.channel === 'follow' ? tx('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : tx('about.how_tag', '固定版不会自己变：导入新版脚本「{script} v{v}」（同名覆盖）', { v: r.latest || '', script: tx('app.script', '【地图】空间地图') });
-    if (r.follow) h += `<div class="res" role="status">${esc(r.status === 'fail' ? tx('about.fail', '检查失败：连不上更新接口，稍后再试')
-      : tx(r.status === 'new' ? 'about.follow_new' : 'about.follow_latest', r.status === 'new' ? '分支有新构建 #{n}（来源 {s}）：刷新酒馆页面即可' : '已是最新（最新构建 #{n} · 来源 {s}）', { n: r.build, s: SRC[r.source] || r.source || '?' }))}</div>`;
-    else h += `<div class="res" role="status">${r.status === 'latest' ? esc(tx('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))
-      : r.status === 'new' ? `${esc(tx('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(tx('about.notes', '更新说明'))}</a><br>${esc(how)}`
-      : esc(tx('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
+    const how = a.channel === 'follow' ? uiTextOr('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : uiTextOr('about.how_tag', '固定版不会自己变：导入新版脚本「{script} v{v}」（同名覆盖）', { v: r.latest || '', script: uiTextOr('app.script', '【地图】空间地图') });
+    if (r.follow) h += `<div class="res" role="status">${esc(r.status === 'fail' ? uiTextOr('about.fail', '检查失败：连不上更新接口，稍后再试')
+      : uiTextOr(r.status === 'new' ? 'about.follow_new' : 'about.follow_latest', r.status === 'new' ? '分支有新构建 #{n}（来源 {s}）：刷新酒馆页面即可' : '已是最新（最新构建 #{n} · 来源 {s}）', { n: r.build, s: SRC[r.source] || r.source || '?' }))}</div>`;
+    else h += `<div class="res" role="status">${r.status === 'latest' ? esc(uiTextOr('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))
+      : r.status === 'new' ? `${esc(uiTextOr('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(uiTextOr('about.notes', '更新说明'))}</a><br>${esc(how)}`
+      : esc(uiTextOr('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
   box.innerHTML = h; updSub(); mountFeedbackButton(box);
   if (window.top !== window) {   // v0.9.6「自动检查更新」（默认开；卡内脚本启动时读 edenMapAutoCheck，同源 localStorage）
-    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
+    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(uiTextOr('about.auto_check', '自动检查更新'))}</span><input type="checkbox" role="switch" id="optAutoCheck">`;
     const cb = lb.querySelector('input'); let on = true; try { on = LocalStore.get('edenMapAutoCheck') !== '0'; } catch (e) {}
     cb.checked = on; cb.onchange = () => { try { LocalStore.set('edenMapAutoCheck', cb.checked ? '1' : '0'); } catch (e) {} }; box.appendChild(lb);
   }
   if (a.channel === 'latest' && a.ref) {   // 0.9.6 起的正式版加载器：「锁定当前版本」（高级，默认关）——加载器固定用这个标签，不再自动换新版
-    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('about.lock', '锁定当前版本'))}</span><input type="checkbox" role="switch" id="optLockVer">`;
+    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(uiTextOr('about.lock', '锁定当前版本'))}</span><input type="checkbox" role="switch" id="optLockVer">`;
     const cb = lb.querySelector('input'); let on = false; try { on = !!LocalStore.get('edenMapLockTag'); } catch (e) {}
     cb.checked = on; cb.onchange = () => { try { if (cb.checked) LocalStore.set('edenMapLockTag', a.ref); else LocalStore.remove('edenMapLockTag'); } catch (e) {} }; box.appendChild(lb);
   }
@@ -227,12 +227,12 @@ export function renderAbout() {
   { const bb = $('#branchBox'); if (bb) { bb.innerHTML = '';
     if (window.top !== window && (a.branches || []).length) {
       const h = document.createElement('div'); h.className = 'hrow';
-      h.innerHTML = `<span>${esc(tx('s.branch', '版本分支'))}</span><select id="branchSel"${a.branchSw ? '' : ' disabled'}>` +
+      h.innerHTML = `<span>${esc(uiTextOr('s.branch', '版本分支'))}</span><select id="branchSel"${a.branchSw ? '' : ' disabled'}>` +
         a.branches.map(o => `<option value="${esc(o.id)}"${a.branch === o.id ? ' selected' : ''}>${esc(LANG === 'en' && o.label_en ? o.label_en : o.label)}</option>`).join('') + '</select>';
-      if (!a.branchSw) h.title = tx('s.branch_na', '不可切换：当前脚本不是从分支地址加载');
+      if (!a.branchSw) h.title = uiTextOr('s.branch_na', '不可切换：当前脚本不是从分支地址加载');
       else h.querySelector('select').onchange = () => { const v = h.querySelector('select').value; if (v) post({ type: 'eden-map:switch-branch', branch: v }); };
       bb.append(h);
-      if (a.branchSw) { const sm = document.createElement('small'); sm.textContent = tx('s.branch_hint', '切换后本次会话立即从该分支重新加载地图脚本；要长期使用请重新导入该分支的脚本'); bb.append(sm); }
+      if (a.branchSw) { const sm = document.createElement('small'); sm.textContent = uiTextOr('s.branch_hint', '切换后本次会话立即从该分支重新加载地图脚本；要长期使用请重新导入该分支的脚本'); bb.append(sm); }
     } } }
   const b = $('#updBtn'); if (b) b.onclick = () => { updBusy = true; updRes = null; renderAbout(); post({ type: 'eden-map:check-update' }); setTimeout(() => { if (updBusy && !updRes) { updBusy = false; updRes = { status: 'fail' }; renderAbout(); } }, 15000); };
   if (updRes) updBusy = false;
@@ -242,8 +242,8 @@ export let selfCheck = null;
 // 设置首页「更新与版本」那一行的摘要：版本号 + 自检 ⚠ 数
 export function updSub() { const el = $('#updSub'); if (!el) return; const w = (selfCheck?.items || []).filter(i => i.status === 'warn').length;
   // 跟随分支：摘要行用「跟随 · 构建 #N」，不挂正式版号，和「更新与版本」页同一份 about 状态源（U13，2026-09-28 修）
-  const vPart = (about?.channel === 'follow' && about?.build != null) ? tx('s.follow_build', `跟随 · 构建 #{n}`, { n: about.build }) : (about?.version || buildInfo?.version ? 'v' + String(about?.version || buildInfo?.version).replace(/^S\d+:/, '') : '');
-  el.textContent = [vPart, w ? tx('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : tx('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
+  const vPart = (about?.channel === 'follow' && about?.build != null) ? uiTextOr('s.follow_build', `跟随 · 构建 #{n}`, { n: about.build }) : (about?.version || buildInfo?.version ? 'v' + String(about?.version || buildInfo?.version).replace(/^S\d+:/, '') : '');
+  el.textContent = [vPart, w ? uiTextOr('s.sc_warn', `自检 ${w} 项 ⚠`, { n: w }) : uiTextOr('s.update_sub', '检查更新 · 自检')].filter(Boolean).join(' · '); el.classList.toggle('warn', !!w); }
 export function renderSelfCheck() {
   if (!selfCheck?.items) return;
   let box = document.getElementById('selfCheck');
@@ -252,19 +252,19 @@ export function renderSelfCheck() {
   // 世界书那一条红线（自检项 worldbook，warn）：加一个「一键写入世界书」按钮，跳到「数据与映射」页并打开看差异（跟点 wbLook/wbDiff 一样）；
   // API 不可用（自检文案已经只剩手动导入提示）时不出这个按钮，只留手动那行小字
   const wbWarn = selfCheck.items.find(i => i.id === 'worldbook' && i.status === 'warn');
-  box.innerHTML = `<b>${esc(tx('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
-    + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(tx('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(tx('selfcheck.wb_manual', '也可以照旧手动导入「{book}」并在世界书里设为全局', { book: wbWarn.book || '' }))}</small>` : '') + `</li>`).join('')}</ul>`;
-  { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = tx('selfcheck.splash', '重新显示开场自检');   // v0.9.5
+  box.innerHTML = `<b>${esc(uiTextOr('selfcheck.title', '自检'))}</b><ul>${selfCheck.items.map(i => `<li class="${esc(i.status)}">${mark[i.status] || ''} ${esc(i[L] || i.zh)}`
+    + (i === wbWarn ? `<div class="hrow"><span></span><button type="button" class="btn primary" id="scWbGo">${esc(uiTextOr('selfcheck.wb_go', '一键写入世界书'))}</button></div><small>${esc(uiTextOr('selfcheck.wb_manual', '也可以照旧手动导入「{book}」并在世界书里设为全局', { book: wbWarn.book || '' }))}</small>` : '') + `</li>`).join('')}</ul>`;
+  { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'splashAgain'; b.textContent = uiTextOr('selfcheck.splash', '重新显示开场自检');   // v0.9.5
     b.onclick = () => { showSet(false); post({ type: 'eden-map:splash' }); }; box.appendChild(b); }
   $('#scWbGo')?.addEventListener('click', () => { setPage('data'); const el = document.getElementById('thWb'); el?.scrollIntoView({ block: 'center' }); ($('#wbDiff') || $('#wbLook'))?.click(); });
   updSub();
   if (selfCheck.items.some(i => i.id === 'update')) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = tx('selfcheck.update_now', '本次切换到新版本');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = uiTextOr('selfcheck.update_now', '本次切换到新版本');
     b.onclick = () => post({ type: 'eden-map:update-now' }); box.appendChild(b);
-    const n = document.createElement('small'); n.textContent = tx('selfcheck.update_note', '只对这次打开的页面生效；要长期使用，请重新导入新版脚本'); box.appendChild(n);
+    const n = document.createElement('small'); n.textContent = uiTextOr('selfcheck.update_note', '只对这次打开的页面生效；要长期使用，请重新导入新版脚本'); box.appendChild(n);
   }
   if (selfCheck.canUpdate) {
-    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(tx('selfcheck.auto_update', '自动更新到新正式版'))}</span><input type="checkbox" role="switch" id="optAutoUpd">`;
+    const lb = document.createElement('label'); lb.innerHTML = `<span>${esc(uiTextOr('selfcheck.auto_update', '自动更新到新正式版'))}</span><input type="checkbox" role="switch" id="optAutoUpd">`;
     const cb = lb.querySelector('input'); let on = !!selfCheck.autoUpdate; try { on = LocalStore.get('edenMapAutoUpdate') === '1'; } catch (e) {}
     cb.checked = on; cb.onchange = () => { try { LocalStore.set('edenMapAutoUpdate', cb.checked ? '1' : '0'); } catch (e) {} };
     box.appendChild(lb);

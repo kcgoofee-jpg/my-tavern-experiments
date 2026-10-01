@@ -7,7 +7,7 @@
 import { parseText } from './msgtext.mjs';
 import { lostTags } from './tabledb-bridge.mjs';
 import { sanitize } from './sanitize.mjs';
-import * as MV from './mvu-readers.mjs';
+import * as mvuReaders from './mvu-readers.mjs';
 
 /** 楼层原文指纹（FNV-1a，36 进制）：标签记录 / 楼层指纹用它识别「这一楼原文变了」 */
 export const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
@@ -141,13 +141,13 @@ export class ContextPipeline {
     let dirty = false, undone = 0;
     if (changed.size) {
       for (const r of tag.log.filter(r => changed.has(r.floor)).reverse()) {   // 倒序撤销：同一项被改过两次时回到最早的值
-        const nx = MV.setCustom(custom, r.key, r.op === 'name' ? { name: r.prev || '' } : { note: r.prev || '' }); if (nx) { custom = nx; undone++; } }
+        const nx = mvuReaders.setCustom(custom, r.key, r.op === 'name' ? { name: r.prev || '' } : { note: r.prev || '' }); if (nx) { custom = nx; undone++; } }
       tag.log = tag.log.filter(r => !changed.has(r.floor)); dirty = true;
     }
     const todo = msgs.filter(m => changed.has(m.floor) || m.floor > tag.floor);
     const applied = [];
     for (const m of todo) {
-      const before = MV.normCustom(custom), r = MV.applyTags(custom, [m], m.floor - 1, kindOf);
+      const before = mvuReaders.normCustom(custom), r = mvuReaders.applyTags(custom, [m], m.floor - 1, kindOf);
       for (const a of r.applied) { const e = before.items[a.key] || {}; tag.log.push({ floor: a.floor, key: a.key, op: a.op, prev: a.op === 'name' ? e.名 || '' : e.用途 || '' }); before.items[a.key] = { ...e, [a.op === 'name' ? '名' : '用途']: a.value }; }
       custom = r.custom; applied.push(...r.applied); tag.seen[m.floor] = hashText(m.text); dirty = true;
     }
@@ -159,23 +159,23 @@ export class ContextPipeline {
   }
 
   /** 行程（v0.9.5）：最近 30 楼每楼的地点（那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5）。
-   *  d = { TRm, CHM?, perFloorStat(floor), mvuGet(st, path), varMap, keywords, fantasy, parseTransit(s) }。
+   *  d = { tripsParseModule, CHM?, perFloorStat(floor), mvuGet(st, path), varMap, keywords, fantasy, parseTransit(s) }。
    *  每楼的解析结果按 (楼层, 原文) 缓存在 msgCache 条目上（key 变了才重算）。返回 { changed, trips }。 */
   computeTrips(msgs, d) {
-    const { TRm, CHM, perFloorStat, mvuGet, varMap, keywords, fantasy, parseTransit } = d;
+    const { tripsParseModule, CHM, perFloorStat, mvuGet, varMap, keywords, fantasy, parseTransit } = d;
     const loc = String(varMap.location || ''), lp = loc ? '/' + loc.split('.').join('/') : '', recentMsgs = msgs.slice(-30), seq = [], tags = [];
     for (const m of recentMsgs) {
       const e = this.msgCache.get(m.floor), key = lp + '|' + varMap.time + '|' + !!CHM;   // 按映射与人物栏开关缓存
       if (!e?.trip || e.tripKey !== key || e.m !== m) {
         const st = perFloorStat(m.floor);
-        const place = String(mvuGet(st, varMap.location) ?? '').trim() || TRm.patchPlace(m.raw || m.text, lp), text = m.text.slice(0, 4000);
+        const place = String(mvuGet(st, varMap.location) ?? '').trim() || tripsParseModule.patchPlace(m.raw || m.text, lp), text = m.text.slice(0, 4000);
         const trip = { seq: { floor: m.floor, place, text, time: String(mvuGet(st, varMap.time) ?? '') }, tags: CHM ? CHM.parseChars(m.text).map(c => ({ floor: m.floor, name: c.name, place: c.place, text })) : [] };
         if (!e || e.m !== m) { seq.push(trip.seq); tags.push(...trip.tags); continue; }
         e.trip = trip; e.tripKey = key;
       }
       seq.push(e.trip.seq); tags.push(...e.trip.tags);
     }
-    const next = TRm.recent([...TRm.playerTrips(seq, parseTransit, keywords), ...TRm.charTrips(tags, keywords)], 5);
+    const next = tripsParseModule.recent([...tripsParseModule.playerTrips(seq, parseTransit, keywords), ...tripsParseModule.charTrips(tags, keywords)], 5);
     const sig = JSON.stringify(next);
     if (sig === this.tripSig) return { changed: false, trips: this.trips };
     this.tripSig = sig; this.trips = next;

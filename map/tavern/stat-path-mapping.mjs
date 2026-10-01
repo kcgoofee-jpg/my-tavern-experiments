@@ -25,7 +25,7 @@ export function defaults(profile = getProfile()) {
 }
 const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
 const val = v => (Array.isArray(v) && v.length === 2 && typeof v[1] === 'string' && (v[0] === null || typeof v[0] !== 'object') ? v[0] : v);
-export function get(obj, path) { if (!path) return undefined; let o = obj; for (const k of String(path || '').split('.').filter(Boolean)) { o = val(o); if (!plain(o) || !(k in o)) return undefined; o = o[k]; } return val(o); }
+export function getByPath(obj, path) { if (!path) return undefined; let o = obj; for (const k of String(path || '').split('.').filter(Boolean)) { o = val(o); if (!plain(o) || !(k in o)) return undefined; o = o[k]; } return val(o); }
 const isTable = t => { t = val(t); const v = plain(t) ? Object.values(t) : []; return v.length > 0 && v.every(x => plain(val(x))); };
 /** stat_data 的路径清单（深 3 层）：[{ path, kind: 'text' | 'number' | 'object' | 'table' }]；以名字为键的表只列表本身，不展开到每个人 */
 export function paths(stat, depth = 3) {
@@ -56,7 +56,7 @@ export function detect(stat, profile = getProfile()) {
   for (const f of fieldsOf(profile)) {
     const d = D[f];
     if (NAME_FIELDS.includes(f)) { out[f] = rf.includes(d) ? d : slotFind(SLOT_OF[f], rf); continue; }
-    const r = KIND[f], dv = d ? get(stat, d) : undefined;
+    const r = KIND[f], dv = d ? getByPath(stat, d) : undefined;
     if (d && dv !== undefined && dv !== '') { out[f] = d; continue; }
     if (!r) { out[f] = ''; continue; }
     const hit = ps.filter(p => hasWord(r[0], p.path.split('.').pop()) && (p.kind === r[1] || (r[1] === 'object' && p.kind === 'text') || (r[1] === 'table' && p.kind === 'object')))
@@ -74,7 +74,7 @@ export function effective(user, stat) {
 /** 读法：'mvu'（有 MVU 且读得到地点）、'mvu-partial'（有 MVU 但地点没映射上）、'tags'（没有 MVU：一切退回聊天标签） */
 export function mode(hasMvu, stat, map) {
   if (!hasMvu || !plain(stat)) return 'tags';
-  return map?.location && get(stat, map.location) !== undefined ? 'mvu' : 'mvu-partial';
+  return map?.location && getByPath(stat, map.location) !== undefined ? 'mvu' : 'mvu-partial';
 }
 /** 按角色卡存的键 */
 export const storeKey = card => 'edenMap:varmap:' + String(card || 'default').slice(0, 120);

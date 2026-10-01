@@ -83,7 +83,7 @@ try {
     await P.page.evaluate(() => document.getElementById('v').contentWindow.postMessage({ type: 'eden-map:here', value: '上层·伊甸庄园' }, '*'));
     await wait(2500);
     const s = await P.page.evaluate(() => { const w = document.getElementById('v').contentWindow;
-      return { here: w.document.querySelector('#here')?.value || '', map: w.cur ?? null }; });
+      return { here: w.document.querySelector('#here')?.value || '', map: w.ViewerDebug?.currentMapId ?? null }; });
     rep.metric('spoof', s);
     rep.check('宿主推的地点不被兄弟 iframe 顶掉', s.here === '上层·伊甸庄园', JSON.stringify(s));
     await P.ctx.close();
