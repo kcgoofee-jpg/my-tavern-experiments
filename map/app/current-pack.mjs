@@ -1,6 +1,6 @@
 // 当前设定包（core/pack.mjs）：查看器启动时解析一次，一律取 packs/<id>/manifest.json（eden 的清单在 viewer.html 里 preload，与模块并行）。
 // 读 = import 活绑定 PACK；数据路径用 packData(键)（没有 = null，调用方跳过那份数据）。
-import { DEFAULT_ID, load, currentId, rebaseRegistry } from '../core/pack.mjs';
+import { DEFAULT_ID, load, currentId, rebaseRegistry, artRegistry } from '../core/pack.mjs';
 import { resolveBlocks, validate2, withDefaults } from '../core/pack-v2.mjs';
 export let PACK = null;   // initPack 之前为 null；isEden 退回地址 / 宿主给的包 id
 export const packData = k => { const p = PACK?.data?.[k]; return typeof p === 'string' && p && p !== 'builtin' ? p : null; };
@@ -25,7 +25,10 @@ export async function initPack(getJSON) {
   packEvents = packData('events') ? getJSON(packData('events')).then(tax => { if (tax) packTax = tax; }).catch(() => {}) : null;
   return PACK;
 }
-export const rebase = reg => rebaseRegistry(reg, PACK.base);
+/** N14 a：美术根地址（宿主注入 window.__edenArtBase = …@<art_sha>/map/；没有 = '' 照旧按 <base> 取） */
+export const ART_BASE = (() => { try { return typeof window.__edenArtBase === 'string' ? window.__edenArtBase : ''; } catch (e) { return ''; } })();
+export const artUrl = p => (ART_BASE && typeof p === 'string' && p.startsWith('art/') ? ART_BASE + p : p);
+export const rebase = reg => artRegistry(rebaseRegistry(reg, PACK.base), ART_BASE);
 // schema-2 包（K-R96）：块文件相对包目录取；校验按「随引擎发布」算（packs/<id>/ 在仓库里；S9-2 加 packs/index.json 后改查名单）。被拒绝 = 抛错，走启动失败的重试卡
 async function openV2(getJSON) {
   const { manifest, problems } = await resolveBlocks(PACK.v2, p => getJSON(PACK.base + p));

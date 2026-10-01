@@ -1,5 +1,5 @@
 // 跟随分支：解析分支最新构建（2026-09-28，没梯子时卡在旧提交的修复；同日补丁：jsdmirror 没有清缓存接口、缓存可能长期落后，加更多镜像 + 分钟级缓存破坏参数）。
-// 分支上的 map/data/head.json = { build: 递增构建号, sha: 内容提交号, at }，由 tools/bump_head.py 在推送前单独提交（见 docs/tooling.md）。
+// 分支上的 map/data/head.json = { build: 递增构建号, sha: 内容提交号, at, art_sha }，由 tools/bump_head.py 在推送前单独提交（见 docs/tooling.md）。
 // 同时向 jsdmirror / jsDelivr（含 fastly / gcore / testingcf 三个二级节点）/ raw.githubusercontent 取分支路径上的 head.json，取构建号最大的；都取不到再问 GitHub 接口（contents，也是 head.json）。
 // 缓存破坏参数 t 取整到分钟：CDN 若认query string 就每分钟都能拿到新的；jsdmirror 经实测不理会 query string（分支路径命中的是它自己按 URL 前缀缓存的老内容），
 // 所以给它加参数不解决问题，真正兜底靠「取构建号最大」——jsdmirror 一直很旧也没关系，其他源会赢。
@@ -17,12 +17,13 @@ export async function resolveFollow(repo, branch, getJson, stored) {
     ['raw', `https://raw.githubusercontent.com/${repo}/${branch}/${P}?t=${t}`],
   ];
   const hist = h => (Array.isArray(h.history) ? { history: h.history.filter(r => r && Number.isInteger(r.build) && /^[0-9a-f]{7,40}$/.test(String(r.sha || ''))).slice(0, 50).map(r => ({ build: r.build, sha: r.sha, ...(r.at ? { at: r.at } : {}) })) } : {});   // I-23：近期构建的 提交号 → 构建号
-  const got = await Promise.all(srcs.map(([s, u]) => getJson(u).then(h => ok(h) ? { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), ...hist(h), source: s } : null, () => null)));
+  const art = h => (/^[0-9a-f]{7,40}$/.test(String(h.art_sha || '')) ? { art: h.art_sha } : {});   // N14 a：最后改动美术的提交（art/ 底图的稳定缓存键）
+  const got = await Promise.all(srcs.map(([s, u]) => getJson(u).then(h => ok(h) ? { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), ...art(h), ...hist(h), source: s } : null, () => null)));
   let best = got.reduce((a, b) => (b && (!a || b.build > a.build) ? b : a), null);
   if (!best) {
     const g = await getJson(`https://api.github.com/repos/${repo}/contents/${P}?ref=${encodeURIComponent(branch)}`).catch(() => null);
     let h = null; try { h = g && g.content ? JSON.parse(atob(String(g.content).replace(/\s/g, ''))) : null; } catch (e) {}
-    if (ok(h)) best = { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), ...hist(h), source: 'github' };
+    if (ok(h)) best = { build: h.build, sha: h.sha, ...(h.at ? { at: h.at } : {}), ...art(h), ...hist(h), source: 'github' };
   }
   if (ok(stored) && (!best || stored.build > best.build)) best = { build: stored.build, sha: stored.sha, source: 'cache' };
   return best;

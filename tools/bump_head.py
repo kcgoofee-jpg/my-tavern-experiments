@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at, history: 最近 40 个构建 [{build, sha, at}]}，单独提交一次（消息「head #N」）。
+"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at, art_sha: 最后改动 map/art 的提交, history: 最近 40 个构建 [{build, sha, at}]}，单独提交一次（消息「head #N」）。
 为什么单独提交：文件写不进自己所在提交的提交号，所以 head.json 记的是它的父提交（内容提交）；两者只差 head.json 本身，按提交号加载内容完全一致。
 跟随分支加载器（build_preview_script.py --follow）从 jsdmirror / jsDelivr / raw.githubusercontent 读分支路径上的这个文件（国内不用梯子），取构建号最大的。
 
@@ -23,6 +23,11 @@ def drop_old_bump():
 HISTORY = 40
 
 
+def art_sha(ref='HEAD'):
+    """N14 a：最后一次改动 map/art 的提交（完整 40 位）。查看器的 art/ 底图按这个提交号取，美术没变就一直是同一个缓存键（不随每个 head 变冷）。"""
+    return git('log', '-1', '--format=%H', ref, '--', 'map/art', check=False).stdout.strip()
+
+
 def history_of(prev, h):
     """I-23：最近 HISTORY 个构建的 {build, sha(12 位), at}（不含当前这一个，当前的在顶层）。按提交号加载（钉住的脚本）的人据此从提交号找回构建号。"""
     rows = [r for r in (prev.get('history') or []) if isinstance(r, dict) and isinstance(r.get('build'), int) and r.get('sha')]
@@ -43,6 +48,8 @@ def bump(branch):
     except Exception: rn = 0
     h = {'build': max(n, rn) + 1, 'sha': git('rev-parse', 'HEAD').stdout.strip(), 'branch': branch,
          'at': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
+    art = art_sha()
+    if art: h['art_sha'] = art
     h['history'] = history_of(prev, h)
     with open(PATH, 'w', encoding='utf-8') as f: json.dump(h, f, ensure_ascii=False); f.write('\n')
     git('add', PATH); git('commit', '-q', '-m', f"head #{h['build']}", '--', PATH)

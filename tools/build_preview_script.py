@@ -145,9 +145,10 @@ def build_follow(branch, fallback, baked=None):
   let stored = null; try { stored = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
   if (!stored || !(stored.build >= BAKED.build)) stored = { ...BAKED, source: 'baked' };
   const h = (await resolveFollow(REPO, BR, getJson, stored)) || stored;
-  if (h.source !== 'cache' && h.source !== 'baked') try { localStorage.setItem(KEY, JSON.stringify({ build: h.build, sha: h.sha })); } catch (e) {}
+  if (h.source !== 'cache' && h.source !== 'baked') try { localStorage.setItem(KEY, JSON.stringify({ build: h.build, sha: h.sha, ...(h.art ? { art: h.art } : {}) })); } catch (e) {}
   const sha = String(h.sha).slice(0, 12);
-  try { window.__edenMapScript = Object.assign(window.__edenMapScript || {}, { sha, build: h.build, source: h.source === 'cache' && stored.source === 'baked' ? 'baked' : h.source }); } catch (e) {}
+  const art = h.art || (h.source === 'cache' && stored.sha === h.sha ? stored.art : '') || '';   // N14 a：美术的稳定缓存键（head.json art_sha）
+  try { window.__edenMapScript = Object.assign(window.__edenMapScript || {}, { sha, build: h.build, source: h.source === 'cache' && stored.source === 'baked' ? 'baked' : h.source, ...(art ? { art: String(art).slice(0, 12) } : {}) }); } catch (e) {}
   console.info('[地图] 预览构建', '#' + h.build, sha, h.source);
   for (const s of sha === BAKED.sha.slice(0, 12) ? [sha] : [sha, BAKED.sha.slice(0, 12)]) for (const x of HOSTS) {
     const u = `https://${x}/gh/${REPO}@${s}/map/tavern/eden-map.js`;

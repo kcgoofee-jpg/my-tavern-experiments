@@ -16,7 +16,7 @@ const getJson = async u => {
 export async function headOf(p) {
   if (/(^|\.)(jsdelivr\.net|jsdmirror\.com)$/.test(new URL(p.origin).host)) return resolveFollow(p.repo, p.ref, getJson, null);
   const h = await getJson(`${p.origin}/gh/${p.repo}@${p.ref}/map/data/head.json?t=${Date.now()}`);
-  return h && Number.isInteger(h.build) && /^[0-9a-f]{7,40}$/.test(String(h.sha || '')) ? { build: h.build, sha: h.sha, at: h.at, source: 'branch' } : null;
+  return h && Number.isInteger(h.build) && /^[0-9a-f]{7,40}$/.test(String(h.sha || '')) ? { build: h.build, sha: h.sha, at: h.at, ...(/^[0-9a-f]{7,40}$/.test(String(h.art_sha || '')) ? { art: h.art_sha } : {}), source: 'branch' } : null;
 }
 
 async function run() {
@@ -27,7 +27,7 @@ async function run() {
   if (!base) return false;
   try {
     const S = (window.__edenMapScript ||= {}), prev = { ...S };
-    Object.assign(S, { channel: S.channel || 'ref', ref: S.ref || p.ref, sha: String(h.sha).slice(0, 12), build: h.build, at: h.at || null, source: h.source || null });
+    Object.assign(S, { channel: S.channel || 'ref', ref: S.ref || p.ref, sha: String(h.sha).slice(0, 12), build: h.build, at: h.at || null, source: h.source || null, art: h.art ? String(h.art).slice(0, 12) : null });
     try { await import(entryUrl(base)); return true; } catch (e) { for (const k of Object.keys(S)) delete S[k]; Object.assign(S, prev); throw e; }
   } catch (e) { console.warn('[eden-map] 按提交号重载失败，沿用分支路径', e); return false; }
 }

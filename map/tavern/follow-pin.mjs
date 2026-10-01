@@ -33,6 +33,14 @@ export function contentBase({ channel, ref, sha, host, repo, tag }) {
   return refKind(t) === 'tag' ? `${origin}/gh/${repo}@${t}/map/` : null;
 }
 
+/** N14 a：art/ 底图的根地址。内容按 @<sha> 取（每个 head 一个新缓存键），美术只在改动时才变：head.json 的 art_sha（最后改动 map/art 的提交，
+ *  加载器 / 门卫写进 window.__edenMapScript.art）给出一个稳定的键，同一线路、同一仓库、只换提交号。
+ *  base 不是 @<提交号> 地址（标签本来就稳定、分支 / 本地不换）或 art 不是提交号 → ''（调用方照旧按 base 取）。 */
+export function artBase(base, art) {
+  const p = parseScriptBase(base), a = String(art || '').toLowerCase();
+  return p && refKind(p.ref) === 'sha' && SHA.test(a) ? `${p.origin}/gh/${p.repo}@${a.slice(0, 12)}/map/` : '';
+}
+
 /** head.json 的内容提交号 → 入口脚本地址（用于「加载新 sha 的入口」） */
 export function entryUrl(base) { return String(base || '') + 'tavern/eden-map.js'; }
 

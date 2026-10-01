@@ -15,7 +15,7 @@ forward.
 
 | Branch | Role | Pointer clients read |
 |---|---|---|
-| `preview` | Integration + follow/preview line. Everything lands here. | `map/data/head.json` (`{build, sha, at}`, written by `tools/bump_head.py`) |
+| `preview` | Integration + follow/preview line. Everything lands here. | `map/data/head.json` (`{build, sha, at, art_sha}`, written by `tools/bump_head.py`) |
 | `cloud/tc-mid-low` | **Deprecated compatibility mirror** of `preview`, retirement in progress (2026-09-30): no longer pushed by default — only on demand (`LEGACY=1 bash tools/push_preview.sh`). A session still on this ref can move to `preview` in-app via Settings → Update & version → Version branch. | — |
 | `main` | Release line. Tags (`map-vX.Y.Z`) live on this line. | `map/data/build.json` (`{version, code}`) + the tag list |
 | feature branches | Short-lived, merged into the follow branch | — |
@@ -130,6 +130,11 @@ first by the entry: a script that finds itself on a branch path resolves the hea
 loader), and re-imports the entry from `@<head sha>` (the entry then mounts nothing). A running follow build that sees
 a newer head switches to that sha's entry through the existing takeover path instead of mixing files. The release
 channel (tag URLs, `latest.json`) is untouched. Test `tests/follow_pin.test.mjs`; probe `tools/browser/follow_pin.mjs`.
+Exception (N14 a): engine art (`art/…` paths of the registry, clouds, the loading thumbnail) loads from `@<art_sha>`, the
+last commit that changed `map/art` (head.json `art_sha`), so heads that change only code request identical art URLs and
+hit a warm cache; `tools/push_preview.sh` warms `map/art/` at that key once per art change. Without the stamp (older
+loaders, pinned commits, tags) art follows the content commit as before. Test `tests/art_key.test.mjs`; probe
+`tools/browser/art_key.mjs`.
 
 ## History note
 

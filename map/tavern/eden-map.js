@@ -22,7 +22,7 @@ import { createHostApi } from './host-api.mjs';
 import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
-import { hostStr } from './host-strings.mjs'; import { updateChannel } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
 (() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
@@ -186,7 +186,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel } from './f
       for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); n += value.length; htmlProg?.(n / total); }
       t = new TextDecoder().decode(await new Blob(parts).arrayBuffer());
     } else t = await r.text();
-    return t.replace('<head>', `<head><base href="${BASE}">` + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
+    const art = artBase(BASE, (() => { try { return (window.__edenMapScript || window.parent.__edenMapScript || {}).art; } catch (e) { return ''; } })());   // N14 a：美术按稳定的 @<art_sha> 取
+    return t.replace('<head>', `<head><base href="${BASE}">` + (art ? `<script>window.__edenArtBase=${JSON.stringify(art)}</script>` : '') + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
   })().catch(e => { html = null; throw e; });
   // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）。
   // 必须在下面 afterGen 之前声明：typeof 也躲不开 TDZ——const 还没初始化时读它照样抛 ReferenceError，而 afterGen 开局就被调。

@@ -13,11 +13,12 @@ import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { altOn, go, setGo } from './map-switch.mjs';
 import { viewField } from './nodes-runtime.mjs';   // 包说哪些图有漂移云：视图上的 x-clouds（K-R70）
+import { artUrl } from './current-pack.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重复先摘旧的，卸载可一把摘净）
 (() => {
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
   const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
-  const SPR = k => `art/clouds/puff${k % 6 + 1}.png`;
+  const SPR = k => artUrl(`art/clouds/puff${k % 6 + 1}.png`);   // N14 a：美术按稳定的 @<art_sha> 取
   // 默认视野下约 5–8 团看得见（原型太稀）：远层小、慢、淡，近层大、快、稍浓
   const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
   const rnd = (a, b) => a + Math.random() * (b - a);

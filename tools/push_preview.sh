@@ -99,4 +99,13 @@ if [ "$WARM" = "1" ]; then
   else WA=(--diff); fi
   [ "$WARM_NOESC" = "1" ] && WA+=(--no-escalate)
   bash tools/warm_cdn.sh "$SHA" 16 "${WA[@]}" --purge-branch "$PRIMARY" --detach
+  # N14 a：美术按 head.json 的 art_sha（最后改动 map/art 的提交）取，键是 12 位提交号（与查看器请求的地址一致）。
+  # 只在 art_sha 变了（或上一个头指针还没有它）时整套预热一次 map/art/；美术没变的 head 什么也不用做，缓存一直是热的。
+  if [ "$HEADBUMP" = 1 ]; then
+    ART_NEW=$(python3 -c "import json; print(json.load(open('map/data/head.json')).get('art_sha', ''))")
+    ART_OLD=$(git show "$BEFORE:map/data/head.json" 2>/dev/null | python3 -c "import json, sys; print(json.load(sys.stdin).get('art_sha', ''))" 2>/dev/null || true)
+    if [ -n "$ART_NEW" ] && [ "$ART_NEW" != "$ART_OLD" ]; then
+      bash tools/warm_cdn.sh "${ART_NEW:0:12}" 16 --full --only map/art/ --detach --log logs/warm_art.log
+    fi
+  fi
 fi

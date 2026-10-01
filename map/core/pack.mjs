@@ -93,6 +93,15 @@ export function rebaseRegistry(reg, base) {
   }
   return { ...reg, maps };
 }
+/**
+ * N14 a：引擎自带美术（map/art/，注册表里写成 art/…）按稳定的美术根地址取（宿主给的 @<art_sha>/map/）：美术没改的 head 之间请求地址完全相同，
+ * 不会每个 head 都打到一个冷的缓存键。只改 maps 里以 art/ 开头的字符串（底图、时段底图、alt、叠加层、插图）；包目录下的美术（packs/<id>/art/）不动。返回新对象。
+ */
+export function artRegistry(reg, artBase) {
+  if (!artBase || !reg?.maps) return reg;
+  const walk = v => (typeof v === 'string' ? (v.startsWith('art/') ? artBase + v : v) : Array.isArray(v) ? v.map(walk) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)])) : v);
+  return { ...reg, maps: Object.fromEntries(Object.entries(reg.maps).map(([id, m]) => [id, walk(m)])) };
+}
 /** 反向：实际键 → 核心里的 edenMap* 名；本包的键还原，eden 的原生 edenMap* 键藏起来（null），别的键原样。预算清理（tavern/storage-budget.mjs）因此只看见、只清本包的数据。 */
 export function unNsKey(k, id) {
   if (typeof k !== 'string' || !id || id === DEFAULT_ID) return k;

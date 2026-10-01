@@ -18,7 +18,7 @@ reason (which mode, which base, why it escalated) goes to stderr so that `--list
 `--count` stay pipeable. Only stdlib + git; no network.
 
 Usage: python3 tools/warm_plan.py [--repo DIR] [--ref REF] [--diff [BASE]] [--full]
-                                  [--no-escalate] [--count]
+                                  [--no-escalate] [--count] [--only PREFIX]
 Exit 0 with the list; exit 2 when the ref has no runtime files at all (bad ref — fetch first).
 """
 import argparse
@@ -116,9 +116,13 @@ def main():
     ap.add_argument("--full", action="store_true", help="强制全量（发版用）")
     ap.add_argument("--no-escalate", action="store_true", help="重度资产变动也不展开成全量")
     ap.add_argument("--count", action="store_true", help="只打印文件个数")
+    ap.add_argument("--only", metavar="PREFIX", help="只留以此开头的路径（N14 a：map/art/ 按 @<art_sha> 单独预热）")
     a = ap.parse_args()
     files, note = plan(a.repo, a.ref, base=a.diff or None, diff=a.diff is not None,
                        full=a.full, no_escalate=a.no_escalate)
+    if a.only:
+        files = [f for f in files if f.startswith(a.only)]
+        note += f"；只留 {a.only}（{len(files)} 个）"
     print(len(files) if a.count else "\n".join(files))
     print(note, file=sys.stderr)
     return 0

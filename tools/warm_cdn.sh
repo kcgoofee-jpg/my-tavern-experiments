@@ -13,12 +13,13 @@
 # 预热清单由 tools/warm_plan.py 算（全量 / 增量 / 重度升级都在那里面，tests/test_warm_cdn.py 覆盖）。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-MODE=; ARGS=(); PBR=; FULL=0; DIFF=0; BASE=; DETACH=0; NOESC=0; LOG=logs/warm_cdn.log
+MODE=; ARGS=(); PBR=; ONLY=; FULL=0; DIFF=0; BASE=; DETACH=0; NOESC=0; LOG=logs/warm_cdn.log
 while [ $# -gt 0 ]; do case "$1" in
   --list|--count) MODE=$1 ;;
   --purge-branch) PBR=$2; shift ;;
   --diff) DIFF=1; if [ -n "${2:-}" ] && [ "${2#-}" = "$2" ]; then BASE=$2; shift; fi ;;
   --full) FULL=1 ;;
+  --only) ONLY=$2; shift ;;   # N14 a：只预热以此开头的路径（push_preview 用 map/art/ 按 @<art_sha> 预热美术）
   --no-escalate) NOESC=1 ;;   # 增量里带了 map/art/ / *.glb 也不升级成全量（本次只动了几张浮雕贴图 / 脚本时用）
   --detach|--async) DETACH=1 ;;
   --log) LOG=$2; shift ;;
@@ -34,6 +35,7 @@ if [ "$DETACH" = 1 ]; then
   if [ "$DIFF" = 1 ]; then if [ -n "$BASE" ]; then CHILD+=(--diff "$BASE"); else CHILD+=(--diff); fi; fi
   [ "$FULL" = 1 ] && CHILD+=(--full)
   [ "$NOESC" = 1 ] && CHILD+=(--no-escalate)
+  [ -n "$ONLY" ] && CHILD+=(--only "$ONLY")
   [ -n "$PBR" ] && CHILD+=(--purge-branch "$PBR")
   mkdir -p "$(dirname "$LOG")"
   nohup bash "$0" "${CHILD[@]}" >> "$LOG" 2>&1 < /dev/null &
@@ -48,6 +50,7 @@ PLAN=(python3 tools/warm_plan.py --ref "$REF")
 [ "$FULL" = 1 ] && PLAN+=(--full)
 if [ "$DIFF" = 1 ]; then if [ -n "$BASE" ]; then PLAN+=(--diff "$BASE"); else PLAN+=(--diff); fi; fi   # BASE = 增量基线（curl 用的是 BASE_URL）
 [ "$NOESC" = 1 ] && PLAN+=(--no-escalate)
+[ -n "$ONLY" ] && PLAN+=(--only "$ONLY")
 LIST=$("${PLAN[@]}" 2> "$TMP/note") || { command cat "$TMP/note" >&2; echo "预热清单算不出来（见上面的 warm_plan 报错）" >&2; exit 1; }
 NOTE=$(command cat "$TMP/note")
 if [ -z "$LIST" ]; then N=0; else N=$(printf '%s\n' "$LIST" | wc -l | tr -d ' '); fi

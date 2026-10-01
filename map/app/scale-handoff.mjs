@@ -17,6 +17,7 @@ import { getText } from './topbar.mjs';
 import { go, groupView } from './map-switch.mjs';
 import { RING_W } from './locate.mjs';
 import { worldGroup } from './nodes-runtime.mjs';
+import { artUrl } from './current-pack.mjs';
 const ScaleHandoffApi = (() => {
   const W_M = 12e6;
   const grp = id => { const m = mapRegistry?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && mapRegistry.groups[m.group]?.place ? m.group : null; };
@@ -35,11 +36,11 @@ const ScaleHandoffApi = (() => {
     const CW = 320, CH = Math.round(CW * asp), c = document.createElement('canvas'); c.width = CW; c.height = CH; const g = c.getContext('2d');
     g.fillStyle = upper ? '#c9d3dc' : '#7d8a6a'; g.fillRect(0, 0, CW, CH);
     try {   // 世界底图：主城附近 RING_W × 3 km 那一小块（约 20 px）放大
-      const x = await getText('art/world.dzi'), T = +x.match(/TileSize="(\d+)"/)[1], ov = +(x.match(/Overlap="(\d+)"/)?.[1] || 0), f = x.match(/Format="(\w+)"/)[1];
+      const x = await getText(artUrl('art/world.dzi')), T = +x.match(/TileSize="(\d+)"/)[1], ov = +(x.match(/Overlap="(\d+)"/)?.[1] || 0), f = x.match(/Format="(\w+)"/)[1];
       const W = +x.match(/Width="(\d+)"/)[1], H = +x.match(/Height="(\d+)"/)[1], top = Math.ceil(Math.log2(Math.max(W, H)));
       const [nx, ny] = ptOf(gid), px = nx * W, py = ny * H, col = Math.floor(px / T), row = Math.floor(py / T), x0 = col * T - (col ? ov : 0), y0 = row * T - (row ? ov : 0);
       const cw = RING_W * T_M / (W_M / W), ch = cw * asp;
-      const img = new Image(); img.crossOrigin = 'anonymous'; img.src = `art/world_files/${top}/${col}_${row}.${f}`; await img.decode();
+      const img = new Image(); img.crossOrigin = 'anonymous'; img.src = artUrl(`art/world_files/${top}/${col}_${row}.${f}`); await img.decode();
       g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
       g.drawImage(img, Math.max(0, px - x0 - cw / 2), Math.max(0, py - y0 - ch / 2), cw, ch, 0, 0, CW, CH);
     } catch (e) {}
