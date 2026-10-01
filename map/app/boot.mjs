@@ -53,6 +53,7 @@ import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
 import { firstRunHint } from './notice-layer.mjs';
 import { initE7 } from './one-hand-mode.mjs';
 import { initShell } from './drawer-glue.mjs';
+import { initDeclaredLayers } from './declared-layers.mjs';   // K-R80: the pack's declared layers draw with the kernel's building blocks
 import { initLayerHost, registry, registerCoreLayers, renderLayerMenu, applyPackLayers } from './layer-host.mjs';
 import { plugins } from './plugins.mjs';
 import { PACK, initPack, packData, packEvents, packNames, packOverlay, packTax, setOverlay, rebase, packV2, packProblems } from './current-pack.mjs';
@@ -98,7 +99,7 @@ async function mainInner() {
   const seg = $('#tiers');
   for (const x of [{ key: 'auto' }, ...TIERS]) { const b = document.createElement('button'); b.dataset.k = x.key;
     b.onclick = () => setTier(x.key); seg.appendChild(b); }
-  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); registerVisionLayer(); registerWanderLayer(); registerDepthHazeLayer(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
+  registerCoreLayers(); registerWeatherLayer(); registerTrafficLayer(); registerQuestLayer(); registerLootLayer(); registerVisionLayer(); registerWanderLayer(); registerDepthHazeLayer(); initDeclaredLayers(); renderLayerMenu(); initShell(); layoutHeader(); busOn({ key: 'boot.resize', type: 'resize', fn: layoutHeader });   // P3-C：#layList 由 LayerRegistry 数据驱动，先于 shell 绑定 / applyI18n 渲染
   applyI18n(); $('#status').textContent = uiText('loading');
   $('#estRetry').onclick = retryEstate; $('#estPlan').onclick = estatePlan;
   // Tab 到视野外的地标 / 事件点：浏览器会去滚动 OSD 的容器（overflow:hidden），这里撤掉滚动、改为平移地图把它带进视野

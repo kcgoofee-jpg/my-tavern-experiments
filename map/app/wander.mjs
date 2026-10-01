@@ -94,6 +94,8 @@ export function setWanderClock(c) {
   base = normClock(c); t0 = performance.now(); rounds = -1; clock = base; tick();
 }
 /** 切图：上一张图的像素位置 / 上一次的 transform 都没意义了 */
+/** 日程表此刻的位置 [{ name, place }]（声明的 routine 来源读它，K-R81）；没有日程 = [] */
+export const routineNow = () => { try { return sched ? placesAt(sched, clock, (plugins.CharactersView?.items || []).filter(c => c.src && c.src !== 'routine').map(c => c.name)) : []; } catch (e) { return []; } };
 export function resetWander() { last.clear(); walker.clear(); rounds = -1; }
 
 /* ---------------- CSS 补间那一半（宿主推来位置变化的老路子） ---------------- */

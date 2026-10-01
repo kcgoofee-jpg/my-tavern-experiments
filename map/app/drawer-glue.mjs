@@ -10,6 +10,8 @@ import { narrowNow } from './subpage3d-host.mjs';
 import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { RT } from './nodes-runtime.mjs';
+import { layerLegendRows, onLegendChange } from './declared-layers.mjs';
+import { cssColor } from './block-overlay.mjs';
 import { initLabelToggle, makeDock } from './control-column.mjs';
 import { noticeRefresh } from './notice-layer.mjs';
 import { initStatusDot } from './status-dot.mjs';
@@ -29,16 +31,32 @@ export function sheetVis() { refreshTabs('sheet'); }
 // 条目是设定包 ui.legend 的数据（K-R70）：{ type, label, desc, i18n: { en: { label, desc } } }；没有条目 = 这一页不出现
 const legendItems = () => (Array.isArray(RT?.ui?.legend) ? RT.ui.legend : []).filter(e => e && typeof e.label === 'string');
 const lgText = (e, k) => (LANG === 'en' && e.i18n?.en?.[k]) || e[k] || '';
-function legendEl() {
-  const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane';
+// 图例页的内容每次重建（K-R84）：先是包的 ui.legend 条目（标记不变），再是每个可见且适用的图层的条目（标题 = 图层的菜单文字，每行带一枚色块）
+function fillLegend(box) {
+  box.replaceChildren();
   const h = document.createElement('h3'); h.textContent = uiTextOr('s.legend', '图例'); box.appendChild(h);
-  const dl = document.createElement('dl');
-  for (const e of legendItems()) {
-    const dt = document.createElement('dt'); dt.textContent = lgText(e, 'label');
-    const dd = document.createElement('dd'); dd.textContent = lgText(e, 'desc'); dl.append(dt, dd);
+  const items = legendItems(), groups = layerLegendRows();
+  if (items.length || !groups.length) {
+    const dl = document.createElement('dl');
+    for (const e of items) {
+      const dt = document.createElement('dt'); dt.textContent = lgText(e, 'label');
+      const dd = document.createElement('dd'); dd.textContent = lgText(e, 'desc'); dl.append(dt, dd);
+    }
+    box.appendChild(dl);
   }
-  box.appendChild(dl); return box;
+  for (const g of groups) {
+    const h4 = document.createElement('h4'); h4.textContent = g.heading; box.appendChild(h4);
+    const dl = document.createElement('dl');
+    for (const r of g.rows) {
+      const dt = document.createElement('dt'), sw = document.createElement('i'), c = cssColor(r.swatch.color);
+      if (r.swatch.shape) { sw.className = 'lgsw'; sw.dataset.shape = r.swatch.shape; if (r.swatch.dash?.length) sw.dataset.dash = '1'; if (c) sw.style.setProperty('--sw', c); sw.setAttribute('aria-hidden', 'true'); dt.append(sw); }
+      dt.append(document.createTextNode(r.label));
+      const dd = document.createElement('dd'); dd.textContent = r.desc; dl.append(dt, dd);
+    }
+    box.appendChild(dl);
+  }
 }
+function legendEl() { const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane'; fillLegend(box); return box; }
 
 export function placeEmpty(um) {
   const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '')) return; e.dataset.um = um || '';
@@ -76,8 +94,9 @@ export function initShell() {
   S.label('pl', esc(uiTextOr('s.place', '地点')), {}); S.label('lg', esc(uiTextOr('s.legend', '图例')), {});
   S.showTab('ev', false); S.showTab('ch', false); S.showTab('it', false); S.showTab('lg', false); S.hide(true);
   initTabs(S, order);
+  onLegendChange(() => { fillLegend(panels.lg); refreshTabs('legend'); });   // a layer became visible / applicable, or the map changed: rebuild the pane
   setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate'),
-    legendOk: () => !document.body.classList.contains('estate') && !!depthData && legendItems().length > 0,   // 图例只在配了纵深数据的层出现，且包里写了图例条目（U18）
+    legendOk: () => !document.body.classList.contains('estate') && ((!!depthData && legendItems().length > 0) || layerLegendRows().length > 0),   // 图例：配了纵深数据的层且包里写了图例条目（U18），或有图层带图例条目（K-R84）
     // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
     um: () => (typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null), beforeRefresh: () => placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null) });
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）
