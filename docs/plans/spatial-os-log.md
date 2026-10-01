@@ -1415,7 +1415,18 @@ commits: f95c350e fix(ac-0): N14 b/c and Q-23..25 accepted
 pushed: yes
 tests: node 1339 pass + 1 skipped / 1340 (baseline 1339; +1 here_v2 N14 b) | smoke PASS | arch PASS | probes: none relevant (data word + self-check text; unit-tested)
 deviations: (1) 地窖 went into the room's `synonyms`, not `words`: floorplans.py keeps `words` for card spellings only and `synonyms` for common names; both feed locate, the picker and maps.json identically. (2) floorplans.py gained `--data-only` (plot imports optional) so the generator runs here; before the edit it reproduced the committed JSON byte for byte. (3) Adding the word changes the injected 地图当前地点 worldbook entry by exactly 「地窖、」 (intended by N14 b; pinned in worldbook_rename_s44b, compat_v1 hints 153 → 154). (4) N14 c root cause: self-check read `Mvu latest` raw while the map and the mode line use the walked-back snapshot; `rawLatestStat` (only reader) removed.
+=== RESULT B1-C01-P1 ===
+status: DONE
+items: 2.1 (master gantry bed & flesh-armor rig) ✓ · 2.2 (human furniture zone & ballet onahole rig) ✓ · 2.3 (west forced submission chair & gravity traction rig) ✓
+commits:
+849d2b29 feat(estate): deepen Section 2.1 gantry bed and aerial flesh-armor rig in B1-C01
+abec77d5 feat(estate): deepen Section 2.2 human furniture zone in B1-C01
+94843dcf feat(estate): deepen Section 2.3 west forced submission and gravity rig in B1-C01
+pushed: yes
+tests: node 1337/1337 | smoke PASS | arch PASS | house.glb 717940 bytes (under 718930 cap)
+deviations: none
 blocker: none
 open: none
 cleanup: done
 === END ===
+
