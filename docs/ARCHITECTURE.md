@@ -121,7 +121,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `render-gate.mjs` | RenderGate: pauses on-demand render loops when the page is hidden or the viewport invisible. |
 | `rng.mjs` | Deterministic pseudo-random generator (mulberry32) shared by particles, traffic and clue nodes. |
 | `room-gallery-db.mjs` | IndexedDB wrapper for room gallery images (browser only). |
-| `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, export bundle shape. |
+| `room-gallery-logic.mjs` | Pure gallery logic: resize dimensions, quota checks, picture records (`private` / `pack`), the source guard for gallery files. |
 | `roster.mjs` | CharacterRosterSystem: five-source roster merged into standard `RosterRow`s with priority arbitration, aliases and portraits. |
 | `routine.mjs` | NPC schedule math shared by host and viewer. |
 | `scene-header.mjs` | Scene header (K-R105): reads a floor's `<tag>place·date·time</tag>` block without a regex and decides one floor's place: this floor's variable patch, then the header place when it resolves, then the carried variable. |
@@ -299,7 +299,7 @@ Shared widgets, used by the viewer, the host and the 3D pages. Mostly plain scri
 | `illustration-panel.js` | Room illustration panel driving the optional image-generation extension. |
 | `notice.mjs` | The single notification layer (P0 blocking, P1 banner, P2 toast). |
 | `progress.mjs` | Unified loading-progress component: determinate or elapsed-time, retry. |
-| `room-gallery-panel.js` | Room gallery UI: custom names, upload, resize, reorder, export bundle. |
+| `room-gallery-panel.js` | Room gallery UI: custom names, a place's pictures (pack pictures read only, then private ones: upload, resize, reorder, "add to pack" in edit mode). |
 | `sheet.js` | The single bottom sheet / desktop right rail (`window.UISheet`). |
 
 ### 3.5 map/three

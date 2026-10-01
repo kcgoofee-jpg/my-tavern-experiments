@@ -1,8 +1,7 @@
 // node tools/browser/room_gallery_ui.mjs —— 房间图集 UI（map/ui/room-gallery-panel.js）：
-//   改名 / 恢复原名 / 简介；默认（非维护者模式）下「投稿」「导出」不可见；
+//   改名 / 恢复原名 / 简介；面板里没有「投稿」「导出」「维护者」之类的东西（S9b 起取消），「加入设定包」只在编辑模式出现（这里没开，所以不可见）；
 //   每个作用域（仅本聊天 / 全部聊天共用）各自上传 → 图片正常显示（不是破图标）→ 切换作用域 → 整页刷新后两边的图都还在、都还能正常显示
 //   （bug fix 回归用例：以前「仅本聊天」作用域刷新后会显示破图标）；
-//   打开维护者模式后：投稿（可见性分段控件）→ 导出（拦截下载）→ 删除。
 // 桌面 + 375 两个视口各跑一遍。
 import * as B from './lib.mjs';
 import fs from 'node:fs';
@@ -75,56 +74,21 @@ async function run(preset, tag) {
   const restored = await f.evaluate(() => ({ h3: document.querySelector('#card h3')?.textContent, hasRestore: !!document.querySelector('#card .rgc-restore') }));
   rep.check(`${tag}：恢复原名`, new RegExp('^' + ROOM).test(restored.h3 || '') && !restored.hasRestore, JSON.stringify(restored));
 
-  // ---------------- 默认（非维护者模式）：投稿 / 导出 UI 不可见 ----------------
+  // ---------------- 没有公开 / 投稿 / 导出的概念；编辑模式没开：也没有「加入设定包」 ----------------
   await openRoomAndGallery(f);
-  const nonMaintainer = await f.evaluate(() => ({
-    hasSubmitBtn: !!document.querySelector('[data-act="vis-submit"]'),
-    hasExport: !!document.querySelector('.rgp-export'),
-    hasNote: (document.querySelector('.rgp-foot .rgp-note')?.textContent || '').length > 0,
-  }));
-  rep.check(`${tag}：默认非维护者模式下不显示「投稿」「导出」`, !nonMaintainer.hasExport, JSON.stringify(nonMaintainer));
+  const noPublic = await f.evaluate(() => ({ submit: !!document.querySelector('[data-act="vis-submit"], .rgp-export, .rgp-seg'), addToPack: !!document.querySelector('[data-act="pack"]'), foot: !!document.querySelector('.rgp-foot') }));
+  rep.check(`${tag}：面板里没有投稿 / 导出 / 可见性控件，编辑模式没开时也没有「加入设定包」`, !noPublic.submit && !noPublic.addToPack && !noPublic.foot, JSON.stringify(noPublic));
   await f.evaluate(() => document.querySelector('.rgp-x')?.click());
-
-  // ---------------- 打开维护者模式（设置里的开关，走 LocalStore/localStorage） ----------------
-  await f.evaluate(() => { try { localStorage.setItem('edenGalleryMaintainerMode', '1'); } catch (e) {} });
 
   // ---------------- 发 chatId，测「仅本聊天」作用域 ----------------
   await f.evaluate((id) => window.postMessage({ type: 'estate:chat', id }, '*'), CHAT_ID);
   await B.wait(200);
   await openRoomAndGallery(f);
-  const maintainerOn = await f.evaluate(() => ({ hasExport: !!document.querySelector('.rgp-export') }));
-  rep.check(`${tag}：维护者模式打开后导出按钮出现`, maintainerOn.hasExport, JSON.stringify(maintainerOn));
-
   await selectScope(f, 'chat');
   const chatCount1 = await uploadOne(P, f);
   rep.check(`${tag}：仅本聊天 作用域上传后图出现在网格`, chatCount1 >= 1, String(chatCount1));
   const chatImg1 = await firstLocalImgOk(f);
   rep.check(`${tag}：仅本聊天 作用域上传后图片正常显示（不是破图标）`, chatImg1.found && chatImg1.naturalWidth > 0 && chatImg1.naturalHeight > 0, JSON.stringify(chatImg1));
-
-  // 可见性分段控件：默认「仅自己」高亮，点「投稿」切过去
-  const visBefore = await f.evaluate(() => ({
-    selfOn: document.querySelector('[data-act="vis-self"]')?.classList.contains('on'),
-    submitOn: document.querySelector('[data-act="vis-submit"]')?.classList.contains('on'),
-  }));
-  rep.check(`${tag}：可见性分段控件默认「仅自己」高亮`, visBefore.selfOn === true && visBefore.submitOn === false, JSON.stringify(visBefore));
-  await f.evaluate(() => document.querySelector('[data-act="vis-submit"]')?.click());
-  await f.waitForFunction(() => document.querySelector('[data-act="vis-submit"]')?.classList.contains('on'), null, { timeout: 5000 }).catch(() => {});
-  const visAfter = await f.evaluate(() => ({
-    selfOn: document.querySelector('[data-act="vis-self"]')?.classList.contains('on'),
-    submitOn: document.querySelector('[data-act="vis-submit"]')?.classList.contains('on'),
-  }));
-  rep.check(`${tag}：点「投稿」后分段控件切到「投稿」`, visAfter.submitOn === true && visAfter.selfOn === false, JSON.stringify(visAfter));
-
-  // 导出（拦截下载，不真正落盘校验内容，只确认触发了下载）+ 拦截 window.open 拿预填 issue 链接的原始参数
-  // （不用等真的跳转完：沙盒里没有登录态，github.com 会跳到登录页，跳转后的 url 跟我们要校验的东西无关）
-  await f.evaluate(() => { window.__openedUrls = []; window.open = (u) => { window.__openedUrls.push(u); return null; }; });
-  const downloads = [];
-  P.page.on('download', (d) => downloads.push(d.suggestedFilename()));
-  await f.evaluate(() => document.querySelector('.rgp-export')?.click());
-  await B.wait(1200);
-  const openedUrls = await f.evaluate(() => window.__openedUrls || []);
-  rep.check(`${tag}：导出触发下载（manifest + 图片）`, downloads.some((n) => /manifest\.json$/.test(n)) && downloads.some((n) => /\.webp$/.test(n)), JSON.stringify(downloads));
-  rep.check(`${tag}：导出打开预填 issue 链接（维护者模式下）`, openedUrls.some((u) => /^https:\/\/github\.com\/.+\/issues\/new\?title=/.test(u)), JSON.stringify(openedUrls));
 
   // 切到「全部聊天共用」，上传另一张，也要正常显示
   await selectScope(f, 'global');

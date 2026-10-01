@@ -336,6 +336,9 @@
 | **place / current place** | 地图上一个有名字的位置；「当前地点」是聊天里说玩家所在的地方。代码里叫 `here`。 | `here-v2.mjs`、`hereRes`、`eden-map:here`。 | 标记（画出来的图钉）或节点。 |
 | **place card** | 点击标记时打开的面板。 | `app/markers.mjs` 的 `showCard`、`app/cardlinks.mjs`。 | 角色卡（酒馆里的对象）和「卡设定」数据。 |
 | **character card / card** | 故事所用的酒馆角色卡。地图从不生成或修改角色卡。 | brief §3 和 §7；设定包数据里的 `stat_data` 路径。 | 地点卡（上一条）。 |
+| **pack picture（包图片）** | 属于设定包的图片：`media` 块里的一项，列在节点的 `media` 里（K-R101）。随导出一起走，计入大小上限。 | `core/pack-media.mjs`、`core/pack-draft.mjs` |
+| **private picture（私有图片）** | 用户只在这个浏览器里给某个地点留的图（图集 IndexedDB，`n:<节点 id>`）；永不进入导出（K-R102）。 | `ui/room-gallery-panel.js`、`core/room-gallery-db.mjs` |
+| **edit draft（编辑草稿）** | 作者在编辑模式里做的改动：和设定包分开存在这个浏览器里、套在包上显示；导出时并入（K-R100）。 | `core/pack-draft.mjs`、`app/pack-edit.mjs` |
 | **automatic pack** | 宿主为没人写过包的卡造出来的 schema-2 包：以卡名命名的根、从世界书标题里找到的地点、从变量形状里找到的变量路径和人物，以及从聊天里长出来的节点（K-R93–K-R95）。外来包、可丢弃的缓存、可导出（K-R98）。 | `core/card-read.mjs`、`core/grow.mjs`、`tavern/auto-pack.mjs`；包来源 `auto`；聊天变量键 `auto`。 | 随地图发布的包（`eden`、`town`、`minimal`）；第一个包。 |
 | **card source** | 宿主为包门卫和自动包从当前卡读出的朴素对象：名字、作者、标签、头像、开场白、世界书标题与关键词、变量树和 initvar 文本。条目正文不在其中（K-R94）。 | `tavern/card-source.mjs` 的 `readCardSource`；`core/card-read.mjs` 是它的纯函数。 | 角色卡本身，地图从不编辑它。 |
 | **map level** | 多层地图的一层，例如城市的各层；用层切换条和「上一级」到达。 | `app/layers.mjs`（将改名 `map-level-nav`）、`REG.groups`。 | Layer slot。 |
