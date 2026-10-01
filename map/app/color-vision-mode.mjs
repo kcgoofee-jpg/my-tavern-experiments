@@ -22,7 +22,7 @@ export function hueBucket(hex, m) {
 }
 
 // 人物头像色相（沿用哈希取色，只换色相表，避开该模式下容易混的两组）
-export const CHAR_HUES_CVD = { rg: [35, 200, 210, 280, 340, 15, 55], by: [15, 340, 200, 45, 280, 5, 165] };
+export const CHAR_HUES_CVD = { rg: [0, 205, 225, 245, 265, 285, 310, 340], by: [0, 15, 100, 130, 160, 175, 320, 340] };   // 8 hues each (U-24 A'): none within 20 degrees of the chrome accent hue 44
 
 export function mode() { try { const v = storage.get('edenMapCvd'); return MODES.includes(v) ? v : '0'; } catch (e) { return '0'; } }
 export function isEnabled() { return mode() !== '0'; }

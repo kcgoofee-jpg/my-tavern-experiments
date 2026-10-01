@@ -840,5 +840,8 @@
   "lyr.generic_period": "a certain time",
   "edit.more": "Edit ⋯",
   "s.rot3d": "3D: rotate slowly after 30 s idle",
-  "s.wheel3d": "Mouse wheel zooms (trackpad pinch is unaffected)"
+  "s.wheel3d": "Mouse wheel zooms (trackpad pinch is unaffected)",
+  "k.comma": "Settings",
+  "k.modes": "3D view: exterior / x-ray / section",
+  "ch.ring_note": "The colour of an avatar ring only tells people apart; it does not mean a faction or a role."
 }

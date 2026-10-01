@@ -86,7 +86,8 @@ export function collectChars(msgs, now, mvu = [], known = [], presentFloor = Inf
 }
 
 // 人物颜色：按名字哈希取固定色。色相避开事态 9 个大类的颜色（地图上一眼分得开），全部中等明度、白字 / 深字都可读
-export const CHAR_HUES = [100, 128, 152, 172, 244, 262, 342];
+// S7-2 U-24 A': ONE fixed 8-hue person palette (rings and map avatars; initials on both); no hue within 20 degrees of the chrome accent (gold, hue 44), none near the event category hues
+export const CHAR_HUES = [100, 114, 128, 152, 172, 244, 262, 342];
 export function hueOf(hex) {
   const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
   if (!d) return null; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; return h < 0 ? h + 360 : h;

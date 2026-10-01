@@ -73,3 +73,8 @@ test('mode()/setMode()：非法值落回关，合法值按 KEYS 兜底走同一�
     TCCvd.setMode('nonsense'); assert.equal(TCCvd.mode(), '0');
   } finally { delete global.globalThis.localStorage; }
 });
+
+test('U-24 A\': one 8-colour person palette (default and both colour-vision sets), no hue within 20 degrees of the chrome accent', async () => {
+  const C = await import('../map/tavern/characters-parse.mjs'), gold = 44, far = h => Math.min(Math.abs(h - gold), 360 - Math.abs(h - gold)) > 20;
+  for (const set of [C.CHAR_HUES, TCCvd.CHAR_HUES_CVD.rg, TCCvd.CHAR_HUES_CVD.by]) { assert.equal(set.length, 8); assert.ok(set.every(far), JSON.stringify(set)); assert.equal(new Set(set).size, 8); }
+});

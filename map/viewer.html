@@ -272,7 +272,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .vpslot { position: absolute; inset: 0; pointer-events: none; isolation: isolate; }
   .vpslot :is([data-hit], .hit) { pointer-events: auto; }
   /* ---------- 浮动控制列 C（§2.3 / §10.1）：手机 = 拇指侧 ⋯ + − ⌂，跟着抽屉高度上移；桌面 = 右下（右栏左侧）层切换 + − ⌂ 🏷 ---------- */
-  #dock { position: absolute; z-index: var(--zu-dock); right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
+  #dock { position: absolute; z-index: var(--zu-dock); right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--tl-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
     transition: bottom var(--dur-2) var(--ease-out), right var(--dur-2) var(--ease-out); }
   #dock > * { pointer-events: auto; }
   #dock[hidden], body.estate #dock { display: none; }
@@ -390,7 +390,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
   /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */
   .mk.far .lab { visibility: hidden; }
-  .mk.far:hover .lab, .mk.far:focus-visible .lab, .mk.far.active .lab { visibility: visible; }
+  .mk.far:hover .lab, .mk.far:focus-visible .lab, .mk.far.active .lab, .mk.far.l1 .lab { visibility: visible; }   /* S7-2 2.6: an L1 name shows on a far island at the default zoom */
   /* 漂浮 ±2 px（周期 8–14 s，越远越慢）：用 translate 属性，不与上面的 transform 打架 */
   .mk.flt .mki { animation: flt var(--fdur, 11s) ease-in-out infinite alternate; }
   @keyframes flt { from { translate: 0 -2px; } to { translate: 0 2px; } }
@@ -493,7 +493,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #credit:empty, #credit[hidden] { display: none; }
   /* v0.9.6：署名默认收成一个 ⓘ，点开看全文，6 秒后自动收起（手机上以前一直横在顶上） */
   #creditBtn { flex: none; position: relative; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: var(--ink-2); font: 13px/1 var(--font-ui); cursor: pointer; display: grid; place-items: center; }
-  #creditBtn::before { content: ''; position: absolute; inset: -6px; }
+  #creditBtn::before { content: ''; position: absolute; inset: -8px; }
   #creditBtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
   #creditBtn[hidden] { display: none; }
   #credit { white-space: normal !important; max-width: min(360px, calc(100vw - 80px)); }

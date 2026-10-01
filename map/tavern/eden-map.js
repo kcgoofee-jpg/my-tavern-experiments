@@ -11,7 +11,7 @@
 import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; import './pack-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
 import { createRoutes, scoreText } from './host-routes.mjs';
-import { createLife, takeOver, mount, install, watchVisible } from './host-lifecycle.mjs';
+import { createLife, takeOver, mount, install, watchVisible, chainText } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
 import { createLlmFlow } from './llm-flow.mjs';
 import { createRouteFlow } from './route-flow.mjs';
@@ -422,7 +422,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     { const h = getHere(); if (h !== here) unm = null; here = h; }   // 地点变了：等地图重新判断是否上图
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
-    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], uiLang === 'en') || parts[0]; hereEl.append(a); }
+    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], uiLang === 'en') || chainText(parts[0]); hereEl.append(a); }
     hereEl.classList.toggle('em-unsure', mvuBridge.snapState !== 'ok' && mvuBridge.snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
     hereEl.classList.toggle('em-unm', !!unm && !!parts[0]); if (unm && parts[0]) { hereEl.setAttribute('role', 'button'); hereEl.tabIndex = 0; } else { hereEl.removeAttribute('role'); hereEl.removeAttribute('tabindex'); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';

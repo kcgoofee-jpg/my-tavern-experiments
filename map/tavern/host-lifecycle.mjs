@@ -4,6 +4,9 @@ import { fnOk, thFn } from './host-tavernhelper.mjs';
 import { hostTokensCss } from './host-tokens.mjs';
 
 /** 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）。所有 eventOn 走 listen 登记句柄；kill() 之后旧实例的所有出口都变成空操作。 */
+/** N10 (7): the place chain of the status line reads with a spaced middle dot between its parts (a display change only; the title keeps the raw text) */
+export const chainText = s => String(s ?? '').replace(/\s*[·・‧•]\s*/g, ' · ').trim();
+
 export function createLife() {
   let dead = false; const offs = [];
   return {
@@ -119,7 +122,7 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-bar .em-tl-btn[hidden] { display: none; }
   #${ID} .em-bar .em-tl-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
   #${ID} .em-tl { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: var(--zh-tl); display: flex; align-items: center; gap: 10px; width: min(86%, 520px); padding: 8px 14px; border-radius: 999px;
-    background: var(--em-bg); border: 1px solid var(--em-accent); box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 12px/1.4 var(--em-font); color: var(--em-ink); box-sizing: border-box; }
+    background: var(--glass-1); border: 1px solid var(--em-accent); box-shadow: var(--elev-panel); font: 12px/1.4 var(--em-font); color: var(--em-ink); box-sizing: border-box; }
   #${ID} .em-tl[hidden] { display: none; }
   #${ID} .em-tl .em-tl-l { flex: none; color: var(--em-accent); font-weight: 700; }
   #${ID} .em-tl input[type="range"] { flex: 1 1 auto; min-width: 80px; accent-color: var(--em-accent); }
@@ -186,6 +189,7 @@ export function mount(pdoc, ID, scriptOwner) {
     #${ID} .em-bar { max-width: 45%; }   /* U19: the host bar <= 45 %, the place field keeps >= 50 % of it */
     #${ID} .em-bar .em-here { flex: 1 1 50%; min-width: 50%; max-width: none; }   /* 线路按钮不再把「当前地点」挤成 0 宽（E5 r3 手机 N-01） */
     #${ID} .em-bar .em-clock:not(.em-open) .em-clock-t { display: none; }   /* folding order: the clock goes to its icon first; a tap shows the time again */
+    #${ID} .em-tl { bottom: calc(var(--sheet-peek, 56px) + 10px); }   /* N10 (5): above the drawer peek, not over the zoom stack */
     #${ID} .em-bar .em-close { width: 44px; height: 44px; }
     #${ID} .em-bar .em-close svg { width: 22px; height: 22px; }
     #${ID} .em-panel.em-left .em-close { order: -1; }   /* 左手（E7）：关闭按钮到左上，离左手拇指近一些；底部还有地图菜单里的「关闭地图」 */
@@ -207,6 +211,9 @@ export function mount(pdoc, ID, scriptOwner) {
   const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
   const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {} const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
   new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();
+  // N10 (5): the replay bar docks as a glass-1 bar above the drawer peek; the viewer shifts its dock up by the bar's height (--tl-h on the viewer's root, the frame is same-origin)
+  const tl = root.querySelector('.em-tl'), fr = root.querySelector('.em-frame'), setTl = () => { try { fr.contentDocument?.documentElement.style.setProperty('--tl-h', tl.hidden ? '0px' : (tl.offsetHeight + 8) + 'px'); } catch (e) {} };
+  new MutationObserver(setTl).observe(tl, { attributes: true, attributeFilter: ['hidden'] }); fr.addEventListener('load', setTl);
   return root;
 }
 

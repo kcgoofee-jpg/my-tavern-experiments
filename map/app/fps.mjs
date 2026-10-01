@@ -8,7 +8,7 @@ function ensureEl() {
   el.id = 'fpsMeter';
   el.setAttribute('aria-hidden', 'true');
   Object.assign(el.style, {
-    position: 'fixed', top: 'calc(var(--bar-h, 44px) + 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 'var(--zu-debug)',   // fix3：以前在左上角压住「上一级」按钮；改到顶栏下方正中（署名 ⓘ 在左上、控制列在右）
+    position: 'fixed', top: 'calc(var(--bar-h, 44px) + var(--edge, 12px) + 40px)', left: 'var(--edge, 12px)', zIndex: 'var(--zu-debug)',   // N10 (10): top-left under the info button, away from the dock (it sat at the top centre before and overlapped the zoom stack with the host bar open)
     font: '11px/1.4 monospace', color: '#0f0', background: 'rgba(0,0,0,.55)',
     padding: '1px 5px', borderRadius: '3px', pointerEvents: 'none', letterSpacing: '.02em',
   });

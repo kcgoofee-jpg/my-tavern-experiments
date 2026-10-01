@@ -165,9 +165,10 @@ const CharactersView = (() => {
     return `<span class="chstat" title="${esc([it.grade ? uiTextOr('ch.grade', '等级') + ' ' + it.grade : '', it.core != null ? `${it.coreKey || ''} ${it.core}` : ''].filter(Boolean).join(' · '))}">${esc(t)}</span>`; };
   // v0.9.6 E1 战力小签（只读，卡里写明才有）
   const tierChip = it => it?.tier ? `<span class="chtier" title="${esc(uiTextOr('ch.tier', '战力'))}">${esc(it.tier)}</span>` : '';
+  const badgesOf = it => { const h = stageChip(it.stage) + statChip(it) + tierChip(it); return h ? `<em>${h}</em>` : ''; };   // N10 (16): no badges, no empty badge row
   function rosterRow(it) {
     const c = items.find(x => x.name === it.name);
-    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b><em>${stageChip(it.stage)}${statChip(it)}${tierChip(it)}</em><small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
+    const body = `<i class="av" style="--c:${color(it.name)}">${avImg(it.name) || esc(ini(it.name))}</i><b>${esc(dn(it.name))}</b>${badgesOf(it)}<small>${esc(it.identity || '')}${c ? ' · ' + esc(c.place) : ''}</small>`;
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner, raw) {   // raw: the body is already markup (the present group's sections), not a list of rows
@@ -193,7 +194,7 @@ const CharactersView = (() => {
     const pre = ck?.pre ? `<p class="chpre" role="note">${esc(uiTextOr('ch.pre', '开局前 · 卡初始值'))}<small>${esc(uiTextOr('ch.pre_tip', '还没选开局：下面是卡的 MVU 初始变量，选了开局后按剧情更新'))}</small></p>` : '';
     // fix3（用户 2026-09-28）：着装属于人（主角），放在人物页顶部「你」这一行，不再挂在地点卡上
     const me = of?.text ? `<div class="chme"><i class="av me" aria-hidden="true">${esc(uiTextOr('ch.me_i', '你'))}</i><b>${esc(uiTextOr('ch.me', '你（主角）'))}</b><small title="${esc(of.items ? Object.entries(of.items).map(([k, v]) => `${k}：${v}`).join('\n') : of.text)}">${esc(uiTextOr('cu.outfit', '着装：{s}', { s: of.text }))}</small></div>` : '';
-    el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(uiTextOr('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><div class="chgrps">`
+    el.innerHTML = pre + me + `<label class="tg chall"><span>${esc(uiTextOr('ch.show', '在地图上显示人物'))}</span><input type="checkbox" role="switch" ${prefs.show ? 'checked' : ''}></label><small class="chring">${esc(uiTextOr('ch.ring_note', '头像边框的颜色只用来区分不同的人，不代表阵营或身份。'))}</small><div class="chgrps">`
       + (secs ? group(M.present.id, M.present.label, items.length + extra.length, secs, true) : group(M.present.id, M.present.label, items.length + extra.length, items.map(row).join('') + extra.map(rosterRow).join('')))
       + M.others.map(g => group(g.id, g.label, g.rest.length + also(g.also), g.rest.map(rosterRow).join(''))).join('') + '</div>';
     for (const d of el.querySelectorAll('details.chgrp')) d.addEventListener('toggle', () => { d.open ? closed.delete(d.dataset.g) : closed.add(d.dataset.g); try { LocalStore.set(GK, JSON.stringify([...closed])); } catch (e) {} });
@@ -249,6 +250,7 @@ const CharactersView = (() => {
   @media (pointer:coarse),(max-width:640px){.chm::before{content:'';position:absolute;left:-9px;top:50%;width:44px;height:44px;margin-top:-22px}}
   #evbar .chpane{padding:0 var(--sp-3,6px) var(--sp-3,6px)}
   #evbar .chpane .chall{padding:0 12px 0 var(--sp-3,6px);border-top:1px solid var(--line)}
+  #evbar .chpane .chring{display:block;padding:0 var(--sp-3,6px) var(--sp-3,6px);color:var(--muted);font-size:var(--fs-micro,11px);line-height:1.45}
   #evbar .chpane .chgrps{overflow:visible}
   #evbar .chpane ul{list-style:none;margin:0;padding:0}
   #evbar .chpane summary{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--sp-3,6px);cursor:pointer;font-size:var(--fs-small,12px);font-weight:600;color:var(--ink-2);border-top:1px solid var(--line)}
