@@ -53,6 +53,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `ambience.mjs` | 程序化环境音（K-R89，Q-01）：滤波噪声与谐波振荡器的配方、按 `{ map, layer, place, weather, night }` 选场景的规则、混音计划。纯函数；数据来自 `sound` 图层。 |
+| `applies-hint.mjs` | 图层「此处不适用」的白话原因（S7-2，`docs/ui-refactor.md` 4）：`appliesHint(applies, ctx, names)` 说出 `applies` 里不满足的键（最多两条）；只有 `data` 不满足时返回 null（该行直接隐藏）；不会把 id 或路径显示出来。 |
 | `base-frame.mjs` | 底图在世界里摆在哪（N10-P0）：`baseFrame(extent)` 恒为一个世界单位宽、从原点起；`aspectDrift` 比较视图的形状与 DZI 的像素形状——时段底图的像素再多也不改变摆放。纯函数。 |
 | `card-read.mjs` | 运行时读卡（K-R93、K-R94、K-R95）：从世界书标题取地点候选、语言、开场视图、变量形状，以及由一个朴素的卡来源造出的自动包；指纹。纯函数。 |
 | `clock.mjs` | 零 Token 的确定性世界时钟：世界时间由推进的轮数算出，不靠模型也不读系统时间。 |
@@ -71,12 +72,11 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
+| `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
-| `applies-hint.mjs` | 图层「此处不适用」的白话原因（S7-2，`docs/ui-refactor.md` 4）：`appliesHint(applies, ctx, names)` 说出 `applies` 里不满足的键（最多两条）；只有 `data` 不满足时返回 null（该行直接隐藏）；不会把 id 或路径显示出来。 |
-| `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-values.mjs` | 宿主送给图层的值（K-R86）：`capValue`（4 KB / 200 项，截断标 `…truncated`）与按路径读快照的 `pickValues`。纯函数。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
 | `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu-readers.mjs` 并进聊天变量。 |
@@ -194,11 +194,11 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |
 | `quick-zoom.mjs` | 触屏单指缩放（双击后按住拖动）。 |
+| `raf-probe.mjs` | 调试 getter `raf` 背后的只读活动计数器（S7-2）：按所属模块数动画帧、存活的定时器及其回调、正在跑的动画；由 `tools/browser/raf_pause.mjs` 读取。 |
 | `route-plan-view.mjs` | 查看器里的路线规划（K-R111、K-R113）：地点卡上的路线链接、计划卡、内核图层 `route-plan`（用户的计划实线、建议路线虚线）、`eden-map:here` 时的重新规划与到达、宿主的回发 `eden-map:route`；发出 `eden-map:route-plan`。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings-pages.mjs` | 设置页的行表（S7-1）：每个子页的行第一次打开该页时才造（启动路径上不造），`onBuilt` / `onShow` 钩子，静态搜索索引。 |
-| `raf-probe.mjs` | 调试 getter `raf` 背后的只读活动计数器（S7-2）：按所属模块数动画帧、存活的定时器及其回调、正在跑的动画；由 `tools/browser/raf_pause.mjs` 读取。 |
 | `settings-wire.mjs` | 设置各行的处理器，页建好后才挂；启动就要生效的存储开关（减少动态、花屏特效、小地图、动作模式、编辑模式）直接读写存储。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
@@ -244,7 +244,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
 | `feature-health.mjs` | 功能健康（S7-1，`docs/settings-ia.md` §4.5）：`createFacts()` 与纯函数 `healthOf(facts)`，对每张 AI 联动卡片给出 开着 / 生效 / 待命 / 未生效、原因、上次生效楼层、文字与 token；`healthSum`。 |
-| `host-tokens.mjs` | 宿主页的令牌块（S7-2）：`HOST_TOKENS_CSS` / `hostTokensCss(id)`，`tokens.css` 的颜色、毛玻璃、层级阴影与 `--zh-*` 层叠阶梯的限定作用域副本（测试逐值对拍）；宿主自己的 `--em-*` 名字都是它的别名。 |
 | `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
 | `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
 | `gallery-flow.mjs` | 媒体来源的宿主侧（K-R106），由 `chars-flow` 创建：每个聊天读一次卡的图片表，每轮扫聊天楼层正文里的标记（一楼的地点经 `MVUBridge.floorPlace`，K-R105），发 `eden-map:media`；回应 `eden-map:media-ask`；开关 `edenMapGallery`（默认开）能关掉；什么都不存。 |
@@ -255,6 +254,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-routes.mjs` | CDN 线路表、版本推断与测速 race；纯计算。 |
 | `host-strings.mjs` | 宿主自己打印的几句产品文案（地图名、脚本名、「有新事态」提示）：读清单 `strings`（`hostStr`），没有就用中性默认；纯函数。 |
 | `host-tavernhelper.mjs` | 酒馆助手适配层：请求包装、接口探测、包命名空间、脚本变量偏好、世界书全自动。 |
+| `host-tokens.mjs` | 宿主页的令牌块（S7-2）：`HOST_TOKENS_CSS` / `hostTokensCss(id)`，`tokens.css` 的颜色、毛玻璃、层级阴影与 `--zh-*` 层叠阶梯的限定作用域副本（测试逐值对拍）；宿主自己的 `--em-*` 名字都是它的别名。 |
 | `imagegen-bridge.mjs` | 到可选外部生图扩展的桥；扩展不在时每个函数都安静降级。 |
 | `interaction-modes.mjs` | 脚本 ↔ 卡的交互方式：紧凑状态注入、标签对账、最小检查点。 |
 | `keyframes.mjs` | 长程关键帧压缩：逐楼状态压成变更点关键帧，是可丢弃的缓存。 |

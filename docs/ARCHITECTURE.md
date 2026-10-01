@@ -72,6 +72,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | Module | Role |
 |---|---|
 | `ambience.mjs` | Procedural ambience (K-R89, Q-01): recipes of filtered noise and harmonic oscillators, scene rules over `{ map, layer, place, weather, night }`, the mixing plan. Pure; its data comes from a `sound` layer. |
+| `applies-hint.mjs` | Plain-words reason a layer does not apply here (S7-2, `docs/ui-refactor.md` 4): `appliesHint(applies, ctx, names)` names the failing keys of `applies` (at most two), `data` alone gives null (the row is hidden); no id or path reaches the screen. |
 | `base-frame.mjs` | Where a map's base image sits (N10-P0): `baseFrame(extent)` is always one world unit wide from the origin, and `aspectDrift` compares the view's shape with a DZI's pixel shape, so a period variant with more pixels never changes the placement. Pure. |
 | `card-read.mjs` | Runtime card reading (K-R93, K-R94, K-R95): place candidates from worldbook titles, language, start view, the variable shape, and the automatic pack derived from a plain card source; the fingerprint. Pure. |
 | `clock.mjs` | Zero-token deterministic world clock: world time is computed from turns advanced, never from the model or system time. |
@@ -90,12 +91,11 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
+| `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
 | `layer-geometry.mjs` | Declared layers, pure geometry and style (K-R80): the route paths of the `line` block (compared with a frozen copy of the old loop), converters from the view data to features, the resolved style of a feature, legend swatches, flow tables, the first-visibility rule. Pure. |
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
 | `layer-spec.mjs` | Declared layers (K-R79, K-R81, K-R82): source parsing, feature and layer normalisation, merge of a pack's `layers` rows with the kernel list, the `applies` evaluator, the `validate2` spec of the block. Pure. |
-| `applies-hint.mjs` | Plain-words reason a layer does not apply here (S7-2, `docs/ui-refactor.md` 4): `appliesHint(applies, ctx, names)` names the failing keys of `applies` (at most two), `data` alone gives null (the row is hidden); no id or path reaches the screen. |
-| `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-values.mjs` | Host-fed layer values (K-R86): `capValue` (4 KB / 200 items, marked `…truncated`) and `pickValues` over a stat snapshot. Pure. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
 | `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu-readers.mjs`. |
@@ -214,11 +214,11 @@ mutable state is written only by its declaring module through `set*()`.
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
 | `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |
 | `quick-zoom.mjs` | Single-finger zoom (double-tap, hold, drag) on touch screens. |
+| `raf-probe.mjs` | Read-only activity counter behind the debug getter `raf` (S7-2): animation frames per owning module, live intervals and their callbacks, running animations; read by `tools/browser/raf_pause.mjs`. |
 | `route-plan-view.mjs` | Route planning in the viewer (K-R111, K-R113): the route link on a place card, the plan card, the kernel layer `route-plan` (the user's plan solid, suggestions dashed), re-planning and arrival on `eden-map:here`, the host's echo `eden-map:route`; sends `eden-map:route-plan`. |
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
 | `settings-pages.mjs` | Settings page table (S7-1): the rows of every settings page, built the first time the page opens (never on the boot path), `onBuilt` / `onShow` hooks, the static search index. |
-| `raf-probe.mjs` | Read-only activity counter behind the debug getter `raf` (S7-2): animation frames per owning module, live intervals and their callbacks, running animations; read by `tools/browser/raf_pause.mjs`. |
 | `settings-wire.mjs` | Handlers of the settings rows, attached when their page is built; the stored switches that must act at boot (reduce motion, no-glitch, minimap, action mode, edit mode) read storage directly. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |
 | `sharpness-tiers.mjs` | Sharpness tiers, data-saver decisions, load progress, overlay and label avoidance. |
@@ -264,7 +264,6 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `events-parse.mjs` | Event parsing: reads event tags from chat text, classifies them through the pack's events block (`typeOf`, K-R50), merges (type + node, K-R54) and ages them (pure). |
 | `extension-api-contract.mjs` | Machine-readable contract of the public `EdenMap` API exposed to the host page. |
 | `feature-health.mjs` | Feature health (S7-1, `docs/settings-ia.md` §4.5): `createFacts()` and the pure `healthOf(facts)` that says per AI-link card whether it is on, working, idle or not effective, with reason, last floor, text and tokens; `healthSum`. |
-| `host-tokens.mjs` | The host page's token block (S7-2): `HOST_TOKENS_CSS` / `hostTokensCss(id)`, a scoped copy of the `tokens.css` colours, glass, elevation and the `--zh-*` z ladder (a test compares every value); the host's own `--em-*` names are aliases of it. |
 | `follow-gate.mjs` | Entry gate: a script loaded from a branch path reloads itself from the head sha. |
 | `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
 | `gallery-flow.mjs` | Host side of the media source (K-R106), made by `chars-flow`: reads the card's picture table once per chat, scans the chat floors' text for tags each round (the place of a floor via `MVUBridge.floorPlace`, K-R105), sends `eden-map:media`; answers `eden-map:media-ask`; the switch `edenMapGallery` (default on) turns it off; nothing is stored. |
@@ -275,6 +274,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `host-routes.mjs` | CDN route table, version inference and route race; pure computation. |
 | `host-strings.mjs` | The host's few product texts (map name, script name, "new events" toast) from the manifest `strings` (`hostStr`), else neutral defaults; pure. |
 | `host-tavernhelper.mjs` | TavernHelper adapter: request wrapper, function probing, pack namespace, script-variable preferences, worldbook automation. |
+| `host-tokens.mjs` | The host page's token block (S7-2): `HOST_TOKENS_CSS` / `hostTokensCss(id)`, a scoped copy of the `tokens.css` colours, glass, elevation and the `--zh-*` z ladder (a test compares every value); the host's own `--em-*` names are aliases of it. |
 | `imagegen-bridge.mjs` | Optional bridge to the external image-generation extension; every function degrades quietly when absent. |
 | `interaction-modes.mjs` | Script ↔ card interaction modes: compact state injection, tag reconciliation, minimal checkpoint. |
 | `keyframes.mjs` | Long-horizon keyframe compression: per-floor state to change-point frames, a droppable cache. |
