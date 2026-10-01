@@ -4,7 +4,7 @@
 import { mapRegistry, currentMapId } from './app/state.mjs';
 import { esc } from './app/dom-helpers.mjs';
 import { LANG } from './app/i18n.mjs';
-import { registry } from './app/layer-host.mjs';
+import { registry, declared } from './app/layer-host.mjs';
 import { register } from './app/plugins.mjs';
 import { packData } from './app/current-pack.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';   // 安保数据是包级挂载点（manifest.data.security，通用化 v1）——内核与外挂都不写死 eden 的文件名
@@ -45,9 +45,8 @@ const SecurityView = (() => {
   }
   function set(on) { try { LocalStore.set(KEY, on ? '1' : '0'); } catch (e) {} load().then(render); }
   // P3-C：「安保」菜单行由 LayerRegistry 渲染（app/layer-host.mjs，行序在航线与行程之间，与旧 insertBefore 位置一致）；勾选 → setVisible → set()
-  registry.register({ id: 'security', slot: 'markers', order: 2, kind: 'osd', initialVisible: isOn(),
-    menu: { order: 40, id: 'tgSec', boxId: 'tgSecBox', labelKey: 'sec.title', label: '安保', titleKey: 'sec.hint', title: '结界、监控、门禁规则（只列卡里写明的）' },
-    setVisible: v => set(v) });
+  registry.register(declared('security', { initialVisible: isOn(),
+    setVisible: v => set(v) }));
   function afterOpen() { const lab = document.getElementById('tgSec'); if (lab) lab.hidden = !(typeof mapRegistry !== 'undefined' && mapRegistry.maps[currentMapId]?.kind === 'points' && data?.items?.some(i => i.map === currentMapId)); load().then(() => { if (lab) lab.hidden = !data?.items?.some(i => i.map === currentMapId); render(); }); }
   const css = `
   .mk .secb{position:absolute;left:50%;top:100%;transform:translate(-50%,2px);padding:0 5px;border-radius:var(--r-pill,999px);background:var(--map-label-bg,rgba(8,10,14,.8));border:1px solid rgba(140,230,255,.75);color:rgba(170,235,255,.95);font:600 var(--fs-micro,11px)/15px var(--font-ui,sans-serif);white-space:nowrap;pointer-events:none;letter-spacing:.08em}

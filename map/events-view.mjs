@@ -10,7 +10,7 @@ import { $, esc } from './app/dom-helpers.mjs';
 import { announce } from './app/screen-reader-announce.mjs';
 import { coarse } from './app/viewport-mode.mjs';
 import { getJSON } from './app/json-cache.mjs';
-import { registry } from './app/layer-host.mjs';
+import { registry, declared } from './app/layer-host.mjs';
 import { declutter, tabOrder } from './app/sharpness-tiers.mjs';
 import { go } from './app/map-switch.mjs';
 import { updateLayerBadges } from './app/map-level-nav.mjs';
@@ -380,9 +380,8 @@ const EventsView = (() => {
   // 换色觉模式（设置 → 显示）后重画点、图例、事态横条（E7）
   TCCvd.onChange(() => { afterOpen(); if ($('#evbar')) renderBar(); });
   // P3-C：事态点层登记为 events 槽的 osd 图层；「事态」菜单行由 LayerRegistry 渲染（行内勾选 → setVisible → 这里的调度）
-  registry.register({ id: 'events', slot: 'events', kind: 'osd', initialVisible: shown,
-    menu: { order: 80, id: 'tgEvents', labelKey: 'ev.toggle', label: '事态' },
-    setVisible: v => { shown = v; document.body.classList.toggle('noevents', !v); renderBar(); applyGlitch(); } });
+  registry.register(declared('events', { initialVisible: shown,
+    setVisible: v => { shown = v; document.body.classList.toggle('noevents', !v); renderBar(); applyGlitch(); } }));
   return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
 register('EventsView', EventsView);

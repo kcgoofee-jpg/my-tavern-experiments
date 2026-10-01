@@ -9,7 +9,7 @@
 
 Every rule has a stable id `K-R01` … `K-R105`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are reserved for S8, K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3; K-R79–K-R89 and K-R104 are for S8 (K-R79, K-R81–K-R83, K-R85 and K-R104 added by S8-1; K-R80, K-R84, K-R86–K-R89 still planned), K-R90–K-R103 for S9 (planned lists at the end of §13); K-R105 was added by R0 (§5, the scene header). The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -453,6 +453,8 @@ only as a legacy form for the page that ships with the engine; it is ignored in 
 compat output of a foreign schema-1 pack (K-R63). Designer rule, not a user choice: a page from a card would run
 arbitrary code on the tavern page.
 
+**K-R104 — The 3D scene manifest schema.** `map/data/schema/v2/scene3d.schema.json` is the v2 schema of the generic 3D viewer's manifest (the file `map/estate/model/manifest.json` and every `map/props/<id>/manifest.json`; K-R64 promised it). It is written from `core/scene3d-manifest.mjs`: `id` and `glb` are required, `glb` is `"x.glb"`, `{ std, low? }` or `{ <part>: { std, low? } }` (the landmark spelling `glb` plus `glb_low` is read too), `floors` are strings or `{ id }`, `hotspots` are objects with an `id`, `budget` / `budgets`, `license` / `credit`, `data` = `{ rooms?, zones?, galleries? }` (paths relative to the manifest), `flows[].color` is `#rrggbb`; unknown fields are kept (`additionalProperties: true`, the format has always done so). `tools/check_pack.py` validates every shipped manifest against it and against `validate` of the core module; a manifest that fails is reported, not edited.
+
 ### 4.6 Schema-2 packs in the viewer
 
 **K-R96 — Opening a schema-2 pack.** `core/pack.mjs` accepts `schema: 2` next to `schema: 1`: for a schema-2 manifest `validate` checks only `id` and `title`, `load` returns the resolved pack with `schema` and the manifest as `v2`, and the viewer (`app/current-pack.mjs`) runs `resolveBlocks` (block files relative to the pack folder), `validate2` (trusted only for a pack that ships with the engine, that is one loaded from `packs/<id>/`) and `withDefaults`. The viewer then works on an in-memory projection, `projectV2(pack, { base })` in `core/pack-v2-view.mjs` (pure), in the registry shape it already draws; no viewer module reads schema 2 itself, and a schema-1 pack never goes through it.
@@ -638,12 +640,58 @@ name, or a key of `fx_presets`); the viewer triggers the block on any open event
 level 1–3 decides the strength), `x-messages` (how many messages the effect lasts; the event's own `duration` wins, default 3). A type's `x-default-off: true` hides it in the list and on the map
 until the user first touches the legend filter.
 
-## 9. layers (reserved)
+## 9. layers
 
 **K-R56 — Reserved shape.** `layers[]` in menu order: `{ id, type, source, slot, applies, style, menu, legend }`.
 `slot` is one of the ten fixed slots, bottom to top: `base`, `depth-haze`, `fog`, `routes`, `trips`, `events`,
 `markers`, `labels`, `fx`, `interaction`. `type` is a building block (`point`, `area`, `line`, `label`, `tint`,
-`particles`, `flow`). S8 designs the rest and may tighten every property except `id` and `slot`.
+`particles`, `flow`; S8 adds `sound`). S8 designs the rest and may tighten every property except `id` and `slot`.
+
+**K-R79 — The layers block.** A layer is one row `{ id, type?, slot?, source?, data?, filter?, applies?, style?, menu?, legend?, off? }` (schema
+`map/data/schema/v2/layers.schema.json`; `_…` and `x-…` keys are kept, K-R04). `id` matches `^[a-z][a-z0-9_-]{0,31}$`. The engine ships a kernel list
+of its own layers (`core/layer-defaults.mjs` `KERNEL_LAYERS`: the 17 viewport layers, each with its slot, kind, order, menu row and the building
+block it draws through, `type: null` when kernel code draws it); each module registers through its declaration (`declared(id, impl)` in
+`app/layer-host.mjs`), so the registry holds exactly the facts of the list plus the module's functions. The effective list is the kernel list merged
+with the pack's rows by id (`mergeLayers`, pure, `core/layer-spec.mjs`): a row whose id is a kernel id **adjusts** that layer, keeping only `menu`
+(label, title, `i18n`, `order`, `default`, `hidden`), `applies` (ANDed with the layer's own code rules), `legend` and `off` (the layer stays
+registered, becomes invisible and loses its menu row); its `type`, `slot`, `source`, `style`, `data` and `filter` are ignored and reported
+(`layer-kernel-fixed`), and a kernel layer's default visibility stays its own stored switch. Any other id **declares** a layer: it needs `type`, `slot`
+and a `source` or `data`, else it is dropped (`layer-incomplete`); a repeated id keeps the first row (`layer-duplicate`); `source: "kernel"` is
+refused (`layer-source`: the kernel list is closed). Menu order: a kernel row keeps its kernel order (10 … 80) unless `menu.order` is given; a new
+layer's order is `menu.order`, else `1000 + its index in the array`. Limits, for every pack (shipped or foreign; the runtime is lenient, the
+tools strict, K-R06): at most 32 new layers, 1000 features per layer, 2000 points per feature, 8 legend rows per layer, 16 `style.by` kinds, 8
+distinct MVU paths, a `file:` source of at most 256 KB under the pack's base after URL resolution (K-R64). Style values are re-checked when used: a
+colour is `#rrggbb`, `#rrggbbaa` or a K-R58 token name, numbers are clamped to their ranges, an icon is a kernel icon name (`prop:` icons are for
+local layers, S8-3), and a bad one is dropped and listed (`style-value`, `style-unknown`). A pack with no `layers` block uses the kernel list
+unchanged. At run time the pack's rows reach the viewer as `RT.layers` (the node runtime, both schemas); at boot `applyPackLayers` merges them and
+adjusts the registered kernel layers through `registry.patch`; new layers are kept in `packLayers` and drawn from S8-2. `validate2` checks the
+block with the same `normLayer` the runtime uses.
+
+**K-R81 — Sources and features.** A feature is `{ id?, view?, at?, node?, pts?, closed?, r?, kind?, label?, i18n? }`: coordinates are fractions
+(0..1) of the open view's width and height (K-R31); `view` defaults to the layer's single `applies.views` entry; a `node` feature is drawn where
+the current-location engine draws that node; a feature with neither a usable view nor a node is dropped (`feature-no-view`); a block needs its
+geometry (`point`, `label`: `at` or `node`; `line`, `flow`: at least 2 points; `area`: at least 3 points, or `at` and `r`; else `feature-geometry`).
+`label` is at most 60 code points and is shown as text only (K-R64). `source` is one of: absent with `data`, or `inline`; `file:<path>`
+(a `.json` file `{ features }` under the pack's base); `view:routes`, `view:markers` (the open view's own data files); `events`, `people`, `items`,
+`routine` (what the entity adapters and the schedule already hold, K-R71, K-R74; nothing is invented); `mvu:<path>` and `ops` (host-fed, S8-3);
+`kernel` (the kernel list only). A foreign pack (K-R63) may use every source except `kernel`; local layers (S8-3) may not use `file:`, `mvu:` or `ops`
+and their ids start with `local-`. `parseSource`, `normFeature`, `normLayer` in `core/layer-spec.mjs` are the one implementation.
+
+**K-R82 — applies.** `applies = { views?, kinds?, nodes?, node_types?, periods?, dark?, data?, mvu? }`: `views` the open view id, `kinds` the open view kind,
+`nodes` the open view's owner node (or an ancestor of it), `node_types` the owner's type, `periods` the current period band id (K-R39), `dark` whether
+that band is dark, `data` whether at least one feature is on the open view (default true for `point`, `label`, `line`, `area`, `flow`, not required
+otherwise; kernel layers do not require it), `mvu` a host-fed value condition (S8-3). Every key given must match (AND); inside a list any entry matches
+(OR; an empty list constrains nothing); an absent or empty `applies` applies everywhere; unknown keys are ignored. `appliesTo(applies, ctx, type)` in
+`core/layer-spec.mjs` is pure; `registry.applicable(id, ctx)` returns true without `applies`, the function's result for a function, `appliesTo` for an
+object. S7 owns the greyed menu row and the pause of an inapplicable layer's animation; S8 owns the data form and the evaluator.
+
+**K-R83 — Menu rows and visibility.** `menu = { label, title?, i18n?, order?, default?, hidden? }`: the layer menu is data driven (one row per
+registered layer with a `menu`, by `menu.order` then registration); a row's text is `menu.i18n.<lang>` first, then `menu.label`, and for a kernel row
+without a pack label the dictionary key it already has; texts are set with `textContent`. A pack's `label` or `title` on a kernel row replaces the
+dictionary text for that row. `menu.default` (default true; always off for `sound`) is the visibility of a pack-declared layer until the user
+switches it; the user's choice is kept in the storage key `edenMapLayers` (one JSON object, layer id to `1` / `0`; registered in `core/storage.mjs`,
+owner `app/layer-host.mjs`; read from S8-2), namespaced per pack by the storage service like every key. Kernel layers keep their existing keys. After
+the pack's rows are applied the menu is rendered once more.
 
 ## 10. ui and llm
 
@@ -761,7 +809,7 @@ Settings → variable mapping use (§6.3); and `avatar.require` (path fragments)
 `.light [data-map="<viewId>"], .light[data-map="<viewId>"]`), so a pack can give each of its views its own colours. Token names and values follow K-R58, with one widening: a `--glow*` value may be a comma list of at most 3 groups of
 ≤ 4 terms (a text-shadow list). `legend` entries are `{ type, label, desc, i18n: { en: { label, desc } } }` (the Settings / drawer legend); `x-event-level` names the view the event list falls back to. `fromV1` merges the block over what it derived
 (`core/overlay-v2.mjs` `applyOverlayUi`): `views` by id, `tokens` / `light` key by key, `legend` replaced as a whole, any other key (`x-…`) overridden. Lenient like K-R67: a bad view id or token is dropped and listed in `problems`
-(`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
+(`overlay-view-invalid`, `overlay-token-invalid`). The viewer re-checks every id and token at run time with `recheck` (`core/pack-v2-spec.mjs`: `hex`, `token`, `tokenName`, `id`; each returns the value when it matches the exact schema pattern, else `null`, K-R64).
 `tools/check_overlay.mjs` runs the merged block through the kernel's schema (K-R06).
 
 **K-R71 — Entity protocol.** People, items and events are **entities on nodes**: `{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`.
@@ -792,7 +840,11 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S6-3:** K-R77 (§7, pickup sentences, strict verbs, never-forms, pack vocabulary) and K-R78 (§7, settlement write paths for the npc and events domains); the Items tab is in K-R76 (§5).
 
+**K-R85 — The overlay of a schema-1 pack may carry `layers`.** `overlay.v2.json` may carry `layers` = an array of layer rows (K-R79, K-R81–K-R83). `applyOverlayLayers(layers, overlay)` in `core/overlay-v2.mjs` runs each row through `normLayer` (the pack's trust) and appends the healed rows to the converted ones by id (an overlay row replaces a converted row with the same id; a schema-1 pack has no converted rows); a part that fails is dropped and listed as `overlay-layer-invalid` with the reason, the rest applies (lenient, K-R06). `compat-v1` sets `pack.layers` when the result is not empty. An overlay may hold `layers` alone. `tools/check_overlay.mjs` runs the same function and `validate2` over the merged block.
+
 **Added by S9-1:** K-R96 and K-R97 (§4.6, schema-2 packs in the viewer, implicit schematic views, schematic layout and picture).
+
+**Added by S8-1:** K-R79, K-R81, K-R82 and K-R83 (§9, the layers block, sources and features, `applies`, menu rows and the visibility store), K-R85 (above, the overlay's `layers`) and K-R104 (§4.5, the 3D manifest schema).
 
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
 - K-R90 pack resolution order and the legacy-default start (S9-2);
@@ -808,18 +860,12 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - K-R102 private pictures, never exported (S9b);
 - K-R103 go-live of a foreign pack's model-facing text (K-08 B; S9-2).
 **Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
-- K-R79 (§9) the layers block: one declaration, the kernel layer list, merge by id, menu order, `off`, limits (S8-1).
 - K-R80 (§9) building blocks and style keys; reduced motion and data saver (S8-2).
-- K-R81 (§9) sources and the feature shape; trust per source (S8-1).
-- K-R82 (§9) `applies`: keys, evaluation, the split with S7 (S8-1).
-- K-R83 (§9) layer menu rows and the visibility store `edenMapLayers` (S8-1).
 - K-R84 (§10.1) legend rows contributed by layers; the legend tab's show rule (S8-2).
-- K-R85 (§13) the overlay of a schema-1 pack may carry `layers` (S8-1).
 - K-R86 (§9) host-fed values: MVU paths, `applies.mvu`, navigator overlays (S8-3).
 - K-R87 (§9) local extension `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers` (S8-3).
 - K-R88 (§9) local prop pack: store, validation, placements, `prop:` icons (S8-3).
 - K-R89 (§9) the `sound` block and the ambience data (S8-3).
-- K-R104 (§4.5) the v2 schema of the generic 3D viewer's manifest (S8-1; K-R90–K-R103 are S9's block).
 
 ## 14. Designer decisions and open points
 

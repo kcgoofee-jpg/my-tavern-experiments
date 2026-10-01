@@ -3,6 +3,7 @@
 // 不在本注册中心的管辖内。查看器侧装配（槽位挂载容器、菜单渲染）在 app/layer-host.mjs；本模块不碰 DOM / 存储 / 网络
 // （tests/layer_registry.test.mjs 机检），只管：槽位层级、图层注册与排序、可见性、滤镜链与标准摘要。
 // 槽位 z 值 = (槽位序号 + 1) × Z_STEP（OSD 画布叠加上下文内使用；viewer.html 的 --zv-* 自定义属性是同一份值的 CSS 镜像，测试对拍）。
+import { appliesTo } from './layer-spec.mjs';
 export const SLOTS = ['base', 'depth-haze', 'fog', 'routes', 'trips', 'events', 'markers', 'labels', 'fx', 'interaction'];
 export const Z_STEP = 10;
 export const KINDS = ['dom', 'canvas', 'osd'];
@@ -70,12 +71,27 @@ export class LayerRegistry {
   setFilters(id, chain) { const rec = this._byId.get(V(id)); if (!rec) throw new Error(`layers: 未注册的图层 ${id}`); rec.filters = normChain(chain); return rec.filters; }
   filters(id) { return [...(this._byId.get(V(id))?.filters || [])]; }
   /** 菜单行（#layList 数据驱动）：按 menu.order → 注册先后排；没带 menu 的层不进菜单 */
-  menuRows() { return this.ordered().filter(r => r.menu).sort((a, b) => ((a.menu.order ?? 0) - (b.menu.order ?? 0)) || a.seq - b.seq); }
+  menuRows() { return this.ordered().filter(r => r.menu && !r.off).sort((a, b) => ((a.menu.order ?? 0) - (b.menu.order ?? 0)) || a.seq - b.seq); }
+  /** patch(id, { menu?, applies?, legend?, off? })（K-R79）：宣告层的字段在注册后被设定包调整；menu 浅合并；off:true = 不可见、不进菜单；未注册返回 false（不抛） */
+  patch(id, f = {}) {
+    const rec = this._byId.get(V(id)); if (!rec) return false;
+    if (f.menu && typeof f.menu === 'object') rec.menu = { ...rec.menu, ...f.menu };
+    for (const k of ['applies', 'legend']) if (f[k] !== undefined) rec[k] = f[k];
+    if (f.off !== undefined) { rec.off = !!f.off; if (rec.off) { rec.visible = false; try { rec.setVisible?.(false); } catch (e) {} } }
+    return rec;
+  }
+  /** applicable(id, ctx)（K-R82）：applies 缺省 = 真；函数 = 其返回值；对象 = core/layer-spec.mjs appliesTo；未注册 = 假 */
+  applicable(id, ctx) {
+    const rec = this._byId.get(V(id)); if (!rec) return false;
+    const a = rec.applies; if (a == null) return true;
+    try { return typeof a === 'function' ? !!a(ctx) : appliesTo(a, ctx, rec.type); } catch (e) { return true; }
+  }
   /** 标准摘要（上下文预算用）：slots = 槽位与各槽图层（由底至顶）、activeLayers = 可见图层 id、filterSummary = 非空滤镜链 */
   describe() {
     const slots = SLOTS.map(s => ({ id: s, layers: this.layersInSlot(s).map(r => r.id) }));
     const activeLayers = this.ordered().filter(r => r.visible).map(r => r.id);
     const filterSummary = this.ordered().filter(r => r.filters?.length).map(r => ({ id: r.id, slot: r.slot, filters: this.filters(r.id) }));
-    return { slots, activeLayers, filterSummary };
+    const declared = this.ordered().filter(r => r.source === 'kernel' || r.origin).map(r => ({ id: r.id, type: r.type ?? null, origin: r.origin || 'kernel', slot: r.slot }));
+    return { slots, activeLayers, filterSummary, declared };
   }
 }

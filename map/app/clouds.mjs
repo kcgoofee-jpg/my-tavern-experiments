@@ -8,7 +8,7 @@
 import { mapRegistry, currentMapId, depthData, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { narrow } from './viewport-mode.mjs';
-import { registry } from './layer-host.mjs';
+import { registry, declared } from './layer-host.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { altOn, go, setGo } from './map-switch.mjs';
@@ -123,5 +123,5 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重
     visible: box && shown ? [...box.querySelectorAll('img')].filter(el => { const r = el.getBoundingClientRect(), s = osdViewer.container.getBoundingClientRect();
       return +getComputedStyle(el).opacity > .15 && r.right > s.left + r.width * .3 && r.left < s.right - r.width * .3 && r.bottom > s.top + r.height * .3 && r.top < s.bottom - r.height * .3; }).length : 0 }) };
   // P3-C：漂移云登记为 depth-haze 槽的 dom 图层（槽位容器 .vpslot[data-slot="depth-haze"] 挂好后由 boot 的 mountAll 调 mount）
-  registry.register({ id: 'clouds', slot: 'depth-haze', kind: 'dom', mount: () => sync(), unmount: () => hide(), setVisible: v => (v ? sync() : hide()) });
+  registry.register(declared('clouds', { mount: () => sync(), unmount: () => hide(), setVisible: v => (v ? sync() : hide()) }));
 })();

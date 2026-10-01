@@ -7,7 +7,7 @@
 > `map/core/compat-v1.mjs`（S1-impl-2 步）继续可用。
 
 每条规则都有固定编号 `K-R01` … `K-R105`，后面的提示词和测试按编号引用。编号永不挪动：初稿之后补的规则（K-R63–K-R70，
-信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 预留给 S8，K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
+信任、上限与 schema-1 包的叠加层）不管写在哪一节，都取下一个空号；K-R71–K-R73 由 S6-1 补上，K-R74–K-R76 由 S6-2 补上，K-R77–K-R78 由 S6-3 补上；K-R79–K-R89 与 K-R104 属于 S8（K-R79、K-R81–K-R83、K-R85、K-R104 由 S8-1 补上；K-R80、K-R84、K-R86–K-R89 仍是计划），K-R90–K-R103 预留给 S9（清单在 §13 末尾）；K-R105 由 R0 补上（§5，场景头）。需要你拍板的是 `K-01` … `K-09`（下面 §0）；其余都由设计方决定，理由列在 §14。
 
 ## 0. 请你拍板
 
@@ -425,6 +425,8 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 所有外来包里的 `x-page` 一律忽略，外来的 schema 1 包经 compat 转出来的也一样（K-R63）。这是设计规则，不请你拍板：卡里带的页面
 等于在酒馆页面上跑任意代码。
 
+**K-R104 —— 3D 场景清单的 schema。** `map/data/schema/v2/scene3d.schema.json` 是通用 3D 查看器清单的 v2 schema（文件 `map/estate/model/manifest.json` 与每个 `map/props/<id>/manifest.json`；K-R64 许下的）。它依 `core/scene3d-manifest.mjs` 写成：`id` 与 `glb` 必填，`glb` 是 `"x.glb"`、`{ std, low? }` 或 `{ <部件>: { std, low? } }`（地标的旧写法 `glb` 加 `glb_low` 也认），`floors` 是字符串或 `{ id }`，`hotspots` 是带 `id` 的对象，`budget` / `budgets`，`license` / `credit`，`data` = `{ rooms?, zones?, galleries? }`（相对清单的路径），`flows[].color` 是 `#rrggbb`；未知字段保留（`additionalProperties: true`，这个格式一向如此）。`tools/check_pack.py` 用它和核心模块的 `validate` 检查每一份随仓清单；不合格的只报告、不改。
+
 ### 4.6 查看器里的 schema-2 包
 
 **K-R96 —— 打开 schema-2 包。** `core/pack.mjs` 在 `schema: 1` 之外也收 `schema: 2`：schema-2 清单的 `validate` 只查 `id` 与 `title`，`load` 返回带 `schema` 的解析结果，并把清单放在 `v2` 里；查看器（`app/current-pack.mjs`）接着跑 `resolveBlocks`（块文件相对包目录）、`validate2`（只有随引擎发布的包才算可信，即从 `packs/<id>/` 加载的包）与 `withDefaults`。查看器用一份内存里的投影工作，`projectV2(pack, { base })`（`core/pack-v2-view.mjs`，纯函数），形状就是它现在画的注册表；没有任何查看器模块自己读 schema 2，schema-1 的包也从不经过它。
@@ -576,11 +578,49 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 「减少动态效果」时只留 `pulse`。类型用 `fx` 声明自己的特效（内核积木名，或 `fx_presets` 的键）；查看器对任何「类型解析到它」的未结束事件触发该积木——不再看类型名（S4-1）。预设字段：`intensity`（0–1；没写 = 按事件的等级 1–3 定强度）、
 `x-messages`（特效持续多少楼；事件自己的 `duration` 优先，缺省 3）。类型的 `x-default-off: true` 让它在列表和地图上默认隐藏，直到用户第一次动图例筛选。
 
-## 9. layers（预留）
+## 9. layers
 
 **K-R56 —— 预留的形状。** `layers[]` 按菜单顺序：`{ id, type, source, slot, applies, style, menu, legend }`。`slot` 是十个固定槽位之一，从下到上：
 `base`、`depth-haze`、`fog`、`routes`、`trips`、`events`、`markers`、`labels`、`fx`、`interaction`。`type` 是一种渲染积木
-（`point`、`area`、`line`、`label`、`tint`、`particles`、`flow`）。其余由 S8 设计，除 `id` 和 `slot` 外每个属性都可能收紧。
+（`point`、`area`、`line`、`label`、`tint`、`particles`、`flow`；S8 加上 `sound`）。其余由 S8 设计，除 `id` 和 `slot` 外每个属性都可能收紧。
+
+**K-R79 —— layers 块。** 一个图层就是一行 `{ id, type?, slot?, source?, data?, filter?, applies?, style?, menu?, legend?, off? }`（schema
+`map/data/schema/v2/layers.schema.json`；`_…` 与 `x-…` 键保留，K-R04）。`id` 符合 `^[a-z][a-z0-9_-]{0,31}$`。引擎自带一份内核图层清单
+（`core/layer-defaults.mjs` 的 `KERNEL_LAYERS`：17 个视口图层，各带槽位、kind、order、菜单行与所用的绘制积木，内核代码自己画的 `type` 为 `null`）；
+各模块经自己的宣告注册（`app/layer-host.mjs` 的 `declared(id, impl)`），所以注册表里恰好是清单上的事实加模块自己的函数。生效清单 = 内核清单按 id
+并上设定包的行（`mergeLayers`，纯函数，`core/layer-spec.mjs`）：id 是内核图层的行是**调整**，只留 `menu`（label、title、`i18n`、`order`、`default`、
+`hidden`）、`applies`（与图层自己的代码规则取与）、`legend` 和 `off`（图层仍注册、变为不可见、没有菜单行）；它的 `type`、`slot`、`source`、`style`、
+`data`、`filter` 被忽略并记录（`layer-kernel-fixed`），内核图层的默认可见性仍是它自己存的开关。其他 id 是**声明**新图层：需要 `type`、`slot` 和
+`source` 或 `data`，否则丢弃（`layer-incomplete`）；重复 id 取第一行（`layer-duplicate`）；`source: "kernel"` 被拒（`layer-source`：内核清单是封闭的）。
+菜单顺序：内核行保持内核顺序（10 … 80），除非给了 `menu.order`；新图层的顺序是 `menu.order`，否则 `1000 + 它在数组里的序号`。上限对每个包都一样
+（随仓的与外来的；运行时宽容、工具严格，K-R06）：新图层至多 32 个，每层至多 1000 个要素，每个要素至多 2000 个点，每层图例至多 8 行，`style.by`
+至多 16 种 kind，不同的 MVU 路径至多 8 条，`file:` 来源至多 256 KB 且 URL 解析后仍在包的 base 之下（K-R64）。样式值使用时再检：颜色是
+`#rrggbb`、`#rrggbbaa` 或 K-R58 的令牌名，数字夹到各自范围，图标是内核图标名（`prop:` 图标只给本机图层，S8-3），不合格的丢弃并记录
+（`style-value`、`style-unknown`）。没有 `layers` 块的包原样用内核清单。运行时设定包的行以 `RT.layers` 到达查看器（两种 schema 的节点运行时都有）；
+启动时 `applyPackLayers` 合并它们，经 `registry.patch` 调整已注册的内核图层；新图层留在 `packLayers`，S8-2 起画出来。`validate2` 用与运行时
+同一个 `normLayer` 检查这个块。
+
+**K-R81 —— 来源与要素。** 要素是 `{ id?, view?, at?, node?, pts?, closed?, r?, kind?, label?, i18n? }`：坐标是打开视图宽高的比例（0..1，K-R31）；
+`view` 缺省取图层 `applies.views` 里唯一的那个；`node` 要素画在「当前地点」引擎画该节点的地方；既没有可用视图又没有节点的要素被丢弃
+（`feature-no-view`）；积木需要自己的几何（`point`、`label`：`at` 或 `node`；`line`、`flow`：至少 2 个点；`area`：至少 3 个点，或 `at` 加 `r`；否则
+`feature-geometry`）。`label` 至多 60 个码点，只当文字显示（K-R64）。`source` 是下列之一：缺省且有 `data`，或 `inline`；`file:<path>`（包 base 下一个
+`.json` 文件 `{ features }`）；`view:routes`、`view:markers`（打开视图自己的数据文件）；`events`、`people`、`items`、`routine`（实体适配器与日程
+已经持有的东西，K-R71、K-R74；不凭空造）；`mvu:<path>` 与 `ops`（宿主送值，S8-3）；`kernel`（只给内核清单）。外来包（K-R63）可用除 `kernel` 外的所有
+来源；本机图层（S8-3）不可用 `file:`、`mvu:`、`ops`，id 以 `local-` 开头。`core/layer-spec.mjs` 里的 `parseSource`、`normFeature`、`normLayer`
+是唯一实现。
+
+**K-R82 —— applies。** `applies = { views?, kinds?, nodes?, node_types?, periods?, dark?, data?, mvu? }`：`views` 打开的视图 id，`kinds` 打开视图的种类，
+`nodes` 打开视图的所属节点（或它的某个祖先），`node_types` 所属节点的类型，`periods` 当前时段带 id（K-R39），`dark` 该时段带是否为暗，`data`
+打开的视图上是否至少有一个要素（`point`、`label`、`line`、`area`、`flow` 缺省为真，其他不要求；内核图层不要求），`mvu` 宿主送来的值条件（S8-3）。
+给出的每个键都必须满足（与）；列表里任一项满足即可（或；空列表不约束）；缺省或空的 `applies` 处处适用；未知键忽略。`core/layer-spec.mjs` 的
+`appliesTo(applies, ctx, type)` 是纯函数；`registry.applicable(id, ctx)` 在没有 `applies` 时返回真，函数返回它的结果，对象走 `appliesTo`。S7
+负责菜单行变灰与不适用图层动画的暂停；S8 负责数据形式与求值器。
+
+**K-R83 —— 菜单行与可见性。** `menu = { label, title?, i18n?, order?, default?, hidden? }`：图层菜单由数据驱动（每个带 `menu` 的已注册图层一行，按
+`menu.order` 再按注册先后）；行文字先取 `menu.i18n.<lang>`，再取 `menu.label`，没有设定包 label 的内核行用它原有的词典键；文字一律用 `textContent`。
+设定包给内核行写的 `label` 或 `title` 替换该行的词典文字。`menu.default`（缺省为真；`sound` 一律为关）是设定包声明的图层在用户切换前的可见性；
+用户的选择存在存储键 `edenMapLayers`（一个 JSON 对象，图层 id → `1` / `0`；登记在 `core/storage.mjs`，属主 `app/layer-host.mjs`；S8-2 起读），
+与所有键一样由存储服务按包加命名空间。内核图层沿用已有的键。设定包的行应用后，菜单再渲染一次。
 
 ## 10. ui 与 llm
 
@@ -676,7 +716,7 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 `.light [data-map="<视图id>"], .light[data-map="<视图id>"]`），所以包可以给自己的每个视图配各自的配色。令牌名和值沿用 K-R58，只放宽一处：`--glow*` 的值可以是逗号分隔的列表，最多 3 组、每组 ≤ 4 项（text-shadow 列表）。
 `legend` 条目是 `{ type, label, desc, i18n: { en: { label, desc } } }`（设置 / 抽屉里的图例）；`x-event-level` 指定事态列表兜底用的视图。`fromV1` 把它合并到转出来的内容之上
 （`core/overlay-v2.mjs` 的 `applyOverlayUi`）：`views` 按 id，`tokens` / `light` 逐键，`legend` 整体替换，其余键（`x-…`）覆盖。和 K-R67 一样宽容：坏的视图 id 或令牌被丢掉并记入 `problems`
-（`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
+（`overlay-view-invalid`、`overlay-token-invalid`）。查看器运行时用 `recheck`（`core/pack-v2-spec.mjs`：`hex`、`token`、`tokenName`、`id`，匹配精确 schema 模式就返回原值，否则 `null`，K-R64）再查每个 id 和令牌。
 `tools/check_overlay.mjs` 把合并后的块过一遍内核 schema（K-R06）。
 
 **K-R71 —— 实体协议。** 人、物、事件都是**节点上的实体**：`{ kind: 'person' | 'item' | 'event', id, name, node, place, source, msgIndex, present?, data }`。
@@ -707,7 +747,11 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 
 **S6-3 补上：** K-R77（§7，拾取句式、严格动词、永不算的句式、包的词表）与 K-R78（§7，npc 与事件两个域的结算写入路径）；物品页签在 K-R76（§5）。
 
+**K-R85 —— schema-1 包的叠加层可以带 `layers`。** `overlay.v2.json` 可以带 `layers` = 图层行的数组（K-R79、K-R81–K-R83）。`core/overlay-v2.mjs` 的 `applyOverlayLayers(layers, overlay)` 让每一行过 `normLayer`（设定包的信任级别），把修好的行按 id 接在转换出来的行后面（叠加层的行替换同 id 的转换行；schema-1 包没有转换行）；失败的部分丢弃并记为 `overlay-layer-invalid`（带原因），其余照常生效（宽容，K-R06）。结果非空时 `compat-v1` 设置 `pack.layers`。叠加层可以只带 `layers`。`tools/check_overlay.mjs` 跑同一个函数，再对合并后的块跑 `validate2`。
+
 **S9-1 新增：** K-R96 与 K-R97（§4.6，查看器里的 schema-2 包、隐式示意图视图、示意图布局与图）。
+
+**S8-1 新增：** K-R79、K-R81、K-R82、K-R83（§9，layers 块、来源与要素、`applies`、菜单行与可见性存储），K-R85（上，叠加层的 `layers`）与 K-R104（§4.5，3D 清单 schema）。
 
 **S9 计划新增**（S9-design 预留，见 `docs/zero-config.md`；全文随其附录里的步骤规格落地）：
 - K-R90 包的解析顺序与旧默认包的启动（S9-2）；
@@ -723,18 +767,12 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 - K-R102 私有图片，永不导出（S9b）；
 - K-R103 外来包给模型的文字何时生效（K-08 B；S9-2）。
 **S8 计划**（设计见 `docs/layers-schema.md`；审阅表 L-01 … L-15；全文随 S8-1 … S8-3 落地）：
-- K-R79（§9）layers 块：一条声明、内核图层清单、按 id 合并、菜单顺序、`off`、上限（S8-1）。
 - K-R80（§9）绘制积木与样式键；减少动态效果与省流档（S8-2）。
-- K-R81（§9）来源与要素形状；各来源的信任（S8-1）。
-- K-R82（§9）`applies`：键、求值、与 S7 的分工（S8-1）。
-- K-R83（§9）图层菜单行与开关存储 `edenMapLayers`（S8-1）。
 - K-R84（§10.1）图层的图例行；图例页的显示规则（S8-2）。
-- K-R85（§13）schema-1 包的叠加层可以带 `layers`（S8-1）。
 - K-R86（§9）宿主送值：MVU 路径、`applies.mvu`、领航员叠加（S8-3）。
 - K-R87（§9）本机扩展 `EdenMap.addLayer` / `removeLayer` / `setLayerData` / `layers`（S8-3）。
 - K-R88（§9）本机道具包：存储、校验、摆放、`prop:` 图标（S8-3）。
 - K-R89（§9）`sound` 积木与环境音数据（S8-3）。
-- K-R104（§4.5）通用 3D 查看器清单的 v2 schema（S8-1；K-R90–K-R103 是 S9 的号段）。
 
 ## 14. 设计方的决定与遗留点
 

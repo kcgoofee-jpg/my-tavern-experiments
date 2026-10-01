@@ -7,7 +7,7 @@
 import { mapRegistry, currentMapId, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
-import { registry } from './layer-host.mjs';
+import { registry, declared } from './layer-host.mjs';
 import { markHere } from './locate.mjs';
 import { norm, visit, known, count } from '../core/exploration-ledger.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
@@ -54,7 +54,7 @@ function here(r) {
   if (r.map === currentMapId) paint();
 }
 const setFog = v => { storage.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };
-registry.register({ id: 'fog', slot: 'fog', kind: 'canvas', initialVisible: on(), setVisible: setFog });   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
+registry.register(declared('fog', { initialVisible: on(), setVisible: setFog }));   // P3-C：迷雾作为 fog 槽的 canvas 图层受 Registry 调度
 register('FogApi', {   // 经 P 注册（同名仍挂 window）：host-messages.mjs 的回放静音走 P.FogApi
   paint, here, on, count: () => count(ex), raw: () => ex, setHaze,   // raw = 到访台账本体（纵深摘要算探索度用）
   mute(v) { mute = !!v; },   // 回放期间静默探索记录（host-messages.mjs 在 eden-map:here replay 时包住 markHere）

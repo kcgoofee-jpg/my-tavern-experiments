@@ -5,12 +5,15 @@
 // ③ window.LayerHostApi——调试 / 探针 / 自检读标准摘要的窗口面。
 // 外层固定 UI（顶栏 / 弹层 / 设置 / 控制列）走 --zu-* 阶梯，不进注册中心。
 import { LayerRegistry, SLOTS, slotZ } from '../core/layer-registry.mjs';
+import { KERNEL_LAYERS, kernelDecl } from '../core/layer-defaults.mjs';
+import { mergeLayers } from '../core/layer-spec.mjs';
 import * as storage from '../core/storage.mjs';
 import { $ } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { mapRegistry, currentMapId } from './state.mjs';
 import { applyOverlayToggle, routeGaps } from './sharpness-tiers.mjs';
 import { ALT_KEY, swapBase } from './map-switch.mjs';
+import { LANG } from './i18n.mjs';
 export const registry = new LayerRegistry();
 let slots = null;
 /** 在 OSD 画布叠加上下文（.openseadragon-canvas）里挂槽位容器；幂等，画布未就绪返回 false（boot 会在 open 后重试） */
@@ -25,7 +28,24 @@ export function initLayerHost(viewer) {
   return true;
 }
 export function slotEl(slot) { return slots?.[slot] || null; }
-window.LayerHostApi = { registry, describe: () => registry.describe(), slotZ };
+/** declared(id, impl)：内核宣告（core/layer-defaults.mjs，K-R79）+ 模块自己的函数 → 注册用的描述符；未知 id 抛错 */
+export function declared(id, impl = {}) {
+  const d = kernelDecl(id); if (!d) throw new Error(`layers: ${id} 不在内核图层清单`);
+  return { ...d, ...impl };
+}
+export let packLayers = [], layerProblems = [];
+const adjust = new Map(); let hooked = false;
+const patchOf = a => { const p = { ...a }; if (p.menu) { p.menu = { ...p.menu }; if (p.menu.label !== undefined) p.menu.labelKey = undefined; if (p.menu.title !== undefined) p.menu.titleKey = undefined; } return p; };
+/** applyPackLayers(rows)（K-R79 / K-R85）：设定包的 layers 行并上内核清单；内核层的调整经 registry.patch（还没注册的等注册时补上），新层留在 packLayers（S8-2 画）；然后再渲染一次菜单 */
+export function applyPackLayers(rows) {
+  const r = mergeLayers(KERNEL_LAYERS, rows, { trust: 'pack' }); layerProblems = r.problems;
+  packLayers = r.layers.filter(l => l.origin !== 'kernel');
+  adjust.clear(); for (const l of r.layers) if (l.adjust) adjust.set(l.id, patchOf(l.adjust));
+  for (const [id, p] of adjust) if (registry.has(id)) registry.patch(id, p);
+  if (adjust.size && !hooked) { hooked = true; registry.onRegister(id => { const p = adjust.get(id); if (p) registry.patch(id, p); }); }
+  renderLayerMenu();
+}
+window.LayerHostApi = { registry, describe: () => registry.describe(), slotZ, problems: () => layerProblems };
 
 // ---------------- 核心图层登记 + #layList 数据驱动（P3-C 阶段 3）----------------
 // 菜单行由 registry.menuRows() 渲染（menu.order 定序），各行的元素 id / 存储键 / 默认勾选与旧静态 #layList 完全一致——
@@ -34,23 +54,18 @@ let coreDone = false;
 export function registerCoreLayers() {
   if (coreDone) return; coreDone = true;
   // 岛屿结界轮廓（barriers）默认关（用户 2026-09-27，和航线一样；两者永久推迟，不再打磨），开了记在本机；世界图国界（dzi）照旧默认开
-  registry.register({ id: 'base-overlay', slot: 'base', kind: 'osd', initialVisible: true,
-    menu: { order: 10, id: 'tgOverlay', boxId: 'tgBorders', label: '国界' },
-    setVisible: v => { if (mapRegistry.maps[currentMapId]?.overlay?.type === 'barriers') { try { storage.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } });
-  registry.register({ id: 'alt-base', slot: 'base', kind: 'osd', order: 1, initialVisible: false,
-    menu: { order: 20, id: 'tgAlt', boxId: 'tgAltBox', label: '显示下方城市', titleKey: 'alt_title', title: '高级：换成带下方城市的底图（图更大）', hidden: true },
-    setVisible: v => { try { storage.set(ALT_KEY + currentMapId, v ? '1' : '0'); } catch (e) {} return swapBase(); } });
+  registry.register(declared('base-overlay', { initialVisible: true,
+    setVisible: v => { if (mapRegistry.maps[currentMapId]?.overlay?.type === 'barriers') { try { storage.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } }));
+  registry.register(declared('alt-base', { initialVisible: false,
+    setVisible: v => { try { storage.set(ALT_KEY + currentMapId, v ? '1' : '0'); } catch (e) {} return swapBase(); } }));
   const routesOn = storage.get('edenMapRoutes') === '1';
-  registry.register({ id: 'routes', slot: 'routes', kind: 'osd', initialVisible: routesOn,
-    menu: { order: 30, id: 'tgRoutes', boxId: 'tgRoutesBox', labelKey: 'routes', label: '航线', titleKey: 'routes_title', title: '上层航线（金色虚线）与银冠堡巡逻环（淡蓝点划线）', hidden: true },
-    setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { storage.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } });
+  registry.register(declared('routes', { initialVisible: routesOn,
+    setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { storage.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } }));
   document.body.classList.toggle('noroutes', !routesOn);
-  registry.register({ id: 'labels', slot: 'labels', kind: 'osd', initialVisible: true,
-    menu: { order: 60, boxId: 'tgLabels', labelKey: 'labels', label: '地名' },
-    setVisible: v => { const cb = $('#tgLabels'); if (cb) { cb.checked = v; cb.dispatchEvent(new Event('change')); } document.body.classList.toggle('nolabels', !v); } });
-  registry.register({ id: 'markers', slot: 'markers', kind: 'osd', initialVisible: true,
-    menu: { order: 70, boxId: 'tgMarkers', labelKey: 'markers', label: '标记' },
-    setVisible: v => document.body.classList.toggle('nomarkers', !v) });
+  registry.register(declared('labels', { initialVisible: true,
+    setVisible: v => { const cb = $('#tgLabels'); if (cb) { cb.checked = v; cb.dispatchEvent(new Event('change')); } document.body.classList.toggle('nolabels', !v); } }));
+  registry.register(declared('markers', { initialVisible: true,
+    setVisible: v => document.body.classList.toggle('nomarkers', !v) }));
 }
 /** 渲染 #layList：行 = 菜单描述符（menu.order → 注册先后），勾选态来自 registry（存储键与默认值不变） */
 export function renderLayerMenu() {
@@ -58,11 +73,12 @@ export function renderLayerMenu() {
   list.replaceChildren(...registry.menuRows().map(rec => {
     const m = rec.menu, lab = document.createElement('label'); lab.className = 'tg';
     if (m.id) lab.id = m.id;
-    if (m.title) lab.title = m.titleKey ? uiTextOr(m.titleKey, m.title) : m.title;
+    const tx = m.i18n?.[LANG]?.title ?? m.title;   // 设定包的行文字优先（K-R83）；内核行仍走字典
+    if (tx) lab.title = m.titleKey && !m.i18n?.[LANG]?.title ? uiTextOr(m.titleKey, tx) : tx;
     if (m.titleKey) lab.setAttribute('data-i18n-title', m.titleKey);
     if (m.hidden) lab.hidden = true;
     const span = document.createElement('span');
-    span.textContent = m.labelKey ? uiTextOr(m.labelKey, m.label || '') : (m.label || '');
+    span.textContent = m.i18n?.[LANG]?.label ?? (m.labelKey ? uiTextOr(m.labelKey, m.label || '') : (m.label || ''));
     if (m.labelKey) span.setAttribute('data-i18n', m.labelKey);
     const box = document.createElement('input'); box.type = 'checkbox'; box.setAttribute('role', 'switch');
     if (m.boxId) box.id = m.boxId;

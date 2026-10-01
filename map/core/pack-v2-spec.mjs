@@ -140,10 +140,7 @@ export const eventsBlock = block(obj({
   closed: arr(str({ re: NL(30) })), examples: arr(str({ min: 1 })), life,
 }, B), 'object');
 
-export const layersBlock = block(arr(obj({ id: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), type: oneOf(['point', 'area', 'line', 'label', 'tint', 'particles', 'flow']),
-  source: str({ min: 1 }), slot: oneOf(['base', 'depth-haze', 'fog', 'routes', 'trips', 'events', 'markers', 'labels', 'fx', 'interaction']),
-  applies: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), style: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')),
-  menu: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), legend: (v, p, x) => (Array.isArray(v) ? v : bad(x, p, 'type', 'array')) }, { req: ['id', 'type', 'slot'], ...B })), 'array');
+export { layersBlock } from './layer-spec.mjs';   // K-R79: the layers block is validated by core/layer-spec.mjs (normLayer)
 
 export const TERM = '(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\\([0-9., %/-]{1,40}\\)|-?[0-9]{0,4}\\.?[0-9]{1,4}(px|rem|em|%|vh|vw)?|[a-z][a-z-]{0,23}|var\\(--[a-z0-9-]{1,40}\\))';
 const TOKEN_NAME = re('^--(accent|ink|bg|surface|line|muted|gold|ok|alert|on|map-label|glow|focus|r|fs)(-[a-z0-9-]{1,30})?$');
@@ -155,6 +152,7 @@ const tokenOk = (name, v, widen) => typeof name === 'string' && typeof v === 'st
 export const recheck = {
   hex: v => (typeof v === 'string' && HEX.test(v) ? v : null),
   id: v => (typeof v === 'string' && ID.test(v) ? v : null),
+  tokenName: v => (typeof v === 'string' && TOKEN_NAME.test(v) ? v : null),   // a kernel colour token name (K-R58)
   token: (name, v) => (tokenOk(name, v, true) ? v : null),   // the K-R58 name list and value grammar, with the K-R70 glow widening
 };
 const tokenDict = widen => (v, p, x) => {   // a token name -> value table; a bad name or value drops that entry

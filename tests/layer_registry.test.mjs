@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SLOTS, Z_STEP, slotZ, cssFilter, canvasFilter, LayerRegistry } from '../map/core/layer-registry.mjs';
+import { KERNEL_LAYERS, kernelDecl } from '../map/core/layer-defaults.mjs';
 
 test('槽位数据契约：由底至顶与诊断报告 §6 逐字一致；外层固定 UI 不进槽位', () => {
   assert.deepEqual(SLOTS, ['base', 'depth-haze', 'fog', 'routes', 'trips', 'events', 'markers', 'labels', 'fx', 'interaction']);
@@ -112,7 +113,8 @@ test('describe：{ slots, activeLayers, filterSummary } 标准摘要', () => {
   r.register(D('mk', { slot: 'markers', initialVisible: false }));
   r.register(D('fx', { slot: 'fx', filters: [{ type: 'css', value: 'blur(1px)' }] }));
   const s = r.describe();
-  assert.deepEqual(Object.keys(s).sort(), ['activeLayers', 'filterSummary', 'slots']);
+  assert.deepEqual(Object.keys(s).sort(), ['activeLayers', 'declared', 'filterSummary', 'slots'], 'S8-1 adds `declared`; the three old fields are unchanged');
+  assert.deepEqual(s.declared, [], '没有宣告来源的层不进 declared');
   assert.deepEqual(s.slots.map(x => x.id), SLOTS);
   assert.deepEqual(s.slots.find(x => x.id === 'fog').layers, ['fog']);
   assert.deepEqual(s.slots.find(x => x.id === 'markers').layers, ['mk']);
@@ -121,6 +123,39 @@ test('describe：{ slots, activeLayers, filterSummary } 标准摘要', () => {
   assert.deepEqual(s.filterSummary, [{ id: 'fx', slot: 'fx', filters: [{ type: 'css', value: 'blur(1px)' }] }]);
   const s2 = new LayerRegistry().describe();
   assert.deepEqual(s2.filterSummary, []); assert.deepEqual(s2.activeLayers, []);
+});
+
+test('patch（K-R79）：menu 浅合并、applies / legend 替换、off 不可见且不进菜单；未注册返回 false', () => {
+  const r = new LayerRegistry(); const calls = [];
+  r.register(D('a', { menu: { order: 1, label: 'A', labelKey: 'k' }, setVisible: v => calls.push(v), initialVisible: true }));
+  r.register(D('b', { menu: { order: 2, label: 'B' } }));
+  assert.equal(r.patch('zz', { off: true }), false);
+  assert.equal(r.patch('a', { menu: { label: 'A2', labelKey: undefined }, applies: { views: ['v'] }, legend: [{ label: 'L' }] }).menu.label, 'A2');
+  assert.deepEqual(r.get('a').menu, { order: 1, label: 'A2', labelKey: undefined });
+  assert.deepEqual(r.get('a').applies, { views: ['v'] }); assert.deepEqual(r.get('a').legend, [{ label: 'L' }]);
+  assert.deepEqual(r.menuRows().map(x => x.id), ['a', 'b']);
+  r.patch('a', { off: true });
+  assert.equal(r.isVisible('a'), false); assert.deepEqual(calls, [false]);
+  assert.deepEqual(r.menuRows().map(x => x.id), ['b'], 'an off layer has no menu row');
+  assert.equal(r.has('a'), true, 'but stays registered');
+  r.patch('a', { off: false }); assert.deepEqual(r.menuRows().map(x => x.id), ['a', 'b']);
+});
+
+test('applicable（K-R82）：缺省真、函数取返回值、对象走 appliesTo、未注册假', () => {
+  const r = new LayerRegistry();
+  r.register(D('none')); r.register(D('fn', { applies: ctx => ctx.ok })); r.register(D('obj', { applies: { views: ['v1'] } }));
+  r.register(D('pt', { type: 'point', applies: { views: ['v1'] } }));
+  assert.equal(r.applicable('none', {}), true);
+  assert.equal(r.applicable('fn', { ok: true }), true); assert.equal(r.applicable('fn', { ok: false }), false);
+  assert.equal(r.applicable('obj', { view: 'v1' }), true); assert.equal(r.applicable('obj', { view: 'v2' }), false);
+  assert.equal(r.applicable('pt', { view: 'v1', count: 0 }), false, 'the block type decides the data default');
+  assert.equal(r.applicable('nope', {}), false);
+});
+
+test('describe.declared：只列有宣告来源的层，三个旧字段不变', () => {
+  const r = new LayerRegistry();
+  r.register(D('x', { type: 'line', source: 'kernel', slot: 'routes' })); r.register(D('y', { type: 'flow', origin: 'pack', slot: 'fx' })); r.register(D('plain'));
+  assert.deepEqual(r.describe().declared, [{ id: 'x', type: 'line', origin: 'kernel', slot: 'routes' }, { id: 'y', type: 'flow', origin: 'pack', slot: 'fx' }]);
 });
 
 test('纯度机检：核心模块不碰 DOM / 全局 / 存储 / 网络', () => {
@@ -162,12 +197,10 @@ test('#layList 静态行清零，行由 Registry 菜单描述符渲染（元素 
   const html = viewerSrc();
   const list = html.slice(html.indexOf('id="layList"'));
   assert.doesNotMatch(list.slice(0, list.indexOf('</div>')), /<label|tgBorders|tgMarkers/, '#layList 里不许再写静态行');
-  const lh = readFileSync(new URL('../map/app/layer-host.mjs', import.meta.url), 'utf8');
-  for (const id of ['tgOverlay', 'tgBorders', 'tgAlt', 'tgAltBox', 'tgRoutes', 'tgRoutesBox', 'tgLabels', 'tgMarkers'])
-    assert.ok(lh.includes(`'${id}'`), `layerhost 缺菜单行 id ${id}`);
-  assert.match(readFileSync(new URL('../map/trips-view.mjs', import.meta.url), 'utf8'), /id: 'tgTrips'/, '行程行的元素 id 不变');
-  assert.match(readFileSync(new URL('../map/events-view.mjs', import.meta.url), 'utf8'), /id: 'tgEvents'/);
-  assert.match(readFileSync(new URL('../map/security.mjs', import.meta.url), 'utf8'), /id: 'tgSec'/);
+  // S8-1：菜单行的事实收进内核清单（core/layer-defaults.mjs），元素 id 在那里逐个对拍
+  const ids = KERNEL_LAYERS.flatMap(l => [l.menu?.id, l.menu?.boxId]).filter(Boolean);
+  for (const id of ['tgOverlay', 'tgBorders', 'tgAlt', 'tgAltBox', 'tgRoutes', 'tgRoutesBox', 'tgLabels', 'tgMarkers', 'tgTrips', 'tgEvents', 'tgSec'])
+    assert.ok(ids.includes(id), `内核清单缺菜单行 id ${id}`);
 });
 
 test('图层存储键完全兼容：键名与所属模块不变', () => {
@@ -182,11 +215,12 @@ test('图层存储键完全兼容：键名与所属模块不变', () => {
 test('现有图层挂到契约槽位：核心六层 + fog / clouds / events / trips / security', () => {
   const lh = readFileSync(new URL('../map/app/layer-host.mjs', import.meta.url), 'utf8');
   for (const id of ['base-overlay', 'alt-base', 'routes', 'labels', 'markers'])
-    assert.ok(lh.includes(`id: '${id}'`), `layerhost 未登记 ${id}`);
-  const slotsOf = { 'map/app/fog.mjs': ['fog', "slot: 'fog'"], 'map/app/clouds.mjs': ['clouds', "slot: 'depth-haze'"], 'map/events-view.mjs': ['events', "slot: 'events'"], 'map/trips-view.mjs': ['trips', "slot: 'trips'"], 'map/security.mjs': ['security', "slot: 'markers'"] };
+    assert.ok(lh.includes(`declared('${id}'`), `layerhost 未登记 ${id}`);
+  const slotsOf = { 'map/app/fog.mjs': ['fog', 'fog'], 'map/app/clouds.mjs': ['clouds', 'depth-haze'], 'map/events-view.mjs': ['events', 'events'], 'map/trips-view.mjs': ['trips', 'trips'], 'map/security.mjs': ['security', 'markers'] };
   for (const [f, [id, slot]] of Object.entries(slotsOf)) {
     const s = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
-    assert.ok(s.includes(`id: '${id}'`) && s.includes(slot), `${f} 未按 ${slot} 登记 ${id}`);
+    assert.ok(s.includes(`declared('${id}'`), `${f} 应以宣告 ${id} 注册`);
+    assert.equal(kernelDecl(id).slot, slot, `${id} 的槽位在内核清单里是 ${slot}`);
     assert.match(s, /layer-host\.mjs/, `${f} 应经 app/layer-host.mjs 注册`);
   }
 });

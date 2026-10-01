@@ -8,7 +8,7 @@
 import { describe as depthDescribe, island as depthIsland } from '../core/depth.mjs';
 import * as Haze from '../core/haze.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
-import { registry, slotEl } from './layer-host.mjs';
+import { registry, slotEl, declared } from './layer-host.mjs';
 import { mapRegistry, currentMapId, currentMapData, depthData } from './state.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { busOn } from './bus.mjs';
@@ -70,12 +70,12 @@ export function applyHaze() {
 let done = false;
 export function registerDepthHazeLayer() {
   if (done) return registry.has(ID); done = true;
-  registry.register({
-    id: ID, slot: 'depth-haze', kind: 'dom', order: 0, initialVisible: true,
+  registry.register(declared(ID, {
+    initialVisible: true,
     mount: () => { css(); const ok = mount(); applyHaze(); return ok; },
     unmount: () => { try { el?.remove(); } catch (e) {} el = null; },
     setVisible: v => { if (!v && el) el.style.display = 'none'; else applyHaze(); },
-  });
+  }));
   // 切层 / 换图：body 的 data-map 变了就跟着重算（stash-markers.mjs 一个路子）；当前地点 / 迷雾数据由宿主消息带过来
   try { watch = new MutationObserver(() => setTimeout(applyHaze, 0)); watch.observe(document.body, { attributes: true, attributeFilter: ['data-map'] }); } catch (e) {}
   busOn({ key: 'depthhaze.hostMsg', type: 'message', fn: e => {

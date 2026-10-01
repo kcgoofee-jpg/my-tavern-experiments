@@ -2,7 +2,7 @@
 // 把 core/traffic.mjs 算出的归一化光点用 OSD 的 pixelFromPoint 换算到屏幕，画成带尾迹的流光。
 // 路线数据来自当前图（curData.routes，与画航线的 SVG 同源、同一套归一化坐标）；没有路线的图一帧都不画。
 // 节拍同天气层：可见性守卫按下暂停位即停（P7-4），省流档减车。
-import { registry, slotEl } from './layer-host.mjs';
+import { registry, slotEl, declared } from './layer-host.mjs';
 import { trafficField, routeList, pathMetrics, trailOf } from '../core/traffic.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
@@ -67,9 +67,8 @@ export const trafficRunning = () => !!raf;
 let done = false;
 export function registerTrafficLayer() {
   if (done) return registry.has('traffic'); done = true;
-  registry.register({
-    id: 'traffic', slot: 'fx', kind: 'canvas', order: 20, initialVisible: true,
-    menu: { order: 46, boxId: 'tgTraffic', labelKey: 'traffic', label: '车流', titleKey: 'traffic_title', title: '航线与巡逻环上的悬浮车流光点' },
+  registry.register(declared('traffic', {
+    initialVisible: true,
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas');
@@ -80,7 +79,7 @@ export function registerTrafficLayer() {
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
     setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
-  });
+  }));
   busOn({ key: 'traffic.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'traffic.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') night = !!e.data.night; } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('traffic') ? start() : null); });

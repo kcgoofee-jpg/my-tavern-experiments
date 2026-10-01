@@ -6,7 +6,7 @@
 //   「减少动态效果」/ 省流档：一步到位，不排队补间。
 // 位置变化还有一路来自宿主：聊天 / MVU 写过位置的人由聊天接管（日程不覆盖 known 名单），那一路仍用 CSS 补间滑过去。
 // 本模块不认识任何人，只看「这枚标记该在哪儿」。
-import { registry } from './layer-host.mjs';
+import { registry, declared } from './layer-host.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { aspect, currentMapId, currentMapData, osdViewer } from './state.mjs';
 import { hereRes } from './locate.mjs';
@@ -131,9 +131,8 @@ let done = false;
 export function registerWanderLayer() {
   if (done) return registry.has('wander'); done = true;
   css();
-  registry.register({
-    id: 'wander', slot: 'interaction', kind: 'dom', order: 20, initialVisible: true,
-    menu: { order: 50, boxId: 'tgWander', labelKey: 'wander.layer', label: '漫游', titleKey: 'wander.layer_title', title: '人物标记换地方时滑过去，不瞬移（日程表按世界时刻挪人）' },
+  registry.register(declared('wander', {
+    initialVisible: true,
     mount: () => {
       on = true;
       if (!t0) t0 = performance.now();
@@ -146,7 +145,7 @@ export function registerWanderLayer() {
     },
     unmount: () => { on = false; stop(); try { obs?.disconnect(); } catch (e) {} obs = null; last.clear(); walker.clear(); },
     setVisible: v => { on = !!v && !lean() && !rmq()?.matches; if (on && !t0) t0 = performance.now(); if (!on) stop(); if (on) tick(); },
-  });
+  }));
   // 省流档与「减少动态效果」：不滑（标记照常更新位置）
   on = !lean() && !rmq()?.matches;
   busOn({ key: 'wander.hostMsg', type: 'message', fn: e => {

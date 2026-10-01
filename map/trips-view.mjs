@@ -6,7 +6,7 @@
 // 查看器核心的状态与工具从 app/*.mjs 显式 import（arch-v2 §6 第 7 步）；别的外挂经 app/plugins.mjs 的 P 取（可能没加载，调用处带守卫）。
 import { mapRegistry, aspect, currentMapId, currentMapData, osdViewer } from './app/state.mjs';
 import { esc } from './app/dom-helpers.mjs';
-import { registry } from './app/layer-host.mjs';
+import { registry, declared } from './app/layer-host.mjs';
 import { showCard, trackEl, untrack } from './app/markers.mjs';
 import { drawnAt, hereRes, userMoved } from './app/locate.mjs';
 import { plugins, register } from './app/plugins.mjs';
@@ -73,9 +73,8 @@ const TripsView = (() => {
   function set(items) { trips = Array.isArray(items) ? items.slice(-10) : []; render(); }
   function setOn(v) { try { LocalStore.set(TK, v ? '1' : '0'); } catch (e) {} render(); }
   // P3-C：行程层登记为 trips 槽的 osd 图层；「行程」菜单行由 LayerRegistry 渲染（app/layer-host.mjs），存储键 edenMapTrips 与默认开不变
-  registry.register({ id: 'trips', slot: 'trips', kind: 'osd', initialVisible: on(),
-    menu: { order: 50, id: 'tgTrips', boxId: 'tgTripsBox', labelKey: 'trips', label: '行程' },
-    setVisible: v => setOn(v) });
+  registry.register(declared('trips', { initialVisible: on(),
+    setVisible: v => setOn(v) }));
   function render() {
     clear();
     if (typeof osdViewer === 'undefined' || !osdViewer || !currentMapId || !osdViewer.world.getItemCount() || mapRegistry.maps[currentMapId]?.kind !== 'points') return;

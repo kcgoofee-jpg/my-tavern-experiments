@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { WEATHERS, weatherOf, weatherFromStory, particleBudget, particleField, lightningAt, rng, describe, tintOf } from '../map/core/weather.mjs';
+import { kernelDecl } from '../map/core/layer-defaults.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -89,5 +90,6 @@ test('纯核心身份：不碰 DOM / 存储 / 酒馆全局，且登记进看门�
   }
   assert.doesNotMatch(src, /from '\.\.\//, 'core 是纯叶层，不许回引父目录');
   const app = readFileSync(join(ROOT, 'map/app/weather-view.mjs'), 'utf8');
-  assert.ok(app.includes("slot: 'fx'"), '天气必须落在 LayerRegistry 的 fx 槽位');
+  assert.ok(app.includes("declared('weather'"), '天气经内核宣告注册');
+  assert.equal(kernelDecl('weather').slot, 'fx', '天气必须落在 LayerRegistry 的 fx 槽位（宣告在 core/layer-defaults.mjs）');
 });

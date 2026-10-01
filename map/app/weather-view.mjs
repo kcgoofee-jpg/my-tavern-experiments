@@ -4,7 +4,7 @@
 // 驱动：宿主推来的事态（eden-map:events）经 weatherFromStory 判天气、时钟（eden-map:clock）判夜；
 // 两条消息都只认宿主（window.__isFromHost，与 app/host-messages.mjs 同一道闸）。
 // 节拍：可见性守卫按下暂停位就停 rAF（P7-4），省流档粒子减半——面板关着 / 标签页在后台一帧都不画。
-import { registry, slotEl } from './layer-host.mjs';
+import { registry, slotEl, declared } from './layer-host.mjs';
 import { weatherOf, particleField, lightningAt, weatherFromStory, tintOf } from '../core/weather.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
@@ -55,9 +55,8 @@ let done = false;
 /** 登记 fx 槽位图层（boot 调一次；槽位容器没就绪时安静返回 false，open 后会重试） */
 export function registerWeatherLayer() {
   if (done) return registry.has('weather'); done = true;
-  registry.register({
-    id: 'weather', slot: 'fx', kind: 'canvas', order: 10, initialVisible: true,
-    menu: { order: 45, boxId: 'tgWeather', labelKey: 'weather', label: '天气', titleKey: 'weather_title', title: '按剧情与时段渲染雨 / 沙尘 / 雪与闪电' },
+  registry.register(declared('weather', {
+    initialVisible: true,
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas');
@@ -69,7 +68,7 @@ export function registerWeatherLayer() {
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
     setVisible: v => { if (!mounted) return; if (v) { cv.style.display = ''; if (id !== 'clear') start(); } else { cv.style.display = 'none'; stop(); } },
-  });
+  }));
   // 宿主消息：事态 → 天气、时钟 → 夜（只认宿主，与 app/host-messages.mjs 同一道闸）
   busOn({ key: 'weather.hostMsg', type: 'message', fn: e => {
     if (!window.__isFromHost?.(e)) return;

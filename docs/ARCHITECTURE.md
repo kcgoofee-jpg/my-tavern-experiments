@@ -61,7 +61,7 @@ Rules that follow:
 
 ## 3. Module map
 
-Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 203 files: `map/core` 53,
+Every engine file (the watchdog's `ENGINE_GLOBS`) appears exactly once below. 205 files: `map/core` 55,
 `map/app` 59, `map/tavern` 55, `map/ui` 9, `map/three` 9, `map/*.mjs` 16, plus `map/viewer.html` and
 `map/props/viewer3d.html`. Roles were derived from each file's header comment and code.
 
@@ -84,7 +84,9 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `exploration-ledger.mjs` | Exploration ledger (fog of visited places): `norm` / `visit` / `known` / `count` over `{ mapId: [placeNames] }`, shared by the host and the viewer. |
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
-| `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `describe()` summary. |
+| `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
+| `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
+| `layer-spec.mjs` | Declared layers (K-R79, K-R81, K-R82): source parsing, feature and layer normalisation, merge of a pack's `layers` rows with the kernel list, the `applies` evaluator, the `validate2` spec of the block. Pure. |
 | `ledger.mjs` | Four-domain settlement ledger: validates atomic instructions per domain (assets, NPC, events, depth) and drops anything unverified. |
 | `legacy-custom.mjs` | The user's room names of the first versions (<= 0.9.2), read from local storage; folded into the chat variable by `tavern/mvu-readers.mjs`. |
 | `lexicon.mjs` | Text primitives and kernel word lists of contract v2: normalise, code-point length, cut, FNV hash, articles, journey patterns. Pure and self-contained. |
@@ -160,7 +162,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `host-messages.mjs` | Host message interface: origin / token checks, protocol validation, dispatch by type. |
 | `i18n.mjs` | Language and theme: dictionary, `uiText` / `translateName` / `localName`, `setLang`, `setTheme`. |
 | `json-cache.mjs` | `getJSON`: data files fetched once, failures not cached. |
-| `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `window.LayerHostApi` summary. |
+| `layer-host.mjs` | Viewer-side LayerRegistry assembly: registry singleton, `.vpslot` slot containers, `declared(id, impl)` (every module registers through its kernel declaration), `applyPackLayers` (a pack's rows adjust kernel layers), the layer menu, `window.LayerHostApi` summary. |
 | `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
 | `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
 | `map-level-nav.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |

@@ -44,7 +44,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 3. 模块地图
 
-每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 203 个：`map/core` 53、`map/app` 59、`map/tavern` 55、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
+每个引擎文件（看门狗的 `ENGINE_GLOBS`）在下面恰好出现一次。共 205 个：`map/core` 55、`map/app` 59、`map/tavern` 55、`map/ui` 9、`map/three` 9、`map/*.mjs` 16，另加 `map/viewer.html` 与 `map/props/viewer3d.html`。各行职责取自文件头注释与代码。
 
 ### 3.1 map/core
 
@@ -65,7 +65,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `exploration-ledger.mjs` | 探索账本（迷雾探索：到过的地点）：对 `{ 地图 id: [地点名] }` 的 `norm` / `visit` / `known` / `count`，宿主与查看器共用。 |
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
-| `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`describe()` 摘要。 |
+| `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
+| `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
+| `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
 | `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu-readers.mjs` 并进聊天变量。 |
 | `lexicon.mjs` | 契约 v2 的文本基元与内核词表：规范化、码点长度、截断、FNV 哈希、冠词、行程句式。纯函数，自成一体。 |
@@ -140,7 +142,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-messages.mjs` | 宿主消息接口：来源 / 令牌检查、协议校验、按类型分派。 |
 | `i18n.mjs` | 语言与主题：词典、`uiText` / `translateName` / `localName`、`setLang`、`setTheme`。 |
 | `json-cache.mjs` | `getJSON`：数据文件只取一次，失败不缓存。 |
-| `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`window.LayerHostApi` 摘要。 |
+| `layer-host.mjs` | 查看器侧的 LayerRegistry 装配：注册表单例、`.vpslot` 槽位容器、`declared(id, impl)`（各模块经内核宣告注册）、`applyPackLayers`（设定包的行调整内核图层）、图层菜单、`window.LayerHostApi` 摘要。 |
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
 | `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `place-resolver.mjs`）、`drawnAt`、`jumpHere`。 |
 | `map-level-nav.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |

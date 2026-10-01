@@ -4,7 +4,7 @@
 // 节拍与兄弟层一致：OSD 叠加元素跟着底图走，图层开关 / 可见性调度走 LayerRegistry。
 //   样式在本模块里注入（tavernhelper-settings.mjs 一个路子），viewer.html 不为这一层留 CSS。
 import { normStash, rows } from '../core/stash.mjs';
-import { registry } from './layer-host.mjs';
+import { registry, declared } from './layer-host.mjs';
 import { esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
@@ -84,13 +84,12 @@ export function rebuildLoot() {
 let done = false;
 export function registerLootLayer() {
   if (done) return registry.has('loot'); done = true;
-  registry.register({
-    id: 'loot', slot: 'interaction', kind: 'dom', order: 10, initialVisible: true,
-    menu: { order: 48, boxId: 'tgLoot', labelKey: 'loot.layer', label: '藏物', titleKey: 'loot.layer_title', title: '设定包里登记在世界上的东西（走到近处才看得到暗格里的）' },
+  registry.register(declared('loot', {
+    initialVisible: true,
     mount: () => { css(); rebuildLoot(); return true; },
     unmount: () => { clearLoot(); },
     setVisible: v => { v ? rebuildLoot() : clearLoot(); },
-  });
+  }));
   // 切图 / 休眠后重开：body 的 data-map 变了就跟着重画（clouds.mjs 一个路子）
   try { watch = new MutationObserver(() => setTimeout(rebuildLoot, 0)); watch.observe(document.body, { attributes: true, attributeFilter: ['data-map'] }); } catch (e) {}
   busOn({ key: 'loot.resize', type: 'resize', fn: () => rebuildLoot() });

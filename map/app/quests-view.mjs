@@ -2,7 +2,7 @@
 // 数据源全是现成的：当前图的标记（地点 + 归一化坐标）与事态外挂的事件；不编势力、不编剧情——
 // 哪里正在出事，全看事态自己说了什么（热度 = 大类权重 × 楼层差衰减，与 events.mjs 同口径）。
 // 节拍与天气 / 车流一致：可见性守卫按下暂停位即停（P7-4）；节点每 2 s 重算一次（事态变了才动）。
-import { registry, slotEl } from './layer-host.mjs';
+import { registry, slotEl, declared } from './layer-host.mjs';
 import { dispatch, tick } from '../core/quests.mjs';
 import { seedOf } from '../core/rng.mjs';
 import { busOn } from './bus.mjs';
@@ -70,9 +70,8 @@ function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; if (cx) cx.clearR
 let done = false;
 export function registerQuestLayer() {
   if (done) return registry.has('quests'); done = true;
-  registry.register({
-    id: 'quests', slot: 'fx', kind: 'canvas', order: 30, initialVisible: true,
-    menu: { order: 47, boxId: 'tgQuests', labelKey: 'quests', label: '线索', titleKey: 'quests_title', title: '事态冒头的地点上给一枚会呼吸的线索节点（不编剧情，只跟着事态走）' },
+  registry.register(declared('quests', {
+    initialVisible: true,
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas'); cv.className = 'qscv'; cv.setAttribute('aria-hidden', 'true');
@@ -82,7 +81,7 @@ export function registerQuestLayer() {
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
     setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
-  });
+  }));
   busOn({ key: 'quests.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'quests.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') setQuestDay(questDay(e.data)); } });
   visibilityGuard.subscribe(paused => { paused ? stop() : (registry.isVisible('quests') ? start() : null); });

@@ -20,7 +20,7 @@ export const KEYS = {
   edenMapEstateFail: { owner: 'viewer', scope: 'session' },
   // 查看器外挂脚本
   edenMapEvOff: { owner: 'events-view.mjs' }, edenMapLegHint: { owner: 'events-view.mjs' }, edenMapPortraits: { owner: 'characters-view.mjs' }, edenMapChGroups: { owner: 'characters-view.mjs' },
-  edenMapCharMoreOpen: { owner: 'characters-view.mjs' }, edenMapNight: { owner: 'custom-names-view.mjs' }, edenMapTrips: { owner: 'trips-view.mjs' }, edenMapSecurity: { owner: 'security.mjs', def: '0' },
+  edenMapCharMoreOpen: { owner: 'characters-view.mjs' }, edenMapNight: { owner: 'custom-names-view.mjs' }, edenMapTrips: { owner: 'trips-view.mjs' }, edenMapLayers: { owner: 'app/layer-host.mjs' }, edenMapSecurity: { owner: 'security.mjs', def: '0' },
   edenMapCompose: { owner: 'tavern/compose-templates.mjs' },
   edenMapInject: { owner: 'tavern/place-action-injection.mjs', def: 'off' }, edenMapActionTpl: { owner: 'tavern/place-action-injection.mjs' },   // Part 6-4 动作注入：模式（默认关）与模板
   edenMapTick: { owner: 'tavern/background-scan-scheduler.mjs', def: '1' },   // Part 6-2 后台静默推演：开 / 关（毫秒数也可，夹在 15 s–5 min）

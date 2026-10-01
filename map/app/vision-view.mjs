@@ -5,7 +5,7 @@
 //      被谁看见了，就把最难的一下（DC）报给宿主（eden-map:stealth），要不要替玩家说这句话由宿主 / 设置决定。
 // 节拍与车流 / 天气一致：fx 槽位画布 + 可见性守卫（P7-4）；省流档岗哨减半。
 // 数据不另起门户：岗位来自地图自己的巡逻环，城墙（walls）默认没有，有水系 / 隔墙的包可由宿主推来。
-import { registry, slotEl } from './layer-host.mjs';
+import { registry, slotEl, declared } from './layer-host.mjs';
 import { conePolygon, crossing, patrolCones } from '../core/vision.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
@@ -97,9 +97,8 @@ function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; if (cx) cx.clearR
 let done = false;
 export function registerVisionLayer() {
   if (done) return registry.has('vision'); done = true;
-  registry.register({
-    id: 'vision', slot: 'fx', kind: 'canvas', order: 25, initialVisible: true,
-    menu: { order: 49, boxId: 'tgVision', labelKey: 'vision.layer', label: '视野锥', titleKey: 'vision.layer_title', title: '巡逻岗哨 / 机兵的警戒视野（沿地图自己的巡逻环在动）' },
+  registry.register(declared('vision', {
+    initialVisible: true,
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas'); cv.className = 'vscv'; cv.setAttribute('aria-hidden', 'true');
@@ -109,7 +108,7 @@ export function registerVisionLayer() {
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
     setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
-  });
+  }));
   busOn({ key: 'vision.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'vision.hostMsg', type: 'message', fn: e => {
     if (!window.__isFromHost?.(e)) return;
