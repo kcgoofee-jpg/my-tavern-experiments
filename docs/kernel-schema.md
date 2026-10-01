@@ -1065,6 +1065,9 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 - K-R114 — thematic schematic for implicit views; function words; marker ranks (§4.6; S8-4b)
 
 
+**Planned in S7** (reserved by S7-design, `docs/ui-refactor.md`; full text lands with the steps named): K-R130 (§9, the navigator's suggested route `OP_ROUTE { to, from?, why? }` in the restricted operation DSL: validation, one per response, handed to `routeOp`; delivery and drawing as K-R113; step S7-1); K-R131 (§4.5, `room_kinds` in a 3D manifest: kind → colour and labels as pack data, N9); K-R132 (§4.5, the `building` block of a 3D manifest: title, motto, floor labels, N11); K-R131 and K-R132 land with step S7-3.
+
+
 ## 14. Designer decisions and open points
 
 ### 14.1 Decided by the designer

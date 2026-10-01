@@ -915,6 +915,9 @@ state：`{place} {time} {people}`；custom：`{items}`），以及 `worldbook.bo
 - K-R114 —— 隐式视图的主题示意图；功能词；标记分级（§4.6；S8-4b）
 
 
+**S7 计划**（S7-design 预留，`docs/ui-refactor.md`；全文随所注步骤落地）：K-R130（§9，受限操作 DSL 里 AI 参谋的建议路线 `OP_ROUTE { to, from?, why? }`：校验、每次回复最多一条、交给 `routeOp`；送达与绘制按 K-R113；步骤 S7-1）；K-R131（§4.5，3D 清单里的 `room_kinds`：房间类型 → 颜色与名称作为包数据，N9）；K-R132（§4.5，3D 清单的 `building` 块：标题、题词、楼层名，N11）；K-R131、K-R132 随步骤 S7-3 落地。
+
+
 ## 14. 设计方的决定与遗留点
 
 ### 14.1 设计方已定

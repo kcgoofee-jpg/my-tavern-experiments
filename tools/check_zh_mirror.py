@@ -20,6 +20,8 @@ PAIRS = [
     ("docs/zero-config.md", "docs/zero-config.zh.md"),
     ("docs/layers-schema.md", "docs/layers-schema.zh.md"),
     ("docs/transit-schema.md", "docs/transit-schema.zh.md"),
+    ("docs/settings-ia.md", "docs/settings-ia.zh.md"),
+    ("docs/ui-refactor.md", "docs/ui-refactor.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 
