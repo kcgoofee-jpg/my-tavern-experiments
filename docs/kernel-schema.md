@@ -134,14 +134,46 @@ card-info bridge the credits page uses (name, creator, version); values written 
 
 ### 2.3 Reserved for S9: match and embedding
 
-- `match.card.name | creator | tags` and `match.worldbook` (entry titles): any hit makes the pack a candidate for the
-  current card; ranking is S9's design.
-- Reserved embedding names: the card field `data.extensions.spatial_os` holds the manifest document with every block
-  inline; or a disabled entry titled `spatial_os:pack` in the card's own worldbook holds it as JSON text (disabled, so
-  it is never sent to the model; the loader reads it anyway, and never from a global or chat book).
-- Loader order (designer decision, safety): a URL or file the user chose for this card → the card's embedded pack →
-  an index match → zero-config. The user can therefore always replace a broken or hostile embedded pack.
-- An embedded pack is at most 1 MB (K-R66); S9 may lower this.
+**K-R90 — Pack resolution.** At start and on every card switch the host resolves one pack for the current card; the first
+source that yields a usable pack wins: (0) the user's choice for this card, or a pack baked into the script; (1) a pack
+embedded in the card (K-R91); (2) the best index match (K-R92); (3) the automatic pack (until it lands, a root-only
+schema-2 pack named after the card, id `c_` + `fnv36(name + "\n" + avatar)`; with no card read at all, or with the index
+unreachable, the legacy default). A refused source (`validate2` returns no pack, a fetch fails, a size limit) falls
+through and leaves one entry in `window.__packProblems`; nothing blocks. The result is `{ id, source: choice | baked |
+card | index | auto, trust: shipped | foreign, schema, manifest }`; `shipped` only for packs in the shipped index (K-R63).
+When the result is the shipped pack whose id is `core/pack.mjs` `DEFAULT_ID` (the pack that owns the legacy names), no
+`window.__tcPack` is set and the host starts exactly as before S9 (every name, key and injected text unchanged). The
+user's choice is stored per card key (`k` + `fnv36(name + "\n" + avatar)`, `k0` when no card is read) under
+`edenMapPackPick`. The gate resolves within 300 ms; over that it starts with the legacy default and corrects by a
+restart. On a card switch it resolves again and, when the pack id or source differs, stops the running instance and
+evaluates the entry again. Resolution reads only the card, the card's own worldbooks, the top-level keys of the chat
+variables, the shipped index and the user's choice; nothing is uploaded.
+
+**K-R91 — A pack embedded in the card.** Read, in this order: (1) `data.extensions.spatial_os` of the card — an object
+holding the manifest with every block inline, or a string holding it as JSON; (2) in the card's own worldbooks (the
+current character's primary and additional books; never a global or chat book) the first entry, in book and entry order,
+whose title (`name`, older hosts `comment`) equals `spatial_os:pack` after trimming; its content is the JSON text. The
+entry is read whether it is enabled or not (authors should disable it, so the host never sends it to the model). The
+pack must be schema 2, all blocks inline, at most 1 MB, and passes `validate2` as foreign; an id equal to a shipped id
+is refused (K-R63). The engine never writes the card or its books.
+
+**K-R92 — The shipped index.** `map/packs/index.json` = `{ "schema": 1, "default": "<pack id>", "packs": [ { "id",
+"schema", "title", "i18n"?, "match"? } ] }`, one row per shipped pack in display order; `match` has the manifest shape
+(`card.name | creator | tags`, `worldbook`). For a schema-2 pack the row's `match` equals its manifest's; for a schema-1
+pack the row is the only place that holds it (`tools/check_pack.py` checks the index). Score of a pack for the current
+card: its chat variable present as a top-level key holding an object in the chat variables 100; a `match.card.name` word
+in the card name (normalised, K-R17, substring) 10; a `match.card.creator` word in the creator 10; a `match.card.tags`
+word equal to one of the card's tags 10; each `match.worldbook` title equal (normalised) to an entry title of the card's
+own books 5. A pack is a candidate with at least 10 points; the highest score wins, ties by index order. Words are
+literal strings (K-R01). `default` is read only by the standalone viewer.
+
+**K-R99 — Importing a pack.** From Settings the user gives an https URL or picks a file (message `eden-map:pack-pick`).
+A URL is fetched with credentials omitted and no referrer, read with a streaming cap of 8 MB, parsed as JSON; a file is
+read the same way. Schema 2 only; blocks given as paths are resolved against the URL's folder for a URL pack (they must
+stay under it, K-R64) and refused for a file. The pack is foreign and passes `validate2`, so its own limits (K-R66) still
+apply. The text of a file pack and the last good copy of a URL pack are kept in this browser (IndexedDB `edenMapPacks`)
+under the card key; a URL is fetched again at each start and the copy is used when the fetch fails. A refused import
+shows one passive line in the pack box and keeps the previous pack.
 
 ### 2.4 Trust and limits
 
@@ -725,6 +757,14 @@ except `{{user}}` and `{{char}}` is escaped, as are `<%` and `%>`; keys shaped l
 are refused. Caps: 16 entries, 2000 code points per entry, 16 000 in total; an entry without keys (always on) counts
 against the kernel's injection budget.
 
+**K-R103 — Go-live of a foreign pack's model text.** The `llm` block of a foreign pack (templates, worldbook entries,
+book name) reaches the host only while the host switch "use this pack's text for the model" is on for that pack and the
+user has confirmed the current text: the switch stores `{ <pack id>: <fnv36 of the canonical JSON of the llm block> }`
+under `edenMapPackLlm`; when the stored hash differs from the pack's, the switch reads as off until the user confirms
+again in Settings (a passive line, no dialog). Default off. Off, the kernel templates in the pack language are used and
+no worldbook entry is written. K-R65 still applies when it is on. Shipped packs are not affected. The switch travels in
+`eden-map:th` `prefs` (`packLlm`).
+
 ## 11. legacy names
 
 **K-R09 — Read old, write new.** `legacy` names what a pack used before schema 2: `chat_var`, `storage_prefix`,
@@ -846,19 +886,16 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S8-1:** K-R79, K-R81, K-R82 and K-R83 (§9, the layers block, sources and features, `applies`, menu rows and the visibility store), K-R85 (above, the overlay's `layers`) and K-R104 (§4.5, the 3D manifest schema).
 
+**Added by S9-2:** K-R90, K-R91, K-R92 and K-R99 (§2.3), K-R103 (after K-R65).
+
 **Planned in S9** (reserved by S9-design, `docs/zero-config.md`; full text lands with the step specs in its appendix):
-- K-R90 pack resolution order and the legacy-default start (S9-2);
-- K-R91 a pack embedded in the card (S9-2);
-- K-R92 the shipped index and the match score (S9-2);
 - K-R93 place candidates from the card's worldbook (S9-3);
 - K-R94 variables, people, start view and language from the card (S9-3);
 - K-R95 the automatic pack, its storage, stability and growth (S9-3);
 - K-R98 export as pack, and overlay export of a shipped pack (S9-3, S9b);
-- K-R99 importing a pack by URL or file (S9-2);
 - K-R100 edit mode and the draft (S9b);
 - K-R101 pack pictures: the media block, sources and limits (S9b);
 - K-R102 private pictures, never exported (S9b);
-- K-R103 go-live of a foreign pack's model-facing text (K-08 B; S9-2).
 **Planned in S8** (design `docs/layers-schema.md`; review sheet L-01 … L-15; the full text lands with S8-1 … S8-3):
 - K-R80 (§9) building blocks and style keys; reduced motion and data saver (S8-2).
 - K-R84 (§10.1) legend rows contributed by layers; the legend tab's show rule (S8-2).

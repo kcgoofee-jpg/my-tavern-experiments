@@ -96,6 +96,8 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
+| `pack-index.mjs` | The shipped pack index and the match score (K-R92). Pure. |
+| `pack-store-db.mjs` | Browser store of imported packs (IndexedDB `edenMapPacks`, key = card key; K-R99). Every call is wrapped. |
 | `pack-v2-rows.mjs` | Run-time readers of a v2 pack's blocks: event types, attribute values, roster rows, world stash rows (re-exported by `pack-v2.mjs`). |
 | `pack-v2-spec.mjs` | Field specs of the v2 blocks, mirroring `map/data/schema/v2/*.schema.json`, healing each item. |
 | `pack-v2-view.mjs` | Opening a schema-2 pack in the viewer (K-R96): implicit schematic views and the projection to the viewer registry (maps, markers, virtual point files). Pure. |
@@ -172,6 +174,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). `buildRuntimeV2` installs the schema-2 runtime into the same slot. |
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
 | `one-hand-mode.mjs` | One-hand mode: handedness switch with the floating button following it; starts the settings-home actions and quick zoom. |
+| `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text (K-R99, K-R103). |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
@@ -207,6 +210,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 |---|---|
 | `background-scan-scheduler.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
 | `branch-follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
+| `card-source.mjs` | Reads the current card and its own worldbooks for the pack gate (K-R90, K-R91); host interfaces come in through `mvu-bridge.mjs hostAccess`. |
 | `characters-parse.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
 | `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
 | `check-failure-report.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
@@ -238,7 +242,9 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `mvu-readers.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
 | `mvu-snapshot.mjs` | MVU snapshot selection and generation-state rules. |
 | `operation-dsl.mjs` | Restricted operation DSL sandbox: extracts, validates and normalizes atomic operation blocks. |
+| `pack-gate.mjs` | The pack gate (top-level `await`, imported first by the entry): resolves one pack per card — choice, baked, embedded, index, automatic — sets `window.__tcPack`, restarts the instance on a card switch (K-R90). |
 | `pack-profile.mjs` | The profile of the pack the script runs (`getProfile` / `setProfile`); the kernel profile until the pack's declarations arrive. |
+| `pack-runtime-v2.mjs` | Host side of schema-2 packs: profile and event geography from the pack, URL / file / embedded import with caps, the go-live gate of model text (K-R91, K-R99, K-R103). |
 | `picker.mjs` | Pure helpers for the customization panel: grouped object list, search, fly-to targets. |
 | `place-action-injection.mjs` | Map-driven actions: a clicked point of interest becomes one sentence (off / compose / silent system injection). |
 | `planner-gateway.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
@@ -423,6 +429,8 @@ markers carry `here_words`, the realm `label_dy` and the `overseas` card. The ma
 add-on book and its entries are named `<prefix>·…`, default the pack title), `credits` (Settings → about) and the
 data paths the host and the viewer used to hard-code (`roster`, `maps`, `galleries`, `worldbook_addon`, `gallery`,
 `routine`); a missing key quietly switches the feature off. The engine names no view, group, place or book.
+
+**The pack gate (S9-2)**: the entry imports `tavern/pack-gate.mjs` first; its top-level `await` resolves the pack of the current card (user choice or baked pack → pack embedded in the card → best match in `packs/index.json` → automatic) and sets `window.__tcPack` before the entry reads it; the legacy-default pack leaves it unset, so the first pack's start, texts and writes are unchanged. On a card switch the gate resolves again and, when the pack id or source changed, stops the instance (`__edenMapCleanup`), clears the profile and chat-variable root that modules keep, and imports the entry again under `?k=<card key>&r=<n>`. `eden-map:pack-pick` (Settings → Advanced) reaches it through `onTh`; the go-live switch of a foreign pack's model text is `eden-map:th` `prefs.packLlm`. Module-level state that survives a restart is listed in `docs/zero-config.md` §14.
 
 **Schema-2 packs (S9-1)**: `viewer.html?pack=<id>` for a schema-2 pack runs `resolveBlocks` + `validate2` + `withDefaults` (`app/current-pack.mjs`), projects the pack with `projectV2` (`core/pack-v2-view.mjs`) into the registry shape and seeds the JSON cache with the virtual point files (`v2/<pack id>/<map id>.json`); `boot.mjs` skips the v1 data files and builds the runtime with `buildRuntimeV2`. A pack with no `views` block gets implicit schematic views (K-R96); a schematic map is a generated picture of lines and dots opened as a single-image source (K-R97). Schema-1 packs take the old path unchanged; 3D views of a schema-2 pack are listed in the self-check as not shown yet.
 

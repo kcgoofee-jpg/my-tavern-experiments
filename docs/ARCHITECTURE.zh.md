@@ -77,6 +77,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |
+| `pack-index.mjs` | 内置包索引与匹配得分（K-R92）。纯函数。 |
+| `pack-store-db.mjs` | 导入的包的本机存储（IndexedDB `edenMapPacks`，键 = 卡键；K-R99）。每个调用都包了一层，不抛错。 |
 | `pack-v2-rows.mjs` | v2 包各块的运行期读取：事态类型、属性值、名册行、世界藏物行（由 `pack-v2.mjs` 再导出）。 |
 | `pack-v2-spec.mjs` | v2 各块的字段规格，对应 `map/data/schema/v2/*.schema.json`，逐项自愈。 |
 | `pack-v2-view.mjs` | 在查看器里打开 schema-2 包（K-R96）：隐式示意图视图，以及到查看器注册表（地图、标记、虚拟点位文件）的投影。纯函数。 |
@@ -152,6 +154,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。`buildRuntimeV2` 把 schema-2 的运行时装进同一个槽。 |
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
 | `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
+| `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关（K-R99、K-R103）。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
 | `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
@@ -187,6 +190,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 |---|---|
 | `background-scan-scheduler.mjs` | 后台静默推演调度器：只读的增量扫描，面板开着或正在生成时让路。 |
 | `branch-follow.mjs` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取分支的最新构建。 |
+| `card-source.mjs` | 为门卫读当前卡与它自己的世界书（K-R90、K-R91）；宿主接口经 `mvu-bridge.mjs hostAccess` 传入。 |
 | `characters-parse.mjs` | 人物栏：从聊天标签和 MVU 变量找出人物及其最新位置。 |
 | `chars-flow.mjs` | 宿主的人物与世界时间流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。`createCharsFlow(host)`。 |
 | `check-failure-report.mjs` | 检定失败报告环：结构化报告在下一轮注入，让剧情顺着客观事实走。 |
@@ -218,7 +222,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `mvu-readers.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、按包的槽位字段读名册行、立绘、时间与时段）。 |
 | `mvu-snapshot.mjs` | MVU 快照选取与生成状态规则。 |
 | `operation-dsl.mjs` | 受限操作 DSL 沙盒：提取、校验并规范化原子操作块。 |
+| `pack-gate.mjs` | 包门卫（顶层 `await`，入口最先 import）：按卡解析一个包——选择、烘入、内嵌、索引、自动——设 `window.__tcPack`，换卡时重启实例（K-R90）。 |
 | `pack-profile.mjs` | 脚本当前跑的包的档案（`getProfile` / `setProfile`）；包的声明到之前是内核档案。 |
+| `pack-runtime-v2.mjs` | schema-2 包的宿主侧：由包得出变量声明与事件地理、网址 / 文件 / 内嵌导入与上限、模型文字生效门（K-R91、K-R99、K-R103）。 |
 | `picker.mjs` | 自定义面板的纯函数：可定制对象的分组清单、搜索、飞行目标。 |
 | `place-action-injection.mjs` | 地图驱动的动作：点一个兴趣点变成一句话（关 / 填输入框 / 静默系统注入）。 |
 | `planner-gateway.mjs` | 后台领航员网关：调度、输入装配、响应门控（私有 key 驱动）。 |
@@ -367,6 +373,8 @@ viewer modules (app/*, root plugins) ──► LayerRegistry slots (core/layer-r
 事态大类自带色觉安全色（`x-cvd`）；世界图地点带 `here_words`，国家带 `label_dy`，还有 `overseas` 大牌。清单带 `worldbook.prefix`
 （附加世界书和条目叫 `<前缀>·…`，缺省 = 包标题）、`credits`（设置「关于」）以及宿主和查看器以前写死的数据路径（`roster`、`maps`、
 `galleries`、`worldbook_addon`、`gallery`、`routine`）；缺一个键，对应功能静默关掉。引擎里不出现任何视图、组、地点或书的名字。
+
+**包门卫（S9-2）**：入口最先 import `tavern/pack-gate.mjs`；它的顶层 `await` 为当前卡解析出包（用户选择或烘入的包 → 卡内嵌的包 → `packs/index.json` 里的最佳匹配 → 自动包），在入口读取之前设好 `window.__tcPack`；旧默认包不设它，所以第一个包的启动、文字与写入都不变。换卡时门卫重新解析，包 id 或来源变了就停掉实例（`__edenMapCleanup`）、清掉模块里留着的变量声明与聊天变量根键，再用 `?k=<卡键>&r=<n>` 重新 import 入口。`eden-map:pack-pick`（设置 → 高级）经 `onTh` 到达；外来包模型文字的生效开关是 `eden-map:th` 的 `prefs.packLlm`。
 
 **schema-2 的包（S9-1）**：schema-2 的包用 `viewer.html?pack=<id>` 打开时，`app/current-pack.mjs` 跑 `resolveBlocks` + `validate2` + `withDefaults`，`core/pack-v2-view.mjs` 的 `projectV2` 把它投影成注册表的形状，并把虚拟点位文件（`v2/<包 id>/<地图 id>.json`）预先填进 JSON 缓存；`boot.mjs` 跳过 v1 数据文件，用 `buildRuntimeV2` 建运行时。没有 `views` 块的包得到隐式示意图视图（K-R96）；示意图地图是一张由线和点生成的图，作为单图来源打开（K-R97）。schema-1 的包走原来的路径、完全不变；schema-2 包的三维视图在自检里列为「暂不显示」。
 
