@@ -88,7 +88,7 @@ test('the kernel list alone yields no declared layer; the first pack declares ex
   assert.deepEqual(first.layers.filter(l => l.origin === 'pack').map(l => l.id), ['estate_ward']);
   const TOWN = { manifest: J('map/packs/town/manifest.json'), maps: J('map/packs/town/maps.json'), events: J('map/packs/town/events.json'), overlay: J('map/packs/town/overlay.v2.json') };
   const town = mergeLayers(KERNEL_LAYERS, makeRuntime(TOWN).layers);
-  assert.deepEqual(town.layers.filter(l => l.origin === 'pack').map(l => l.id), ['patrol', 'danger']);
+  assert.deepEqual(town.layers.filter(l => l.origin === 'pack').map(l => l.id), ['patrol', 'danger', 'harbour-sound']);   // S8-3 T7 added the sound layer
   const flat = JSON.stringify(fs.readdirSync(ROOT + 'map/app').filter(f => /^(block-|declared-)/.test(f)).map(f => fs.readFileSync(ROOT + 'map/app/' + f, 'utf8')));
-  assert.ok(!/patrol|danger|estate_ward/.test(flat), 'no engine file names any pack layer');
+  assert.ok(!/patrol|danger|estate_ward|harbour-sound/.test(flat), 'no engine file names any pack layer');
 });

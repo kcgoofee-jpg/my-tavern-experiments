@@ -23,6 +23,13 @@
       "menu": { "label": "危险区域", "i18n": { "en": { "label": "Danger zone" } } },
       "legend": [ { "label": "危险区域", "desc": "鱼市仓库一带，夜里别独自靠近",
                     "i18n": { "en": { "label": "Danger zone", "desc": "Around the fish-market warehouses; keep away alone at night" } } } ]
+    },
+    {
+      "id": "harbour-sound", "type": "sound", "slot": "fx",
+      "applies": { "views": ["town_harbour"] },
+      "data": { "rules": [ { "match": { "map": "town_harbour" }, "scenes": [ { "id": "wind", "gain": 0.4 }, { "id": "crackle", "gain": 0.15 } ] } ] },
+      "menu": { "label": "港口环境声", "title": "港口的风声与远处的噼啪声（默认关，打开后才会出声）",
+                "i18n": { "en": { "label": "Harbour ambience", "title": "Wind and a distant crackle around the harbour (off until you switch it on)" } } }
     }
   ]
 }
