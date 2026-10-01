@@ -75,6 +75,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
+| `applies-hint.mjs` | 图层「此处不适用」的白话原因（S7-2，`docs/ui-refactor.md` 4）：`appliesHint(applies, ctx, names)` 说出 `applies` 里不满足的键（最多两条）；只有 `data` 不满足时返回 null（该行直接隐藏）；不会把 id 或路径显示出来。 |
+| `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-values.mjs` | 宿主送给图层的值（K-R86）：`capValue`（4 KB / 200 项，截断标 `…truncated`）与按路径读快照的 `pickValues`。纯函数。 |
 | `ledger.mjs` | 四域结算账本：按域（资产、NPC、事件、纵深）校验原子指令，未验证的一概丢弃。 |
 | `legacy-custom.mjs` | 用户最早几个版本（≤ 0.9.2）里的房间叫法，从本机存储读出；由 `tavern/mvu-readers.mjs` 并进聊天变量。 |
@@ -196,6 +198,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
 | `settings-pages.mjs` | 设置页的行表（S7-1）：每个子页的行第一次打开该页时才造（启动路径上不造），`onBuilt` / `onShow` 钩子，静态搜索索引。 |
+| `raf-probe.mjs` | 调试 getter `raf` 背后的只读活动计数器（S7-2）：按所属模块数动画帧、存活的定时器及其回调、正在跑的动画；由 `tools/browser/raf_pause.mjs` 读取。 |
 | `settings-wire.mjs` | 设置各行的处理器，页建好后才挂；启动就要生效的存储开关（减少动态、花屏特效、小地图、动作模式、编辑模式）直接读写存储。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |
 | `sharpness-tiers.mjs` | 清晰度档位、省流判断、加载进度、叠加层与标注避让。 |
@@ -241,6 +244,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `events-parse.mjs` | 事态解析：从聊天正文读事件标签，按包的事件块分类（`typeOf`，K-R50），合并（类型 + 节点，K-R54）并老化（纯函数）。 |
 | `extension-api-contract.mjs` | 暴露给宿主页的公共 `EdenMap` API 的机读契约。 |
 | `feature-health.mjs` | 功能健康（S7-1，`docs/settings-ia.md` §4.5）：`createFacts()` 与纯函数 `healthOf(facts)`，对每张 AI 联动卡片给出 开着 / 生效 / 待命 / 未生效、原因、上次生效楼层、文字与 token；`healthSum`。 |
+| `host-tokens.mjs` | 宿主页的令牌块（S7-2）：`HOST_TOKENS_CSS` / `hostTokensCss(id)`，`tokens.css` 的颜色、毛玻璃、层级阴影与 `--zh-*` 层叠阶梯的限定作用域副本（测试逐值对拍）；宿主自己的 `--em-*` 名字都是它的别名。 |
 | `follow-gate.mjs` | 入口门卫：从分支路径加载的脚本，换成头提交号的入口重新加载。 |
 | `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
 | `gallery-flow.mjs` | 媒体来源的宿主侧（K-R106），由 `chars-flow` 创建：每个聊天读一次卡的图片表，每轮扫聊天楼层正文里的标记（一楼的地点经 `MVUBridge.floorPlace`，K-R105），发 `eden-map:media`；回应 `eden-map:media-ask`；开关 `edenMapGallery`（默认开）能关掉；什么都不存。 |
@@ -459,7 +463,7 @@ S8-3 加上宿主送值的来源：宿主读包的图层点名的卡变量（`pr
 
 - **底图**：OpenSeadragon（`map/vendor/openseadragon`）加载 `map/art/` 里的 DZI 瓦片金字塔。瓦片解码可以放进 blob worker（`app/dzi-worker*.mjs`），失败时退回原生路径。
 - **LayerRegistry**（`core/layer-registry.mjs`，由 `app/layer-host.mjs` 装配）：十个槽位，由底至顶——`base`、`depth-haze`、`fog`、`routes`、`trips`、`events`、`markers`、`labels`、`fx`、`interaction`。槽位的 z 值是 `(序号 + 1) × 10`。图层注册 `{ id, slot, kind, order, mount, unmount, … }`；滤镜链（`css` / `canvas`）逐层叠加。`window.LayerHostApi` 暴露标准摘要。
-- **`viewer.html` 里的两条 z-index 阶梯**：`--zv-*` 自定义属性镜像槽位值（在 OSD 叠加层叠上下文里，由测试与 `SLOTS` 对拍）；`--zu-*` 是外层固定 UI 阶梯（顶栏、弹层、设置、控制列、庄园 iframe、盖布），永远在槽位之上。令牌之外禁止裸数字 z-index（看门狗检查 3）。
+- **z 阶梯与毛玻璃类都在 `map/ui/tokens.css` 里**（S7-2；`viewer.html` 内联一份由 `tools/sync_tokens.py` 压缩出的副本）：`--zv-*` 镜像槽位值（测试对拍 `SLOTS`），`--zu-*` 是查看器界面阶梯，`--zl-*` 是组件内部的局部层级，`--zh-*` 是宿主页的（由 `tavern/host-tokens.mjs` 复制，测试对拍）。裸数字 z-index 一律禁止（看门狗检查 3，账本该节为空）。外壳用 `.g1`（浮在地图上的控件：80 % 毛玻璃带模糊，只给宿主栏、查看器顶栏、缩放列和 ⓘ，触屏 / `lowmem` / `noblur` / 三维打开时一律不糊）和 `.g2`（阅读面：不透明、不糊）。设定包的分视图主题只写地图空间令牌 `--map-*`，外壳令牌在每个视图和三维里都一样。
 - **`map/three` 运行时**：纯叶子小件（上下文工厂、裁剪、实例化、LOD、昼夜、粒子、浮雕、着色器、贴图资源），THREE 由调用方注入。
 - **庄园页**：`map/estate/`（`index.html`、`main.js`）是第一个包的三维页，由 `app/subpage3d-host.mjs` 加载进 blob iframe。它的模型经 `core/scene3d-manifest.mjs` 取自 `map/estate/model/manifest.json`；通用查看器 `map/props/viewer3d.html?model=<id>` 服务每个地标的 `manifest.json`。两者都用烘焙光照和 `map/ui` 里的共享外壳。
 - **特效与昼夜**：天气与极光渲染到 `fx` 槽位；世界时钟（`core/clock.mjs`）驱动 `three/daynight.mjs` 与查看器的夜色。没有任何东西读系统时间。
