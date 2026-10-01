@@ -1586,3 +1586,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+=== RESULT B2-COMPLETE ===
+status: DONE
+items: 4 (B2-C03 档案室: 绝密契约防爆保险箱机柜群、物理断网闭路监控机柜、身份鉴权终端、中央查阅审核台) ✓ · 5 (B2-C04 储藏室: 重型角钢物资货架群、双联防汛排污泵组、应急医疗急救站EQ-51、拆包质检岛台) ✓ · 6 (B2 主人通道前室: 潜艇级耐压防水气密门、手轮与RFID面板) ✓
+commits:
+pending feat(estate): industrial realism modeling for B2 archives, storage, and blast bulkhead door
+pushed: yes
+tests: node 1412/1413 (1 skipped) | smoke PASS | arch PASS | house.glb 718876 bytes (54 bytes under 718930 cap)
+deviations: none; all equipment tops strictly <= z+1.44m (no section cut clipping)
+blocker: none
+open: none
+cleanup: done
+=== END ===
