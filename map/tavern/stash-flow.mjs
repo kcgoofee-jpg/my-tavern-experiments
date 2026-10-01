@@ -1,6 +1,7 @@
 // 拾取与背包流：地图 → 动作注入、W2 掷骰 / 失败环、W11 结算闸门与漏项审计、拾取扫描、统一背包存储（stash，S6-2：原 loot-flow，仓库 / 虚拟槽位两处并成一份）与世界藏物表。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch } from './host-tavernhelper.mjs';
+import { getProfile } from './pack-profile.mjs';
 export const DEPS = [
   'LS', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'composeIn', 'life', 'lsGet', 'mvuStat', 'post', 'saveRoot', 'BASE', 'mvuBridge', 'mvuReaders', 'uiLang', 'alive', 'floorNow',
 ];
@@ -51,6 +52,7 @@ export function createStashFlow(host) {
   // 任务一（第二步）客观动作强制反思探测：正文里**写明的**物理获取动作也是事实来源——主模型因为「卡里没有
   // 背包字段」在 UpdateVariable 里漏掉道具时，这里把动作本身补成一条 loot 事实，交给同一套漏项审计 + 强制入账。
   // 纯计算在 core/pickup.mjs（node 单测 tests/auto_stash.test.mjs）；这里只做取数与副作用。
+  const vocab = () => getProfile().pickup;   // K-R77：包的拾取词（内核词表之外的追加 / 关闭 / 严格类 / 非物品）；第一个包不声明 = 空
   let pickupModule = null; import(scriptBase + 'core/pickup.mjs').then(m => { pickupModule = m; }).catch(() => {});
   /** 已知物品名（世界藏物表 + 已经在账上的东西）：命中即视为「具体物品名词」，不必带引号 / 量词 */
   function knownItems() {
@@ -68,7 +70,7 @@ export function createStashFlow(host) {
     if (!pickupModule || !host.alive || life.dead) return 0;
     roundMsgs = (msgs || []).map((m, i, a) => { let at = null; return { msgIndex: m.floor, text: m.text, get place() { return at ??= (i === a.length - 1 || m.floor === host.floorNow ? place : placeAt(m.floor)); } }; });
     const last = msgs?.[msgs.length - 1]; if (!last?.text) return 0;
-    let facts = []; try { facts = pickupModule.scan(last.text, { known: knownItems(), floor: last.floor, place }); } catch (e) { return 0; }
+    let facts = []; try { facts = pickupModule.scan(last.text, { known: knownItems(), floor: last.floor, place, vocab: vocab() }); } catch (e) { return 0; }
     let n = 0;
     for (const f of facts) { if (lootFacts.some(x => x?.id === f.id)) continue; lootFacts.push(f); n++; }
     while (lootFacts.length > 40) lootFacts.shift();
@@ -89,7 +91,7 @@ export function createStashFlow(host) {
     if (!ledgerModule || !stashStoreModule || !stashRecomputeModule || !stash || !host.alive || life.dead || !roundMsgs.length) return null;
     const rt = stashStoreModule.retag(stash, worldIds());
     const probe = ledgerModule.slotProbe(host.mvuBridge.mvuStat());
-    const r = stashRecomputeModule.step(rt.stash, roundMsgs, { worldNames: worldNames(), vocab: undefined, probe });
+    const r = stashRecomputeModule.step(rt.stash, roundMsgs, { worldNames: worldNames(), vocab: vocab(), probe });
     stash = r.stash;
     let dirty = r.changed || rt.changed;
     // 地图拾取的槽位事实比行晚一轮入账（与 v1 同一时点：事实先进 lootFacts，下一次结算才进账）

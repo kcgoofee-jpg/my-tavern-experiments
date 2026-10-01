@@ -4,6 +4,7 @@
 // and every other field overridden. Pure and lenient (K-R06): a bad entry is skipped and listed in `problems`, the rest applies.
 // K-R68: an overlay may also carry an `events` block (v2 shape) and `llm.templates`; both are merged over what compat-v1 derived, the overlay wins.
 // K-R69: and a `vars` block (paths, periods by id) and an `entities` block (groups by id, fields by `field`, the avatar block); same rule.
+// K-R67 (S6-3): and an `items` block, of which only `pickup` is read (per language the word lists are united); other keys are ignored.
 // K-R70: and a `ui` block (per-view theme tokens re-checked by recheck.token, the legend, `x-…`); same rule.
 import { recheck } from './pack-v2-spec.mjs';
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -14,7 +15,7 @@ const LISTS = ['alias', 'hints'];
 export function applyOverlay(nodes, overlay) {
   const out = nodes.map(n => ({ ...n })), byId = new Map(out.map(n => [n.id, n])), problems = [];
   if (overlay === null || overlay === undefined) return { nodes: out, problems };
-  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
+  if (!isObj(overlay) || overlay.schema !== 2 || !(Array.isArray(overlay.nodes) || (overlay.nodes === undefined && (isObj(overlay.events) || isObj(overlay.llm) || isObj(overlay.vars) || isObj(overlay.entities) || isObj(overlay.ui) || isObj(overlay.items))))) return { nodes: out, problems: [{ code: 'overlay-invalid' }] };
   (overlay.nodes || []).forEach((o, index) => {
     if (!isObj(o) || typeof o.id !== 'string' || o.id === '') return problems.push({ code: 'overlay-node-invalid', index });
     const cur = byId.get(o.id);
@@ -160,4 +161,29 @@ export function applyOverlayUi(tree, ui, problems = []) {
     else out[k] = copy(v);
   }
   return out;
+}
+
+const PICKUP_LISTS = ['verbs', 'verbs_strict', 'verbs_off', 'not_items'];
+/** applyOverlayItems(items, overlay) -> { items, problems } (K-R67): `overlay.items.pickup.<lang>.<list>` united per language with the converted block's
+ *  (`items` may be undefined); a non-object or a list that is not a list of strings -> `overlay-items-invalid`; any other key under `items` is ignored
+ *  and listed as `overlay-items-ignored`. The input is not touched. */
+export function applyOverlayItems(items, overlay) {
+  const base = isObj(items) ? copy(items) : undefined, problems = [], add = isObj(overlay) ? overlay.items : undefined;
+  if (add === undefined || add === null) return { items: base, problems };
+  if (!isObj(add)) return { items: base, problems: [{ code: 'overlay-items-invalid' }] };
+  for (const k of Object.keys(add)) if (k !== 'pickup' && !k.startsWith('_') && !k.startsWith('x-')) problems.push({ code: 'overlay-items-ignored', key: k });
+  if (add.pickup === undefined) return { items: base, problems };
+  if (!isObj(add.pickup)) return { items: base, problems: [...problems, { code: 'overlay-items-invalid' }] };
+  const out = base || {}, pk = out.pickup = isObj(out.pickup) ? out.pickup : {};
+  for (const [lang, o] of Object.entries(add.pickup)) {
+    if (!isObj(o)) { problems.push({ code: 'overlay-items-invalid', lang }); continue; }
+    for (const [k, v] of Object.entries(o)) {
+      if (!PICKUP_LISTS.includes(k)) continue;
+      if (!Array.isArray(v) || v.some(w => typeof w !== 'string' || w === '')) { problems.push({ code: 'overlay-items-invalid', lang, key: k }); continue; }
+      const cur = isObj(pk[lang]) ? pk[lang] : (pk[lang] = {});
+      cur[k] = union(cur[k], v);
+    }
+  }
+  if (!Object.keys(pk).length) delete out.pickup;
+  return { items: Object.keys(out).length ? out : base, problems };
 }

@@ -28,6 +28,7 @@
       "type": "object", "additionalProperties": false, "patternProperties": { "^_": {}, "^x-": {} },
       "properties": {
         "verbs": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Extra acquisition verbs (strict: verb + concrete noun)." },
+        "verbs_strict": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "acquisition verbs that need a measure word, a quoted name or a known item name" },
         "verbs_off": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Kernel verbs this pack switches off (idioms of its setting)." },
         "not_items": { "type": "array", "items": { "type": "string", "pattern": "^[^\\n]{1,20}$" }, "description": "Extra words that are never items (abstract nouns)." }
       }

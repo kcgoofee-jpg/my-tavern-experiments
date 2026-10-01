@@ -124,7 +124,7 @@ export const entitiesBlock = reserved => {
 const row = obj({ id: str({ re: re('^[a-z][a-z0-9_]{0,39}$') }), name: str({ re: NL(60) }), node: idRef, hidden: str({ re: NL(60) }), note: str({ re: NL(200) }),
   dc: num({ int: true, min: 1, max: 30 }), qty: num({ int: true, min: 1, max: 999 }) }, { req: ['name', 'node'], ...B });
 const n20 = arr(str({ re: NL(20) }));
-export const itemsBlock = block(obj({ stash: arr(row, { max: 200 }), pickup: dict(LANG, obj({ verbs: n20, verbs_off: n20, not_items: n20 }, B)) }, B), 'object');
+export const itemsBlock = block(obj({ stash: arr(row, { max: 200 }), pickup: dict(LANG, obj({ verbs: n20, verbs_strict: n20, verbs_off: n20, not_items: n20 }, B)) }, B), 'object');
 
 const eid = str({ re: re('^[a-z][a-z0-9_]{0,31}$') }), color = str({ re: HEX }), l30 = label(30);
 const life = obj({ live: num({ int: true, min: 1, max: 200 }), after: num({ int: true, min: 1, max: 400 }), fade: num({ int: true, min: 1, max: 800 }),

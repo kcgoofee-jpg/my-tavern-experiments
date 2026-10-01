@@ -13,16 +13,22 @@ export const MAX_NAME = 20;         // 物品名的长度上限（更长多半�
 const NEAR = 24;                    // 已知物品名：动词要出现在它前面这么多字符内才算「这一下拿的是它」
 
 /**
- * 获取动词：只收「把东西弄到手」这一件事。不含制造 / 消耗 / 使用（那三类别的事件由各自域管）。
+ * 获取动词（普通类）：只收「把东西弄到手」这一件事。不含制造 / 消耗 / 使用（那三类别的事件由各自域管）。
  * 中文按词长降序排列（长的先匹配，免得「拿起」被「拿」抢走）；英文只收短语形态，避免 take / get 这类泛动词误伤。
+ * 中文与英文分列：中文三种形状（引号 / 直接带 / 把字句）只认中文动词，英文有自己的形状（见 compile）。
  */
-export const VERBS = Object.freeze([
+export const ZH_VERBS = Object.freeze([
   '收入囊中', '据为己有', '揣进口袋', '揣进怀里', '捡了起来', '拿了起来',
   '拿到', '拿起', '拾起', '捡起', '捡到', '拾到', '抓起', '取走', '拿走', '带走', '收下', '收好', '收起',
   '拿出', '取出', '掏出', '摸出', '翻出', '抽出', '摘下', '取下', '夺得', '缴获', '掳走', '顺走', '摸走', '抢到', '收了',
   '揣进', '揣入', '塞进', '装进', '放进', '放入',
-  'picks up', 'picked up', 'grabs', 'grabbed', 'pockets', 'pocketed',
 ]);
+export const EN_VERBS = Object.freeze(['picks up', 'picked up', 'grabs', 'grabbed', 'pockets', 'pocketed']);
+/** 严格类：这些词太泛（「得到消息」「获得勇气」），宾语要被引号包住、带量词或命中已知物品名才算（英文：引号或已知名） */
+export const STRICT_VERBS = Object.freeze(['获得', '得到', '拿取']);
+export const STRICT_EN = Object.freeze(['obtains', 'obtained', 'gets', 'got', 'takes', 'took', 'receives', 'received', 'acquires', 'acquired']);
+export const VERBS = Object.freeze([...ZH_VERBS, ...EN_VERBS]);
+
 /** 动词后面允许缀的体标记（拿了 / 拿起了 / 拿住…） */
 const ASPECT = ['了', '着', '过', '到', '起', '住', '下', '进', '入', '走', '来', '去', '好', '上', '出'];
 /** 量词：带量词 = 一件具体的东西（「一个银怀表」）；不带量词时名字要更短更干净 */
@@ -40,8 +46,14 @@ export const NOT_ITEMS = Object.freeze([
   '注意', '机会', '主动权', '主动', '优势', '劣势', '时间', '经验', '教训', '印象', '好感', '信任', '控制',
   '力量', '勇气', '信心', '耐心', '自由', '生命', '呼吸', '视线', '目光', '话语', '话头', '话语权', '感觉',
   '灵感', '线索', '情报', '消息', '许可', '资格', '名额', '任务', '委托', '命令', '承诺', '答案', '结论',
+  '认可', '回应', '回报', '好处', '帮助', '支持', '原谅', '安慰', '满足', '乐趣', '成就', '成功', '胜利', '荣誉',
+  '名声', '地位', '权力', '知识', '技能', '能力', '启发', '结果', '进展', '同意', '批准', '允许', '保证', '关注',
+  '青睐', '赏识', '体验', '收获', '平静', '安宁', '休息',
 ]);
-const NOT_SET = new Set(NOT_ITEMS);
+export const NOT_ITEMS_EN = Object.freeze(['chance', 'opportunity', 'attention', 'lead', 'breath', 'look', 'moment', 'hint', 'idea', 'news', 'message', 'hold']);
+const DET = '(?:a|an|the|some|his|her|their|my|your|its)';
+const DET_LEAD = new RegExp(`^${DET}\\s+`, 'i');
+const NOT_SET = new Set(NOT_ITEMS), NOT_EN = new Set(NOT_ITEMS_EN);
 
 const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** FNV-1a → 36 进制（纯 ASCII id；与 core/stash.rowId 同一手法，但前缀 x 与藏物表 s 分开） */
@@ -51,7 +63,7 @@ const clip = (v, n) => [...String(v ?? '').trim()].slice(0, n).join('');
 /** 物品 id：由名字混出来——同名同物，正文重复提到不会记成两件 */
 export const itemId = name => 'x' + fnv(String(name ?? '').trim());
 /** 这个名词像不像一件**东西**（黑名单 / 长度 / 空） */
-export const isItemName = n => { const s = clip(n, MAX_NAME); return !!s && !NOT_SET.has(s) && s.length >= 1 && s.length <= MAX_NAME; };
+export const isItemName = n => { const s = clip(n, MAX_NAME); return !!s && !NOT_SET.has(s) && !NOT_EN.has(s.toLowerCase().replace(DET_LEAD, '')) && s.length >= 1 && s.length <= MAX_NAME; };
 /**
  * 泛指 / 方位 / 代词：这些位置词不是东西（「拿到手」「拿到这里」「拿到的」）——只有不带量词的短名字才查它，
  * 因为带量词时（「一枚手里的钥匙」这种怪句子）本来就少见，宁可放过。
@@ -91,48 +103,108 @@ function tidy(s, min = 2) {
 }
 /** 不带量词 / 引号的短名字：要 2–8 字、不是方位代词、不是泛指词（「拿到钥匙」收，「拿到手」/「拿到这里」不收） */
 const bareOk = n => n.length >= 2 && n.length <= 8 && !GENERIC.has(n) && !PRONOUN.test(n);
-/** 英文名词收尾清理：切在标点与常见介词 / 连词处 */
-const tidyEn = s => String(s ?? '').split(/[.,;:!?\n]|\b(?:and|then|from|into|off|with|for|to)\b/i)[0].trim().replace(/\s+/g, ' ').slice(0, 40);
-
-const VERB_ALT = VERBS.map(esc).join('|');
 const ASPECT_RE = `(?:${ASPECT.join('|')})?`;
-// 四种形状：
-//   A 引号明示  拿到「锈迹斑斑的黄铜钥匙」       —— 引号里原样收，不做断句清理
-//   B 动词直接带（可带量词）  拿到钥匙 / 拿到一枚银怀表
-//   C 把字句    把账本揣进怀里
-//   D 已知物品  名词命中调用方给的已知表，且前面 NEAR 字内出现过获取动词
-const RX_QUOTED = QUOTE_PAIRS.map(([a, b]) => new RegExp(`(?:${VERB_ALT})${ASPECT_RE}\\s*${esc(a)}([^${esc(b)}\\n]{1,${MAX_NAME}})${esc(b)}`, 'g'));
-const RX_BARE = new RegExp(`(?:${VERB_ALT})${ASPECT_RE}\\s*(${QUANT_RE})?\\s*([^${CUT_CHARS}]{1,12})`, 'g');
-const RX_BA = new RegExp(`[把将將]\\s*([^${CUT_CHARS}]{1,${MAX_NAME}}?)\\s*(?:${VERB_ALT})`, 'g');
-const EN_VERB = '(?:picks up|picked up|grabs|grabbed|pockets|pocketed)';
-const RX_EN = new RegExp(`${EN_VERB}\\s+(?:a|an|the)?\\s*([A-Za-z][A-Za-z'\\- ]{1,60})`, 'g');
-const KNOWN_VERB = new RegExp(`(?:${VERB_ALT})`);
+/** 英文名词收尾清理：切在标点与常见介词 / 连词处，再去掉开头的限定词 */
+const tidyEn = s => String(s ?? '').split(/[.,;:!?\n]|\b(?:and|then|from|into|off|with|for|to)\b/i)[0].trim().replace(/\s+/g, ' ').replace(DET_LEAD, '').slice(0, 40);
+
+// ---- 不算拾取的句式（K-R77）：对每一条命中（所有类，含已知名路径）逐条检查，只否决，不改写正文 ----
+const NEG = ['没有', '没能', '无法', '不能', '没', '未', '不', '别'];
+const NEG_EXCEPT = ['不由得', '不由', '不禁', '不得不', '不一会', '不久', '不料', '不觉', '不住'];
+const INTENT = ['想', '要', '打算', '准备', '试图', '企图', '希望', '如果', '要是', '假如', '若'];
+const NEG_EN = /(?:^|\s)(?:not|never)(?:\s|$)|n['’]t\b|\bno longer\b/i;
+const INTENT_EN = /\b(?:want to|wants to|try to|tries to|if|would|will)\b/i;
+const POTENTIAL = '看听想做找买办猜闻感觉等赶追吃用见';
+const TERMS = '。！？；…!?;\n';
+const isTerm = (t, i) => TERMS.includes(t[i]) || (t[i] === '.' && (i + 1 >= t.length || /\s/.test(t[i + 1])));
+/** 对话 / 引文区间：“…” 「…」 『…』 与成对的 "…"（从左到右配对） */
+function spans(t) {
+  const out = [];
+  for (const [a, b] of [['“', '”'], ['「', '」'], ['『', '』']]) for (let i = t.indexOf(a); i >= 0;) { const j = t.indexOf(b, i + 1); if (j < 0) break; out.push([i, j]); i = t.indexOf(a, j + 1); }
+  for (let i = 0, open = -1; i < t.length; i++) if (t[i] === '"') { if (open < 0) open = i; else { out.push([open, i]); open = -1; } }
+  return out;
+}
+/** 这条命中是不是「没发生」的拾取：否定 / 疑问 / 对话 / 意图条件 / 可能补语 / 复合词。at = 动词下标（把字句：把字的下标） */
+function blocked(t, at, verb, sp) {
+  if (sp.some(([a, b]) => at > a && at < b)) return true;                                    // 对话：动词严格落在引号区间里面（名字前的引号是引号名形，不算）
+  const after = t.charAt(at + verb.length);
+  if (verb === '得到' && at > 0 && POTENTIAL.includes(t[at - 1])) return true;               // 看得到 / 找得到
+  if (verb === '获得' && after && '者感'.includes(after)) return true;                       // 获得者 / 获得感
+  let s = at, e = at; while (s > 0 && !isTerm(t, s - 1)) s--; while (e < t.length && !isTerm(t, e)) e++;
+  const pre = t.slice(s, at), cl = t.slice(s, e).trim();
+  for (const w of NEG) for (let i = pre.indexOf(w); i >= 0; i = pre.indexOf(w, i + 1)) {
+    if (i + w.length < pre.length - 3) continue;                                              // 否定词的词尾要在动词前 4 个字内
+    if (w === '不' && NEG_EXCEPT.some(x => { for (let j = pre.indexOf(x); j >= 0; j = pre.indexOf(x, j + 1)) if (i >= j && i < j + x.length) return true; return false; })) continue;
+    return true;
+  }
+  if (NEG_EN.test(pre.split(/\s+/).filter(Boolean).slice(-3).join(' '))) return true;
+  const last = cl.replace(/[”」』"’\s]+$/, '').slice(-1);
+  if (t[e] === '？' || t[e] === '?' || (last && '吗呢么'.includes(last)) || /^[\s“「『"]*(?:是否|能否|有没有|要不要)/.test(cl)) return true;   // 疑问
+  return INTENT.some(w => pre.includes(w)) || INTENT_EN.test(pre);                            // 想 / 要 / 如果 …… 还没发生
+}
+
+// ---- 词表编译（内核词 + 包词）：按词表的 JSON 记一份，同一词表同一套正则 ----
+const CJK = /[⺀-鿿豈-﫿぀-ヿ가-힯]/;
+const wordList = v => { const out = []; for (const w of Array.isArray(v) ? v : []) { const t = clip(w, 40); if (t && !out.includes(t) && out.length < 100) out.push(t); } return out; };
+const lenDesc = a => [...new Set(a)].sort((x, y) => y.length - x.length);
+const alt = a => (a.length ? a.map(esc).join('|') : '(?!)');
+const altEn = a => (a.length ? a.map(w => esc(w).replace(/ +/g, '\\s+')).join('|') : '(?!)');
+let CACHE = { key: null, val: null };
+/** vocab = { verbs, verbs_strict, verbs_off, not_items }（词都按字面，不当正则）。返回编译好的正则与名词否决函数。 */
+export function compile(vocab) {
+  const v = vocab && typeof vocab === 'object' ? vocab : {};
+  const w = { verbs: wordList(v.verbs), verbs_strict: wordList(v.verbs_strict), verbs_off: wordList(v.verbs_off), not_items: wordList(v.not_items) };
+  const key = JSON.stringify(w);
+  if (CACHE.key === key) return CACHE.val;
+  const off = new Set(w.verbs_off), keep = a => a.filter(x => !off.has(x)), zh = a => a.filter(x => CJK.test(x)), en = a => a.filter(x => !CJK.test(x));
+  const zhN = lenDesc(keep([...ZH_VERBS, ...zh(w.verbs)])), enN = lenDesc(keep([...EN_VERBS, ...en(w.verbs)]));
+  const zhS = lenDesc(keep([...STRICT_VERBS, ...zh(w.verbs_strict)])), enS = lenDesc(keep([...STRICT_EN, ...en(w.verbs_strict)]));
+  const bare = vs => new RegExp(`(${alt(vs)})${ASPECT_RE}\\s*(${QUANT_RE})?\\s*([^${CUT_CHARS}]{1,12})`, 'g');
+  const nots = new Set([...NOT_ITEMS, ...w.not_items]), notsEn = new Set([...NOT_ITEMS_EN, ...w.not_items.map(x => x.toLowerCase().replace(DET_LEAD, ''))]);
+  const val = {
+    quoted: QUOTE_PAIRS.map(([a, b]) => new RegExp(`(${alt([...zhN, ...zhS])})${ASPECT_RE}\\s*${esc(a)}([^${esc(b)}\\n]{1,${MAX_NAME}})${esc(b)}`, 'g')),
+    bare: bare(zhN), bareStrict: bare(zhS),
+    ba: new RegExp(`[把将將]\\s*([^${CUT_CHARS}]{1,${MAX_NAME}}?)\\s*(${alt(lenDesc(keep([...zhN, '拿取'])))})`, 'g'),
+    en: new RegExp(`\\b(${altEn(enN)})\\b\\s+(?:${DET}\\s+)?([A-Za-z][A-Za-z'\\- ]{1,60})`, 'gi'),
+    enQuoted: QUOTE_PAIRS.map(([a, b]) => new RegExp(`\\b(${altEn(enS)})\\b\\s+(?:${DET}\\s+)?${esc(a)}([^${esc(b)}\\n]{1,${MAX_NAME}})${esc(b)}`, 'gi')),
+    known: new RegExp(`(?:${alt([...zhN, ...zhS])})|\\b(?:${altEn([...enN, ...enS])})\\b`, 'gi'),
+    not: n => nots.has(n) || notsEn.has(String(n).toLowerCase().replace(DET_LEAD, '')),
+  };
+  CACHE = { key, val };
+  return val;
+}
 
 /**
  * 扫描一段正文，产出物理拾取事实。
  * s：正文（**已过净化管线**的解析文本，思考链与变量块不该出现在里面；调用方负责）。
  * o = { known?: Set<string>|string[]（已知物品名：世界藏物表 + 现有仓库，命中即视为名词站得住）,
- *       floor?: number, place?: string（当前地点，写进 来源）, map?: string（当前地图 id）, limit?: number }
+ *       floor?: number, place?: string（当前地点，写进 来源）, map?: string（当前地图 id）, limit?: number,
+ *       vocab?: { verbs, verbs_strict, verbs_off, not_items }（包词表，已合并语言） }
  * 返回 [{ kind:'loot', id, name, place, map, floor, authority:'verified', why }]（按正文出现顺序，同一件只出一条）。
  * authority 恒为 verified：这是地图侧的客观物理判定，不是自称（权威阶梯见 core/ledger.mjs）。
  */
 export function scan(s, o = {}) {
   const text = String(s ?? '');
   if (!text) return [];
+  const C = compile(o.vocab), sp = spans(text);
   const known = o.known instanceof Set ? o.known : new Set(Array.isArray(o.known) ? o.known : []);
   const limit = Math.max(0, Math.round(Number(o.limit) || MAX_FACTS));
   const floor = Number.isInteger(o.floor) ? o.floor : null;
   const place = clip(o.place, 60), map = clip(o.map, 40);
-  const hits = [];   // [{ at, name, raw? }]：带位置以便按出现顺序排； quoted = true 的名字原样收（不做断句清理）
-  for (const re of RX_QUOTED) { re.lastIndex = 0; for (let m; (m = re.exec(text));) hits.push({ at: m.index, name: m[1], quoted: true }); }
-  RX_BARE.lastIndex = 0; for (let m; (m = RX_BARE.exec(text));) hits.push({ at: m.index, name: m[2], quant: !!m[1] });
-  RX_BA.lastIndex = 0; for (let m; (m = RX_BA.exec(text));) hits.push({ at: m.index, name: m[1] });
-  RX_EN.lastIndex = 0; for (let m; (m = RX_EN.exec(text));) hits.push({ at: m.index, name: m[1], en: true });
+  const hits = [];   // [{ at, verb, name, … }]：带位置以便按出现顺序排； quoted = true 的名字原样收（不做断句清理）
+  const each = (re, f) => { re.lastIndex = 0; for (let m; (m = re.exec(text));) f(m); };
+  for (const re of C.quoted) each(re, m => hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }));
+  each(C.bare, m => hits.push({ at: m.index, verb: m[1], name: m[3], quant: !!m[2] }));
+  each(C.bareStrict, m => { if (m[2]) hits.push({ at: m.index, verb: m[1], name: m[3], quant: true }); });   // 严格类：必须带量词
+  each(C.ba, m => hits.push({ at: m.index, verb: m[2], name: m[1] }));
+  each(C.en, m => hits.push({ at: m.index, verb: m[1], name: m[2], en: true }));
+  for (const re of C.enQuoted) each(re, m => hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }));   // 英文严格类：必须是引号名
   for (const k of known) {
     const nm = String(k ?? '').trim(); if (!nm) continue;
     for (let from = 0; ;) {
       const at = text.indexOf(nm, from); if (at < 0) break; from = at + 1;
-      if (KNOWN_VERB.test(text.slice(Math.max(0, at - NEAR), at))) { hits.push({ at, name: nm, known: true }); break; }
+      const w0 = Math.max(0, at - NEAR), win = text.slice(w0, at); let vm = null;
+      C.known.lastIndex = 0; for (let m; (m = C.known.exec(win));) vm = m;
+      if (vm && !blocked(text, w0 + vm.index, vm[0], sp)) { hits.push({ at, verb: vm[0], name: nm, known: true }); break; }
     }
   }
   hits.sort((a, b) => a.at - b.at);
@@ -140,8 +212,9 @@ export function scan(s, o = {}) {
   for (const h of hits) {
     if (out.length >= limit) break;
     const name = h.en ? tidyEn(h.name) : h.quoted || h.known ? clip(h.name, MAX_NAME) : tidy(h.name, h.quant ? 1 : 2);
-    if (!isItemName(name) || seen.has(name)) continue;
+    if (!isItemName(name) || C.not(name) || seen.has(name)) continue;
     if (!h.quoted && !h.known && !h.en && !h.quant && !bareOk(name)) continue;   // 无引号 / 无量词 / 不在已知表：只在名字够具体时才收
+    if (!h.known && blocked(text, h.at, h.verb, sp)) continue;                    // 否定 / 疑问 / 对话 / 意图（已知名路径在上面查过）
     seen.add(name);
     out.push({ kind: 'loot', id: itemId(name), name, ...(place ? { place } : {}), ...(map ? { map } : {}), floor,
       authority: 'verified', why: h.known ? '正文客观获取动作 + 已知物品名核对（verified）' : '正文客观获取动作（动词 + 具体物品名）' });
@@ -152,5 +225,5 @@ export function scan(s, o = {}) {
 /** 只取名字（宿主 / 测试少写代码用） */
 export const names = (s, o) => scan(s, o).map(f => f.name);
 
-const API = { MAX_FACTS, MAX_NAME, VERBS, NOT_ITEMS, itemId, isItemName, scan, names };
+const API = { MAX_FACTS, MAX_NAME, VERBS, ZH_VERBS, EN_VERBS, STRICT_VERBS, STRICT_EN, NOT_ITEMS, NOT_ITEMS_EN, itemId, isItemName, compile, scan, names };
 export default API;

@@ -7,9 +7,9 @@
 > `tools/check_pack.py` (schema-2 branch) and `tests/pack_schema_v2.test.mjs`. Schema 1 (`docs/pack-schema-v1.md`)
 > stays frozen and keeps working through `map/core/compat-v1.mjs` (step S1-impl-2).
 
-Every rule has a stable id `K-R01` … `K-R76`; later prompts and tests cite them. Ids never move: rules added after the
+Every rule has a stable id `K-R01` … `K-R78`; later prompts and tests cite them. Ids never move: rules added after the
 first draft (K-R63–K-R70, trust, limits and the overlay of a schema-1 pack) take the next free number wherever they sit; K-R71–K-R73
-were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 are reserved for the rest of S6 (list at the end of §13). The choices left to the user
+were added by S6-1, K-R74–K-R76 by S6-2, K-R77–K-R78 by S6-3. The choices left to the user
 are `K-01` … `K-09` (§0). Everything else was decided by the designer and is listed with its reason in §14.
 
 ## 0. Decisions for the user (review sheet)
@@ -473,7 +473,7 @@ image views may carry `variants` keyed by band id.
 
 **K-R76 — The card's own item table.** `vars.inventory` (optional, a dot path, read only) names the table of the card's `stat_data` that holds the player's items; without it the kernel uses the field its inventory words find (`EXACT.inventory`: 物品栏, 背包, …, inventory, backpack, …) when that field really exists in the card;
 with neither there is no such table. `cardInventory(stat, path)` reads it as rows `{ name, qty?, text? }` (at most 100, names ≤ 60 code points, text ≤ 80): an object keyed by item name (a number is the quantity, a string the text, an object its first number and first string) or a list (strings are names; objects: the name field by the kernel's name words,
-else the first string field, and the first number as the quantity). MVU `[value, note]` pairs are unwrapped, keys starting with `_` or `$` are skipped, and nothing is ever written back. It reaches the viewer as `eden-map:inv.card = { path, rows }` (`null` when there is no table). The Items tab that shows it, with the other groups, lands in S6-3.
+else the first string field, and the first number as the quantity). MVU `[value, note]` pairs are unwrapped, keys starting with `_` or `$` are skipped, and nothing is ever written back. It reaches the viewer as `eden-map:inv.card = { path, rows }` (`null` when there is no table). The Items tab shows it, read only, with the other groups: the drawer has a fifth tab `items` (button class `ittab`, between characters and places, drawer kept open, fallback after the places tab) in four groups. *Carried* = store rows with `carried: true`; *here* = own rows (`carried: false`) at the player's node and world-stash rows at that node that are not taken (a hidden one only when the player stands on its spot); *elsewhere* = own rows at another place, one sub-heading per place, places in code-point order, rows without a place last under "unplaced"; *in card* = the rows above. Empty groups are not drawn; the tab is visible when any group has a row and its count is the number of carried rows. A world row "here" has a take button that sends the same `eden-map:loot` intent as the marker; a row whose place locates has a fly-to button; card rows have none. Names, places and notes reach the page as text only (K-R64). With an old host (no `stash` field) the legacy rows are shown as not carried.
 
 ## 6. entities
 
@@ -547,7 +547,7 @@ the search difficulty; a search succeeds when d20 + modifier ≥ `dc` (default 1
 **K-R46 — Pickup vocabulary.** The kernel keeps per-language lists (acquisition verbs, aspect marks, measure words,
 not-items, generic words) and the strictness rule: a pickup needs a verb and a concrete noun (quoted, with a measure
 word, a known item name — stash names and carried items — or a bare noun of 2–8 characters, as `core/pickup.mjs`
-accepts today). A pack adds `verbs` and `not_items` and switches kernel verbs off with `verbs_off`, per language.
+accepts today). A pack adds `verbs` (normal class), `verbs_strict` (strict class) and `not_items` and switches kernel verbs off with `verbs_off`, per language. The sentence patterns and the never-forms are K-R77.
 
 **K-R47 — One store.** What the player carries lives in `<chat var>.stash` (first pack: `eden_map.stash`, decision D4).
 The v1 keys for the old inventory and the virtual slot migrate into it on first read (S6). Its shape is K-R74. It is
@@ -560,6 +560,10 @@ recomputable from the chat and never written into `stat_data`.
 (at most 200, the oldest dropped; a tombstone stays when the item is picked up again, it is the only record of the removal). Ids are kept from v1 (`i<n>`, the ids of world-stash rows, name-derived ids): the 3D page's "already taken" list and the world-stash glow rely on them.
 **Migration** runs once, when the chat variable has no `stash` and has one of the v1 keys (a constant in `tavern/stash-store.mjs`, read only, removed at S10): each v1 row becomes a row (`src` `text` when its id is the name-derived id, `map` when it is a world-stash id, else `legacy`), the slot is mapped key for key,
 `since` is the first message the new store scans, and `from` records the keys. The v1 keys are never written or deleted: the root is replaced as a whole, so every save carries their values back verbatim, and a chat that never had them gets none. The injected digest line and slot line are byte-identical to v1 for the same rows.
+
+**K-R77 — Pickup sentences.** Two verb classes. *Normal*: the kernel's Chinese verbs and `picks up`, `picked up`, `grabs`, `grabbed`, `pockets`, `pocketed`; the object is quoted, has a measure word, is a known item name, or is a bare noun of 2–8 characters that is not a generic word. *Strict*: `获得`, `得到`, `拿取` and `obtains`, `obtained`, `gets`, `got`, `takes`, `took`, `receives`, `received`, `acquires`, `acquired`; the object must be quoted, carry a measure word, or be a known item name (English: quoted or known only); the disposal form `把` / `将` + noun + `拿取` counts like the normal class. The Chinese patterns use the Chinese verbs only; the English pattern is verb + optional determiner (`a`, `an`, `the`, `some`, `his`, `her`, `their`, `my`, `your`, `its`) + a name that starts with a letter, and a leading determiner is stripped from the name (O-1). Forms that never count, for every verb and class, checked on each hit with the clause = the span between sentence ends (`。！？；…!?;`, a line break, or a full stop followed by a space): a negation word (`没有 没能 无法 不能 没 未 不 别`; `not`, `n't`, `never`, `no longer`) within the 4 characters (3 words) before the verb, except `不` inside `不由得 不由 不禁 不得不 不一会 不久 不料 不觉 不住`; a question (the clause ends with `？` / `?`, or with `吗 呢 么`, or starts with `是否 能否 有没有 要不要`); dialogue (the verb lies strictly inside `“…”`, `「…」`, `『…』` or a pair of `"`; a quote that opens right after the verb is the quoted-name form); an intention or condition word before the verb in the clause (`想 要 打算 准备 试图 企图 希望 如果 要是 假如 若`; `want to`, `try to`, `if`, `would`, `will`); `得到` right after a "can do" verb character (`看听想做找买办猜闻感觉等赶追吃用见`); `获得` followed by `者` or `感`; an object in the not-item lists (kernel Chinese and English lists plus the pack's `not_items`). The rules only decide what counts as a pickup; chat text is never hidden or rewritten. A pack's words are literal strings (no regular expressions): `verbs` join the normal class, `verbs_strict` the strict class, `verbs_off` removes kernel verbs from both, `not_items` extends the list. The host reads them from `profile.pickup` (the union over languages of the pack's `items.pickup`; a schema-1 pack's overlay may carry `items.pickup`, the only part of an overlay `items` block that is read: lists united per language, a bad list is `overlay-items-invalid`, any other key `overlay-items-ignored`) and passes them to `scan(text, { vocab })`; the compiled patterns are memoised by the vocabulary.
+
+**K-R78 — Settlement write paths.** The npc and events domains of the settlement audit write to the map's own chat variable, never to `stat_data`: `<chat var>.ledger = { npc: { <name>: { place, node, msgIndex, src: 'routine' } }, events: { <id>: { type, level, node, msgIndex } } }`, at most 200 entries each (the oldest by `msgIndex` is dropped). The npc facts are the round's schedule placements (authority `verified`) of people who belong to a roster group; the landed view is the MVU present-roster places united with `ledger.npc`, a roster person without a place being a hole; the audit patches only holes (a person with a place is never overwritten). The event facts are the parsed chat events (authority `committed`), keyed by id; the patch is made when the id is not in the ledger (the type was resolved by the pack's events block, K-R50, so the audit accepts any non-empty type with the option `anyEventType`). The patches go through the settlement gate and the same save as the stash. The whole path runs only when the host switch `edenMapLedgerWrite` is on (default off, set in Settings → TavernHelper); off, no fact is produced and no read happens, and a chat never gets the `ledger` key. The ledger is a droppable cache; drawing settled events and npc places is a later step.
 
 **K-R75 — Reconciliation.** The store is a cache of the chat. The live fold (`step`) scans each message once, from `since` on and never before it (the newest message is scanned again every round, so a swipe of it is seen), replays a message whose text changed since its rows were made
 (its text rows and slot facts are rebuilt from the new text; rows another channel owns stay), and turns a pickup into a text row unless the item is already in the store or was removed at or after that message. `recompute(messages, { since, actions })` rebuilds a store from nothing: first the actions that belong to no message,
@@ -773,12 +777,7 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 
 **Added by S6-2:** K-R74 (§7, the stash store), K-R75 (§7, reconciliation) and K-R76 (§5, the card's own item table; its Items tab follows in S6-3).
 
-**Planned in S6 (ids reserved; the full text lands with the step that implements each one, design in
-`docs/entity-protocol.md`).**
-- K-R77 — Pickup sentences: normal and strict verb classes, forms that never count, the English determiner rule (O-1),
-  pack `verbs_strict`, overlay `items.pickup`. S6-3.
-- K-R78 — Settlement write paths: the npc and events domains write holes into `<chat var>.ledger` through the settlement
-  gate, behind a default-off switch (todo I-04). S6-3.
+**Added by S6-3:** K-R77 (§7, pickup sentences, strict verbs, never-forms, pack vocabulary) and K-R78 (§7, settlement write paths for the npc and events domains); the Items tab is in K-R76 (§5).
 
 ## 14. Designer decisions and open points
 
@@ -819,7 +818,7 @@ a micro level opens only `here` and keeps the rest as collapsed sections the use
 ### 14.2 Open points for later steps (not user decisions)
 
 - **O-1 (S6).** The English pickup scan reports a spurious item "the" for "picked up the Brass Key" (found while
-  writing Appendix B); S6 adds the false-positive test and the fix.
+  writing Appendix B); S6 adds the false-positive test and the fix; fixed in S6-3 (K-R77).
 - **O-2 (S4).** v1 has two night rules (tint 22:00–05:00, base-map period 20:00–05:00). With bands, `dark` follows the
   night band; S4 picks the first pack's bands (a separate late band keeps today's tint).
 - **O-3 (S4).** The estate's 3D zones and the room plan become real zone / room nodes in the first pack's v2 data;
