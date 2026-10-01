@@ -17,7 +17,9 @@ const frame = () => B.estateFrame(p);
 const crumbs = () => p.evaluate(() => ({ links: [...document.querySelectorAll('#crumbs a')].map(a => a.dataset.go), here: document.querySelector('#crumbs b')?.textContent || '' }));
 const live = () => p.evaluate(() => ({ frames: document.querySelectorAll('#stage iframe').length, lease: window.Lease3dApi?.live() }));
 const focusZone = id => p.evaluate(id => document.querySelector('#estate').contentWindow.postMessage({ type: 'estate:room', name: id }, '*'), id);   // 宿主发给三维页的那条消息，按区域 id
-const pinnedZone = async () => (await frame()).evaluate(() => window.__estate.pinned()?.id ?? null);
+// 读当前那个 iframe（不握旧的 frame 句柄：返回庄园时三维页换 iframe，CI 上旧句柄可能已脱离；S7-2 后 CI 偶发 'pinned' of undefined）
+const pinnedZone = () => p.evaluate(() => { try { return document.querySelector('#estate')?.contentWindow?.__estate?.pinned?.()?.id ?? null; } catch (e) { return null; } });
+const waitPinned = id => p.waitForFunction(id => { try { return document.querySelector('#estate')?.contentWindow?.__estate?.pinned?.()?.id === id; } catch (e) { return false; } }, id, { timeout: 40000 }).catch(() => {});
 
 try {
   // ---- 拓扑：没有孤立入口 ----
@@ -61,7 +63,7 @@ try {
   rep.check('up_button_targets_estate_and_farm', up.go === 'eden_estate' && up.focus === 'dairy' && !up.hidden, JSON.stringify(up));
   await p.locator('#upBtn').click();
   await ready('eden_estate');
-  await (await frame()).waitForFunction(() => window.__estate.pinned()?.id === 'dairy', null, { timeout: 15000 }).catch(() => {});
+  await waitPinned('dairy');
   rep.check('back_focuses_farm', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
   l = await live(); rep.check('single_gl_context_back', l.frames === 1 && l.lease === 1, JSON.stringify(l));
   await snap('estate_back_on_farm');
@@ -83,7 +85,7 @@ try {
   // ---- 返回：面包屑里的伊甸庄园 ----
   await p.locator('#crumbs a[data-go="eden_estate"]').click();
   await ready('eden_estate');
-  await (await frame()).waitForFunction(() => window.__estate.pinned()?.id === 'dairy', null, { timeout: 15000 }).catch(() => {});
+  await waitPinned('dairy');
   rep.check('back_by_crumb_focuses_farm', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
   // 直接返回上层不带落点：庄园之外的面包屑不带 data-focus
   await p.evaluate(() => ViewerDebug.go('tc_upper')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_upper', null, { timeout: T });
