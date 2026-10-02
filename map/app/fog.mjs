@@ -13,6 +13,7 @@ import { norm, visit, known, count } from '../core/exploration-ledger.mjs';
 import { cssFilter } from '../core/layer-registry.mjs';
 import * as storage from '../core/storage.mjs';
 import { register } from './plugins.mjs';
+import { chatId } from './extension-api.mjs';   // 查看器自己认的聊天 id（宿主 push 时才更新）：到访报告带上它，宿主据此丢掉换聊天瞬间还带着上一个聊天地点的那一条
 const { FOG_KEY, FOG_LOCAL_KEY } = storage;
 const embedded = () => window.top !== window;
 let ex = embedded() ? {} : norm(storage.json(FOG_LOCAL_KEY, {}));
@@ -50,7 +51,7 @@ function here(r) {
   if (mute || !on() || !r?.map || !r.marker) return;
   const name = mapRegistry?.maps?.[r.map]?.markers?.[r.marker]?.name; if (!name) return;
   const v = visit(ex, r.map, name); if (!v.changed) return; ex = v.ex;
-  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name }); else storage.set(FOG_LOCAL_KEY, JSON.stringify(ex));
+  if (embedded()) post({ type: 'eden-map:explore', map: r.map, name, chat: chatId || undefined }); else storage.set(FOG_LOCAL_KEY, JSON.stringify(ex));
   if (r.map === currentMapId) paint();
 }
 const setFog = v => { storage.set(FOG_KEY, v ? '1' : '0'); if (v && typeof markHere === 'function') markHere($('#here').value); paint(); };

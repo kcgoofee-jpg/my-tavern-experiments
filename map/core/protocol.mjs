@@ -21,6 +21,7 @@ export const SCHEMA = {
   'eden-map:tiles-failed': [VIEWER_TO_HOST, {}],
   'eden-map:storage-info': [VIEWER_TO_HOST, {}],
   'eden-map:storage-clean': [VIEWER_TO_HOST, {}],
+  'eden-map:chat-reset': [VIEWER_TO_HOST, {}],   // CHAT-ISO: reset this chat's map data (tavern/chat-data.mjs)
   'eden-map:emit': [VIEWER_TO_HOST, { ev: 'string' }],
   'eden-map:check-update': [VIEWER_TO_HOST, {}],
   'eden-map:splash': [VIEWER_TO_HOST, {}],
@@ -39,7 +40,7 @@ export const SCHEMA = {
   'eden-map:loot': [VIEWER_TO_HOST, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
   'eden-map:stealth': [VIEWER_TO_HOST, { dc: 'number', from: 'string?', to: 'string?', seen: 'boolean?', hits: 'array?', worst: 'object?' }],   // Part 5-2：这次移动穿过了谁的视野（dc = 最难的一下；worst = {id,name,dc,dist,at} W2 补发，检定失败环用）
   'eden-map:route-plan': [VIEWER_TO_HOST, { plan: 'object?' }],   // S8-4b K-R111: the user chose (or cleared, null) a route plan; the host re-checks it (checkPlan) and echoes eden-map:route
-  'eden-map:explore': [VIEWER_TO_HOST, { map: 'string', name: 'string' }],   // 迷雾探索：记一次到访（只在开着时发）
+  'eden-map:explore': [VIEWER_TO_HOST, { map: 'string', name: 'string', chat: 'string?' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [VIEWER_TO_HOST, {}],
   'eden-map:th': [VIEWER_TO_HOST, { op: 'string', prefs: 'object?', ai: 'boolean?', cfg: 'object?', nonce: 'string?' }],   // S7-1: + watch { ai } (the AI link page is open: send the full health) and nav-test { cfg } (the form's values, used once, never stored)
   //   // 酒馆助手设置（app/tavernhelper-settings.mjs）：state / prefs（含 packLlm：外来包的模型文字开关，K-R103）/ wb-inspect / wb-write / wb-del-legacy / wb-peek（W8 地点卡 → 附加书条目摘要，只读）
@@ -77,6 +78,7 @@ export const SCHEMA = {
   'eden-map:key': [HOST_TO_VIEWER, { key: 'string' }],
   'eden-map:tiles-route': [HOST_TO_VIEWER, { switched: 'boolean?', line: 'string?' }],
   'eden-map:storage-result': [HOST_TO_VIEWER, { storage: 'object?', sources: 'object?', cleaned: 'object?', cleanable: 'number?' }],
+  'eden-map:chat-reset-result': [HOST_TO_VIEWER, { ok: 'boolean?', images: 'number?', book: 'boolean?' }],
   'eden-map:settings': [HOST_TO_VIEWER, { page: 'string?' }],
   'eden-map:notice-act': [HOST_TO_VIEWER, { key: 'string?' }],
   'eden-map:unmapped-pick': [HOST_TO_VIEWER, {}],

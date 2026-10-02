@@ -87,6 +87,18 @@ export class MVUBridge {
   swipeAt(i) { return this.#chat()?.[i]?.swipe_id; }
   cardKey() { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } }
   chatId() { try { return String(SillyTavern.getContext().chatId || ''); } catch (e) { return ''; } }
+  /** 酒馆里现存的全部聊天 id（角色聊天 + 群聊）；读不到就返回 null（调用方什么都不删）。接口：POST /api/chats/search（空查询 = 全部），失败 / 结果为空 / 里面没有当前聊天 = 不可信 → null */
+  async listChatIds() {
+    try {
+      const c = SillyTavern.getContext(), cur = this.chatId(); if (!cur || typeof c.getRequestHeaders !== 'function') return null;
+      const P = this.#parent() || window, r = await P.fetch('/api/chats/search', { method: 'POST', headers: { ...c.getRequestHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '' }) });
+      if (!r.ok) return null;
+      const rows = await r.json(); if (!Array.isArray(rows)) return null;
+      const ids = new Set(rows.map(x => String(x?.file_name || '').replace(/\.jsonl$/, '')).filter(Boolean));
+      for (const g of Array.isArray(c.groups) ? c.groups : []) for (const id of Array.isArray(g?.chats) ? g.chats : []) ids.add(String(id));
+      return ids.has(cur) ? ids : null;
+    } catch (e) { return null; }
+  }
   // 标题栏显示用：{{user}} 换成酒馆里的用户名，取不到就去掉（发给地图的仍是原值，地图自己处理）
   userName(s) { let n = ''; try { n = SillyTavern.getContext().name1 || ''; } catch (e) {} return String(s).replace(/\{\{user\}\}/g, n).trim(); }
   // 酒馆助手接口在不在（A-11 读写路径共用）

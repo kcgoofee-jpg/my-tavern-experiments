@@ -243,7 +243,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
       mapTitle = e.data.title || ''; showTitle(); }
     if (e.data?.type === 'eden-map:esc') { if (e.data.from === 'key' && !TL.tlEl.hidden) TL.tlExit(); else close(); }   // 地图里没有可关的卡片 / 列表时 Esc 先关回放条（宿主自己的一层，X-01），再关面板；× 按钮直接关
     if (e.data?.type === 'eden-map:line-pick') showPicker(); if (e.data?.type === 'eden-map:tiles-failed') { const k = nextRoute({ lines: LINES, current: line, swappable, lastAt: tileSwitchAt }); post({ type: 'eden-map:tiles-route', switched: !!k, line: k || undefined }); if (k) { tileSwitchAt = Date.now(); setTimeout(() => chooseLine(k, true), 400); } }   // N13：瓦片全挂 → 自动换到另一条线路一次（之后再失败才由查看器提示）
-    if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
+    if (e.data?.type === 'eden-map:chat-reset') RS.resetChat(); if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
       (async () => { let cleaned = null; const st = store();
         if (e.data.type === 'eden-map:storage-clean' && RS.storageBudget && st && Date.now() - (window.__edenCleanAt || 0) > 10000) { window.__edenCleanAt = Date.now();   // 只认本面板 iframe（onMsg 的 e.source 检查）；10 秒内只清一次
           try { cleaned = RS.storageBudget.sweep(st, chatId(), 5); } catch (x) { console.warn('[eden-map] 清理失败', x); cleaned = { error: true, dropped: [], freed: 0 }; } }
@@ -263,7 +263,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
     if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
     if (e.data?.type === 'eden-map:route-plan') RF.onPlan(e.data);   // K-R111: the user's route plan (re-checked, held, echoed)
-    if (e.data?.type === 'eden-map:explore' && explorationLedgerModule && RS.custom) { const r = explorationLedgerModule.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发
+    if (e.data?.type === 'eden-map:explore' && explorationLedgerModule && RS.custom && !(e.data.chat && e.data.chat !== chatId())) { const r = explorationLedgerModule.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发，丢掉换聊天瞬间还带着上一个聊天地点的到访
     if (e.data?.type === 'eden-map:explore-reset' && RS.custom) { explored = {}; saveRoot(); post({ type: 'eden-map:fog', explored }); }
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
@@ -338,7 +338,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   }
 
   // 依赖袋（S5-1）：拆出去的 flow 模块经它取宿主的变量 / 函数；活的变量是取存器，函数是晚绑定转发（模块先于定义被创建时也不会撞暂时性死区）
-  const host = { entryUrl: import.meta.url, autoCache: null,
+  let chatSwitched = () => {}; const host = { entryUrl: import.meta.url, autoCache: null, onChatSwitch: () => chatSwitched(),
     get alive() { return alive; }, get BASE() { return BASE; }, get storageBudget() { return RS.storageBudget; }, get mvuBridge() { return CF.mvuBridge; }, buildNow: (...a) => buildNow(...a),
     get cardId() { return HA.cardId; }, set cardId(v) { HA.cardId = v; }, cardKey: (...a) => CF.cardKey(...a), changedInv: (...a) => LF.changedInv(...a),
     channel: (...a) => channel(...a), get chars() { return chars; }, chatId: (...a) => CF.chatId(...a), get checkAt() { return CK.checkAt; },
@@ -635,7 +635,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
     listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); });
+    chatSwitched = () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} LL.jitReset(); injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); }; listen(tavern_events.CHAT_CHANGED, () => chatSwitched());
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
@@ -654,7 +654,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   })();
 
   // 脚本被关闭或重载时清理注入的元素
-  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); clearInterval(tickT); cgObs.disconnect(); acuObs.disconnect(); try { mvuBridge.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
+  const cleanup = () => { if (life.dead) return; life.kill(); life.unlisten(); clearInterval(watchT); clearTimeout(quietT); clearInterval(pollT); clearInterval(updT); clearInterval(tickT); cgObs.disconnect(); acuObs.disconnect(); try { mvuBridge.disposeDb(); } catch (e) {} clearTimeout(killT); clearTimeout(pushT); clearTimeout(evT); clearTimeout(restT); clearTimeout(ghostT); try { inject(''); } catch (e) {} try { root.querySelector('.em-clock')?.emDispose?.(); } catch (e) { console.warn('[eden-map] clock popup teardown', e); } root.remove(); window.parent.removeEventListener('message', onMsg); themeMq?.removeEventListener?.('change', onThemeMq); pdoc.removeEventListener('keydown', onKey);
     if (window.parent.EdenMap === exposed) delete window.parent.EdenMap; CK.toastEl?.remove(); CK.updEl?.remove(); CK.splash?.el?.remove(); try { NT?.destroy(); barRO?.disconnect(); } catch (e) {}
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[scriptOwner] === scriptBase) delete R[scriptOwner]; } catch (e) { /* host page not reachable: nothing to do */ }   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」

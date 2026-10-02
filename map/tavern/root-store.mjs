@@ -2,10 +2,11 @@
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
 import { recordNorm, describeRecord } from '../core/settlement-record.mjs';
+import { createChatData } from './chat-data.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord', 'autoCache',
+  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord', 'autoCache', 'mvuBridge', 'onChatSwitch',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -40,17 +41,21 @@ export function createRootStore(host) {
   }
   // ---------------- A-13 本机存储预算（tavern/storage-budget.mjs）：LRU 清旧聊天的地图键、头像上限；出问题时告诉用户（面板开着走地图的提示条，关着走宿主小提示） ----------------
   let storageBudget = null, varsFailed = false; const warnAt = {};
-  import(new URL('storage-budget.mjs', import.meta.url).href).then(m => { storageBudget = m; }).catch(() => {});
+  const budgetP = import(new URL('storage-budget.mjs', import.meta.url).href).then(m => { storageBudget = m; return m; }).catch(() => null);
   function storeWarn(reason) {
     if (life.dead || Date.now() - (warnAt[reason] || 0) < 60000) return; warnAt[reason] = Date.now();
     const msg = storageBudget ? storageBudget.warnText(reason, host.uiLang === 'en') : '本机存储写入失败'; console.warn('[eden-map]', msg);
     if (!panel.hidden && host.alive && !host.ghost) { toastQ.push(msg); flushToasts(); return; }
     hostToast(host.uiLang === 'en' ? 'Map storage' : '地图存储', [msg], 12000);
   }
-  function budgetSweep() {   // 启动空闲时：记下当前聊天刚用过，聊天数超了按 LRU 清最久的；量一下占用（EdenMap.storage() 可取）
-    if (!storageBudget) return; const ls = store(); if (!ls) return;
-    storageBudget.touch(ls, chatId()); const r = storageBudget.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
+  function budgetSweep() {   // 启动空闲时：记下当前聊天刚用过，聊天数超了按 LRU 清最久的；量一下占用（EdenMap.storage() 可取）。预算模块还在加载就等它（启动空闲可能比它先到）
+    budgetP.then(SB => {
+      if (!SB || life.dead) return; const ls = store(); if (!ls) return;
+      SB.touch(ls, chatId()); const r = SB.sweep(ls, chatId()); if (r.dropped.length) console.info('[eden-map] 清理旧聊天的地图数据', r.dropped.length, '个聊天', r.freed, '字节');
+      return chatData.orphanSweep();   // 已删聊天留下的本机行 / 图集图片 / 每聊天世界书（读不到聊天列表就什么都不做）
+    }).catch(e => console.warn('[eden-map] 存储清理失败', e));
   }
+  const chatData = createChatData(host, { store, ls: () => LS, varsOk: () => varsOk(), clearWb: () => { wbState = ''; } });
   // S6-2：背包存 stash（一份、ASCII 键）；旧键 仓库 / 槽位 只读——加载时迁移一次，之后原样随每次保存带回去（整块替换不能把它们丢了），没有旧键的聊天不会多出它们
   let legacyKeep = {};
   const ledgerOf = () => { const r = host.ledgerRecord, d = r && typeof r === 'object' ? describeRecord(r) : null; return d && (d.npc || d.events) ? { ledger: recordNorm(r) } : {}; };   // K-R78: the key only when there is an entry
@@ -168,7 +173,7 @@ export function createRootStore(host) {
   }
   function flushToasts() { if (!host.alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   return {
-    get storageBudget() { return storageBudget; }, budgetSweep, get custom() { return custom; }, set custom(v) { custom = v; }, customChanged, get customChat() { return customChat; },
+    get storageBudget() { return storageBudget; }, budgetSweep, resetChat: () => chatData.reset(), orphanSweep: () => chatData.orphanSweep(), get custom() { return custom; }, set custom(v) { custom = v; }, customChanged, get customChat() { return customChat; },
     customTags, kindOf, loadCustom, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
     get wbState() { return wbState; }, set wbState(v) { wbState = v; },
   };

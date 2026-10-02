@@ -52,6 +52,25 @@ export async function listScopeUsage(scope) {
   return { count: mine.length, bytes: mine.reduce((s, r) => s + (r.bytes | 0), 0) };
 }
 
+// 清掉一个作用域的全部图（重置本聊天 / 清理已删聊天的孤儿）；返回删掉的张数
+export async function deleteScope(scope) {
+  const db = await openDB();
+  const { t, store } = tx(db, 'readwrite');
+  const all = await reqp(store.getAll());
+  let n = 0;
+  for (const r of all) if (r.scope === scope) { store.delete(r.key); n++; }
+  await new Promise((res, rej) => { t.oncomplete = res; t.onerror = () => rej(t.error); });
+  return n;
+}
+
+// 库里出现过的全部作用域（孤儿清理用）
+export async function listScopes() {
+  const db = await openDB();
+  const { store } = tx(db, 'readonly');
+  const all = await reqp(store.getAll());
+  return [...new Set(all.map((r) => r.scope))];
+}
+
 export async function putImage(scope, meta, blob) {
   const db = await openDB();
   const key = `${scope}::${imageRecordKey(meta.roomId, meta.id)}`;

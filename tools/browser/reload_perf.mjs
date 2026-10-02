@@ -6,7 +6,7 @@
 // requestAnimationFrame gap monitor everywhere, which is the only signal WebKit offers) and, on Chromium, a CDP CPU
 // profile aggregated by function. Budgets are asserted for the page / in-map / cold scenarios on Chromium; WebKit
 // is measured and reported (rAF gaps) with the same long-task budget.
-// Also: in-place restarts (query / new-build import): live listeners, intervals, observers, iframes, host handlers and prompt hooks must not grow; DOM documents and heap are reported (known open: one viewer document per restart is retained).
+// Also: in-place restarts (query / new-build import): live listeners, intervals, observers, iframes, host handlers and prompt hooks must not grow; DOM documents and heap are reported. Note: Playwright element handles (locator clicks, waitForSelector results) keep the old panel alive until disposed, so documents / heap read high here; I-34 (the clock popup's document listeners) was found by taking handles out of the loop.
 // Usage: node tools/browser/reload_perf.mjs <outdir> [--engines chromium,webkit] [--chat 300] [--profile] [--json]
 // Defaults: 3000-floor chat, Chromium CPU throttled 4x. Budgets below are for that setting on a dev laptop; CI factor 2 (env CI set -> every time budget x2).
 // Reference numbers (before / after the I-29 fixes) are in docs/plans/spatial-os-log.md RESULT I-29.

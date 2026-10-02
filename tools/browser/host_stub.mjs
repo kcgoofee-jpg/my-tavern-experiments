@@ -18,11 +18,16 @@ const STUB = `<script>
     window.getChatWorldbookName = function () { return parent.__chatWb || null; };
     window.rebindChatWorldbook = async function (c, n) { parent.__chatWb = n; };
   }
+  // CHAT-ISO：多聊天桩（S.multi）——酒馆助手的世界书读 / 删接口、聊天列表请求头；聊天变量 / 消息 / 聊天世界书随 H.switchChat 按聊天分开存
+  if (S.multi && !S.noVars) {
+    window.getWorldbook = window.getWorldbook || async function (n) { return JSON.parse(JSON.stringify((parent.__wb || {})[n] || [])); };
+    window.deleteWorldbook = async function (n) { var had = !!(parent.__wb || {})[n]; delete (parent.__wb || {})[n]; return had; };
+  }
   if (S.charData || S.charLive) window.getCharData = function () { return S.charAsync ? new Promise(function (r) { setTimeout(function () { r(S.charData); }, 50); }) : S.charData; };   // charAsync：宿主 API 返回 Promise（A-8）
   if (S.charLive) { window.getCharWorldbookNames = function () { return S.charBooks ? JSON.parse(JSON.stringify(S.charBooks.names)) : { primary: null, additional: [] }; };   // 换卡测试（pack_switch）：角色卡自己的世界书，随 __stub.charBooks 变
     window.getWorldbook = async function (n) { return S.charBooks && S.charBooks.books[n] ? JSON.parse(JSON.stringify(S.charBooks.books[n])) : []; }; }
   window._ = { get: function (o, p, d) { var v = p.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); return v == null ? d : v; } };
-  window.SillyTavern = { getContext: function () { return { name1: 'Player', chatId: S.chat || 'stub' }; } };
+  window.SillyTavern = { getContext: function () { return { name1: 'Player', chatId: S.chat || 'stub', getRequestHeaders: S.multi ? function () { return {}; } : undefined }; } };
   window.tavern_events = { CHAT_CHANGED: 'c', MESSAGE_SWIPED: 's', MESSAGE_RECEIVED: 'r', MESSAGE_UPDATED: 'u', MESSAGE_DELETED: 'd', GENERATION_AFTER_COMMANDS: 'g' };
   window.eventOn = function (k, f) { (H[k] = H[k] || []).push(f); }; parent.__fire = function (k) { (H[k] || []).forEach(function (f) { f(); }); };
   window.waitGlobalInitialized = async function () {};
@@ -39,10 +44,13 @@ const STUB = `<script>
 const HOST = `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0;background:#2a2a2a;height:100vh;color:#aaa;font:14px sans-serif"><p style="padding:12px">tavern host (stub)</p><textarea id=send_textarea style="position:fixed;left:8px;bottom:8px;width:200px;height:24px"></textarea>
 <iframe id=card style="display:none" srcdoc="${STUB.replace(/"/g, '&quot;')}"></iframe></body>`;
 
-export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null, charLive = false, charBooks = null, rawStat = false, splash = false, scriptBase = null, pack = null } = {}) {
+export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stub', vars = {}, noVars = false, ls = null, charData = null, charLive = false, charBooks = null, rawStat = false, splash = false, scriptBase = null, pack = null, multi = false, chatList = null } = {}) {
   if (!splash) await P.ctx.addInitScript(() => { try { if (!sessionStorage.getItem('__splashSeeded')) { sessionStorage.setItem('__splashSeeded', '1'); localStorage.setItem('edenMapSplashSeen', 'dev'); localStorage.setItem('edenMapHint', '1'); } } catch (e) {} });   // v0.9.5 开场自检卡 + v2 P1 三步上手横幅：别的测试里不弹（横幅盖在面板上会吃掉点击，见 e7_host）
   const p = P.page;
-  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData, charLive, charBooks, rawStat, pack });
+  await P.ctx.addInitScript(() => { try { const w = window.top === window && sessionStorage.getItem('__wbSeed'); if (w) window.__wb = JSON.parse(w); } catch (e) {} });   // CHAT-ISO：重载后还在的世界书（探针在 sessionStorage.__wbSeed 里放一份）
+  await P.ctx.addInitScript(s => { if (window.top === window) { window.__stub = s; if (s.ls && !sessionStorage.getItem('__lsSeeded')) { sessionStorage.setItem('__lsSeeded', '1'); for (const [k, v] of Object.entries(s.ls)) localStorage.setItem(k, v); } } }, { here, stat, msgs, chat, vars, noVars, ls, charData, charLive, charBooks, rawStat, pack, multi });
+  const chats = { list: chatList };   // H.chatList = [...]：酒馆里现存的聊天（null = 接口读不到）
+  if (multi) await p.route('**/api/chats/search', r => (chats.list ? r.fulfill({ contentType: 'application/json', body: JSON.stringify(chats.list.map(c => ({ file_name: c + '.jsonl' }))) }) : r.fulfill({ status: 500, body: '' })));
   await p.route(B.BASE + '__stubhost.html', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: HOST.split('__SCRIPT_BASE__').join(scriptBase || B.BASE) }));
   await p.goto(B.BASE + '__stubhost.html');
   await p.waitForSelector('#eden-map-root .em-fab', { timeout: 15000 });
@@ -56,6 +64,18 @@ export async function openHost(P, { here = '', stat = {}, msgs = [], chat = 'stu
     injected: () => p.evaluate(() => window.__injected || ''),
     vars: () => p.evaluate(() => window.__vars || null),
     wb: () => p.evaluate(() => ({ books: window.__wb || {}, chat: window.__chatWb || null })),
+    get chatList() { return chats.list; }, set chatList(v) { chats.list = v; },
+    /** 换到另一个聊天：当前聊天的变量 / 消息 / 状态 / 聊天世界书存起来，取（或新建）目标聊天的，然后触发 CHAT_CHANGED（和换聊天后的新楼事件） */
+    async switchChat(id, init = {}) {
+      await p.evaluate(([id, init]) => {
+        const s = window.__stub, st = (window.__chatState = window.__chatState || {});
+        st[s.chat] = { vars: window.__vars, msgs: s.msgs, stat: s.stat, here: s.here, chatWb: window.__chatWb || null };
+        const n = st[id] || { vars: init.vars || {}, msgs: init.msgs || [], stat: init.stat || s.stat, here: init.here ?? s.here, chatWb: null };
+        s.chat = id; window.__vars = n.vars; s.msgs = n.msgs; s.stat = n.stat; s.here = n.here; window.__chatWb = n.chatWb;
+        window.__fire('c'); window.__fire('r'); window.__fire('v');
+      }, [id, init]);
+      await B.wait(2000);
+    },
     async setMsgs(m, stat) { await p.evaluate(([m, st]) => { window.__stub.msgs = m; if (st) window.__stub.stat = st; window.__fire('r'); window.__fire('v'); }, [m, stat || null]); await B.wait(700); },
   };
   return H;

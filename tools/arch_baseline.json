@@ -123,7 +123,7 @@
     "map/tavern/pack-gate.mjs": 9,
     "map/tavern/pack-runtime-v2.mjs": 2,
     "map/tavern/place-action-injection.mjs": 1,
-    "map/tavern/root-store.mjs": 9,
+    "map/tavern/root-store.mjs": 8,
     "map/tavern/splash.mjs": 1,
     "map/tavern/stash-flow.mjs": 7,
     "map/tavern/storage-budget.mjs": 4,

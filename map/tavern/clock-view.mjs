@@ -42,9 +42,13 @@ export function mountClockPop(clk, { lang = () => 'zh' } = {}) {
     clk.dispatchEvent(new CustomEvent('em-period', { detail: { view: state.view } }));
   });
   // 弹层是最上面一层：Esc 只关它（捕获阶段先拿到，不让查看器 / 面板跟着关）；点别处也关
-  clk.ownerDocument.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { e.stopImmediatePropagation(); e.preventDefault(); open(false); clk.focus(); } }, true);
-  clk.ownerDocument.addEventListener('click', e => { if (!pop.hidden && !pop.contains(e.target)) open(false); });
-  return { open, render, pop };
+  // 这两个挂在宿主文档上，会比面板活得久：原地重启拆面板时必须摘掉（off；clk.emDispose 给拆面板的一方调），否则每次重启留下一份旧面板 DOM（I-34）
+  const doc = clk.ownerDocument;
+  const onKey = e => { if (!clk.isConnected) return off(); if (e.key === 'Escape' && !pop.hidden) { e.stopImmediatePropagation(); e.preventDefault(); open(false); clk.focus(); } };
+  const onClick = e => { if (!clk.isConnected) return off(); if (!pop.hidden && !pop.contains(e.target)) open(false); };
+  const off = () => { doc.removeEventListener('keydown', onKey, true); doc.removeEventListener('click', onClick); clk.emDispose = null; };
+  doc.addEventListener('keydown', onKey, true); doc.addEventListener('click', onClick); clk.emDispose = off;
+  return { open, render, pop, off };
 }
 
 /** 胶囊上的「预览中」标记与说明（时间文字不变；图标跟着 data-band 走，由调用方设） */

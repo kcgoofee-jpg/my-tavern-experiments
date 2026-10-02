@@ -19,7 +19,9 @@ export function renderStorageSettings(d) {
     + `<div class="hrow"><span>${esc(uiTextOr('s.src_chars', '人物来源'))}</span><span>${esc(ch)}</span></div>`
     + (Array.isArray(src?.list) ? `<div class="hrow"><span>${esc(uiTextOr('s.src_list', '在读的来源'))}</span><span>${esc(src.list.filter(x => x.active).map(x => uiTextOr('s.src_' + x.id, x.id)).join(' · ') || '—')}</span></div>` : '')
     + `<div class="hrow"><span>${esc(uiTextOr('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(uiTextOr('s.stor_clean_btn', '清理'))}</button></div>`
+    + `<div class="hrow"><span>${esc(uiTextOr('s.chatreset', '重置本聊天地图数据'))}</span><button type="button" class="btn" id="chatReset">${esc(uiTextOr('s.chatreset_btn', '重置'))}</button></div><small id="chatResetMsg" role="status"></small>`
     + (d.cleaned ? `<small role="status">${esc(d.cleaned.limited ? uiTextOr('s.stor_limited', '刚清理过，请 {s} 秒后再试', { s: d.cleaned.wait || 10 }) : d.cleaned.error ? uiTextOr('s.stor_fail', '清理失败') : uiTextOr('s.stor_cleaned', '已清理 {n} 个聊天，释放 {b}', { n: d.cleaned.n, b: kb(d.cleaned.bytes) }))}</small>` : '');
+  wireChatReset(d);
   // 清理不可撤销：第一次点只变成「再点一次确认（删除 N 个旧聊天）」，5 秒内再点才发（架构评审 P1）
   const cb = $('#storClean'), old = typeof d.cleanable === 'number' ? d.cleanable : Math.max(0, (s?.chats || 0) - 5); let armed = 0;
   if (!old) { cb.disabled = true; cb.title = uiTextOr('s.stor_none', '没有可清理的旧聊天'); }
@@ -27,4 +29,16 @@ export function renderStorageSettings(d) {
     armed = Date.now(); cb.textContent = uiTextOr('s.stor_confirm', `再点一次确认：删除 ${old} 个旧聊天的地图数据（不能撤销）`, { n: old });
     setTimeout(() => { if (armed && Date.now() - armed >= 5000 && cb.isConnected) { armed = 0; cb.textContent = uiTextOr('s.stor_clean_btn', '清理'); } }, 5100); };
 }
-if (typeof window !== 'undefined') window.renderStorageSettings = renderStorageSettings;
+
+// 重置本聊天：和清理一样先「再点一次确认」（行内，不弹对话框），5 秒内再点才发；结果由宿主回 eden-map:chat-reset-result
+function wireChatReset() {
+  const b = $('#chatReset'); if (!b) return; let armed = 0;
+  b.onclick = () => { if (Date.now() - armed < 5000) { armed = 0; b.disabled = true; post({ type: 'eden-map:chat-reset' }); return; }
+    armed = Date.now(); const m = $('#chatResetMsg'); if (m) m.textContent = uiTextOr('s.chatreset_confirm', '再点一次确认：清掉本聊天的地图数据并按聊天楼层重算（不能撤销；别的聊天不受影响）'); b.textContent = '✓ ' + uiTextOr('s.chatreset_btn', '重置');
+    setTimeout(() => { if (armed && Date.now() - armed >= 5000 && b.isConnected) { armed = 0; b.textContent = uiTextOr('s.chatreset_btn', '重置'); if (m) m.textContent = ''; } }, 5100); };
+}
+export function renderChatResetResult(r) {
+  const b = $('#chatReset'), m = $('#chatResetMsg'); if (b) { b.disabled = false; b.textContent = uiTextOr('s.chatreset_btn', '重置'); }
+  if (m) m.textContent = r?.ok ? uiTextOr('s.chatreset_done', '已重置本聊天的地图数据（图集图片 {n} 张）', { n: r.images || 0 }) : uiTextOr('s.chatreset_fail', '重置没有完成，可以再试一次');
+}
+if (typeof window !== 'undefined') { window.renderStorageSettings = renderStorageSettings; window.renderChatResetResult = renderChatResetResult; }

@@ -90,16 +90,19 @@ export function createLlmFlow(host) {
   // ---------------- W6 世界书 JIT 条目水合（tavern/worldbook-jit.mjs 纯计划；写世界书在这里） ----------------
   // 只动 wbsync.BOOK 附加书里带 extra.eden_id 的条目（extra.eden_jit 标记 JIT 关的；用户关的记 ignore 永不再碰）。
   // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
-  let worldbookJitModule = null, WBSm = null, jitWatermark = null, jitBusy = false;
+  let worldbookJitModule = null, WBSm = null, jitWatermark = null, jitBusy = false, jitEpoch = 0;
+  /** 换聊天：激活水位作废（上一个聊天算出的激活集不能当新聊天的），正在跑的一轮结果也不再记水位；下一轮重算一遍再写 */
+  const jitReset = () => { jitWatermark = null; jitEpoch++; };
   import(scriptBase + 'tavern/worldbook-jit.mjs').then(m => { worldbookJitModule = m; }).catch(e => console.warn('[map] llm-flow: worldbook-jit import failed', e));
   import(scriptBase + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(e => console.warn('[map] llm-flow: worldbook-sync import failed', e));
   async function jitRound() {
     if (jitBusy || !worldbookJitModule || !WBSm || !host.SpatialM || life.dead || lsGet('edenMapWbJit') !== '1') return;
     const getBook = thFn('getWorldbook'), updBook = thFn('updateWorldbookWith');
     if (!getBook || !updBook) return;
-    jitBusy = true;
+    jitBusy = true; const epoch = jitEpoch;
     try {
       const entries = await getBook(WBSm.BOOK).catch(() => null);
+      if (epoch !== jitEpoch) return;   // 读书期间换了聊天：这一轮作废
       host.facts.jit.book = Array.isArray(entries) && entries.length > 0;   // health: is the add-on book there
       if (!Array.isArray(entries) || !entries.length) return;
       const loc = host.SpatialM.locate(host.regNow, host.here);
@@ -108,12 +111,13 @@ export function createLlmFlow(host) {
       const active = host.SpatialM.activationOf(host.regNow, host.here, { [loc.mapId]: pts });
       const hash = worldbookJitModule.hashOf(active);
       if (!worldbookJitModule.shouldWrite(jitWatermark, hash)) { host.facts.jit.floor = host.floorNow; return; }
+      if (epoch !== jitEpoch) return;
       jitWatermark = { floor: host.floorNow, hash };
       const plan = worldbookJitModule.planActivation(entries, active);
       Object.assign(host.facts.jit, { enabled: plan.enable.length, disabled: plan.disable.length, floor: host.floorNow });
       if (!plan.enable.length && !plan.disable.length && !plan.markIgnore.length) return;
       const muts = worldbookJitModule.applyPlan(entries, plan);
-      await WBSm.withLock(async () => {
+      await WBSm.withLock('eden-map-wb', async () => {
         await updBook(WBSm.BOOK, list => {
           if (Array.isArray(list)) for (const mu of muts) for (const e of list) if (e?.extra?.eden_id === mu.id) {
             e.enabled = mu.enabled;
@@ -153,7 +157,7 @@ export function createLlmFlow(host) {
       const cfg = xtalCfgOf();
       const drafts = worldbookCrystallizeModule.newDrafts(worldbookCrystallizeModule.drafts(facts, { tombstones: cfg.tombstones }), new Set(Object.keys(cfg.written)));
       if (!drafts.length) return;
-      await WBSm.withLock(async () => {
+      await WBSm.withLock('eden-map-wb', async () => {
         await updBook(WBSm.BOOK, list => {
           const out = Array.isArray(list) ? list : [];
           for (const d of drafts) out.push({ name: d.name, enabled: true, content: d.content, strategy: d.strategy, position: d.position, recursion: { prevent_incoming: true, prevent_outgoing: true }, extra: { ...d.extra } });
@@ -167,6 +171,6 @@ export function createLlmFlow(host) {
     finally { xtalBusy = false; }
   }
   return {
-    jitRound, resetOps, sendOps, addRoutes, navFacts, planRoutes, navSchedule, xtalClear, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
+    jitRound, jitReset, resetOps, sendOps, addRoutes, navFacts, planRoutes, navSchedule, xtalClear, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
   };
 }

@@ -95,6 +95,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:tiles-route') tilesRoute(e.data);   // N13：瓦片全挂后宿主答复「已自动换线」或「没得换」
     if (e.data?.type === 'eden-map:line') setLine(e.data);   // fix3：线路行常驻，显示当前线路 / 自动或手动 / 不可切换的原因
     if (e.data?.type === 'eden-map:storage-result') window.renderStorageSettings?.(e.data);
+    if (e.data?.type === 'eden-map:chat-reset-result') window.renderChatResetResult?.(e.data);
     if (e.data?.type === 'eden-map:fog') window.FogApi?.set(e.data.explored);   // 迷雾探索：这个聊天到过的地点   // 线路选择在设置「高级」
     if (e.data?.type === 'eden-map:settings' && typeof e.data.page === 'string') SettingsApi.open(e.data.page);
     if (e.data?.type === 'eden-map:notice-act') { const a = ntActs[e.data.key]?.find(x => x.id === e.data.id); delete ntActs[e.data.key]; try { a?.run?.(); } catch (x) { console.warn('[地图] 通知按钮', x); } }   // 卡内脚本的启动自检结果（E6）   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
