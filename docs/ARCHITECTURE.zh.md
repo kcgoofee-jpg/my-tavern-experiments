@@ -61,9 +61,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `compat-v1-geo.mjs` | v1 地图注册表 → v2 节点（按声明顺序，另给出其余 compat 文件读取的编号表与词表）。 |
 | `compat-v1-views.mjs` | v1 地图 → v2 视图：世界图 / 点位图各一张 tiles 视图、每个三维地标页一张 model3d 视图、庄园页一张。 |
 | `compat-v1.mjs` | schema 1 → schema 2 的内存转换：已加载的 v1 包（清单与数据文件）变成带内联块的 schema 2 包。纯函数，不取不写任何文件。由下面三个 `compat-v1-*` 文件组成。 |
+| `crumb-menu.mjs` | 面包屑切换菜单的内容：当前图的同级各层与带三维页的子地点，方向键步进。纯函数。 |
 | `custom-book.mjs` | 本聊天的自定义世界书：一条名字对照的常驻索引，加每个有文字的地点一条关键词条目（正文来自 `entryText`）。 |
 | `custom-record.mjs` | 玩家在一个地点上的字段（K-R135）：说明、事实、基于指纹、楼层、有界撤销、恢复、键迁移；逐字段盖在记录上。 |
-| `crumb-menu.mjs` | 面包屑切换菜单的内容：当前图的同级各层与带三维页的子地点，方向键步进。纯函数。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `drawer-tabs.mjs` | 抽屉页签规则（K-R72）：内核页签集合、`tabOrder(ui.tabs)`，以及对抽屉类对象的唯一一套显示 / 隐藏 / 回退顺序（纯函数）。 |
 | `entities.mjs` | 实体协议（K-R71、K-R73）：`personOf` / `eventOf` 适配器、`presentAt`、打开视图的层级（`levelMode`）与在场组的分节（`peopleSections`）（纯函数）。 |

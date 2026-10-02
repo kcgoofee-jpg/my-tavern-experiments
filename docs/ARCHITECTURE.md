@@ -80,9 +80,9 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `compat-v1-geo.mjs` | v1 map registry → v2 nodes (declaration order, plus the id map and word tables the other compat files read). |
 | `compat-v1-views.mjs` | v1 maps → v2 views: a tiles view per world / points map, a model3d view per 3D landmark page, one for the estate page. |
 | `compat-v1.mjs` | Schema 1 → schema 2 in memory: a loaded v1 pack (manifest and data files) becomes a schema-2 pack with inline blocks. Pure; nothing is fetched or written. Assembled from the three `compat-v1-*` files. |
+| `crumb-menu.mjs` | What the breadcrumb switcher offers: sibling levels and child 3D pages of the open map, arrow-key stepping. Pure. |
 | `custom-book.mjs` | The chat's custom world book: one constant index of name pairs plus one keyword entry per place with text (bodies from `entryText`). |
 | `custom-record.mjs` | The player's fields on one place (K-R135): description, facts, base fingerprints, floor, bounded undo, restore, key migration; laid over a record field by field. |
-| `crumb-menu.mjs` | What the breadcrumb switcher offers: sibling levels and child 3D pages of the open map, arrow-key stepping. Pure. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
 | `drawer-tabs.mjs` | Drawer tab rules (K-R72): the kernel tab set, `tabOrder(ui.tabs)`, and the one show / hide / fallback sequence on a drawer-like object (pure). |
 | `entities.mjs` | Entity protocol (K-R71, K-R73): `personOf` / `eventOf` adapters, `presentAt`, the level of the open view (`levelMode`) and the present group's sections (`peopleSections`) (pure). |
