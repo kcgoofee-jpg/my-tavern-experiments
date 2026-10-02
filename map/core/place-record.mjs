@@ -109,6 +109,13 @@ export function sharedNames(pack) {
   for (const r of list) { const o = seen.get(r.name); if (o === undefined) seen.set(r.name, own(r.id)); else if (o !== own(r.id)) out[r.name] = true; }
   return out;
 }
+/** The resolver core/custom-record.mjs migrateKeys needs: a place name (or one of its other names) -> its node id, or null.
+ *  The first record of a name wins, so a name that several records share (a generic word) never moves an item. */
+export const idFinder = pack => {
+  const m = new Map();
+  for (const r of records(pack)) { if (r.name && !m.has(r.name)) m.set(r.name, r.id); for (const a of arr(r.alias)) if (a && !m.has(a)) m.set(a, r.id); }
+  return n => m.get(clean(n)) || null;
+};
 /** The words that trigger a record's entry: its name and its other names (two characters or more). */
 export const entryKeys = rec => uniq([rec.name, ...arr(rec.alias)].map(clean)).filter(k => [...k].length >= 2);
 /** Does the record have anything to say beyond its name? (the rule for having a world-book entry) */

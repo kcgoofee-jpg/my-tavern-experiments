@@ -9,7 +9,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { nodePictures } from '../core/pack-media.mjs';   // 设定包图片（K-R101）：来源规则与查看器同一份
-import { roomCustomBlockHTML, bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';
+import { bindRoomCustomEvents, getCustomName, setGalleryChatId } from '../ui/room-gallery-panel.js';   // PLACE-1b: 只留图集入口与旧的本机叫法（只读）；那两个「自定义名称 / 简介」输入框不再画
 import { makePresetCluster, makeCompass, makeHintCard, makeIdleTimer, wheelAction, rotateOn } from '../ui/camera-controls.js';
 import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 标准契约（P3-A）：清单校验 / 路径解析 / describe 摘要
 import { createRenderer as createGpu } from '../three/render-context.mjs';   // 全仓唯一的渲染器工厂（stencil:true → WebKit 上 24 位深度，N12）
@@ -293,7 +293,7 @@ function loadHouse() {
 /* ---------------- 房间（精确多边形）与室外热点 ---------------- */
 const pickMat = new THREE.MeshBasicMaterial({ visible: false });
 const roomG = FLOORS.map((f, i) => { const g = new THREE.Group(); g.name = 'rooms_' + f.id; g.visible = false; scene.add(g); return g; });
-const ITEMS = [], ROOM_BY_NODE = new Map();   // node id → 它的（第一间）房间项
+const ITEMS = [], ROOM_BY_NODE = new Map(), LBL_SEEN = new Set();   // node id → 它的（第一间）房间项；每层每个节点 / 名字只画一个标注
 const polyShape = (poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(x, y)));
 const flatGeo = (poly, y) => { const g = new THREE.ShapeGeometry(polyShape(poly)); g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };   // (x, y) → (x, y0, −y)
 const bboxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
@@ -316,10 +316,9 @@ const plates = FLOORS.map(() => []);
   const rank = r.sub ? 1 : KIND(r.kind).rank;
   const it = { kind: 'room', d: r, floor: fi, poly: r.poly, cx: c.x, cz: c.z, w: bb.x1 - bb.x0, dd: bb.y1 - bb.y0, y: f.y, rank, pick };
   if (r.node && !ROOM_BY_NODE.has(r.node)) ROOM_BY_NODE.set(r.node, it);   // 同一个节点的几间房：第一间代表它
-  pick.userData.item = it;
-  it.label = mkLabel(roomG[fi], c.x, f.y + 1.2, c.z, 'room');
-  it.pri = (4 - rank) * 10000 + (r.area || 0);
-  ITEMS.push(it);
+  pick.userData.item = it;   // PLACE-1b：共用节点的几间房都还能点，只是共用一枚标注（LBL_SEEN，同名再由 updateLabelSet 的 A11 合并；用户 2026-10-02 截图：医疗与改造室 ×2）
+  const lk = `${f.id}|${r.node || r.name}`; it.label = LBL_SEEN.has(lk) ? null : (LBL_SEEN.add(lk), mkLabel(roomG[fi], c.x, f.y + 1.2, c.z, 'room'));
+  it.pri = (4 - rank) * 10000 + (r.area || 0); ITEMS.push(it);
 });
 const zoneG = new THREE.Group(); zoneG.name = 'zones'; scene.add(zoneG);
 ZDATA.zones.forEach((z) => {
@@ -498,7 +497,7 @@ const nameOf = (it) => {
   return LANG === 'en' && enName(d) ? enName(d) : nm;
 };
 function relabel() {
-  for (const it of ITEMS) { it.label.element.firstChild.textContent = nameOf(it); it.lw = 0; }
+  for (const it of ITEMS) { if (!it.label) continue; it.label.element.firstChild.textContent = nameOf(it); it.lw = 0; }
 }
 
 /* ---------------- 楼层条 ---------------- */
@@ -589,8 +588,9 @@ function parseFloor(f) {
 /* ---------------- 标签：按等级、模式、缩放与重叠筛选 ---------------- */
 let labelSet = [];
 function updateLabelSet() {
-  labelSet = []; for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
-  const seen = new Set(); for (const it of labelSet.slice().sort((a, b) => b.pri - a.pri)) { const n = nameOf(it); if (seen.has(n)) { it.label.visible = false; it.label.element.classList.add('hide'); } else seen.add(n); }   // A11 (D42): duplicate labels for the same room / passage name are merged — the highest-priority item keeps the label, the others stay quiet (still clickable)
+  labelSet = [];
+  for (const it of ITEMS) { if (!it.label) continue; const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
+  const seen = new Set(); for (const it of labelSet.slice().sort((a, b) => b.pri - a.pri)) { const n = nameOf(it); if (seen.has(n)) { it.label.visible = false; it.label.element.classList.add('hide'); } else seen.add(n); }   // A11 (D42) + PLACE-1b (P3): 同名只留一枚标注（优先级最高的那间），其余仍然点得到；没有标注的项（LBL_SEEN 去重过的）跳过
   labelSet = labelSet.filter(it => it.label.visible); guard.dirty(); wake();
 }
 const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => { const b = polyBox((CARD.rooms || []).filter((r) => r.floor === f.id)); return { y: f.y, z: f.z, box: { x0: b.x0, x1: b.x1, z0: -b.y1, z1: -b.y0 } }; }), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
@@ -689,7 +689,7 @@ function cardHTML(it) {
   if (custom && LANG === 'zh') rows(h, [[tx('orig'), o.title]]);
   rows(h, o.rows);
   if (o.acts.length) { const a = document.createElement('div'); a.className = 'acts'; for (const x of o.acts) { const b = document.createElement('button'); b.type = 'button'; b.className = x.id === 'enter' ? 'enter3d' : 'garage'; if (x.node) b.dataset.node = x.node; if (x.zone) b.dataset.zone = x.zone; if (x.title) b.title = x.title; b.textContent = x.label; a.append(b); } h.append(a); }
-  return h.innerHTML + (it.kind === 'room' ? roomCustomBlockHTML(d.name, LANG) : '');
+  return h.innerHTML;   // PLACE-1b：房间卡里那套只存本机的「自定义名称 / 简介」输入框去掉了，改由查看器那一个编辑器（名称与说明都进聊天变量与世界书）
 }
 function rows(h, list) { for (const [k, v] of list) { const r = document.createElement('div'); r.className = 'row'; const e = document.createElement('em'); e.textContent = k; r.append(e, v); h.append(r); } }
 // 区域下挂着的子地图（宿主按运行时节点树发来的 estate:children）：有子节点的区域，卡片带「进入三维」、双击直接进
@@ -1135,7 +1135,7 @@ window.__estate = {
   people: { set: setPeople, list: () => PRES.list, chips: () => [...document.querySelectorAll('.pc')].map((b) => b.dataset.name || b.textContent), count: () => PRES.count(), located: () => [...LOCATED] },   // S7-3（探针用）
   rect: (node) => { const it = ROOM_BY_NODE.get(node); if (!it) return null; const f = FLOORS[it.floor], b = bboxOf(it.poly), pts = [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]].map(([x, y]) => V(x, y, f.y + 1.9).project(camera));   // 房间在屏幕上的外包（探针用）
     const xs = pts.map((v) => (v.x + 1) / 2 * innerWidth), ys = pts.map((v) => (1 - v.y) / 2 * innerHeight); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; },
-  labels: { guard, hits: (node) => { const it = ROOM_BY_NODE.get(node); return it && it.label.element.classList.contains('occl'); } },
+  labels: { guard, hits: (node) => { const it = ROOM_BY_NODE.get(node); return !!(it && it.label && it.label.element.classList.contains('occl')); }, named: () => ITEMS.filter(i => i.label).map(i => ({ node: i.d.node || '', name: nameOf(i), floor: i.floor == null ? '' : FLOORS[i.floor].id })) },
   camera, controls, renderer, scene, setLang, fit: fitDepth,   // fit：探针换机位后手动重算 near / far（正式交互走 loop）
 };
 buildNav(); relabel(); frustum();

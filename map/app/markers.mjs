@@ -8,6 +8,7 @@ import { routePaths } from '../core/layer-geometry.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { LANG, localName, uiText, translateName } from './i18n.mjs';
 import { cardSheet } from './drawer-glue.mjs';
+import { placeCardBridge } from './place-card-bridge.mjs';   // PLACE-1b: 记录卡那一对函数（place-card.mjs 装）
 import { plugins } from './plugins.mjs';
 import { isScene, RT } from './nodes-runtime.mjs';
 // ---------------- 标记 ----------------
@@ -58,6 +59,8 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   // 不必重画整层标记——重画会重复 addOverlay，标记会叠一层）
   c.querySelector('.extra').innerHTML = (typeof extra === 'function' ? extra() : extra) || '';
   if (typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.decorateCard(el, name);   // v0.9.3：自定义显示名 / 用途；本人地点卡的着装
+  // PLACE-1b：地图上这个地点的正文与动作由记录画（有记录才画；事态 / 人物 / 行程的卡不走这里）
+  if (el && (el.classList.contains('mk') || el.classList.contains('realm'))) { const rec = markerRecord(el, name); if (rec) placeCardBridge.prependRecord?.(rec, {}); }
   if (typeof plugins.StashView !== 'undefined') plugins.StashView.decorate(el, name);   // 空间化背包（Part 5-1）：这里存放的东西
   if (typeof plugins.ScrapbookView !== 'undefined') plugins.ScrapbookView.decorate(el, name);   // 见闻录（Part 5-5）：这里钉过的图与手记
   if (typeof plugins.SecurityView !== 'undefined') plugins.SecurityView.decorate(el, name);   // v0.9.6 安保叠加层开着时：结界 / 监控 / 门禁
@@ -70,6 +73,9 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   c.scrollTop = 0;
   declutter();
 }
+// PLACE-1b：地图标记的记录（先按标记的节点 id，再按显示名）。取不到就是 null，卡片照旧只显示包自己的正文。
+// place-card.mjs 反过来 import 这里的 showCard，所以这一侧只用一次绑定，不在解析期互相调用。
+const markerRecord = (el, name) => { try { const f = placeCardBridge.recordOf; return f ? (f(el.dataset.mid || '') || f(name || '')) : null; } catch (e) { return null; } };
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素
 export function closeCard(user) {
   const c = $('#card'), had = !c.hidden, inCard = c.contains(document.activeElement);

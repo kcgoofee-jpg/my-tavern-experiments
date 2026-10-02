@@ -33,6 +33,7 @@
     },
     "routine": { "$ref": "#/$defs/path", "description": "NPC 日程表（Part 5-3，结构见 core/routine.mjs）；键与 id 一律 ASCII，中文只允许出现在值里" },
         "worldbook_addon": { "$ref": "#/$defs/path", "description": "世界书附加条目成品 JSON（tools/build_worldbook_addon.py 的产物，宿主自检与 JIT 读）" },
+        "addon_places": { "$ref": "#/$defs/path", "description": "在自己的世界书条目里写着的地点 [{ id, name, alias?, text, estate? }]（docs/place-record.md §2.3：那段正文就是这些地点的说明，K-R134）" },
         "patrol": { "$ref": "#/$defs/path", "description": "巡逻岗哨 / 机兵的视野锥 {walls?, guards: [...]}（Part 5-2，结构见 core/vision.mjs）" }
       } },
     "preload": { "type": "array", "items": { "$ref": "#/$defs/path" }, "description": "启动预取的数据文件（查看器首帧按包注入 <link rel=preload>；路径相对清单目录，eden 相对 map/）" },

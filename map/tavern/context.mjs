@@ -145,8 +145,8 @@ export class ContextPipeline {
 
   /** ⌖改名 / ⌖用途（v0.9.3）：某一楼原文变了（重 roll / 编辑 / 删楼）先倒序撤销那一楼用过的标签，再按新原文重扫比 标签楼 新的楼。
    *  返回 null（没动）或 { custom, tag, applied, undone }——提示与保存由宿主做（有应用 / 撤销才 customChanged，否则只 saveRoot）。
-   *  kindOf(key) = 这个名字算人物 / 房间 / 区域 / 地标（宿主拿人物栏与注册表判）。 */
-  customTags(custom, msgs, floorNow, kindOf) {
+   *  kindOf(key) = 这个名字算人物 / 房间 / 区域 / 地标（宿主拿人物栏与注册表判）。idOf（PLACE-1b）= 标签里的地点名 → 自定义项的键（节点 id）。 */
+  customTags(custom, msgs, floorNow, kindOf, idOf) {
     const tag = this.tag;
     if (!custom) return null;
     if (floorNow >= 0 && floorNow < tag.floor) tag.floor = floorNow;   // 删过楼：之后的新楼照常处理
@@ -161,7 +161,7 @@ export class ContextPipeline {
     const todo = msgs.filter(m => changed.has(m.floor) || m.floor > tag.floor);
     const applied = [];
     for (const m of todo) {
-      const before = mvuReaders.normCustom(custom), r = mvuReaders.applyTags(custom, [m], m.floor - 1, kindOf);
+      const before = mvuReaders.normCustom(custom), r = mvuReaders.applyTags(custom, [m], m.floor - 1, kindOf, idOf);
       for (const a of r.applied) { const e = before.items[a.key] || {}; tag.log.push({ floor: a.floor, key: a.key, op: a.op, prev: a.op === 'name' ? e.名 || '' : e.用途 || '' }); before.items[a.key] = { ...e, [a.op === 'name' ? '名' : '用途']: a.value }; }
       custom = r.custom; applied.push(...r.applied); tag.seen[m.floor] = hashText(m.text); dirty = true;
     }

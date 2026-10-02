@@ -17,6 +17,9 @@ import { noticeRefresh } from './notice-layer.mjs';
 import { initStatusDot } from './status-dot.mjs';
 import { initTabs, refreshTabs, setTabEnv } from './tabs.mjs';   // the tab registry (S6-1): visibility rules live in core/drawer-tabs.mjs
 import { firstFallback, tabOrder, legendOptedIn } from '../core/drawer-tabs.mjs';
+import { placeTab, openRecord } from './place-card.mjs';
+import { recordOf, onSources } from './place-sources.mjs';
+import { hereRes } from './locate.mjs';
 // 层切换器：手机放在抽屉摘要行左侧（「中层 ▾」一次点开），桌面在控制列顶上常展开
 export function placeLayers() {
   const lay = $('#layers'), S = window.ViewerDrawer; if (!lay || !S) return;
@@ -59,12 +62,29 @@ function fillLegend(box) {
 function legendEl() { const box = document.createElement('div'); box.className = 'lg'; box.id = 'legendPane'; fillLegend(box); return box; }
 
 export function placeEmpty(um) {
-  const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '') || (document.body.classList.contains('shell3d') && e.dataset.um === '3d')) return;   // a 3D building fills this pane itself (estate-shell.mjs) e.dataset.um = um || '';
-  if (!um) { e.textContent = ''; e.textContent = uiTextOr('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
-  let s = e.querySelector('span.umq');   // HEADER-1: the name only; the one entry is the place pill in the header
-  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; e.append(s); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
-  s.textContent = uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + uiTextOr('um.empty_where', '点上方的地点标签，把它放到地图上；放一次，这个聊天之后都会记住。');
+  const e = $('#cardEmpty'); if (!e || (document.body.classList.contains('shell3d') && e.dataset.um === '3d')) return;   // 三维页自己填这一格（estate-shell.mjs）；二维每次都按当前的地点重画
+  e.dataset.um = um || '';
+  if (um) {   // 当前地点认不出来：还是那一句「放到地图上」
+    let s = e.querySelector('span.umq');   // HEADER-1: the name only; the one entry is the place pill in the header
+    if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; e.append(s); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
+    s.textContent = uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + uiTextOr('um.empty_where', '点上方的地点标签，把它放到地图上；放一次，这个聊天之后都会记住。');
+    return;
+  }
+  // PLACE-1b（docs/place-record.md §3.1）：二维的「地点」页也是「当前地点记录卡 + 上级链 + 附近」，不再是空的
+  e.replaceChildren(placeTab({ record: hereRecord(), pick: id => openRecord(id) }));
 }
+/** 当前位置所在的地方的记录：先按节点（树认得的地名），再按图钉所在的地标；都没有就空态 */
+function hereRecord() {
+  const r = hereRes($('#here')?.value || '');
+  for (const id of [r?.node, r?.marker]) { const rec = id && recordOf(id); if (rec) return rec; }
+  return null;
+}
+onSources(() => placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null));   // 包里那份地点散文到了：地点页重画一次
+// 当前位置变了、或者玩家改了地点的文字：地点页跟着重画
+busOn({ key: 'drawer.placeTab', type: 'message', fn: e => {
+  const t = e?.data?.type; if (t !== 'eden-map:here' && t !== 'eden-map:custom') return;
+  placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null);
+} });
 
 export function cardSheet(open) {
   const S = window.ViewerDrawer; if (!S) return; sheetVis();

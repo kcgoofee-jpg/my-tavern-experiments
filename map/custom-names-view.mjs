@@ -18,6 +18,8 @@ import { packStorage, chatId, rebuildHere } from './app/extension-api.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import { createTint, NIGHT_KEY } from './custom-tint.mjs'; import { createOutfit } from './custom-outfit.mjs'; import { createHints } from './custom-hints.mjs'; import { createDialogView } from './custom-dialog-view.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { openPlaceEditor, placeEditorOpen } from './app/place-editor.mjs';
+import { refreshCard } from './app/place-card.mjs';   // PLACE-1b：宿主推来新的自定义数据后，打开着的那张记录卡跟着重画
 const CustomNamesView = (() => {
   const embed = window.top !== window;
   let MV = null, data = { items: {}, 同步世界书: true }, host = null, clock = null;
@@ -33,14 +35,15 @@ const CustomNamesView = (() => {
   function saveLocal() { try { packStorage?.setItem(lsKey(), JSON.stringify({ 自定义: data })); return true; } catch (e) { return false; } }
 
   // ---------- 给其他部分用 ----------
-  const name = key => (data.items?.[key]?.名) || key;
-  const entry = key => data.items?.[key] || null;
+  const keyOf = key => (MV?.findKey(data, key) || Object.entries(data.items || {}).find(([k, e]) => (e.标 || k) === key)?.[0] || key);   // PLACE-1b: 键可能是节点 id，按名字 / 叫法 / 包里的原名都找得到
+  const name = key => MV?.displayName(data, keyOf(key)) || key;
+  const entry = key => data.items?.[keyOf(key)] || null;
   /** app/place-resolver.mjs makeHere 的 custom 参数：房间 / 地标的自定义叫法 */
   // v0.9.6：区域、层 / 大区、世界地名的叫法，和「未上图」里选了「忽略」的名字
   function index() { if (!MV) return null; return { rooms: MV.aliasMap(data, ['room']), areas: MV.aliasMap(data, ['area']), marks: MV.aliasMap(data, ['landmark']), layers: MV.aliasMap(data, ['layer']), world: MV.aliasMap(data, ['world']), ignore: data.忽略 || [] }; }
   function apply() {
     if (typeof rebuildHere === 'function') rebuildHere();
-    relabel(); renderUI();
+    relabel(); renderUI(); refreshCard();   // PLACE-1b：记录卡、地图标签与设置里的清单一起跟上（编辑器保存 / 撤销 / 剧情标签之后）
     if (typeof plugins.CharactersView !== 'undefined') { plugins.CharactersView.render(); }
     if (typeof markHere === 'function' && typeof mapRegistry !== 'undefined' && mapRegistry) markHere(document.getElementById('here')?.value || '');
   }
@@ -72,9 +75,9 @@ const CustomNamesView = (() => {
   const { night, nightOn, todNow } = createTint({ getClock: () => clock }), OF = createOutfit(), { toast } = createHints(), V = createDialogView({ uiTextOr }), { ic, IC, excerpt } = V;
 
   // ---------- 设置里的「自定义」一栏（入口 + 同步 / 存储 / 夜色）与「自定义」对话框（v0.9.5） ----------
-  // 对话框三页：list 已有的自定义（卡片：原名 → 新名、用途摘要、来源；编辑 / 重置 / 在地图上看）→ pick 选择器（搜索 + 按层 / 楼层分组）→ edit 表单（校验、字数）。
-  // 点卡片或选择器里的「在地图上看」= flyTo({ map, marker | room | area | character })。
-  let listQ = '', PK = null, plan = null, view = 'list', editing = null, query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
+  // PLACE-1b：这一项只剩两页 —— list（本聊天改过的地点：原名 → 新名、用途摘要、来源；编辑 / 重置 / 在地图上看）与 pick（选一个对象）。
+  // 「编辑」不再有自己的表单：任何一行、选择器里的任何一条都打开同一个编辑器（app/place-editor.mjs）。
+  let listQ = '', PK = null, plan = null, view = 'list', query = '', opener = null, resetArm = null, resetT = 0, flyMsg = '';
   const pk = () => (PK ? Promise.resolve(PK) : import(new URL('tavern/picker.mjs', document.baseURI).href).then(m => (PK = m)));
   const planP = () => (plan ? Promise.resolve(plan) : !packData('rooms') ? Promise.resolve(plan = {}) : Promise.all([import(new URL('estate/plan.js', document.baseURI).href).catch(() => ({})), fetch(new URL(packData('rooms'), document.baseURI)).then(r => (r.ok ? r.json() : null)).catch(() => null)])
     .then(([m, card]) => (plan = { ...m, CARD: card })));   // 卡设定分层房间（B2–F3）
@@ -84,6 +87,7 @@ const CustomNamesView = (() => {
     return PK.buildGroups({ reg: mapRegistry, plan: plan && { ...plan, CARD: cardPlan() }, chars: typeof plugins.CharactersView !== 'undefined' ? plugins.CharactersView.items.map(c => c.name) : [], lang: typeof LANG !== 'undefined' ? LANG : 'zh' });
   }
   const allKeys = () => groups().flatMap(g => g.items.map(i => i.key));
+  void allKeys;   // PLACE-1b：表单搬进 app/place-editor.mjs 之后，选择器的校验在这里用不到了
   function targetOf(key) {
     const it = PK && PK.findItem(groups(), key); if (it) return it.target;
     const e = entry(key); if (e?.类 === 'character') return { character: key };
@@ -107,7 +111,7 @@ const CustomNamesView = (() => {
       for (const ev of ['pointerenter', 'focusin']) box.addEventListener(ev, () => { if (!depsOk) (window.requestIdleCallback || setTimeout)(warm); }, { once: true }); }
     const n = Object.keys(data.items || {}).length;
     box.innerHTML = `<h3>${esc(uiTextOr('cu.title', '自定义'))}</h3>`
-      + `<button type="button" class="btn cu-open" data-open="1"><span>${esc(uiTextOr('cu.manage', '名称与用途'))}</span><em>${esc(n ? uiTextOr('cu.count', '{n} 项', { n }) : uiTextOr('cu.none', '还没有'))}</em></button>`
+      + `<button type="button" class="btn cu-open" data-open="1"><span>${esc(uiTextOr('cu.manage', '本聊天改过的地点'))}</span><em>${esc(n ? uiTextOr('cu.count', '{n} 项', { n }) : uiTextOr('cu.none', '还没有'))}</em></button>`
       + (embed && host ? `<label><span>${esc(uiTextOr('cu.sync', '同步到世界书'))}</span><input type="checkbox" role="switch" id="cuSync" ${data.同步世界书 ? 'checked' : ''} ${host.wb ? '' : 'disabled'}></label>`
         + `<small>${esc(host.wb ? uiTextOr('cu.sync_hint2', '默认开：有了第一项自定义才建世界书「{book}」（每个聊天一本，一个常驻条目）。关掉只停用条目，不删世界书', { book: worldbookPrefix(PACK, PACK?.id) + '·自定义' }) : uiTextOr('cu.sync_noapi', '酒馆助手没有世界书接口，不能同步'))}</small>`
         : '')   // 任务二：书没绑上由卡内脚本静默水合（tavern/wb_jit.bindPlan + eden-map.js silentBind），前端不再提示玩家去后台手动勾
@@ -126,15 +130,15 @@ const CustomNamesView = (() => {
     dlg = document.createElement('div'); dlg.id = 'cuDlg'; dlg.hidden = true;
     dlg.innerHTML = `<div class="cu-sheet" role="dialog" aria-modal="true" aria-labelledby="cuDlgT"><header><button type="button" class="cu-ic" data-back="1" hidden></button><h2 id="cuDlgT" tabindex="-1"></h2><button type="button" class="cu-ic" data-close="1"></button></header><div class="cu-body"></div><p class="cu-live a11y" role="status" aria-live="polite"></p></div>`;
     document.body.appendChild(dlg);
-    dlg.addEventListener('click', onDlgClick); dlg.addEventListener('input', onInput); dlg.addEventListener('submit', e => { e.preventDefault(); save(); });
+    dlg.addEventListener('click', onDlgClick); dlg.addEventListener('input', onInput);
     dlg.addEventListener('keydown', onKey);
   }
   // fix3（用户 2026-09-28「打开自定义卡顿」）：以前先等 选择器模块 + 主场景房间表（分层房间表）+ MVU 模块全部到齐才开对话框；
   // 现在列表页立刻打开（只用已有数据），这些在后台取，进「选一个对象 / 编辑」时才等（等的时候显示统一加载组件）；设置「数据与映射」一打开就空闲预取
   const deps = () => Promise.all([pk(), planP(), ready]).catch(() => {});
   let depsOk = false; const warm = () => deps().then(() => { depsOk = true; });
-  async function openDlg(from, v = 'list', key = null) {
-    if (!dlg) mkDlg(); opener = from || document.activeElement; view = v; editing = key; query = ''; flyMsg = ''; resetArm = null;
+  async function openDlg(from, v = 'list') {
+    if (!dlg) mkDlg(); opener = from || document.activeElement; view = v; query = ''; flyMsg = ''; resetArm = null;
     dlg.hidden = false; document.body.classList.add('cudlg');
     if (v !== 'list' && !depsOk) { loadingBody(); await warm(); if (dlg.hidden) return; }
     renderDlg(true); if (!depsOk) warm();
@@ -151,13 +155,12 @@ const CustomNamesView = (() => {
     const body = dlg.querySelector('.cu-body'), h = dlg.querySelector('h2'), back = dlg.querySelector('[data-back]'), x = dlg.querySelector('[data-close]');
     back.hidden = view === 'list'; back.innerHTML = ic(IC.back); back.setAttribute('aria-label', uiTextOr('cu.back', '返回'));
     x.innerHTML = ic(IC.x); x.setAttribute('aria-label', uiTextOr('close', '关闭'));
-    h.textContent = view === 'pick' ? uiTextOr('cu.pick_title', '选一个对象') : view === 'edit' ? (entry(editing) ? uiTextOr('cu.edit_title', '编辑') : uiTextOr('cu.add_title', '添加自定义')) : uiTextOr('cu.dlg_title', '名称与用途');
+    h.textContent = view === 'pick' ? uiTextOr('cu.pick_title', '选一个对象') : uiTextOr('cu.dlg_title', '本聊天改过的地点');
     if (view === 'list') body.innerHTML = V.listHtml({ data, flyMsg, listQ, resetArm });
-    else if (view === 'pick') { body.innerHTML = V.pickHtml({ gs: groups(), query }); pickResults(); }
-    else body.innerHTML = V.editHtml({ editing, e: entry(editing) || {}, it: PK?.findItem(groups(), editing), kd: kindOf(editing), MV });
+    else { body.innerHTML = V.pickHtml({ gs: groups(), query }); pickResults(); }
     if (focus) {
-      const f = view === 'pick' ? (matchMedia('(pointer: coarse)').matches ? null : body.querySelector('input[type=search]')) : view === 'edit' ? body.querySelector('input[name=name]') : h;
-      (f || h).focus({ preventScroll: true }); if (f?.select && view === 'edit') f.select();
+      const f = view === 'pick' ? (matchMedia('(pointer: coarse)').matches ? null : body.querySelector('input[type=search]')) : h;
+      (f || h).focus({ preventScroll: true });
     }
   }
   function pickResults() {
@@ -167,22 +170,9 @@ const CustomNamesView = (() => {
     dlg.querySelector('.cu-chips').hidden = !!query;
     box.innerHTML = V.resultsHtml(gs, entry);
   }
-  const ERR = { too_long: ['cu.err_long', '太长了'], dup_std: ['cu.err_dup_std', '和另一个地点 / 人物的标准名重名，地点匹配会分不清'], dup_name: ['cu.err_dup', '和另一项的显示名重名'], empty: ['cu.err_empty', '至少填一项（想恢复原样用「重置」）'] };
-  function check(show) {
-    const f = dlg.querySelector('form'); if (!f || !PK) return true;
-    const r = PK.validate({ key: editing, name: f.elements.name.value, note: f.elements.note.value, custom: data, keys: allKeys(), maxName: MV?.MAX_NAME, maxNote: MV?.MAX_NOTE });
-    const nu = [...f.elements.note.value.trim()].length, max = MV?.MAX_NOTE || 200, cnt = dlg.querySelector('#cuNoteCnt');
-    cnt.textContent = `${nu} / ${max}`; cnt.classList.toggle('near', nu > max * .9);
-    const nm = r.name && (show || r.name !== 'empty') ? uiTextOr(...ERR[r.name]) : '', nt = r.note ? uiTextOr(...ERR[r.note]) : '';
-    dlg.querySelector('#cuNameErr').textContent = nm; dlg.querySelector('#cuNoteErr').textContent = nt;
-    f.elements.name.setAttribute('aria-invalid', nm ? 'true' : 'false'); f.elements.note.setAttribute('aria-invalid', nt ? 'true' : 'false');
-    f.querySelector('[type=submit]').setAttribute('aria-disabled', r.ok ? 'false' : 'true');
-    return r.ok;
-  }
   function onInput(ev) {
     if (ev.target.id === 'cuQ') { query = ev.target.value; pickResults(); }
     else if (ev.target.id === 'cuLQ') { listQ = ev.target.value; const pos = ev.target.selectionStart; renderDlg(false); const i = dlg.querySelector('#cuLQ'); i.focus(); i.setSelectionRange(pos, pos); }
-    else if (ev.target.form) check(false);
   }
   function say(s) { const l = dlg?.querySelector('.cu-live'); if (l) { l.textContent = ''; setTimeout(() => { l.textContent = s; }, 30); } }
   function onDlgClick(ev) {
@@ -190,10 +180,10 @@ const CustomNamesView = (() => {
     const b = ev.target.closest('button'); if (!b) return; ev.stopPropagation();
     const d = b.dataset;
     if (d.close) closeDlg();
-    else if (d.back) { view = view === 'edit' && !entry(editing) ? 'pick' : 'list'; renderDlg(true); }
+    else if (d.back) { view = 'list'; renderDlg(true); }
     else if (d.pick) go2('pick');
-    else if (d.pickkey != null) { editing = d.pickkey; go2('edit'); }
-    else if (d.edit != null) { editing = d.edit; go2('edit'); }
+    else if (d.pickkey != null) { editPlace(d.pickkey); return; }   // PLACE-1b：选一个对象 → 同一个编辑器
+    else if (d.edit != null) { editPlace(d.edit); return; }
     else if (d.jump) { const s = dlg.querySelector(`section[data-g="${CSS.escape(d.jump)}"]`); s?.scrollIntoView({ block: 'start' }); s?.querySelector('button')?.focus({ preventScroll: true }); }
     else if (d.reset != null) {
       if (resetArm !== d.reset) { resetArm = d.reset; clearTimeout(resetT); resetT = setTimeout(() => { resetArm = null; if (!dlg.hidden && view === 'list') renderDlg(false); }, 4000); renderDlg(false); dlg.querySelector(`[data-reset="${CSS.escape(d.reset)}"]`)?.focus(); return; }
@@ -203,7 +193,7 @@ const CustomNamesView = (() => {
     else if (d.unalias != null) { const k = d.unalias, a = d.a; setCustom(k, { unalias: a }).then(ok => { if (ok) say(uiTextOr('cu.unalias_done', '已去掉叫法 {a}', { a })); }); }
   }
   function onKey(e) {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (view !== 'list') { view = view === 'edit' && !entry(editing) ? 'pick' : 'list'; renderDlg(true); } else closeDlg(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (view !== 'list') { view = 'list'; renderDlg(true); } else closeDlg(); return; }
     if (e.key === 'Enter' && e.target.id === 'cuQ') { e.preventDefault(); dlg.querySelector('#cuRes .cu-row')?.focus(); return; }
     if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && (e.target.classList.contains('cu-row') || e.target.id === 'cuQ')) {
       const rows = [...dlg.querySelectorAll('#cuRes .cu-row')], i = rows.indexOf(e.target), n = e.key === 'ArrowDown' ? i + 1 : i - 1;
@@ -214,15 +204,10 @@ const CustomNamesView = (() => {
     if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
   }
   // 查看器的全局按键（捕获阶段）先问这里：对话框开着时一律不交给地图（Esc 不会顺带关掉设置或整个面板；[ ] 不切层）
-  function dlgKey(e) { if (!dlg || dlg.hidden) return false; if (!dlg.contains(e.target)) { onKey(e); if (e.key === 'Tab' && !e.defaultPrevented) { e.preventDefault(); dlg.querySelector('h2').focus(); } } return true; }
-  function save() {
-    if (!check(true)) { dlg.querySelector('[aria-invalid=true]')?.focus(); return; }
-    const f = dlg.querySelector('form'), key = editing;
-    setCustom(key, { name: f.elements.name.value, note: f.elements.note.value, kind: kindOf(key), source: 'manual' }).then(ok => {
-      if (!ok) { dlg.querySelector('#cuNameErr').textContent = uiTextOr('cu.err_save', '没存上，请再试一次'); return; }
-      view = 'list'; editing = null; renderDlg(false); say(uiTextOr('cu.saved', '已保存')); dlg.querySelector(`[data-edit="${CSS.escape(key)}"]`)?.focus();
-    });
-  }
+  function dlgKey(e) { if (!dlg || dlg.hidden) return false; if (placeEditorOpen?.()) return true;   // PLACE-1b：编辑器开着时按键归它（Esc 先关编辑器，不连带关掉这一层）
+    if (!dlg.contains(e.target)) { onKey(e); if (e.key === 'Tab' && !e.defaultPrevented) { e.preventDefault(); dlg.querySelector('h2').focus(); } } return true; }
+  // PLACE-1b：设置页不再有自己的编辑表单 —— 列表里的一行、选择器里的一条，都打开同一个编辑器
+  function editPlace(key) { const e = entry(key); openPlaceEditor(keyOf(key), { person: e?.类 === 'character', onSaved: () => { renderDlg(false); if (!dlg.hidden) dlg.querySelector('.cu-live') && say(uiTextOr('cu.saved', '已保存')); } }); }
   // 点了「在地图上看」：关掉对话框和设置，飞过去；飞不了（人物不在人物栏、找不到地点）就留在对话框里说明
   async function fly(key) {
     await pk(); const t = targetOf(key);
@@ -265,8 +250,9 @@ const CustomNamesView = (() => {
   }
 
   // ---------- 读写（EdenMap 也走这里） ----------
+  // PLACE-1b：写之前按名字 / 叫法找回那个键（有节点树的包键已经是节点 id 了）
   async function setCustom(key, patch) {
-    const M = MV || await ready; if (!M) return false;
+    const M = MV || await ready; if (!M) return false; key = M.findKey(data, key) || key;
     if (embed && host) { if (!M.setCustom(data, key, patch)) return false; post({ type: 'eden-map:custom-set', key, patch }); return true; }
     const r = M.setCustom(data, key, patch); if (!r) return false; data = r; saveLocal(); apply(); return true;
   }
@@ -326,7 +312,6 @@ const CustomNamesView = (() => {
   #cuDlg .cu-names b{font-weight:600}
   #cuDlg .cu-ex{color:var(--ink-2);font-size:var(--fs-small);line-height:1.5;word-break:break-all}
   #cuDlg .cu-tags{display:flex;gap:var(--sp-3)}
-  #cuDlg .cu-tags em,#cuDlg .cu-target em{font-style:normal;font-size:var(--fs-micro);padding:1px var(--sp-3);border-radius:var(--r-pill);border:1px solid var(--line);color:var(--ink-2)}
   #cuDlg .cu-tags em.src-tag{border-color:var(--line-strong);color:var(--accent)}
   #cuDlg .cu-card .cu-acts{display:flex;border-top:1px solid var(--line)}
   #cuDlg .cu-card .cu-acts .btn{flex:1;border:0;border-radius:0;background:none;min-width:0;padding:0 var(--sp-3)}
@@ -354,20 +339,6 @@ const CustomNamesView = (() => {
   #cuDlg .cu-row span{flex-basis:100%;color:var(--ink-2);font-size:var(--fs-small);line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #cuDlg .cu-row .cu-u{color:var(--accent)}
   #cuDlg .cu-none{color:var(--ink-2);font-size:var(--fs-small);line-height:1.6}
-  #cuDlg .cu-form{display:flex;flex-direction:column;gap:var(--sp-3)}
-  #cuDlg .cu-target{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-3) var(--sp-4);margin:0 0 var(--sp-4);padding:0 0 var(--sp-5);border-bottom:1px solid var(--line)}
-  #cuDlg .cu-target b{font-size:var(--fs-title);font-weight:600}
-  #cuDlg .cu-target small{color:var(--muted);font-size:var(--fs-small)}
-  #cuDlg .cu-target .btn{margin-left:auto}
-  #cuDlg label.col{font-size:var(--fs-small);color:var(--ink-2);margin-top:var(--sp-4)}
-  #cuDlg label.col small{color:var(--muted);font-size:var(--fs-micro)}
-  #cuDlg .cu-err{color:var(--alert);font-size:var(--fs-small);min-height:0}
-  #cuDlg .cu-err:empty{display:none}
-  #cuDlg .cu-cnt{display:flex;justify-content:space-between;gap:var(--sp-4)}
-  #cuDlg #cuNoteCnt{margin-left:auto;color:var(--muted);font-size:var(--fs-small);font-variant-numeric:tabular-nums}
-  #cuDlg #cuNoteCnt.near{color:var(--alert)}
-  #cuDlg .cu-form .cu-acts{display:flex;gap:var(--sp-4);margin-top:var(--sp-5)}
-  #cuDlg .cu-form .cu-acts .btn{flex:1}
   #cuDlg .a11y{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   @media (max-width:640px){
     #cuDlg{place-items:stretch}
@@ -375,7 +346,6 @@ const CustomNamesView = (() => {
     #cuDlg .cu-body{padding:var(--sp-5) var(--sp-6)}
     #cuDlg .cu-search{margin:calc(-1 * var(--sp-5)) calc(-1 * var(--sp-6)) 0;padding:var(--sp-5) var(--sp-6)}
     #cuDlg .cu-card .cu-acts .btn span{font-size:var(--fs-small)}
-    #cuDlg .cu-form .cu-acts{position:sticky;bottom:calc(-1 * var(--sp-5));margin:var(--sp-5) calc(-1 * var(--sp-6)) calc(-1 * var(--sp-5));padding:var(--sp-4) var(--sp-6) var(--sp-5);background:var(--surface);border-top:1px solid var(--line)}
   }
   #card .cu-note,#card .cu-outfit{margin:0 0 var(--sp-3,6px);font-size:var(--fs-micro);line-height:1.5;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #card .cu-note{white-space:normal}

@@ -2,6 +2,9 @@
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
 import { recordNorm, describeRecord } from '../core/settlement-record.mjs';
+import { fromV1 } from '../core/compat-v1.mjs';
+import { records, idFinder } from '../core/place-record.mjs';
+import * as CR from '../core/custom-record.mjs';
 import { createChatData } from './chat-data.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
@@ -73,6 +76,34 @@ export function createRootStore(host) {
     }
     return any;
   }
+  // PLACE-1b（docs/place-record.md §5.2）：自定义项的键跟着记录走（有节点树的包用节点 id），包里的原名留在 标。
+  // 解析器来自包自己的节点表 + 房间表（查看器读的是同两份文件，core/compat-v1 + core/place-record）；取不到就退回按名字认，什么都不丢。
+  let keysP = null, keysNow = null, tagsIdOf = null;
+  async function placeKeys() {
+    if (keysP) return keysP;
+    keysP = (async () => {
+      const none = { idOf: () => null, ready: false };
+      try {
+        const man = await host.MAN; if (!man) return none;
+        const maps = regNow || await reg(); if (!maps?.maps) return none;
+        const nodes = fromV1({ manifest: man, maps }).pack?.nodes || [];
+        let plan = null; const rel = man.data?.rooms;   // 房间表带 node，节点的 id 才有意义
+        if (rel && host.BASE) { const r = await cdnFetch(host.BASE + (PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/') + rel).catch(() => null); plan = r?.ok ? await r.json().catch(() => null) : null; }
+        if (!plan?.rooms) return none;
+        const all = records({ nodes, plan }), idOf = idFinder({ nodes, plan });
+        keysNow = { idOf, by: new Map(all.map(r => [r.id, r.name])) };
+        return { idOf, ready: true };
+      } catch (e) { console.warn('[eden-map] 地点键解析不可用，仍按名字认', e); return none; }
+    })();
+    return keysP;
+  }
+  /** 一个地点词 → 它在自定义数据里的键（已有的项优先，其次节点 id，最后原词）；顺带给出包里的原名（键是 id 时写进 标） */
+  async function placeKeyOf(word) {
+    const k = String(word || '').trim(); if (!k || !custom) return { key: k, std: k };
+    const mvr = host.mvuReaders, hit = mvr?.findKey(custom, k), km = await placeKeys();
+    const key = hit || km.idOf(k) || k;
+    return { key, std: hit ? mvr.stdOf(custom, hit) : (km.by?.get(key) || (key === k ? k : mvr?.stdOf(custom, key) || k)) };
+  }
   async function loadCustom() {
     if (!host.mvuReaders) return;
     const id = chatId(); customChat = id;
@@ -105,6 +136,13 @@ export function createRootStore(host) {
       const had = await wbExists(host.mvuReaders.wbName(id)); if (customChat !== id) return;
       custom = host.mvuReaders.normCustom(host.mvuReaders.syncMigrate(v.自定义, had)); custom.同步手动 = true; await saveRoot(); }   // 迁移结果立刻写回（否则下次加载会把新建的世界书当成「自己关过」）
     if (customChat !== id) return;
+    // PLACE-1b：旧键（标准名）换成节点 id，名字搬进 标；换不到的照旧按名字认。改过一次，之后不再动。
+    const km = await placeKeys(); if (customChat !== id) return;
+    if (km.ready && Object.keys(custom.items).length) {
+      const mig = CR.migrateKeys(custom, km.idOf);
+      if (mig.moved) { custom = host.mvuReaders.normCustom(mig.custom); await saveRoot(); }
+      if (customChat !== id) return;
+    }
     if (migrated) await saveRoot();   // 迁移结果落盘一次（内容没变时 writeVars 自己不写）
     if (customChat !== id) return;
     customChanged(false);
@@ -166,16 +204,20 @@ export function createRootStore(host) {
   let regNow = null; reg().then(r => { regNow = r; });
   // 注：reg() 用的是当前线路的 maps.json（与地图同一份）；取不到时一律当地标
   function kindOf(key) {
-    if (host.chars.some(c => c.name === key)) return 'character';
+    const n = keyName(key);   // PLACE-1b: 键可能是节点 id，判定类别一律按包里的原名
+    if (host.chars.some(c => c.name === n)) return 'character';
     const e = Object.values(regNow?.maps || {}).find(m => m.kind === 'estate');
-    if (e?.rooms?.includes(key)) return 'room'; if (e?.areas?.includes(key)) return 'area';
+    if (e?.rooms?.includes(n)) return 'room'; if (e?.areas?.includes(n)) return 'area';
     return 'landmark';
   }
+  /** 键 → 包里的原名（同步的项已换键时用得上；解析器没到之前就是键本身） */
+  function keyName(key) { const known = keysNow?.by.get?.(key); return known || CR.stdOf(custom?.items?.[key], key); }
   // 剧情标签 ⌖改名 / ⌖用途（v0.9.3）：撤销-重放状态机在流水线里（tavern/context.mjs customTags，node 单测）；
   // 这里只做守卫与副作用——有应用 / 撤销走 customChanged（提示 + 保存 + 世界书），纯指纹收紧只 saveRoot。
   function customTags(msgs) {
     if (!host.mvuReaders || !custom || customChat !== chatId()) return;
-    const r = contextPipeline.customTags(custom, msgs, host.floorNow, kindOf);
+    placeKeys().then(km => { if (km.ready) tagsIdOf = km.idOf; });   // PLACE-1b：标签里的地点名换成节点 id（解析器没到就按名字认）
+    const r = contextPipeline.customTags(custom, msgs, host.floorNow, kindOf, tagsIdOf);
     if (!r) return;
     custom = r.custom; contextPipeline.tag = r.tag;
     if (r.applied.length || r.undone) { toastQ.push(...r.applied.map(host.mvuReaders.tagToast)); customChanged(true); } else saveRoot();
@@ -186,7 +228,8 @@ export function createRootStore(host) {
     if (!mvr || !custom || customChat !== chatId() || !key || !patch || typeof patch !== 'object') return false;
     const p = {}; for (const k of ['name', 'desc', 'facts', 'aliases', 'base']) if (k in patch) p[k] = patch[k];
     if ('use' in patch) p.note = patch.use;
-    const r = mvr.setCustom(custom, key, { ...p, kind: custom.items[key]?.类 || kindOf(key), source: 'manual', floor: Math.max(0, Math.trunc(+host.floorNow) || 0), undo: true });
+    const km = keysNow, std = km?.by?.get(key) || CR.stdOf(custom.items[key], key);   // PLACE-1b: 键是节点 id 时把包里的原名一起存下
+    const r = mvr.setCustom(custom, key, { ...p, std, kind: custom.items[key]?.类 || kindOf(key), source: 'manual', floor: Math.max(0, Math.trunc(+host.floorNow) || 0), undo: true }, km?.idOf || null);
     if (!r) return false; custom = r; customChanged(true); return true;
   }
   function placeUndo(id) {
@@ -196,7 +239,7 @@ export function createRootStore(host) {
   function flushToasts() { if (!host.alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   return {
     get storageBudget() { return storageBudget; }, budgetSweep, resetChat: () => chatData.reset(), orphanSweep: () => chatData.orphanSweep(), get custom() { return custom; }, set custom(v) { custom = v; }, customChanged, get customChat() { return customChat; },
-    customTags, kindOf, loadCustom, onHide, placeEdit, placeUndo, get evHide() { return evHide; }, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
+    customTags, kindOf, loadCustom, onHide, placeEdit, placeKeyOf, placeUndo, get evHide() { return evHide; }, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
     get wbState() { return wbState; }, set wbState(v) { wbState = v; },
   };
 }

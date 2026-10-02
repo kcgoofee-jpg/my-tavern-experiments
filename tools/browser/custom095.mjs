@@ -71,45 +71,42 @@ async function run(name, preset) {
     await vf.locator('#cuQ').fill('门厅'); await B.wait(150);
     const alias = await vf.evaluate(() => [...document.querySelectorAll('#cuRes .cu-row b')].map(b => b.textContent));
     rep.check(`${name} 搜索别名「门厅」→ 大厅`, alias.includes('大厅') || alias.includes('门厅'), JSON.stringify(alias));   // estate2 起「门厅」在卡分层房间表里是独立条目
-    // 键盘：↓ 到第一行，Enter 进编辑
+    // 键盘：↓ 到第一行，Enter 打开同一个编辑器（PLACE-1b：设置页不再有自己的表单）
     await vf.locator('#cuQ').fill('主人书房'); await B.wait(150);
-    await vf.locator('#cuQ').press('ArrowDown'); await vf.evaluate(() => document.activeElement.click()); await B.wait(300);
-    const ed = await vf.evaluate(() => ({ t: document.querySelector('#cuDlg .cu-target b')?.textContent, foc: document.activeElement?.id, cnt: document.querySelector('#cuNoteCnt')?.textContent }));
-    rep.check(`${name} 键盘 ↓ + 回车进编辑页，焦点在显示名，字数 0 / 200`, ed.t === '主人书房' && ed.foc === 'cuName' && ed.cnt === '0 / 200', JSON.stringify(ed));
-    // 4 校验：重名、都空
-    await vf.locator('#cuName').fill('大厅'); await B.wait(100);
-    const e1 = await vf.evaluate(() => document.querySelector('#cuNameErr').textContent);
-    await vf.locator('#cuName').fill(''); await vf.evaluate(() => document.querySelector('#cuDlg form').requestSubmit()); await B.wait(150);
-    const e2 = await vf.evaluate(() => ({ t: document.querySelector('#cuNameErr').textContent, inv: document.querySelector('#cuName').getAttribute('aria-invalid') }));
-    rep.check(`${name} 校验：和标准名重名、都空不能保存（行内提示）`, /重名/.test(e1) && /至少填一项/.test(e2.t) && e2.inv === 'true', JSON.stringify({ e1, e2 }));
-    await vf.locator('#cuName').fill('星图室'); await vf.locator('#cuNote').fill('夜里看星图，整理旧地图'); await B.wait(100);
-    const cnt = await vf.evaluate(() => document.querySelector('#cuNoteCnt').textContent);
+    await vf.locator('#cuQ').press('ArrowDown'); await vf.evaluate(() => document.activeElement.click()); await B.wait(400);
+    const ed = await vf.evaluate(() => ({ open: !document.getElementById('prDlg')?.hidden, t: document.querySelector('#prDlg .pr-target b')?.textContent, foc: document.activeElement?.tagName, cnt: document.querySelector('#prDlg .pr-f > label > em')?.textContent }));
+    rep.check(`${name} 键盘 ↓ + 回车：打开地点编辑器（目标 主人书房，焦点在名称，字数 0 / 40）`, ed.open && ed.t === '主人书房' && ed.foc === 'INPUT' && ed.cnt === '0 / 40', JSON.stringify(ed));
     await jpg(p, `cu_${name}_edit`);
-    await vf.evaluate(() => document.querySelector('#cuDlg form').requestSubmit()); await B.wait(900);
+    // 编辑器里改显示名与用途 → 保存（校验交给 core/custom-record：字数上限在字段上，冲突提示在编辑器字段下）
+    await vf.evaluate(() => { const d = document.getElementById('prDlg'); const [n, u] = d.querySelectorAll('input[type=text]'); n.value = '星图室'; n.dispatchEvent(new Event('input')); u.value = '夜里看星图，整理旧地图'; u.dispatchEvent(new Event('input')); d.querySelector('button[type=submit]').click(); });
+    await B.wait(1200);
     const v1 = await H.vars(), wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '';
-    rep.check(`${name} 保存 → 聊天变量 eden_map（来源 手动）；字数 11 / 200`, v1?.eden_map?.自定义?.items?.主人书房?.名 === '星图室' && v1.eden_map.自定义.items.主人书房.源 === '手动' && cnt === '11 / 200' && !('stat_data' in v1), JSON.stringify({ cnt, it: v1?.eden_map?.自定义?.items?.主人书房 }));
-    rep.check(`${name} 第一项自定义后才建世界书，并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && wb1.books[bn][0].enabled && /星图室/.test(wb1.books[bn][0].content) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat }));
+    const it = Object.values(v1?.eden_map?.自定义?.items || {})[0] || {};
+    rep.check(`${name} 保存 → 聊天变量 eden_map（键 = 记录 id，标 = 包里的原名；来源 手动）`, it.名 === '星图室' && it.用途 === '夜里看星图，整理旧地图' && it.标 === '主人书房' && it.源 === '手动' && !('stat_data' in v1), JSON.stringify(it));
+    rep.check(`${name} 第一项自定义后才建世界书，并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && (wb1.books[bn] || []).some(e => e.enabled && /星图室|主人书房/.test(e.content)) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat, n: (wb1.books[bn] || []).length }));
+    await vf.evaluate(() => { const d = document.getElementById('cuDlg'); if (!d.hidden && d.querySelector('.cu-chips')) d.querySelector('[data-back]').click(); else if (d.hidden) { ViewerDebug.showSet(true); document.querySelector('#cuBox .cu-open').click(); } }); await B.wait(700);
     // 5 列表卡片：剧情标签来源
-    await H.setMsgs([{ message_id: 5, message: '<span style="display:none">⌖用途 温室：冬天在这里喝茶</span>' }]); await B.wait(900);
+    await H.setMsgs([{ message_id: 5, message: '<span style="display:none">⌖用途 温室：冬天在这里喝茶</span>' }]); await B.wait(1200);
     const cards = await vf.evaluate(() => [...document.querySelectorAll('#cuDlg .cu-card')].map(c => ({ n: c.querySelector('.cu-names').textContent, src: c.querySelector('.cu-tags em:last-child').textContent, acts: c.querySelectorAll('.cu-acts .btn').length, h: Math.min(...[...c.querySelectorAll('.cu-acts .btn, .cu-main')].map(b => b.getBoundingClientRect().height)) })));
-    rep.check(`${name} 卡片：原名 → 新名、来源（手动 / 剧情标签）、编辑 / 重置 / 在地图上看，触控 ≥ 44 px`, cards.length === 2 && cards.some(c => /主人书房→星图室/.test(c.n) && c.src === '手动') && cards.some(c => /温室/.test(c.n) && c.src === '剧情标签') && cards.every(c => c.acts === 3 && c.h >= 44), JSON.stringify(cards));
+    rep.check(`${name} 卡片：包里的原名 → 新名（不显示节点 id）、来源（手动 / 剧情标签）、编辑 / 重置 / 在地图上看，触控 ≥ 44 px`, cards.length === 2 && cards.some(c => /主人书房→星图室/.test(c.n) && c.src === '手动') && cards.some(c => /温室/.test(c.n) && c.src === '剧情标签') && cards.every(c => c.acts === 3 && c.h >= 44), JSON.stringify(cards));
     await jpg(p, `cu_${name}_list`);
     // 6 重置：二次确认
     await vf.evaluate(() => document.querySelector('#cuDlg [data-reset="温室"]').click()); await B.wait(200);
     const arm = await vf.evaluate(() => ({ t: document.querySelector('#cuDlg [data-reset="温室"]').textContent, n: document.querySelectorAll('#cuDlg .cu-card').length }));
-    await vf.evaluate(() => document.querySelector('#cuDlg [data-reset="温室"]').click()); await B.wait(800);
-    const v2 = await H.vars();
-    rep.check(`${name} 重置：第一下变「确认重置」，第二下才删`, arm.t === '确认重置' && arm.n === 2 && !v2.eden_map.自定义.items.温室 && v2.eden_map.自定义.items.主人书房, JSON.stringify(arm));
-    // 7 Tab 焦点困在对话框里；Esc 从编辑页回列表、再 Esc 关掉，焦点回到入口按钮
+    await vf.evaluate(() => document.querySelector('#cuDlg [data-reset="温室"]').click()); await B.wait(1000);
+    const v2 = await H.vars(), left = Object.values(v2.eden_map.自定义.items).map(e => e.标 || e.名);
+    rep.check(`${name} 重置：第一下变「确认重置」，第二下才删（只剩另一项）`, arm.t === '确认重置' && arm.n === 2 && left.length === 1 && left[0] === '主人书房', JSON.stringify({ arm, left }));
+    // 7 Tab 焦点困在对话框里；Esc 从编辑器回到列表、再 Esc 关掉，焦点回到入口
     const trap = await vf.evaluate(() => { const d = document.querySelector('#cuDlg'); const f = [...d.querySelectorAll('button, input, textarea')].filter(x => x.offsetParent); f.at(-1).focus(); return f.length; });
     await vf.locator(':focus').press('Tab');
     const inDlg = await vf.evaluate(() => document.querySelector('#cuDlg').contains(document.activeElement));
-    await vf.evaluate(() => document.querySelector('#cuDlg [data-edit="主人书房"]').click()); await B.wait(200);
-    await vf.locator(':focus').press('Escape'); await B.wait(150);
-    const back = await vf.evaluate(() => !!document.querySelector('#cuDlg .cu-cards'));
-    await vf.locator(':focus').press('Escape'); await B.wait(150);
+    await vf.evaluate(() => document.querySelector('#cuDlg [data-edit="主人书房"]').click()); await B.wait(400);
+    const edOpen = await vf.evaluate(() => !document.getElementById('prDlg').hidden);
+    await vf.locator('#prDlg .pr-body input').first().press('Escape'); await B.wait(200);
+    const edClosed = await vf.evaluate(() => document.getElementById('prDlg').hidden);
+    await vf.locator(':focus').press('Escape'); await B.wait(200);
     const closed = await vf.evaluate(() => ({ h: document.querySelector('#cuDlg').hidden, f: document.activeElement?.className }));
-    rep.check(`${name} 键盘：Tab 不跑出对话框；Esc 编辑页 → 列表 → 关闭，焦点回入口`, trap > 3 && inDlg && back && closed.h && /cu-open/.test(closed.f || ''), JSON.stringify({ trap, inDlg, back, closed }));
+    rep.check(`${name} 键盘：Tab 不跑出对话框；编辑开 / Esc 关；再 Esc 关列表，焦点回入口`, trap > 3 && inDlg && edOpen && edClosed && closed.h && /cu-open/.test(closed.f || ''), JSON.stringify({ trap, inDlg, edOpen, edClosed, closed }));
     // 8 飞过去：地标（中层 → 下层 7 号井黑市）
     await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#cuBox .cu-open').click(); }); await B.wait(500);
     await vf.evaluate(() => document.querySelector('#cuDlg .cu-add').click()); await B.wait(300);

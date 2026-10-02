@@ -33,6 +33,9 @@ const S7 = {
     'cu.night': ['按时段给地图加色调、切换昼夜底图（清晨 / 傍晚 / 夜间）', 'Tint the map and switch day / night base maps by time (dawn / dusk / night)'],
     // UI-COH-1 (D46): the load state is the dot only; the ✓ glyph leaves the text
     'loaded': ['已加载', 'Loaded'],
+    // PLACE-1b (D44 §7.2): the settings row and the dialog are the list of what this chat changed, not a form of its own
+    'cu.manage': ['本聊天改过的地点', 'Places changed in this chat'],
+    'cu.dlg_title': ['本聊天改过的地点', 'Places changed in this chat'],
   },
 };
 // U-FIX-5 (TT sweep-1 D1-01, S-02): chat-floor wording (「聊天第 N 楼」, not the building's floors), neutral settings words, the portrait hint without host jargon. Pinned values (zh, en).

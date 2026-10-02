@@ -20,6 +20,7 @@
     "routine": "data/routine.json",
     "overlay": "packs/eden/overlay.v2.json",
     "worldbook_addon": "data/worldbook_addon.json",
+    "addon_places": "data/addon_places.json",
     "names": {
       "en": "packs/eden/names.en.json"
     }

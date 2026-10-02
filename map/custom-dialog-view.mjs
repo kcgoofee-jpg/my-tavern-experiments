@@ -14,8 +14,9 @@ export function createDialogView({ uiTextOr }) {
         .map(([a, b, c]) => `<li><b>${esc(a)}</b>${b ? ` → <b>${esc(b)}</b>` : ''}<small>${esc(uiTextOr('cu.note', '用途'))}：${esc(c)}</small></li>`).join('') + `</ul></div>`;
     const lq = listQ.trim().toLowerCase(), shown = lq ? items.filter(([k, e]) => [k, e.名, e.用途, ...(e.别名 || [])].some(s => s && s.toLowerCase().includes(lq))) : items;
     const filt = items.length > 5 ? `<input type="search" id="cuLQ" class="cu-lq" autocomplete="off" aria-label="${esc(uiTextOr('cu.list_search', '在已有的自定义里找'))}" placeholder="${esc(uiTextOr('cu.list_search', '在已有的自定义里找'))}" value="${esc(listQ)}">` : '';
-    return add + msg + filt + `<ul class="cu-cards">` + shown.map(([k, e]) => {
-      const src = e.源 === '标签' ? ['tag', uiTextOr('cu.src_tag', '剧情标签')] : ['man', uiTextOr('cu.src_manual', '手动')], arm = resetArm === k;
+    return add + msg + filt + `<ul class="cu-cards">` + shown.map(([k0, e]) => {
+      const k = e.标 || k0;   // PLACE-1b: the key may be a node id; the list always shows the pack's own name
+      const src = e.源 === '标签' ? ['tag', uiTextOr('cu.src_tag', '剧情标签')] : ['man', uiTextOr('cu.src_manual', '手动')], arm = resetArm === k;   // 键可能是节点 id；界面上一律用包里的原名，读写再换回键
       return `<li class="cu-card"><button type="button" class="cu-main" data-fly="${esc(k)}" aria-label="${esc(uiTextOr('cu.fly_aria', '在地图上看 {n}', { n: e.名 || k }))}">`
         + `<span class="cu-names">${e.名 ? `<s>${esc(k)}</s><i aria-hidden="true">→</i><b>${esc(e.名)}</b>` : `<b>${esc(k)}</b>`}</span>`
         + (e.用途 ? `<span class="cu-ex">${esc(excerpt(e.用途))}</span>` : '')
@@ -38,16 +39,5 @@ export function createDialogView({ uiTextOr }) {
         + `<button type="button" class="cu-ic" data-fly="${esc(it.key)}" aria-label="${esc(uiTextOr('cu.fly_aria', '在地图上看 {n}', { n: e?.名 || it.key }))}" title="${esc(uiTextOr('cu.fly', '在地图上看'))}">${ic(IC.pin)}</button></li>`;
     }).join('') + `</ul></section>`).join('');
   }
-  function editHtml({ editing, e, it, kd, MV }) {
-    const nu = [...(e.用途 || '')].length;
-    return `<form class="cu-form" novalidate><p class="cu-target"><b>${esc(editing)}</b><em>${esc(uiTextOr(...(KIND[kd] || KIND.landmark)))}</em>${it ? `<small>${esc(it.group)}</small>` : ''}`
-      + `<button type="button" class="btn" data-fly="${esc(editing)}">${ic(IC.pin)}<span>${esc(uiTextOr('cu.fly', '在地图上看'))}</span></button></p>`
-      + `<label class="col" for="cuName"><span>${esc(uiTextOr('cu.name', '显示名'))} <small>${esc(uiTextOr('cu.name_hint', '留空 = 用标准名'))}</small></span></label>`
-      + `<input type="text" id="cuName" name="name" maxlength="${MV?.MAX_NAME || 40}" value="${esc(e.名 || '')}" placeholder="${esc(editing)}" aria-describedby="cuNameErr"><small class="cu-err" id="cuNameErr" aria-live="polite"></small>`
-      + `<label class="col" for="cuNote"><span>${esc(uiTextOr('cu.note', '用途'))} <small>${esc(uiTextOr('cu.note_hint', '一句话，模型会当作背景'))}</small></span></label>`
-      + `<textarea id="cuNote" name="note" rows="3" maxlength="${MV?.MAX_NOTE || 200}" aria-describedby="cuNoteCnt cuNoteErr">${esc(e.用途 || '')}</textarea>`
-      + `<div class="cu-cnt"><small class="cu-err" id="cuNoteErr" aria-live="polite"></small><small id="cuNoteCnt">${nu} / ${MV?.MAX_NOTE || 200}</small></div>`
-      + `<span class="cu-acts"><button type="submit" class="btn pri">${esc(uiTextOr('cu.save', '保存'))}</button><button type="button" class="btn" data-back="1">${esc(uiTextOr('cu.cancel', '取消'))}</button></span></form>`;
-  }
-  return { ic, IC, excerpt, listHtml, pickHtml, resultsHtml, editHtml };
+  return { ic, IC, excerpt, listHtml, pickHtml, resultsHtml };   // PLACE-1b：编辑表单搬去 app/place-editor.mjs（一个编辑器，地点与人物共用）
 }

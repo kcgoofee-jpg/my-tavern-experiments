@@ -105,6 +105,7 @@ const CharactersView = (() => {
       document.getElementById('card').classList.toggle('person2', !!sv.querySelector('details.chmore'));   // 桌面：有「更多资料」时人物卡两栏
       sv.querySelector('details.chmore')?.addEventListener('toggle', e => { try { LocalStore.set(MO_OPEN, e.target.open ? '1' : '0'); } catch (x) {} });
       if (typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.person(c.name);   // K-R106: the card script's own pictures and this person's scenes
+      editAct(c.name);   // PLACE-1b：人物卡也用那一个编辑器（用途对人物不显示）
       return; }
     sv.innerHTML = `<dl class="fields">${list.map(c => `<dt>${esc(dn(c.name))}</dt><dd>${esc(when(c) + ' · ' + srcOf(c))}</dd>`).join('')}</dl>`;
   }
@@ -124,6 +125,14 @@ const CharactersView = (() => {
   /** the person's card where the viewer already is (the 3D view's chip: no flying to the 2D map) */
   function cardHere(name) { const c = items.find(x => x.name === name) || (rosterItem(name) ? { name, place: '', floor: 0, roster: true } : null); if (c) card([c]); }
   function afterOpen() { render().then(() => { if (flyName) fly(flyName); }); }
+  /** PLACE-1b：人物卡上的「编辑」——与地点同一个编辑器（app/place-editor.mjs），用途字段对人物不显示 */
+  function editAct(name) {
+    const ex = document.querySelector('#card .extra'); if (!ex) return;
+    ex.querySelectorAll('.pr-acts').forEach(n => n.remove());
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = uiTextOr('pr.edit', '编辑');
+    b.addEventListener('click', () => import('./app/place-editor.mjs').then(m => m.openPlaceEditor(name, { person: true })));
+    const box = document.createElement('div'); box.className = 'pr-acts'; box.append(b); ex.prepend(box);
+  }
 
   // ---------- 横条里的「人物」页 ----------
   const glist = () => groupList({ groups, rosters, declared: packOverlay?.entities?.groups });   // 分组：宿主发来的 groups 优先；旧宿主只发 rosters 时按包声明的组

@@ -1,59 +1,49 @@
-// The cards of a 3D building, in the one card system (docs/ui-refactor.md U-30, S7-3 T3): a room, an outdoor zone or vehicle, and the building itself are the viewer's place card with
-// sections; the 3D page only says what was picked. Everything here is built with textContent (the words come from pack data). Pure DOM builders: the shell (estate-shell.mjs) owns the state.
+// 3D 建筑里的卡（PLACE-1b，docs/place-record.md §3.2）：一间房、一处室外区域或载具，都由那条记录画。
+// 三维页只说「点了哪个」（estate:select / estate:zone），记录与文字都在查看器这一侧算，所以同一个地点在二维三维里长得一样。
+// 署名（PACK.credits）不住在这里了：它在设置页，地点页与房间卡都不再出现（brief §7 对原作者署名的要求由设置页与包清单满足）。
 import { $ } from './dom-helpers.mjs';
-import { LANG } from './i18n.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { showCard } from './markers.mjs';
-import { PACK } from './current-pack.mjs';
-import { roomMedia, remoteOn } from './pack-live.mjs';
-import { nodePictures } from '../core/pack-media.mjs';
+import { recordCard, recordBody, recordActions } from './place-card.mjs';
+import { recordOf } from './place-sources.mjs';
 import { RT } from './nodes-runtime.mjs';
 
 const T = (k, zh, v) => uiTextOr(k, zh, v);
 const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-const zhOnly = t => LANG === 'zh' || !/[一-鿿]/.test(t);   // text that exists in Chinese only is not shown under the English interface
-const fieldRows = (rows) => { const dl = h('dl', 'fields'); for (const [k, v] of rows) { if (!v) continue; dl.append(h('dt', null, k), h('dd', null, v)); } return dl; };
 const floorLabel = (floors, id) => floors.find(f => f.id === id)?.label || id || '';
+const dl = rows => { const d = h('dl', 'fields'); for (const [k, v] of rows) if (v) d.append(h('dt', null, k), h('dd', null, v)); return d; };
 
-/** a room: floor and building as the sub line, area / use / access rows, the room's pictures and the custom block; `back` = a way back to the building's list */
+/** a room: the record does the talking (floor · building, description, access, area, facts) + 编辑 / 世界书档案 */
 export function roomCard(r, ctx) {
+  const rec = recordOf(r.node || '') || recordOf(r.name);
   const k = ctx.kinds.find(x => x.id === r.kind) || { id: r.kind, label: r.kind, color: '' };
-  const fl = floorLabel(ctx.floors, r.floor), bd = ctx.building.title;
-  showCard(null, r.name, '', '', [fl, bd].filter(Boolean).join(' · '), undefined, false);
-  const c = $('#card');
+  const sub = rec?.sub || [floorLabel(ctx.floors, r.floor), ctx.building.title].filter(Boolean).join(' · ');
+  if (!rec) return bareRoom(r, k, sub);
+  recordCard(rec, { kindLabel: k.label, back: ctx.back, sub });
+  return $('#card');
+}
+/** 这一间在树里还没有记录（表里有、记录还没算出来）：只画它自己的行，不编文字 */
+function bareRoom(r, k, sub) {
+  showCard(null, r.name, '', null, sub, undefined, false);
   const rows = [[T('v3.kind', '类别'), k.label]];
   if (Number.isFinite(r.area) && r.area > 0) rows.push([T('v3.area', '面积'), `${Math.round(r.area)} ㎡`]);
-  if (r.note && zhOnly(r.note)) rows.push([T('v3.use', '说明'), r.note]);
-  if (r.access && zhOnly(r.access)) rows.push([T('v3.access', '出入'), r.access]);
-  const src = c.querySelector('.src'); src.replaceChildren(fieldRows(rows));
-  const ex = c.querySelector('.extra');
-  if (ctx.back) { const b = h('button', 'btn v3back', T('v3.back', '回到建筑')); b.type = 'button'; b.dataset.v3back = '1'; ex.append(b); }
-  customBlock(ex, r);
+  if (r.note) rows.push([T('v3.use', '说明'), r.note]);
+  if (r.access) rows.push([T('v3.access', '出入'), r.access]);
+  $('#card .src').replaceChildren(dl(rows));
+  return $('#card');
 }
-/** the room-gallery panel's custom name / note / picture entry of a room (loaded on first use; the same store as before, keyed by the room name) */
-async function customBlock(ex, r) {
-  const m = await import('../ui/room-gallery-panel.js').catch(() => null); if (!m || !ex.isConnected) return;
-  const box = h('div'); box.innerHTML = m.roomCustomBlockHTML(r.name, LANG); ex.append(...box.children);
-  const c = $('#card'); if (c.dataset.rgBound) return; c.dataset.rgBound = '1'; c.dataset.lang = LANG;
-  m.bindRoomCustomEvents(c, { base: './', pictures: name => { const raw = roomMedia()[name] || []; return raw.map(x => ({ id: x.id, item: x.item, url: nodePictures({ [x.id]: x.item }, [x.id], { base: '', remoteOn: remoteOn() })[0]?.url ?? null })); } });
-}
-/** an outdoor zone or a vehicle: { title, sub, rows: [[label, text]], acts: [{ id, label, node?, zone? }] } as the 3D page describes it */
+/** an outdoor zone or a vehicle: the record's text, then the rows the 3D page has for it, then its own jumps */
 export function zoneCard(z) {
-  showCard(null, z.title || '', '', '', z.sub || '', undefined, false);
-  const c = $('#card'); c.querySelector('.src').replaceChildren(fieldRows((z.rows || []).filter(r => Array.isArray(r) && zhOnly(String(r[1] ?? '')))));
-  const ex = c.querySelector('.extra');
+  const rec = recordOf(z.title || '') || recordOf(z.id || '');
+  showCard(null, z.title || '', '', null, rec?.sub || z.sub || '', undefined, false);
+  const c = $('#card'), src = c.querySelector('.src'), ex = c.querySelector('.extra');
+  if (rec) { src.replaceChildren(recordBody(rec)); ex.append(recordActions(rec)); }
+  src.append(dl((z.rows || []).filter(r => Array.isArray(r) && r[1])));
   for (const a of z.acts || []) {
     if (a.id === 'enter' && a.node) { const l = h('a', null, a.label); l.dataset.go = a.node; l.setAttribute('role', 'button'); l.tabIndex = 0; if (a.title) l.title = a.title; ex.append(l); }
     else if (a.id === 'zone' && a.zone) { const b = h('button', 'btn', a.label); b.type = 'button'; b.dataset.v3zone = a.zone; ex.append(b); }
   }
-}
-/** the building's words and credits (the about section reads only `building` and `credits`) */
-export function aboutSection(bd) {
-  const s = h('section', 'v3about'); if (bd.subtitle) s.append(h('p', 'v3sub', bd.subtitle)); if (bd.summary) s.append(h('p', null, bd.summary));
-  const cr = PACK?.credits || {}, line = (t, url) => { const p = h('p', 'v3cr'); if (typeof url === 'string' && /^https:\/\//.test(url)) { const a = h('a', null, t); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; p.append(a); } else p.textContent = t; return p; };
-  if (cr.card?.creator) s.append(line(cr.card.creator, cr.card.url));
-  for (const x of [...(cr.pack || []), ...(cr.assets || [])]) if (x?.name) s.append(line([x.name, x.role, x.license].filter(Boolean).join(' · '), x.url));
-  return s;
+  return c;
 }
 /** the rooms grouped by floor, each a button; `rooms` = [{ name, node?, floor }]; `pick(room)` is called on a click */
 export function roomList(rooms, floors, pick) {

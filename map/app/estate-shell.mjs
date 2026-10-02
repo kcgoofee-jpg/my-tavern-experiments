@@ -5,7 +5,7 @@
 //   * opens the shared place / person card for what the page reports (estate:select, estate:person) and lists the building's rooms in the drawer's place tab;
 //   * sends the people the chat places in the building (estate:people, from core/estate-people.mjs) when the list changes.
 // The card sections are built in estate-cards.mjs. Nothing here writes host state; the viewer only sends intents up (eden-map:* stays in the other modules).
-import { mapRegistry, currentMapId } from './state.mjs';
+import { currentMapId } from './state.mjs';
 import { $, iconSvg } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { plugins, register } from './plugins.mjs';
@@ -14,9 +14,11 @@ import { renderNav } from './map-level-nav.mjs';
 import { hereRes } from './locate.mjs';
 import { eventGeo, isScene } from './nodes-runtime.mjs';
 import { buildEstatePeople, sameList } from '../core/estate-people.mjs';
-import { aboutSection, roomCard, roomList, treeRooms, zoneCard } from './estate-cards.mjs';
+import { roomCard, zoneCard } from './estate-cards.mjs';
+import { placeTab, recordCard, nearbyRow } from './place-card.mjs';
+import { recordOf, buildingOf, onSources } from './place-sources.mjs';
 
-const S = { on: false, ready: false, floors: [], rooms: [], building: { title: '', subtitle: '', summary: '' }, kinds: [], mode: 'ext', floor: null, labels: true, sent: null, insets: '' };
+const S = { on: false, ready: false, floors: [], rooms: [], nodes: new Set(), building: { title: '', subtitle: '', summary: '' }, kinds: [], mode: 'ext', floor: null, labels: true, sent: null, insets: '' };
 let send = () => {}, ui = null;
 const T = (k, zh) => uiTextOr(k, zh);
 const MODES = [['ext', 'v3.ext', '外观'], ['sect', 'v3.section', '楼层']];   // D38: two buttons, the x-ray view is gone
@@ -88,7 +90,8 @@ export const holds = name => !!S.sent?.some(p => p.name === name);
 export function attach(sendFn) { Object.assign(S, { on: true, ready: false, floors: [], rooms: [], kinds: [], mode: 'ext', floor: null, sent: null, insets: '' }); send = sendFn; document.body.classList.add('shell3d'); paint(); }
 export function detach() { if (!S.on) return; S.on = false; S.ready = false; send = () => {}; document.body.classList.remove('shell3d'); $('#v3menu').hidden = true; $('#zoom #lblTog')?.setAttribute('aria-pressed', 'true'); S.labels = true; }
 export function ready(d) {
-  Object.assign(S, { ready: true, floors: (d.floors || []).filter(f => f && typeof f.id === 'string'), rooms: (d.rooms || []).filter(r => r && typeof r.name === 'string'), kinds: d.kinds || [], building: { title: '', subtitle: '', summary: '', ...(d.building || {}) } });
+  const rooms = (d.rooms || []).filter(r => r && typeof r.name === 'string');
+  Object.assign(S, { ready: true, floors: (d.floors || []).filter(f => f && typeof f.id === 'string'), rooms, nodes: new Set(rooms.map(r => r.node).filter(Boolean)), kinds: d.kinds || [], building: { title: '', subtitle: '', summary: '', ...(d.building || {}) } });
   paint(); insets(); renderNav(); refreshList(); people(); $('#stage').setAttribute('aria-label', S.building.title || '');
 }
 export const language = () => { if (S.on) { paint(); refreshList(); } };
@@ -118,11 +121,23 @@ export function fromPage(d) {
 const cardCtx = back => ({ kinds: S.kinds, floors: S.floors, building: S.building, back });
 /** U-28: a person drawn from the schedule says where the position comes from (a neutral line in the person card) */
 function scheduleLine() { const dl = document.querySelector('#card .src dl.fields'); if (!dl || dl.querySelector('.v3sch')) return; const a = document.createElement('dt'), b = document.createElement('dd'); a.className = 'v3sch'; a.textContent = T('v3.where', '位置'); b.textContent = T('v3.by_schedule', '位置按日程推算'); dl.append(a, b); }
-/** the drawer's place tab, while no card is open: the building's about section and its rooms by floor (U-30) */
+/** PLACE-1b：玩家所在的地方 —— 他在这一栋楼里的那一间，没有就在这栋楼本身（docs/place-record.md §3.1） */
+function hereRecord() {
+  const r = hereRes($('#here')?.value || '');
+  if (r?.node && S.nodes.has(r.node)) return recordOf(r.node);
+  return buildingOf(currentMapId);
+}
+/** 地点页里点一处：房间让三维页打开它，楼层切过去，其他（楼 / 层 / 地名）就地打开那条记录 */
+function pickPlace(id, isFloor) {
+  if (isFloor) { const f = String(id).split('#')[1]; if (f) setFloor(f); return; }
+  const rec = recordOf(id); if (!rec) return;
+  if (rec.kind === 'room') { if (S.nodes.has(rec.id)) { send({ type: 'estate:select', node: rec.id }); return; } }
+  recordCard(rec, {});
+}
+/** the drawer's place tab, while no card is open: where the player is, its ancestors, what is next door (PLACE-1b) */
 function refreshList() {
   const e = $('#cardEmpty'); if (!e || !S.on || !S.ready) return;
-  const t = document.createElement('h3'); t.className = 'v3t'; t.textContent = S.building.title;
-  e.replaceChildren(t, aboutSection(S.building), roomList(S.rooms, S.floors, r => send({ type: 'estate:select', node: r.node })));
+  e.replaceChildren(placeTab({ record: hereRecord(), pick: pickPlace }));
   e.dataset.um = '3d';
 }
 
@@ -135,12 +150,13 @@ export function people() {
   if (S.sent && sameList(list, S.sent)) return;
   S.sent = list; send({ type: 'estate:people', items: list });
 }
-/** a 2D building card: the building's about section and its rooms from the node tree, each opening the 3D page on that room (a `data-go` link) */
+/** a 2D building card: the building is one record (PLACE-1b) — its words come from the record, and the rooms next door stay one click away */
 export function decorate(el, name) {
-  const mid = el?.dataset?.mid, meta = mid && mapRegistry?.maps[currentMapId]?.markers?.[mid], mp = meta?.link3d?.map || meta?.link?.map;
-  if (!mp || !isScene(mp)) return;
-  const rooms = treeRooms(mp); if (!rooms.length) return;
-  const ex = $('#card .extra'), box = roomList(rooms, [], r => { const a = document.createElement('a'); a.dataset.go = mp; a.dataset.focus = r.name; document.body.append(a); a.click(); a.remove(); });
-  ex.append(box);
+  const rec = recordOf(el?.dataset?.mid || '') || recordOf(name || '');
+  if (!rec) return;
+  $('#card .extra').querySelectorAll('.pr-near').forEach(n => n.remove());
+  const near = nearbyRow(rec, id => { const r = recordOf(id); if (r) recordCard(r, {}); });
+  if (near) $('#card .extra').append(near);
 }
+onSources(() => { if (S.on) refreshList(); });   // 包里那份地点散文到了：地点页重画一次
 register('EstateShell', { people, active, holds, fromPage, decorate });

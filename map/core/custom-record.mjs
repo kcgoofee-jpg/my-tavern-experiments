@@ -15,14 +15,17 @@ export const normFacts = v => [...new Set((Array.isArray(v) ? v : []).map(x => c
 export const baseOf = rec => ({ name: fp(rec?.baseName ?? rec?.name), desc: fp(rec?.desc), facts: fp((rec?.facts || []).join('\n')) });
 const BASE_FIELDS = ['name', 'desc', 'facts'];
 
-/** The new fields of one item, healed into `e` (`it` = the raw item): 说明, 事实, 基于, 楼. */
+/** The new fields of one item, healed into `e` (`it` = the raw item): 说明, 事实, 基于, 楼, 标. */
 export function normItemExtra(e, it) {
   const d = String(it.说明 ?? '').trim(); if (d) e.说明 = cut(d, MAX_DESC);
   const f = normFacts(it.事实); if (f.length) e.事实 = f;
   if (isObj(it.基于)) { const b = {}; for (const k of BASE_FIELDS) if (typeof it.基于[k] === 'string' && /^[a-z0-9]{1,12}$/.test(it.基于[k])) b[k] = it.基于[k]; if (Object.keys(b).length) e.基于 = b; }
   if (Number.isInteger(it.楼) && it.楼 >= 0) e.楼 = it.楼;
+  if (typeof it.标 === 'string') { const s = clean(it.标); if (s && [...s].length <= MAX_NAME) e.标 = s; }   // the pack's own name, kept when the key is a node id (PLACE-1b)
   return e;
 }
+/** The pack's name of an item: what the key used to be (PLACE-1b: the key is a node id once the tree knows the place). */
+export const stdOf = (item, key) => (item && typeof item.标 === 'string' && item.标) || key;
 /** The undo list (`自定义.撤销`): the last 20 previous states, [{ key, prev: item | null, at }]; `normItem(key, raw)` heals one item. */
 export function normUndo(raw, normItem) {
   const out = [];
@@ -39,6 +42,7 @@ export function applyPatch(cur, patch, key) {
   if ('desc' in patch) { const v = String(patch.desc ?? '').trim(); if ([...v].length > MAX_DESC) return false; if (v) cur.说明 = v; else delete cur.说明; }
   if ('facts' in patch) { const f = normFacts(patch.facts); if (f.length) cur.事实 = f; else delete cur.事实; }
   if ('aliases' in patch) { const a = [...new Set((Array.isArray(patch.aliases) ? patch.aliases : []).map(clean).filter(x => x && x !== key && x !== cur.名 && [...x].length <= MAX_NAME))].slice(0, MAX_ALIAS); if (a.length) cur.别名 = a; else delete cur.别名; }
+  if ('std' in patch) { const s = clean(patch.std); if (s && s !== key && [...s].length <= MAX_NAME) cur.标 = s; else delete cur.标; }   // PLACE-1b: the pack's own name, when the key is a node id
   if ('base' in patch) { if (isObj(patch.base)) cur.基于 = { ...(cur.基于 || {}), ...patch.base }; else delete cur.基于; }
   if (Number.isInteger(patch.floor) && patch.floor >= 0) cur.楼 = patch.floor;
   return true;
@@ -84,14 +88,16 @@ export function overlay(rec, item, story = []) {
   out.stale = staleFields(item, { baseName: rec.name, desc: rec.desc, facts: rec.facts });
   out.custom = true; return out;
 }
-/** Old keys are standard names; a node id is the key once the tree knows the name. `idOf(name)` -> node id | null. Items that cannot be resolved keep their key. */
+/** Old keys are standard names; a node id is the key once the tree knows the name. `idOf(name)` -> node id | null. Items that cannot be resolved keep their key.
+ *  A moved item remembers the name it came from in 标 (PLACE-1b), so every reader can still show the place by name. */
 export function migrateKeys(c, idOf) {
   const items = {}; let moved = 0;
   for (const [k, e] of Object.entries(c?.items || {})) {
     const id = idOf(k);
-    if (!id || id === k) { items[k] = items[k] ? { ...e, ...items[k] } : e; continue; }
-    items[id] = items[id] ? { ...e, ...items[id] } : e; moved++;   // an item already under the id wins field by field
+    if (!id || id === k) { items[k] = items[k] ? { ...items[k], ...e } : e; continue; }   // 已经写在 id 下的那项逐字段优先
+    const moved0 = { ...e, 标: stdOf(e, k) };   // an item already under the id wins field by field
+    items[id] = items[id] ? { ...moved0, ...items[id] } : moved0; moved++;
   }
-  const undo = (c.撤销 || []).map(u => { const id = idOf(u.key); return id && id !== u.key ? { ...u, key: id } : u; });
+  const undo = (c.撤销 || []).map(u => { const id = idOf(u.key); return id && id !== u.key ? { ...u, key: id, prev: u.prev ? { ...u.prev, 标: stdOf(u.prev, u.key) } : null } : u; });
   return { custom: { ...c, items, ...(undo.length ? { 撤销: undo } : {}) }, moved };
 }

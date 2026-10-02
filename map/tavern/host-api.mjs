@@ -5,14 +5,14 @@ import { EDEN_API, guardApi } from './extension-api-contract.mjs';
 import { createFacts } from './feature-health.mjs';
 export const DEPS = [
   'mvuBridge', 'HS', 'LS', 'MAN', 'PACK_ID', 'SCRIPT', 'scriptBase', 'VER', 'cardKey', 'changedInv', 'channel', 'chatId', 'customChanged', 'fab', 'frame',
-  'hostToast', 'kindOf', 'life', 'listen', 'loadCustom', 'loadViewer', 'lsGet', 'lsSet', 'macroSet', 'openSettings', 'panel', 'pdoc', 'plainVer',
+  'hostToast', 'kindOf', 'life', 'listen', 'loadCustom', 'loadViewer', 'lsGet', 'lsSet', 'macroSet', 'openSettings', 'panel', 'pdoc', 'plainVer', 'placeKeyOf',
   'post', 'prefSync', 'push', 'reg', 'runCheck', 'showSplash', 'stateInject', 'injectPreview', 'store', 'storeWarn', 'varsOk', 'BASE', 'storageBudget', 'stashStoreModule', 'LKF', 'mvuReaders', 'dataSourceRegistryModule',
   'uiLang', 'alive', 'chars', 'checkAt', 'checkItems', 'checkP', 'clock', 'custom', 'customChat', 'floorNow', 'flyQ', 'ghost', 'here', 'stash', 'outfitNow',
   'rep', 'roster', 'wbState', 'navFacts', 'navSchedule', 'macroVal', 'xtalClear',
 ];
 export function createHostApi(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('host-api: missing dep ' + k);
-  const { mvuBridge, HS, LS, MAN, PACK_ID, SCRIPT, scriptBase, VER, cardKey, changedInv, channel, chatId, customChanged, fab, frame, hostToast, kindOf, life, listen, loadCustom, loadViewer, lsGet, lsSet, macroSet, openSettings, panel, pdoc, plainVer, post, prefSync, push, reg, runCheck, showSplash, stateInject, store, storeWarn, varsOk } = host;
+  const { mvuBridge, HS, LS, MAN, PACK_ID, SCRIPT, scriptBase, VER, cardKey, changedInv, channel, chatId, customChanged, fab, frame, hostToast, kindOf, life, listen, loadCustom, loadViewer, lsGet, lsSet, macroSet, openSettings, panel, pdoc, plainVer, placeKeyOf, post, prefSync, push, reg, runCheck, showSplash, stateInject, store, storeWarn, varsOk } = host;
   // ---------------- 本机扩展接口 window.EdenMap（E6，docs/content-compat.md） ----------------
   // 在宿主页挂 window.EdenMap，转发给地图 iframe（srcdoc，与宿主同源，直接调用）；地图没开时直接读写本机 localStorage（同一份存储）。
   // 自定义叫法按聊天分开存（edenMap:chat:<聊天 id>:custom），拿不到聊天 id 时存全局 edenMap:custom。不联网、不上传、不进地址。
@@ -53,8 +53,8 @@ export function createHostApi(host) {
     async layers() { const f = via('layers', 0); return f ? f() : []; },
     addProp: (file, o) => queued('addProp', [file, o], 1), placeProp: (id, t) => queued('placeProp', [id, t], 2),
     async removeProp(id) { const f = via('removeProp', 1); return f ? f(id) : false; }, async props() { const f = via('props', 0); return f ? f() : []; }, async unplaceProp(id, map) { const f = via('unplaceProp', 2); return f ? f(id, map) : false; },
-    // v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义）：key = 标准名（房间 / 区域 / 地标 / 人物）；patch = { name?, note?, kind? }，传 '' 清掉
-    async setCustom(key, patch = {}) { if (!host.mvuReaders || !host.custom) await loadCustom(); if (!host.mvuReaders) return false; await reg(); const k = String(key || '').trim(), r = host.mvuReaders.setCustom(host.custom, k, { ...patch, kind: patch.kind || host.custom.items[k]?.类 || kindOf(k) }); if (!r) return false; host.custom = r; customChanged(true); return true; },
+    // v0.9.3 自定义名称与用途（聊天变量 eden_map.自定义）：key = 地点 / 区域 / 地标 / 人物（PLACE-1b 起有节点树的包用节点 id，标准名由宿主换）；patch = { name?, note?, kind? }，传 '' 清掉
+    async setCustom(key, patch = {}) { if (!host.mvuReaders || !host.custom) await loadCustom(); if (!host.mvuReaders) return false; await reg(); const { key: k, std } = await placeKeyOf(key), r = host.mvuReaders.setCustom(host.custom, k, { ...patch, std, kind: patch.kind || host.custom.items[k]?.类 || kindOf(k) }); if (!r) return false; host.custom = r; customChanged(true); return true; },
     async removeCustom(key) { if (!host.mvuReaders || !host.custom) await loadCustom(); if (!host.mvuReaders) return false; const r = host.mvuReaders.removeCustom(host.custom, host.mvuReaders.findKey(host.custom, key) || key); if (!r) return false; host.custom = r; customChanged(true); return true; },
     async getCustom() { if (!host.mvuReaders || !host.custom) await loadCustom(); return { ...host.mvuReaders.normCustom(host.custom), storage: varsOk() ? 'chat' : 'local', worldbook: host.wbState ? { name: host.mvuReaders.wbName(host.customChat), state: host.wbState } : null }; },
     async setWorldbookSync(on) { if (!host.mvuReaders || !host.custom) await loadCustom(); const was = !!host.custom.同步世界书; host.custom = { ...host.custom, 同步世界书: !!on, 同步手动: true }; if (!on && was && !host.wbState) host.wbState = 'off'; customChanged(true); return true; },

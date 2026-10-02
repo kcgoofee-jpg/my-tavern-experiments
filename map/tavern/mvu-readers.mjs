@@ -131,9 +131,10 @@ function normItem(k, it) {
 /** 设置 / 修改一项（返回新对象；无效返回 null）。patch = { name?, note?, kind?, alias?, unalias?, ignore? }；name / note 传 '' = 清掉该项
  *  v0.9.6：alias = 给标准名 key 加一个叫法（进 别名，不改显示名；「未上图」指派用）；unalias = 去掉一个叫法；
  *  ignore: true / false = 把 key 这个名字记进 / 移出「忽略」（不动 items）
- *  PLACE-1a: desc / facts / aliases / base / floor / undo（见 core/custom-record.mjs applyPatch） */
-export function setCustom(c, key, patch = {}) {
-  key = clean(key); if (!key || [...key].length > MAX_NAME) return null;
+ *  PLACE-1a: desc / facts / aliases / base / floor / undo（见 core/custom-record.mjs applyPatch）
+ *  PLACE-1b: idOf（core/place-record.mjs idFinder）把标准名换成节点 id——键跟着记录走，名字留在 标 */
+export function setCustom(c, key, patch = {}, idOf = null) {
+  key = clean(idOf?.(key) || key); if (!key || [...key].length > MAX_NAME) return null;
   const n = normCustom(c);
   if ('ignore' in patch) { const ig = (n.忽略 || []).filter(a => a !== key); if (patch.ignore) ig.push(key); n.忽略 = ig; return normCustom(n); }
   const prev = n.items[key] || null, cur = { ...(prev || { 类: 'landmark' }) };
@@ -155,15 +156,19 @@ export function setCustom(c, key, patch = {}) {
 /** Undo the last editor change (of `key` when given); null = nothing to undo. */
 export const undoCustom = (c, key) => CR.undoLast(normCustom(c), key, normCustom);
 export function removeCustom(c, key) { const n = normCustom(c); key = clean(key); if (!(key in n.items)) return null; delete n.items[key]; return n; }
-/** 显示名（没有自定义就是标准名） */
-export const displayName = (c, key) => c?.items?.[key]?.名 || key;
+/** 显示名（没有自定义就是标准名；键是节点 id 时标准名在 标 里，PLACE-1b） */
+export const displayName = (c, key) => c?.items?.[key]?.名 || CR.stdOf(c?.items?.[key], key);
+/** 标准名（包里的原名）：键本身就是名字时就是键 */
+export const stdOf = (c, key) => CR.stdOf(c?.items?.[key], key);
 /** 自定义叫法 → 标准名（含旧叫法）；kinds 只取这些类 */
 export function aliasMap(c, kinds = KINDS) {
-  const m = {}; for (const [k, e] of Object.entries(c?.items || {})) if (kinds.includes(e.类)) for (const a of [e.名, ...(e.别名 || [])]) if (a) m[a] = k;
+  const m = {}; for (const [k, e] of Object.entries(c?.items || {})) if (kinds.includes(e.类)) { const s = CR.stdOf(e, k); for (const a of [e.名, ...(e.别名 || [])]) if (a) m[a] = s; }
   return m;
 }
-/** 查自定义项：标准名或显示名都认 */
-export function findKey(c, word) { word = clean(word); if (!word) return null; if (c?.items?.[word]) return word; return aliasMap(c)[word] || null; }
+/** 查自定义项：键、显示名、叫法或包里的原名都认，返回它真正的键 */
+export function findKey(c, word) { word = clean(word); if (!word) return null; if (c?.items?.[word]) return word;
+  for (const [k, e] of Object.entries(c?.items || {})) if (e.名 === word || e.标 === word || (e.别名 || []).includes(word)) return k;
+  return null; }
 /** 旧版本机叫法（core/legacy-custom.mjs readCustom：{ rooms: { 自定义名: 标准房间名 } }）并进来；已有显示名的只记成旧叫法 */
 export function migrateRooms(c, rooms) {
   const n = normCustom(c); let changed = 0;
@@ -174,15 +179,15 @@ export function migrateRooms(c, rooms) {
   }
   return { custom: normCustom(n), changed };
 }
-/** 注入给模型的一句（紧凑、有上限）；没有返回 '' */
+/** 注入给模型的一句（紧凑、有上限）；没有返回 ''。键是节点 id 时用包里的原名（PLACE-1b） */
 export function summarizeCustom(c, maxLen = 220) {
-  const parts = Object.entries(c?.items || {}).map(([k, e]) => (e.名 ? `${k}→${e.名}` : k) + (e.用途 ? `（${e.用途}）` : '')).filter(Boolean);
+  const parts = Object.entries(c?.items || {}).map(([k, e]) => (e.名 ? `${stdOf(c, k)}→${e.名}` : stdOf(c, k)) + (e.用途 ? `（${e.用途}）` : '')).filter(Boolean);
   if (!parts.length) return '';
   return `[地图自定义·玩家起的名字与用途] ${clip(parts.join('；'), maxLen)}。`;
 }
-/** 同步到世界书「<包名>·自定义」的条目正文 */
+/** 同步到世界书「<包名>·自定义」的条目正文（旧单体形状；PLACE-1a 起由 core/custom-book.mjs 分条目取代） */
 export function wbContent(c) {
-  const rows = Object.entries(c?.items || {}).map(([k, e]) => `- ${k}${e.名 ? `：玩家称为「${e.名}」` : ''}${e.用途 ? `；用途：${e.用途}` : ''}`);
+  const rows = Object.entries(c?.items || {}).map(([k, e]) => `- ${stdOf(c, k)}${e.名 ? `：玩家称为「${e.名}」` : ''}${e.用途 ? `；用途：${e.用途}` : ''}`);
   return rows.length ? `<地图自定义>\n以下地点 / 人物有玩家起的名字或用途，正文里可以用这些叫法：\n${rows.join('\n')}\n</地图自定义>` : '';
 }
 /** PLACE-1a: the chat's custom book = one constant index (names only) + one keyword entry per place that has a description, use or facts (core/custom-book.mjs). */
@@ -222,23 +227,24 @@ export function parseCustomTags(raw) {
   }
   return out.slice(0, 6);
 }
-/** 把新楼层的标签用到自定义数据上：msgs = [{floor, text}]，after = 已处理到的楼层。返回 { custom, applied: [{op,key,value,floor}], last } */
-export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
+/** 把新楼层的标签用到自定义数据上：msgs = [{floor, text}]，after = 已处理到的楼层。idOf（PLACE-1b）把标签里的地点名换成节点 id。
+ *  返回 { custom, applied: [{op,key,value,floor}], last } */
+export function applyTags(c, msgs, after, kindOf = () => 'landmark', idOf = null) {
   let cur = normCustom(c), last = after; const applied = [];
   for (const { floor, text } of msgs) {
     if (!(floor > after)) continue; last = Math.max(last, floor);
     for (const t of parseCustomTags(text)) {
       if (t.op === 'fact') continue;   // W7 事实：不落 custom items，wb_crystallize 从消息窗口重放收集
-      const key = findKey(cur, t.key) || t.key, kind = cur.items[key]?.类 || kindOf(key);
+      const key = findKey(cur, t.key) || (idOf?.(t.key) ?? null) || t.key, kind = cur.items[key]?.类 || kindOf(stdOf(cur, key));
       const was = cur.items[key]; if (was?.源 === '手动' && was.楼 > floor) continue;   // PLACE-1a: a manual edit saved at a later floor wins over an older tag
       const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind, source: 'tag', floor } : { note: t.value, kind, source: 'tag', floor });
-      if (nx) { cur = nx; applied.push({ ...t, key, floor }); }
+      if (nx) { cur = nx; applied.push({ ...t, key, name: t.key, floor }); }
     }
   }
   return { custom: cur, applied, last };
 }
 /** 一次性提示的文字 */
-export const tagToast = a => (a.op === 'name' ? `${a.key} 改名为「${a.value}」` : `${a.key} 的用途已更新`);
+export const tagToast = a => { const n = a.name || a.key; return a.op === 'name' ? `${n} 改名为「${a.value}」` : `${n} 的用途已更新`; };
 
 // ---------------- v0.9.5 人物栏的名册（只读）：表名和行内字段来自包（core/profile.mjs），没写的按表的形状 / 内核词表发现，不认具体卡的字段内容 ----------------
 // 组（K-R41）：在场表 = 包的 present 组，或名字在内核「在场」词表里的表；其余「以名字为键、行是对象、行里有人物 / 地点字段」的表按出现顺序分给包声明的其余各组（第 1 张给在场组之后的第一组，依此类推）

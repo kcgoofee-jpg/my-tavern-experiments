@@ -31,7 +31,7 @@ test('核心与外挂模块在桩 DOM 下都能求值（没有 TDZ / 未声明�
     for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'stat-path-mapping-view', 'compose-view', 'security']) await import(`../map/${f}.mjs`);
     for (const f of ['card-links', 'clouds', 'fog', 'data-mapping-settings', 'scale-handoff']) await import(`../map/app/${f}.mjs`);
     const { plugins } = await import('../map/app/plugins.mjs');
-    assert.deepEqual(Object.keys(plugins).sort(), ['CharactersView', 'ComposeView', 'CustomNamesView', 'EstateShell', 'EventsView', 'FogApi', 'SecurityView', 'TripsView', 'UnmappedPlacePicker', 'StatPathMappingView'].sort());
+    assert.deepEqual(Object.keys(plugins).sort(), ['CharactersView', 'ComposeView', 'CustomNamesView', 'EstateShell', 'EventsView', 'FogApi', 'SecurityView', 'TripsView', 'UnmappedPlacePicker', 'StatPathMappingView', 'WorldbookPeekView'].sort());   // PLACE-1b: the archive view is pulled into the boot graph by app/place-card.mjs
   } finally { for (const [k, d] of Object.entries(keep)) d ? Object.defineProperty(globalThis, k, d) : delete globalThis[k]; }
 });
 

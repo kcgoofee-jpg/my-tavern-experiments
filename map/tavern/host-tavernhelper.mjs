@@ -104,6 +104,9 @@ export function createWbAuto(deps) {
   // 全自动（用户 2026-09-28）：总开关 edenMapWbOn（默认开，'0' = 关）。打开地图 / 换聊天时：书没有就建并挂到当前角色附加世界书；版本变了静默合并；每个版本只提示一次；每个聊天换版本时提醒一次。
   // 墓碑（用户撤销过 / 自己删过书）存酒馆助手全局变量 eden_wb_tomb（跨设备）+ 本机 LS；只有在「数据与映射」手动写入才清掉。多标签页：navigator.locks 互斥，锁里重新读书再写；没有锁时靠合并幂等。
   const wbOn = () => lsGet('edenMapWbOn') !== '0';
+  /** PLACE-1b：档案卡上那行版本 = 发布号 + 构建号 + 日期（WB-2 的口径），不带内容指纹 */
+  const verOf = async (v, S) => { if (!v) return null; const W = await wbMod(); const l = String(W.verLabel(v, S) || v).replace(/ \(id [^)]*\)$/, ''), b = deps.mapInfo?.()?.build;
+    return l ? (Number.isInteger(b) ? `${l} · head #${b}` : l) : null; };
   const mapFacts = () => ({ map: deps.mapInfo?.() || null, lang: deps.uiLang() === 'en' ? 'en' : 'zh', now: Date.now() });   // WB-2: the readme entry's facts (map build, language, time)
   const jitOn = () => lsGet('edenMapWbJit') === '1';   // D43: while the JIT is on, the entries it switched off stay off through a sync
   /** D43: the JIT was switched off -> enable every entry it had disabled (only our book, only entries marked extra.eden_jit) */
@@ -258,7 +261,7 @@ export function createWbAuto(deps) {
             const ship = await wbShip(), S = ship ? W.shipped(ship) : null;
             for (const eid of Array.isArray(ship?.index?.[id]) ? ship.index[id] : []) {
               const c = (Array.isArray(book) ? book : []).find(x => x?.extra?.eden_id === eid), e = S?.entries.find(x => x.extra.eden_id === eid), st = W.entryState(c, e);
-              entries.push({ book: W.BOOK, id: eid, name: c?.name || e?.name || '', content: (st === 'pending' ? e?.content : c?.content) ?? '', ver: W.verLabel((st === 'pending' ? e : c)?.extra?.eden_ver, S) || null, state: st,
+              entries.push({ book: W.BOOK, id: eid, name: c?.name || e?.name || '', content: (st === 'pending' ? e?.content : c?.content) ?? '', ver: await verOf((st === 'pending' ? e : c)?.extra?.eden_ver, S), state: st,
                 ...(st === 'edited' ? { upstream: c.extra.eden_conflict?.content ?? e?.content ?? '' } : {}) });
             }
             const cn = deps.customBookName?.(), cb = cn ? await getBook(cn).catch(() => null) : null;   // this chat's custom book: the player's text for this place

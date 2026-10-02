@@ -17,7 +17,7 @@ export function loadPack(id = 'eden') {
     overlay: d.overlay ? J(d.overlay.startsWith('packs/') ? 'map/' + d.overlay : base + d.overlay) : null });
   const model = id === 'eden' ? 'map/estate/model/' : '', mm = model ? J(model + 'manifest.json') : null;
   const points = {}; for (const [k, m] of Object.entries(maps.maps || {})) if (m?.data) { const p = J(base + m.data); if (p?.markers) points[k] = { markers: p.markers.map(({ id, nx, ny, ax, ay }) => ({ id, nx, ny, ax, ay })) }; }
-  return { nodes: pack.nodes, plan, addon: d.addon_places ? null : (id === 'eden' ? J('map/data/addon_places.json')?.places : null), building: mm?.building || null,
+  return { nodes: pack.nodes, plan, addon: d.addon_places ? J(base + d.addon_places)?.places : (id === 'eden' ? J('map/data/addon_places.json')?.places : null), building: mm?.building || null,
     zones: model ? J(model + 'zones.json')?.zones : null, extras: model ? J(model + 'extras.json') : null, points };
 }
 export function dump(pack) {
