@@ -21,7 +21,7 @@ const T6 = {
 // S7-1 (docs/settings-ia.md §2, §6, §7, §8): the settings regrouping, the hint fixes and the AI advisor rename change these keys on purpose. A removed key must be gone; a changed key must
 // have exactly the value pinned here (zh, en) for the first pack. Every other key is still byte-identical to the frozen dictionaries.
 const S7 = {
-  removed: ['s.display', 's.display_sub', 's.kbd', 's.kbd_group', 'ch.from_card', 'hint.1b', 'hint.4', 'th.inj', 'th.inj_next', 'th.inj_none', 'th.inj_r_off', 'th.inj_r_skipped', 'th.inj_r_empty', 'th.inj_on', 'th.inj_note', 'th.macros', 'th.ledger_write', 'th.dice', 'th.spatial', 'th.wbjit', 'th.wbxtal', 'th.nav_cfg'],   // the rows they labelled became feature cards (fc.*), the first-run hint lost its 4th item, the shortcut heading and row became one row
+  removed: ['lg.ward', 'lg.ward_d', 'lg.conduit', 'lg.conduit_d', 'lg.platform', 'lg.platform_d', 'lg.tower', 'lg.tower_d', 'lg.clouds', 'lg.clouds_d', 'lg.omit', 'lg.omit_d', 'lg.sight', 'lg.sight_d' /* LEGEND-1 */, 's.display', 's.display_sub', 's.kbd', 's.kbd_group', 'ch.from_card', 'hint.1b', 'hint.4', 'th.inj', 'th.inj_next', 'th.inj_none', 'th.inj_r_off', 'th.inj_r_skipped', 'th.inj_r_empty', 'th.inj_on', 'th.inj_note', 'th.macros', 'th.ledger_write', 'th.dice', 'th.spatial', 'th.wbjit', 'th.wbxtal', 'th.nav_cfg'],   // the rows they labelled became feature cards (fc.*), the first-run hint lost its 4th item, the shortcut heading and row became one row
   changed: {
     's.people': ['人物与物品', 'People & items'], 's.people_sub': ['数值 · 更多资料 · 头像 · 图鉴', 'Stats · more info · portraits · gallery'],
     's.adv_sub': ['地图包 · 编辑模式 · 快捷键 · 开发者', 'Map pack · edit mode · shortcuts · developer'], 's.update_sub': ['head #{n} · {d}', 'head #{n} · {d}'],

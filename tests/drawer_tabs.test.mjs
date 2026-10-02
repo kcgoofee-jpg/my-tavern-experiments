@@ -2,7 +2,7 @@
 // (tests/helpers/drawer_tabs_v1_frozen.mjs) and the new sequence run on two fresh fake drawers for every combination of the inputs.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { KERNEL_TABS, tabOrder, applyTo, firstFallback } from '../map/core/drawer-tabs.mjs';
+import { KERNEL_TABS, tabOrder, applyTo, firstFallback, legendOptedIn } from '../map/core/drawer-tabs.mjs';
 import { renderBarFrozen, cardSheetFrozen, fakeSheet } from './helpers/drawer_tabs_v1_frozen.mjs';
 
 const IDS = ['ev', 'ch', 'it', 'pl', 'lg'], B = [false, true];
@@ -110,4 +110,15 @@ test('S6-3: a visible Items tab keeps the drawer open and is the last fallback (
   assert.equal(S.drawerHidden, true);
   const T = fakeSheet(IDS, { hidden: ['ev', 'ch', 'lg'] });
   assert.equal(firstFallback(T, KERNEL_TABS), 'it');
+});
+
+test('LEGEND-1: the legend tab is opt-in: only a pack that names `legend` in ui.tabs gets it (the first pack and the fixtures do not)', () => {
+  for (const u of [undefined, null, [], ['places', 'events', 'characters', 'items'], 'legend']) assert.equal(legendOptedIn(u), false);
+  assert.equal(legendOptedIn(['places', 'legend']), true);
+  const S = fakeSheet(IDS, { state: 'half', hidden: ['ev', 'ch', 'it', 'lg'] });   // a fixture pack that opts in: the button shows when the pane has content
+  applyTo(S, { vis: {}, scene: false, card: true, layChip: false, um: null, legendOk: legendOptedIn(['legend']) }, tabOrder(['places', 'legend']));
+  assert.equal(S.button('lg').hidden, false);
+  const T = fakeSheet(IDS, { state: 'half', hidden: ['ev', 'ch', 'it', 'lg'] });   // the first pack: no legend button
+  applyTo(T, { vis: {}, scene: false, card: true, layChip: false, um: null, legendOk: legendOptedIn(undefined) }, tabOrder(undefined));
+  assert.equal(T.button('lg').hidden, true);
 });

@@ -42,7 +42,7 @@ document.body.classList.toggle('embed', EMBED); document.body.classList.toggle('
 document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light');
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
-// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）；色标只在剖切视图里（kindsEl）----------------
+// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）----------------
 document.getElementById('zoom')?.remove();
 const aboutEl = document.createElement('div'); aboutEl.id = 'about';
 const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; if (!SHELL) roomEl.append(document.getElementById('card')); { const e = document.createElement('p'); e.id = 'cardEmpty'; roomEl.append(e); }
@@ -56,7 +56,6 @@ const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ 
   onEsc: () => { if (IN_FRAME) post({ type: 'estate:key', key: 'Escape' }); else if (pinned) unpin(); } });
 C3.setAuto(LS('edenMap3dAuto') === '1');   // 独立打开时的抽屉自动收起（高级设置，默认关）
 let lastFloor = 0;   // 最近一次剖切的楼层（下标），FLOORS 读出后取第一层地上楼
-const kindsEl = document.createElement('div'); kindsEl.id = 'kinds'; kindsEl.className = 'g1'; kindsEl.hidden = true; C3.root.append(kindsEl);   // 色标：只在剖切视图里，当前楼层有哪几类房间就几枚
 const url = (p) => new URL(p, document.baseURI).href;   // 查看器用 blob + <base> 载入本页：相对地址按 <base> 解析
 const kick = (phase) => { try { window.__estateKick && window.__estateKick(phase); } catch (e) { } };
 const clamp = THREE.MathUtils.clamp;
@@ -315,6 +314,7 @@ const ITEMS = [], ROOM_BY_NODE = new Map();   // node id → 它的（第一间�
 const polyShape = (poly) => new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(x, y)));
 const flatGeo = (poly, y) => { const g = new THREE.ShapeGeometry(polyShape(poly)); g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };   // (x, y) → (x, y0, −y)
 const bboxOf = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }; };
+const PLATES = MAN['x-kind-plates'] === true;   // LEGEND-1 (D35): kind-coloured floor plates and the all-room edge lines are drawn only when the 3D manifest asks for them; the hover / pin highlight (mkHi) is the room boundary otherwise
 const plateMats = {};
 const plateMat = (kind) => (plateMats[kind] ||= new THREE.MeshBasicMaterial({ color: KIND(kind).color, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
 const edgeMat = new THREE.LineBasicMaterial({ color: '#5a4a32', transparent: true, opacity: 0.55 });
@@ -322,9 +322,11 @@ const plates = FLOORS.map(() => []);
 (CARD.rooms || []).concat(SUBS.filter((w) => (CARD.rooms || []).some((r) => r.id === w.parent))).forEach((r) => {
   const fi = FI[r.floor]; if (fi == null) return;
   const f = FLOORS[fi], bb = bboxOf(r.poly);
-  const plate = new THREE.Mesh(flatGeo(r.poly, f.y + 0.06), plateMat(r.kind)); plate.renderOrder = 2; roomG[fi].add(plate); plates[fi].push(plate);
-  const pts = r.poly.map(([x, y]) => V(x, y, f.y + 0.08)); pts.push(pts[0].clone());
-  const edge = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat); roomG[fi].add(edge); plates[fi].push(edge);
+  if (PLATES) {
+    const plate = new THREE.Mesh(flatGeo(r.poly, f.y + 0.06), plateMat(r.kind)); plate.renderOrder = 2; roomG[fi].add(plate); plates[fi].push(plate);
+    const pts = r.poly.map(([x, y]) => V(x, y, f.y + 0.08)); pts.push(pts[0].clone());
+    const edge = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat); roomG[fi].add(edge); plates[fi].push(edge);
+  }
   const pg = new THREE.ExtrudeGeometry(polyShape(r.poly), { depth: r.sub ? 2.5 : 2.4, bevelEnabled: false }); pg.rotateX(-Math.PI / 2); pg.translate(0, f.y, 0);
   const pick = new THREE.Mesh(pg, pickMat); roomG[fi].add(pick);
   const c = V((bb.x0 + bb.x1) / 2, (bb.y0 + bb.y1) / 2, f.y);
@@ -527,16 +529,10 @@ function buildNav() {
   roomEl.querySelector('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
   const bd = BLD(); aboutEl.replaceChildren(...[['h2', bd.title], ['div', bd.subtitle, 'motto'], ['p', bd.summary], ['p', tx('hint')]].filter(([, t]) => t).map(([tag, t, c]) => { const e = document.createElement(tag); e.textContent = t; if (c) e.className = c; return e; }));
   C3.setTitle(bd.title);
-  syncNav(); renderKinds();
+  syncNav();
   if (!SHELL) { $('#lblBtn').title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; $('#lblBtn').setAttribute('aria-label', $('#lblBtn').title);
     for (const k of ['zin', 'zout', 'zreset']) { $('#' + k).title = tx(k); $('#' + k).setAttribute('aria-label', tx(k)); } }
   document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN'; aria();
-}
-/** 色标（N9）：剖切视图里，当前楼层出现的每类房间一枚（颜色 + 名字，都来自清单的 room_kinds） */
-function renderKinds() {
-  const f = isFloor(mode) ? FLOORS[mode].id : null, ks = f ? [...new Set((CARD.rooms || []).filter((r) => r.floor === f).map((r) => r.kind))].map(KIND) : [];
-  kindsEl.hidden = !ks.length;
-  kindsEl.replaceChildren(...ks.map((k) => { const e = document.createElement('span'); e.append(kindChip(k), k.label); return e; }));
 }
 function syncNav() { for (const [k, b] of Object.entries(BTN)) { const on = String(mode) === k; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   C3.setView(isFloor(mode) ? 'sect' : mode); C3.showSub(isFloor(mode)); if (isFloor(mode)) lastFloor = mode; }
@@ -593,7 +589,7 @@ function setMode(m, o = {}) {
   applyMode();
   if (pinned && !itemVisible(pinned)) unpin();
   hover = null; hideCard(true); showHi(hiHover, null);
-  syncNav(); renderKinds(); updateLabelSet();
+  syncNav(); updateLabelSet();
   if (o.fly) flyTo(viewFor(m));
   if (o.user) post({ type: 'estate:floor', floor: modeKey(m) });
   else if (SHELL && !o.quiet) post(isFloor(mode) ? { type: 'estate:floor', floor: FLOORS[mode].id } : { type: 'estate:view', mode });   // the viewer's strip and segment follow the page
@@ -714,10 +710,9 @@ function info(it) {
   if (!d.sub && shown(d.access)) rows.push([tx('access'), d.access]);
   return out;
 }
-const kindChip = (k) => { const c = document.createElement('i'); c.className = 'kc'; c.style.setProperty('--kc', k.color); c.title = k.label; return c; };
 function cardHTML(it) {
   const o = info(it), d = it.d, custom = it.kind === 'room' ? getCustomName(d.name) : '', h = document.createElement('div');
-  const t = document.createElement('h3'); if (o.kind) t.append(kindChip(o.kind)); t.append(custom || o.title); h.append(t);
+  const t = document.createElement('h3'); t.append(custom || o.title); h.append(t);
   const sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = o.sub; h.append(sub);
   if (custom && LANG === 'zh') rows(h, [[tx('orig'), o.title]]);
   rows(h, o.rows);
@@ -1141,6 +1136,7 @@ window.__estate = {
   pick: (n) => { const it = findByName(n) || ITEMS.find((x) => x.kind === 'area' && x.d.id === n); if (it) { focusItem(it); postSelect(it); } return !!it; },   // 点选（探针用）：选中并告诉查看器
   view: (theta, phi) => { tween = null; placeCam(controls.target, theta, phi); wake(); },   // 机位（探针用）：绕目标的方位 / 俯仰角
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
+  plates: () => ({ on: PLATES, meshes: plates.reduce((n, ps) => n + ps.length, 0) }), hi: () => ({ pin: hiPin.visible, hover: hiHover.visible }),   // LEGEND-1 probe: no plate meshes unless the manifest asks; the highlight is the room boundary
   tier: () => tier, dpr: () => DPR, paused: () => paused, cam: () => ({ ...CAM, rotating: controls.autoRotate }),
   stats: () => ({ ...lastInfo, depth: depthLabel(renderer.getContext()), near: camera.near, far: camera.far, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),
   describe: () => Estate3D.describe(MAN, { base: M3D.base }),   // Estate3D 标准摘要（{ id, glbPath, floors, hotspots, budget, license }）

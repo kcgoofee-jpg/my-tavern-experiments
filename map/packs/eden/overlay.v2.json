@@ -395,50 +395,6 @@
         "tc_low": {"tokens":{"--bg":"#0b0b0b","--surface":"#111411","--line":"rgba(159, 232, 112, .2)","--ink":"#d8e8cc","--ink-2":"#bcd0ae","--muted":"#7aa35c","--accent":"#9fe870","--on-accent":"#0b1406","--accent-2":"#f4f1e8","--ok":"var(--muted)"},"light":{"--bg":"#f4f1e8","--surface":"#f8f6ef","--line":"rgba(27, 36, 20, .16)","--ink":"#1b2414","--ink-2":"#34402b","--muted":"#55664a","--accent":"#336619","--on-accent":"#fff","--accent-2":"#8a7a52"}}
       }
     },
-    "legend": [
-      {
-        "type": "ward",
-        "label": "结界",
-        "desc": "近景是淡青格边，中景是细线，远景不画",
-        "i18n": {"en":{"label":"Ward","desc":"Near: pale cyan lattice edge; mid: thin line; far: not drawn"}}
-      },
-      {
-        "type": "conduit",
-        "label": "以太导能管",
-        "desc": "暗色细管，只在节点有点状微光",
-        "i18n": {"en":{"label":"Ether conduit","desc":"Dark thin tube, faint node glints only"}}
-      },
-      {
-        "type": "platform",
-        "label": "访客停靠平台",
-        "desc": "带信标环、进场光带和密封悬浮车",
-        "i18n": {"en":{"label":"Visitor docking platform","desc":"Beacon ring, approach light strip, sealed skimmer"}}
-      },
-      {
-        "type": "tower",
-        "label": "以太气候调节塔",
-        "desc": "深色塔身，外加同心场环",
-        "i18n": {"en":{"label":"Ether climate tower","desc":"Dark tower with concentric field rings"}}
-      },
-      {
-        "type": "clouds",
-        "label": "云层",
-        "desc": "云纱越厚，海拔越低",
-        "i18n": {"en":{"label":"Cloud layers","desc":"The thicker the veil, the lower the altitude"}}
-      },
-      {
-        "type": "omit",
-        "label": "刻意不画",
-        "desc": "航线、轨道、车站",
-        "i18n": {"en":{"label":"Deliberately not drawn","desc":"Flight lanes, tracks, stations"}}
-      },
-      {
-        "type": "sight",
-        "label": "层间视线",
-        "desc": "上层各岛彼此可见，俯瞰中层像铺在脚下的电路板；下层抬头可见中层底面；清晨有云海。",
-        "i18n": {"en":{"label":"Sightlines between layers","desc":"Upper isles see one another and look down on the mid layer like circuitry laid underfoot; the lower layers look up at its underside; a sea of clouds at dawn."}}
-      }
-    ],
     "x-event-level": "tc_mid"
   },
   "layers": [

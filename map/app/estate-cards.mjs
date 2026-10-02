@@ -12,17 +12,15 @@ import { RT } from './nodes-runtime.mjs';
 const T = (k, zh, v) => uiTextOr(k, zh, v);
 const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const zhOnly = t => LANG === 'zh' || !/[一-鿿]/.test(t);   // text that exists in Chinese only is not shown under the English interface
-export const kindChip = k => { const c = h('i', 'kc'); c.style.setProperty('--kc', k?.color || 'var(--muted)'); c.title = k?.label || ''; c.setAttribute('aria-hidden', 'true'); return c; };
 const fieldRows = (rows) => { const dl = h('dl', 'fields'); for (const [k, v] of rows) { if (!v) continue; dl.append(h('dt', null, k), h('dd', null, v)); } return dl; };
 const floorLabel = (floors, id) => floors.find(f => f.id === id)?.label || id || '';
 
-/** a room: kind chip before the name, floor and building as the sub line, area / use / access rows, the room's pictures and the custom block; `back` = a way back to the building's list */
+/** a room: floor and building as the sub line, area / use / access rows, the room's pictures and the custom block; `back` = a way back to the building's list */
 export function roomCard(r, ctx) {
   const k = ctx.kinds.find(x => x.id === r.kind) || { id: r.kind, label: r.kind, color: '' };
   const fl = floorLabel(ctx.floors, r.floor), bd = ctx.building.title;
   showCard(null, r.name, '', '', [fl, bd].filter(Boolean).join(' · '), undefined, false);
-  const c = $('#card'), title = c.querySelector('h2');
-  title.prepend(kindChip(k));
+  const c = $('#card');
   const rows = [[T('v3.kind', '类别'), k.label]];
   if (Number.isFinite(r.area) && r.area > 0) rows.push([T('v3.area', '面积'), `${Math.round(r.area)} ㎡`]);
   if (r.note && zhOnly(r.note)) rows.push([T('v3.use', '说明'), r.note]);

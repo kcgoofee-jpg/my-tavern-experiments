@@ -503,6 +503,8 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 
 **K-R131 —— 房间类别作为设定包数据。** 3D 清单可带 `room_kinds: { <kind>: { color: "#rrggbb", label, rank?: 1 | 2 | 3, i18n?: { <lang>: { label } } } }`：该类别每间房的底板颜色，以及它在剖切视图色标与房间卡上的名字（有语言条目取语言条目，否则取 `label`；`rank` 是该类别房间标注的优先级，1 最先，缺省 2）。类别 id 符合 `^[a-z][a-z0-9_]{0,63}$`，颜色运行时用 `recheck.hex` 复核，名字是纯文本、只经 `textContent` 上页（K-R64）。房间用了而表里没有的类别：生成一个颜色（`core/kind-palette.mjs`：八个颜色，在两种主题底色上都至少 3:1，在正常视觉与红色盲、绿色盲、蓝色盲模拟下两两至少相距 20，按类别 id 的稳定哈希挑选），名字就是类别 id。查看器不再自带类别表。`rooms.json`（清单的 `data.rooms`，`map/data/schema/v2/rooms.schema.json`）列 `floors: [{ id, name?, z }]` 与 `rooms: [{ name, node, floor, kind, area?, note?, poly }]`；`node` 是该房间在设定包节点树里的 id（同名房间可共用一个节点），房间卡、人物头像与房间列表按节点 id 对账，名字只作兜底。清单的 `data.extras` 可指向一个可选的包文件，里面有 `room_alias`（搜索时认房间的叫法）、`sub_rooms`（房间里的一个热点）与 `vehicles`（画出来的几件道具及其卡文字）；3D 页自己一个也不写。
 
+**LEGEND-1 修订（D35，K-R131）：**只有 3D 清单写了 `"x-kind-plates": true`（默认 false，第一个包不开）时，类别颜色才会在剖切视图里画成半透明的楼面色块（和逐房间的边线）。不开时，悬停 / 选中的高亮就是房间唯一的边界，不再有色标，房间卡上也没有颜色小块；`room_kinds` 仍是标签和优先级的数据。
+
 **K-R132 —— 建筑的名字。** 3D 清单可带 `building: { title, subtitle?, summary?, i18n?: { <lang>: { title?, subtitle?, summary? } } }`：查看器显示的标题、副标题与一句话简介（外壳的无障碍名字、建筑的卡）。楼层名字是现有 K-R104 `floors[]` 各项上的 `label` 与 `i18n`；`building.floors` 键会被 schema 拒绝（一份列表、一个位置）。没有这个块时，查看器说「Building」、不显示副标题与简介、用楼层 id 当名字。所有文字都是纯文本、用 `textContent` 设置。（地标清单里的 `building: { min, max }` 是它的包围盒，由 `props/viewer3d.html` 读取，不是这个块。）可选的 `view.ext = { target: [x, y, z], size: [w, d, h] }` 以 layout 米给外观视图取景；没有时用模型包围盒。
 
 ### 4.6 查看器里的 schema-2 包
@@ -786,6 +788,8 @@ v1 的中文字段名与英文名（`type`、`place`、`title`、`level`、`stat
 `line` 与 `flow` 是描线，`area` 与 `tint` 是实心方块，`point` 是圆点，`label`、`particles`、`sound` 没有；颜色经 K-R64 复核后用 CSS 自定义属性设置。
 图例页在当前视图不是 3D 页、且今天的规则（纵深数据与 `ui.legend` 条目）或至少一行图层图例成立时显示，所以没有图层图例的包看不到任何变化。
 图层的可见性或适用性变化、换图时，这一页重建。
+
+**LEGEND-1 修订（D35，K-R84 / P-03）：**抽屉的图例页对所有包都改为按需开启：只有包在 `ui.tabs` 里写了 `legend` 才有（第一个包没有写，它的 `ui.legend` 条目已删除）；没有开启时，图层菜单里的说明（`menu.title`）是图层唯一的解释。
 
 ### 10.2 llm
 

@@ -1,7 +1,7 @@
 // ONE-OFF (S4-3 T2-T7). Moves the first pack's viewer special cases into pack data, reading the constants that lived in the engine before S4-3 from
 // tests/helpers/s43_frozen.mjs (verbatim copies: the per-view theme CSS, the legend, the CVD palettes, the world-map word table, the tag examples, the picker's
 // tier table) and the legend's words from the i18n dictionaries. Writes:
-//   map/packs/eden/overlay.v2.json   ui (K-R70: theme.views, legend, x-event-level), events.groups[].x-cvd, node tiancheng hint 全城, llm.x-tag-examples
+//   map/packs/eden/overlay.v2.json   ui (K-R70: theme.views, x-event-level; no legend rows since LEGEND-1), events.groups[].x-cvd, node tiancheng hint 全城, llm.x-tag-examples
 //   map/data/maps.json               clouds / tint / tier_label(_en) on the tier maps; the lm_hunting_camp 3D entry (T7)
 //   map/data/world_markers.json      here_words (tiancheng), realms[].label_dy, overseas {at,name,sub,src}, hunting_camp link (T7)
 //   map/packs/eden/manifest.json     worldbook.prefix, credits, data.worldbook_addon
@@ -22,9 +22,7 @@ for (const css of F.THEME_CSS_V1) {
   const id = css.match(/\[data-map="([^"]+)"\]/)[1], light = css.startsWith('.light');
   (views[id] ||= {})[light ? 'light' : 'tokens'] = tokensOf(css);
 }
-const zh = J('map/i18n/zh.json'), en = J('map/i18n/en.json');
-const legend = F.LEGEND.map(([kt, , kd]) => ({ type: kt.replace(/^lg\./, ''), label: zh[kt], desc: zh[kd], i18n: { en: { label: en[kt], desc: en[kd] } } }));
-const ui = { theme: { views }, legend, 'x-event-level': 'tc_mid' };
+const ui = { theme: { views }, 'x-event-level': 'tc_mid' };
 
 // ---- overlay text edits ----
 const one = v => JSON.stringify(v);

@@ -16,7 +16,7 @@ import { initLabelToggle, makeDock } from './control-column.mjs';
 import { noticeRefresh } from './notice-layer.mjs';
 import { initStatusDot } from './status-dot.mjs';
 import { initTabs, refreshTabs, setTabEnv } from './tabs.mjs';   // the tab registry (S6-1): visibility rules live in core/drawer-tabs.mjs
-import { firstFallback, tabOrder } from '../core/drawer-tabs.mjs';
+import { firstFallback, tabOrder, legendOptedIn } from '../core/drawer-tabs.mjs';
 // 层切换器：手机放在抽屉摘要行左侧（「中层 ▾」一次点开），桌面在控制列顶上常展开
 export function placeLayers() {
   const lay = $('#layers'), S = window.ViewerDrawer; if (!lay || !S) return;
@@ -96,7 +96,7 @@ export function initShell() {
   initTabs(S, order);
   onLegendChange(() => { fillLegend(panels.lg); refreshTabs('legend'); });   // a layer became visible / applicable, or the map changed: rebuild the pane
   setTabEnv({ card: () => !$('#card').hidden, layChip: () => narrowNow() && !$('#layers').hidden, scene: () => document.body.classList.contains('estate') && !document.body.classList.contains('shell3d'),   // S7-3: a 3D building keeps the main drawer
-    legendOk: () => !document.body.classList.contains('estate') && ((!!depthData && legendItems().length > 0) || layerLegendRows().length > 0),   // 图例：配了纵深数据的层且包里写了图例条目（U18），或有图层带图例条目（K-R84）
+    legendOk: () => !document.body.classList.contains('estate') && legendOptedIn(RT?.ui?.tabs) && ((!!depthData && legendItems().length > 0) || layerLegendRows().length > 0),   // 图例：配了纵深数据的层且包里写了图例条目（U18），或有图层带图例条目（K-R84）
     // 未上图（v2 门控遗留）：当前地点认不出时，抽屉 / 桌面收起的右栏条也留着，「地点」页给出「放到地图上」入口
     um: () => (typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null), beforeRefresh: () => placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null) });
   // 点地图空白 = 抽屉回到收起（只认移动 < 8 px、< 250 ms 的轻点；点到地标 / 事态按地标处理，§10.4）

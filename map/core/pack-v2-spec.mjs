@@ -199,7 +199,7 @@ const tokenDict = widen => (v, p, x) => {   // a token name -> value table; a ba
 };
 const viewTheme = dict(ID, obj({ tokens: tokenDict(true), light: tokenDict(true) }));   // K-R70
 export const uiBlock = block(obj({
-  start: idRef, tabs: arr(oneOf(['places', 'events', 'characters', 'items'])),
+  start: idRef, tabs: arr(oneOf(['places', 'events', 'characters', 'items', 'legend'])),
   strings: dict(LANG, dict(re('^[a-z][a-z0-9_.]{0,63}$'), str())),
   theme: obj({ accent: str({ re: HEX }), tokens: tokenDict(false), views: viewTheme, chrome: obj({ accent: str({ re: HEX }), onAccent: str({ re: HEX }) }) }),   // K-R70: chrome = the pack-wide chrome accent; views = map-space only
   legend: arr(obj({ type: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), label: str({ min: 1 }), desc: str(), i18n: (v, p, x) => (isObj(v) ? v : bad(x, p, 'type', 'object')), icon: str({ re: re('^[a-z][a-z0-9-]{0,31}$') }) }, { req: ['type'], ...B })),

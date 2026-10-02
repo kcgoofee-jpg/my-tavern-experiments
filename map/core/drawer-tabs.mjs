@@ -3,6 +3,7 @@
 // and the drawer and calls these. A "sheet" below is the drawer's API (ui/sheet.js): showTab, setTab, hide, button(id).hidden, tab.
 //   KERNEL_TABS     the kernel tabs of the drawer: { name (K-R57), id (drawer id), btnClass, icon, keepsDrawer, fallback }; the Items tab (S6-3) sits between characters and places
 //   tabOrder(uiTabs)    the rows in display order: the pack's list (each once, unknown names ignored), then `places` when it was left out, then the legend last
+//   legendOptedIn(uiTabs)   whether the pack asked for the legend tab (LEGEND-1)
 //   applyTo(sheet, inputs, order)   the one sequence that shows / hides the buttons and the drawer and picks a tab when the selected one is gone
 //   firstFallback(sheet, order)     the tab the place card gives way to when it closes: the first visible tab that counts for the drawer, by fallback order
 const row = (name, id, btnClass, icon, keepsDrawer, fallback) => Object.freeze({ name, id, btnClass, icon, keepsDrawer, fallback });
@@ -21,6 +22,9 @@ export function tabOrder(uiTabs) {
   if (!named.includes(by('places'))) named.push(by('places'));
   return [...named, by('legend')];
 }
+
+/** legendOptedIn(uiTabs): LEGEND-1 (D35, K-R84 / P-03): the legend tab exists only for a pack that names `legend` in `ui.tabs`; no pack names it by default. */
+export const legendOptedIn = uiTabs => Array.isArray(uiTabs) && uiTabs.includes('legend');
 
 const byFallback = order => order.filter(t => t.keepsDrawer).sort((a, b) => a.fallback - b.fallback);
 

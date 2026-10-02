@@ -18,13 +18,17 @@ const J = p => JSON.parse(readFileSync(new URL('../' + p, import.meta.url), 'utf
 const I = edenInputs(), MAPS = I.maps, WORLD = I.world, ZH = edenDict('zh'), EN = edenDict('en');   // the dictionary as the first pack sees it (its manifest strings over the core words)
 const pack = fromV1(I).pack, rt = buildRuntime(I);
 
-test('legend: the overlay ui.legend carries the old LEGEND entries, zh and en words verbatim, in order', () => {
-  assert.equal(pack.ui.legend.length, F.LEGEND.length);
-  F.LEGEND.forEach(([kt, , kd], i) => {
-    const e = pack.ui.legend[i];
-    assert.equal(e.type, kt.replace(/^lg\./, '')); assert.equal(e.label, ZH[kt]); assert.equal(e.desc, ZH[kd]); assert.equal(e.i18n.en.label, EN[kt]); assert.equal(e.i18n.en.desc, EN[kd]);
-  });
-  assert.equal(fromV1(townInputs()).pack.ui?.legend, undefined);   // a pack that declares none has none: the section stays hidden
+test('legend (LEGEND-1, D35): the first pack declares no ui.legend rows and does not opt in to the legend tab; the old words are gone from the dictionaries', () => {
+  assert.equal(pack.ui?.legend, undefined);
+  assert.ok(!(pack.ui?.tabs || []).includes('legend'));
+  assert.equal(Object.keys(ZH).filter(k => k.startsWith('lg.')).length, 0); assert.equal(Object.keys(EN).filter(k => k.startsWith('lg.')).length, 0);
+  assert.equal(fromV1(townInputs()).pack.ui?.legend, undefined);
+});
+
+test('LEGEND-1: every first-pack layer that has legend rows keeps its own menu description (zh and en), so the layer menu explains it', () => {
+  const ov = J('map/packs/eden/overlay.v2.json'); let n = 0;
+  for (const l of ov.layers || []) if (l.legend?.length) { n++; assert.ok(l.menu?.title, l.id + ' zh'); assert.ok(l.menu?.i18n?.en?.title, l.id + ' en'); }
+  assert.ok(n >= 1);
 });
 
 test('clouds / tint: maps.json flags become view fields; only the tiers that had the behaviour carry them', () => {

@@ -8,7 +8,7 @@
   "patternProperties": { "^_": {}, "^x-": {} },
   "properties": {
     "start": { "$ref": "#/$defs/id", "description": "Node shown when the panel first opens and nothing is located yet. Default: the root." },
-    "tabs": { "type": "array", "items": { "enum": ["places", "events", "characters", "items"] }, "description": "Drawer tabs in order. Default: every tab whose data exists." },
+    "tabs": { "type": "array", "items": { "enum": ["places", "events", "characters", "items", "legend"] }, "description": "Drawer tabs in order. Default: every tab whose data exists." },
     "strings": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" }, "additionalProperties": { "type": "object", "propertyNames": { "type": "string", "pattern": "^[a-z][a-z0-9_.]{0,63}$" }, "additionalProperties": { "type": "string" } },
       "description": "UI string overrides per language: i18n key -> text (the v1 'key@en' form becomes strings.en.key). Shown as text only; protected keys (consent, remote pictures, privacy, self-check) are never overridden (K-R57, K-R64)." },
     "theme": { "type": "object", "additionalProperties": false,

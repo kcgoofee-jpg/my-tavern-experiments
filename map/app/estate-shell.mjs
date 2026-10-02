@@ -32,7 +32,6 @@ body.shell3d #evbar:not([hidden]){display:flex!important}
 body.shell3d #zHome{display:none}
 #layers button[data-act]{color:var(--accent)}
 #layers button[data-floor]{min-width:0;padding-inline:var(--sp-5)}
-.kc{display:inline-block;width:12px;height:12px;border-radius:var(--r-s);background:var(--kc);margin-right:var(--sp-3);vertical-align:-1px;border:1px solid var(--glass-line)}
 .v3rooms details{border-top:1px solid var(--line)}.v3rooms summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--ink-2)}
 .v3rooms .v3room{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-s);cursor:pointer;font-size:var(--fs-control)}
 .v3rooms .v3room:hover{background:var(--surface-2)}.v3rooms .v3room:focus-visible{box-shadow:var(--focus-ring)}

@@ -1778,3 +1778,15 @@ blocker: none
 open: placing a local prop while the local-props layer is off draws nothing until the row is ticked (consider auto-showing on placement); a pack cannot yet turn a parked feature on (only a stored '1')
 cleanup: done
 === END ===
+
+=== RESULT LEGEND-1 ===
+status: DONE
+items: 1 plates (no plate meshes or all-room edge lines unless the 3D manifest says `x-kind-plates: true`; hover / pin highlight is the boundary; colour chip removed from both room cards) ✓ · 2 `#kinds` + `renderKinds` removed ✓ · 3 legend tab opt-in via `ui.tabs: legend` (`legendOptedIn`, schema + spec accept it), eden `ui.legend` rows deleted from the overlay, `lg.*` strings (zh + en) removed, generator no longer emits them; the eden layer with legend rows (estate_ward) keeps its menu description ✓ · 4 `x-kind-plates` documented next to K-R131 (K-R84 amended too, both languages) ✓ · 5 dead CSS (`.kc`, `#kinds`) and strings removed; CVD untouched; `edenMapLegHint` / `ev.legend_hint` KEPT: they belong to the events category bar hint (events-view.mjs), not the drawer legend, so F-30 is unchanged ✓ · 6 D35 in both plan editions, N9 struck in todo, LEGEND-1 added and struck ✓ · 7 tests + probe `tools/browser/legend1.mjs` ✓ (shots in ~/eden-map-review/legend-1/)
+commits: see git log (one commit)
+pushed: yes
+tests: node 1518/1519 (0 fail, 1 skipped as before) | smoke PASS | arch PASS | probes: legend1=PASS
+deviations: `tools/gen_eden_s43_data.mjs --write` was NOT run: it already drifts from the committed overlay and manifest (it would drop the layers block and the card url), so the `ui.legend` array was removed from the overlay by hand and the generator was changed to match. Tests removed: `s43_parity` "legend: the overlay ui.legend carries the old LEGEND entries" (replaced by a test that the first pack declares no legend, no opt-in and no `lg.*` words); `i18n_s44_parity` now lists the 14 `lg.*` keys as removed. Tests added: drawer_tabs opt-in, s43_parity layer menu description. Net count up.
+blocker: none
+open: none
+cleanup: done
+=== END ===
