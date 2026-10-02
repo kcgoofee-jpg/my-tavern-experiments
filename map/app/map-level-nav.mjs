@@ -72,6 +72,7 @@ function escTop() {
   if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); return true; }
   const lay = $('#layers'); if (narrowNow() && !lay.hidden && !lay.classList.contains('compact')) { lay.classList.add('compact'); lay.querySelector('button.on')?.focus(); return true; }
   const S = window.ViewerDrawer; if (S && !S.el.hidden && S.down()) { if (S.state === 'peek') S.el.querySelector('.uis-tog')?.focus({ preventScroll: true }); return true; }
+  const up = EstateShell.active() && parentMap(currentMapId); if (up) { go(up); return true; }   // S7-3: in a 3D building Esc steps back up to the 2D map
   return false;
 }
 export function onEsc() { if (noticeLayer?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc' }); }   // P0 阻断卡开着：Esc 不关任何东西

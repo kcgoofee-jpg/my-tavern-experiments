@@ -64,6 +64,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `drawer-tabs.mjs` | 抽屉页签规则（K-R72）：内核页签集合、`tabOrder(ui.tabs)`，以及对抽屉类对象的唯一一套显示 / 隐藏 / 回退顺序（纯函数）。 |
 | `entities.mjs` | 实体协议（K-R71、K-R73）：`personOf` / `eventOf` 适配器、`presentAt`、打开视图的层级（`levelMode`）与在场组的分节（`peopleSections`）（纯函数）。 |
+| `estate-people.mjs` | 3D 建筑里显示的人物（S7-3）：人物行 + 房间 + 节点解析 → `estate:people` 列表（头像过滤、至多 30 个、与二维人物页同一批人）。纯函数。 |
 | `event-geo.mjs` | 事态发生在哪里：地点文字经 `nodes.locate` 落点、画它的那张地图、图钉的位置（纯函数；层、城区、城郊的词全是包数据）；`geo.taxonomy()` 带来包的事件块。 |
 | `events-default.mjs` | 内核的中性事件分类（K-R53）：没有事件块的包显示的内容；关闭词与注入句标签的缺省。 |
 | `exploration-ledger.mjs` | 探索账本（迷雾探索：到过的地点）：对 `{ 地图 id: [地点名] }` 的 `norm` / `visit` / `known` / `count`，宿主与查看器共用。 |
@@ -72,7 +73,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `graphics-budget.mjs` | 图形内存预算策略：按设备档位定字节预算，并判断上报的用量算不算吃紧。 |
 | `grow.mjs` | 从聊天里长节点（K-R26）：地点文字变成树下的 `g_` 节点；从零重算。纯函数。 |
 | `haze.mjs` | 空气透视滤镜：把当前纵深平面的霾浓度换成一条滤镜链。 |
-| `estate-people.mjs` | 3D 建筑里显示的人物（S7-3）：人物行 + 房间 + 节点解析 → `estate:people` 列表（头像过滤、至多 30 个、与二维人物页同一批人）。纯函数。 |
 | `kind-palette.mjs` | 3D 清单没有声明的房间类别所用的生成颜色（K-R131）：八个对色觉友好的颜色，按类别 id 的稳定哈希挑选。纯函数。 |
 | `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
@@ -164,6 +164,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `drawer-glue.mjs` | 唯一抽屉 / 右栏：层切换器落点、抽屉可见性、图例页、「地点」页空态、点地点卡时的开合。 |
 | `dzi-worker-src.mjs` | 瓦片解码线程的源码串（以文本导出，这样 `srcdoc` 里也能起 blob worker）。 |
 | `dzi-worker.mjs` | 瓦片解码线程的查看器侧客户端，失败时退回原生图片路径。 |
+| `estate-cards.mjs` | 3D 建筑在共用地点卡里的各种卡：房间（类别块、面积、用途、出入、图片、自定义块）、区域或载具、建筑的「关于」与按楼层的房间列表。DOM 构建，只用 `textContent`。 |
+| `estate-shell.mjs` | 打开 3D 建筑时，一体外壳在查看器这一半（S7-3）：视图分段与菜单、层条里的楼层、工具栏 / 键盘 / Esc 转给 3D 页、页面所报内容的卡片、发给页面的人物（`estate:*`）。 |
 | `extension-api.mjs` | 本机扩展接口 `window.EdenMap` 与聊天 id。 |
 | `feature-card.mjs` | 功能卡片组件（S7-1）：纯函数 `cardModel`（图标、健康行、文字、token）与用 textContent 绘制并原地更新的 `featureCard`。 |
 | `feedback-report.mjs` | 反馈报告文本的纯函数组装，字段白名单。 |
@@ -209,8 +211,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `stash-markers.mjs` | 地图上由世界藏物表画出的发光拾取物；点击把拾取意图发给宿主。 |
 | `state.mjs` | 查看器核心状态：当前地图、注册表、OSD 实例、焦点请求。 |
 | `status-dot.mjs` | 状态点：加载 / 档位状态的圆点与读屏标签。 |
-| `estate-shell.mjs` | 打开 3D 建筑时，一体外壳在查看器这一半（S7-3）：视图分段与菜单、层条里的楼层、工具栏 / 键盘 / Esc 转给 3D 页、页面所报内容的卡片、发给页面的人物（`estate:*`）。 |
-| `estate-cards.mjs` | 3D 建筑在共用地点卡里的各种卡：房间（类别块、面积、用途、出入、图片、自定义块）、区域或载具、建筑的「关于」与按楼层的房间列表。DOM 构建，只用 `textContent`。 |
 | `subpage3d-host.mjs` | 庄园 / 三维子页宿主：带 `<base>` 的 blob iframe、失败钩子、子页消息、通用三维查看器入口。 |
 | `tabs.mjs` | 抽屉的页签注册表：归属模块提供页签内容，一次刷新决定按钮、抽屉、标签和当前打开的页签；页签角标背后的按聊天「看过」集合（K-R72）。 |
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
@@ -364,6 +364,11 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 |---|---|
 | `map/viewer.html` | 查看器页面：结构、内联令牌与 `--zu-*` / `--zv-*` 阶梯、预加载、启动脚本、外挂脚本标签。 |
 | `map/props/viewer3d.html` | 通用三维查看器（`?model=<id>`）：经 `core/scene3d-manifest.mjs` 读 `<id>/manifest.json`，烘焙光照，运行时无灯光。 |
+| `map/estate/index.html` | 三维建筑页（壳模式）：只有画布、画布里的标注和人物头像；所有文字与颜色来自包的 3D 清单。 |
+| `map/estate/main.js` | 三维建筑查看器：场景、楼层与剖面视图、镜头、拾取、按需渲染、与查看器之间的消息。 |
+| `map/estate/presence.js` | 在场人物：定位在某房间里的人以头像标记画在该房间，点按打开共用的人物卡。 |
+| `map/estate/labels.js` | 画布里的标注：悬停标签、主要地名、被遮挡的标签整个隐藏。 |
+| `map/estate/terrain.js` | 三维页的场地地面与室外区域。 |
 
 ## 4. 宿主 → 查看器的数据流
 
@@ -469,7 +474,7 @@ S8-3 加上宿主送值的来源：宿主读包的图层点名的卡变量（`pr
 - **LayerRegistry**（`core/layer-registry.mjs`，由 `app/layer-host.mjs` 装配）：十个槽位，由底至顶——`base`、`depth-haze`、`fog`、`routes`、`trips`、`events`、`markers`、`labels`、`fx`、`interaction`。槽位的 z 值是 `(序号 + 1) × 10`。图层注册 `{ id, slot, kind, order, mount, unmount, … }`；滤镜链（`css` / `canvas`）逐层叠加。`window.LayerHostApi` 暴露标准摘要。
 - **z 阶梯与毛玻璃类都在 `map/ui/tokens.css` 里**（S7-2；`viewer.html` 内联一份由 `tools/sync_tokens.py` 压缩出的副本）：`--zv-*` 镜像槽位值（测试对拍 `SLOTS`），`--zu-*` 是查看器界面阶梯，`--zl-*` 是组件内部的局部层级，`--zh-*` 是宿主页的（由 `tavern/host-tokens.mjs` 复制，测试对拍）。裸数字 z-index 一律禁止（看门狗检查 3，账本该节为空）。外壳用 `.g1`（浮在地图上的控件：80 % 毛玻璃带模糊，只给宿主栏、查看器顶栏、缩放列和 ⓘ，触屏 / `lowmem` / `noblur` / 三维打开时一律不糊）和 `.g2`（阅读面：不透明、不糊）。设定包的分视图主题只写地图空间令牌 `--map-*`，外壳令牌在每个视图和三维里都一样。
 - **`map/three` 运行时**：纯叶子小件（上下文工厂、裁剪、实例化、LOD、昼夜、粒子、浮雕、着色器、贴图资源），THREE 由调用方注入。
-- **庄园页**：`map/estate/`（`index.html`、`main.js`）是第一个包的三维页，由 `app/subpage3d-host.mjs` 加载进 blob iframe。它的模型经 `core/scene3d-manifest.mjs` 取自 `map/estate/model/manifest.json`；通用查看器 `map/props/viewer3d.html?model=<id>` 服务每个地标的 `manifest.json`。两者都用烘焙光照和 `map/ui` 里的共享外壳。
+- **庄园页**（三维室内查看器，「主外壳里的 3D 画布」）：`map/estate/`（`index.html`、`main.js`、`presence.js`、`labels.js`、`terrain.js`）由 `app/subpage3d-host.mjs` 以壳模式（`window.__shell = 'host'`）加载进 blob iframe：它只画场景、画布里的标注和人物头像；视图分段、楼层、工具栏、抽屉与卡片是查看器的（`app/estate-shell.mjs`、`app/estate-cards.mjs`；消息 `estate:view`、`estate:floor`、`estate:cam`、`estate:labels`、`estate:select`、`estate:people`、`estate:person`、`estate:esc`、`estate:inset`、`estate:ready` 登记在 `core/protocol.mjs`）。它按需渲染（静止时不排动画帧；探针 `estate_presence`），所有文字与颜色读自这个包的 3D 清单（K-R131、K-R132）与房间表；探针 `estate_generic`（夹具包 `tests/fixtures/pack3d-min`）与 `estate_kbd`。它的模型经 `core/scene3d-manifest.mjs` 取自清单（第一个包是 `map/estate/model/manifest.json`）；通用查看器 `map/props/viewer3d.html?model=<id>` 服务每个地标的 `manifest.json`。两者都用烘焙光照和 `map/ui` 里的共享外壳。
 - **特效与昼夜**：天气与极光渲染到 `fx` 槽位；世界时钟（`core/clock.mjs`）驱动 `three/daynight.mjs` 与查看器的夜色。没有任何东西读系统时间。
 
 ## 9. 守卫

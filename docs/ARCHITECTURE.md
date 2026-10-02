@@ -83,6 +83,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
 | `drawer-tabs.mjs` | Drawer tab rules (K-R72): the kernel tab set, `tabOrder(ui.tabs)`, and the one show / hide / fallback sequence on a drawer-like object (pure). |
 | `entities.mjs` | Entity protocol (K-R71, K-R73): `personOf` / `eventOf` adapters, `presentAt`, the level of the open view (`levelMode`) and the present group's sections (`peopleSections`) (pure). |
+| `estate-people.mjs` | The people a 3D building shows (S7-3): rows + rooms + node resolution -> the `estate:people` list (avatar filter, at most 30, same people as the 2D tab). Pure. |
 | `event-geo.mjs` | Where an event happens: its place text placed by `nodes.locate`, the map that draws it, the pin's spot (pure; every tier and district word is pack data); `geo.taxonomy()` carries the pack's events block. |
 | `events-default.mjs` | The kernel's neutral event taxonomy (K-R53): what a pack with no events block shows; closing words and injected-line tag defaults. |
 | `exploration-ledger.mjs` | Exploration ledger (fog of visited places): `norm` / `visit` / `known` / `count` over `{ mapId: [placeNames] }`, shared by the host and the viewer. |
@@ -91,7 +92,6 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `graphics-budget.mjs` | Graphics memory budget policy: decides the byte budget per device class and whether reported usage means pressure. |
 | `grow.mjs` | Growing nodes from chat (K-R26): place texts become `g_` nodes under the tree; recompute from nothing. Pure. |
 | `haze.mjs` | Aerial-perspective filter: turns the haze density of the current depth plane into a filter chain. |
-| `estate-people.mjs` | The people a 3D building shows (S7-3): rows + rooms + node resolution -> the `estate:people` list (avatar filter, at most 30, same people as the 2D tab). Pure. |
 | `kind-palette.mjs` | The generated colours of room kinds a 3D manifest does not declare (K-R131): eight colour-vision-safe colours picked by a stable hash of the kind id. Pure. |
 | `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
@@ -184,6 +184,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `drawer-glue.mjs` | The single drawer / right rail: where the layer switcher sits, drawer visibility, legend page, empty place page, opening on a place card. |
 | `dzi-worker-src.mjs` | Source string of the tile decode worker (exported as text so a blob worker works inside `srcdoc`). |
 | `dzi-worker.mjs` | Viewer-side client of the tile decode worker, with fallback to the stock image path. |
+| `estate-cards.mjs` | Cards of a 3D building in the shared place card: a room (kind chip, area, use, access, pictures, custom block), a zone or vehicle, the building's about section and its rooms by floor. DOM builders, `textContent` only. |
+| `estate-shell.mjs` | The viewer's half of the one shell while a 3D building is open (S7-3): view segment and menu, the building's floors in the level strip, toolbar / keys / Esc to the page, cards for what the page reports, the people sent to the page (`estate:*`). |
 | `extension-api.mjs` | Local extension interface `window.EdenMap` and the chat id. |
 | `feature-card.mjs` | The feature card component (S7-1): pure `cardModel` (icon, health line, text, tokens) and `featureCard` that draws it with textContent and patches it in place. |
 | `feedback-report.mjs` | Pure feedback-report text assembly with a whitelist of fields. |
@@ -229,8 +231,6 @@ mutable state is written only by its declaring module through `set*()`.
 | `stash-markers.mjs` | Glowing pickup items on the map from the world stash; a click sends the pickup intent to the host. |
 | `state.mjs` | Core viewer state: current map, registry, OSD instance, focus request. |
 | `status-dot.mjs` | Status dot: load / tier state as a dot with a screen-reader label. |
-| `estate-shell.mjs` | The viewer's half of the one shell while a 3D building is open (S7-3): view segment and menu, the building's floors in the level strip, toolbar / keys / Esc to the page, cards for what the page reports, the people sent to the page (`estate:*`). |
-| `estate-cards.mjs` | Cards of a 3D building in the shared place card: a room (kind chip, area, use, access, pictures, custom block), a zone or vehicle, the building's about section and its rooms by floor. DOM builders, `textContent` only. |
 | `subpage3d-host.mjs` | Estate / 3D sub-page host: blob iframe with `<base>`, failure hook, sub-page messages, generic 3D viewer entry. |
 | `tabs.mjs` | The drawer's tab registry: owner modules provide a tab's content, one refresh decides the buttons, the drawer, the labels and the open tab; the per-chat "seen" sets behind the tab badges (K-R72). |
 | `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
@@ -386,6 +386,11 @@ They import core state from `app/*` and reach each other only through `app/plugi
 |---|---|
 | `map/viewer.html` | The viewer page: markup, inline tokens and the `--zu-*` / `--zv-*` ladders, preloads, startup scripts, plugin script tags. |
 | `map/props/viewer3d.html` | The generic 3D viewer (`?model=<id>`): loads `<id>/manifest.json` through `core/scene3d-manifest.mjs`, baked lighting, no runtime lights. |
+| `map/estate/index.html` | The 3D building page (shell mode): canvas, in-canvas labels and presence chips only; every word and colour comes from the pack's 3D manifest. |
+| `map/estate/main.js` | The 3D building viewer: scene, floors and section views, camera, picking, on-demand rendering, messages to and from the viewer. |
+| `map/estate/presence.js` | Presence chips: the people located in a room drawn as avatar tokens in that room, tap → the shared character card. |
+| `map/estate/labels.js` | In-canvas labels: hover label, major names, occluded labels hidden fully. |
+| `map/estate/terrain.js` | The site's ground and outdoor zones for the 3D page. |
 
 ## 4. Data flow host → viewer
 
@@ -555,8 +560,11 @@ includes the English card words (`EN_TERMS`, case-sensitive).
   per-view theme feeds only the map-space tokens `--map-*`; the chrome set is the same in every view and in 3D.
 - **`map/three` runtime**: pure leaf helpers (context factory, culling, instancing, LOD, day / night, particles,
   relief, shaders, texture resources). THREE is injected by the caller.
-- **Estate page**: `map/estate/` (`index.html`, `main.js`) is the first pack's 3D page, loaded by `app/subpage3d-host.mjs`
-  into a blob iframe. Its models come from `map/estate/model/manifest.json` through `core/scene3d-manifest.mjs`; the
+- **Estate page** (the 3D interior viewer, "3D canvas in the main shell"): `map/estate/` (`index.html`, `main.js`, `presence.js`, `labels.js`, `terrain.js`) is loaded by `app/subpage3d-host.mjs` into a blob
+  iframe in shell mode (`window.__shell = 'host'`): it draws the scene, the in-canvas labels and the presence chips; the view segment, floors, toolbar, drawer
+  and cards are the viewer's (`app/estate-shell.mjs`, `app/estate-cards.mjs`; messages `estate:view`, `estate:floor`, `estate:cam`, `estate:labels`, `estate:select`, `estate:people`,
+  `estate:person`, `estate:esc`, `estate:inset`, `estate:ready` in `core/protocol.mjs`). It renders on demand (no animation frame while still; probe `estate_presence`) and reads every word
+  and colour from the pack's 3D manifest (K-R131, K-R132) and rooms; probes `estate_generic` (fixture pack `tests/fixtures/pack3d-min`) and `estate_kbd`. Its models come from the manifest (`map/estate/model/manifest.json` for the first pack) through `core/scene3d-manifest.mjs`; the
   generic viewer `map/props/viewer3d.html?model=<id>` serves each landmark's `manifest.json`. Both use baked
   lighting and the shared chrome in `map/ui`.
 - **Fx and day / night**: weather and aurora render into the `fx` slot; the world clock (`core/clock.mjs`) drives

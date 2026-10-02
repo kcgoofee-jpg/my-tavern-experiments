@@ -322,6 +322,7 @@
 | 术语 | 含义 | 现在在哪里 | 不要混淆 |
 |---|---|---|---|
 | **Spatial OS / Spatial Map** | D5 定下的中性产品名：与角色卡无关的引擎加数据设定包。 | 计划与 brief 里；代码里还没有（仍是 `EdenMap`，表 C）。 | `Eden Map`，第一个设定包的产品名。 |
+| **在场头像（presence chip）** | 3D 建筑里为位置落在某个房间的人画的 32 px 头像按钮（`estate:people`，`map/estate/presence.js`）；按日程站位的人是同一枚淡色头像。不是二维地图上的头像框（`.chm`）。 | `core/estate-people.mjs`、`docs/ui-refactor.md` U-27 / U-28。 | 图钉、标记。 |
 | **engine** | 不知道任何卡的代码（`map/core`、`app`、`tavern`、`ui`、`three`、`map/*.mjs`、两个页面）。 | `tools/check_architecture.py` 里的 `ENGINE_GLOBS`。 | 设定包（数据）。 |
 | **pack** | 描述一张卡的世界的数据：一份清单加它指向的文件。引擎只读取、从不执行。 | `map/packs/<id>/manifest.json`；第一个设定包 `eden` 还用 `map/data/`；`town` 是虚构的示例。 | npm 上的「包」（`tiancheng-map-assets`）。 |
 | **host** | 在酒馆页面里运行的酒馆助手脚本 `map/tavern/eden-map.js`。通过 `MVUBridge` 独占对 `Mvu` / `SillyTavern` 的访问。 | `map/tavern/*`。 | `app/host.mjs`，它在查看器里、处理宿主消息（将改名 `host-messages`）。 |

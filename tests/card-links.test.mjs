@@ -22,8 +22,8 @@ test('link + link3d：两个链接，通道在前、三维在后', () => {
   assert.match(h, /data-go="lm_x" data-focus="" data-link3d="1"[^>]*>3D 查看</);
 });
 test('只有 link3d；自定义文案去掉尾箭头；转义', () => {
-  assert.match(linksHtml({ link3d: { map: 'lm_x', label: '看模型 →' } }, ctx), />看模型</);
-  assert.match(linkHtml({ map: 'lm_x', label: '<b>x' }, ctx, '3d'), /&lt;b&gt;x/);
+  assert.match(linksHtml({ link3d: { map: 'lm_x', label: '看模型 →' } }, ctx), />3D 查看</);   // S7-3 U-31: a link into a 3D page is the one action 「3D 查看」 whatever the data wrote
+  assert.match(linkHtml({ map: 'tc_low', label: '去<b>下层 →' }, ctx), />去&lt;b&gt;下层</);   // a link to a flat map keeps its own (escaped) label, the trailing arrow cut
 });
 test('目标不存在 / 规划中 / 与通道同图：不出第二个', () => {
   assert.equal(linksHtml({ link3d: { map: 'nope' } }, ctx), '');
@@ -45,7 +45,7 @@ test('任务三：三维视口入口常驻（link 指三维场景不重复出；
   assert.equal(isScene3d(REG2.maps.eden), true); assert.equal(isScene3d(REG2.maps.tc_low), false); assert.equal(isScene3d(REG2.maps.plan), false);
   // 地标的通道本身指到庄园：那条链接就是三维入口，不再重复出第二条
   const h1 = L({ link: { map: 'eden', label: '进入伊甸庄园' } }, c);
-  assert.equal((h1.match(/<a /g) || []).length, 1); assert.match(h1, />进入伊甸庄园</);
+  assert.equal((h1.match(/<a /g) || []).length, 1); assert.match(h1, />3D 查看</);
   // 人在庄园里（当前图 = 三维场景）：任意地标卡都有「进入三维视口」，且带 data-same（点了走同图聚焦而不是重开）
   const h2 = L({ name: '书房' }, { ...c, cur: 'eden' });
   assert.equal((h2.match(/<a /g) || []).length, 1);

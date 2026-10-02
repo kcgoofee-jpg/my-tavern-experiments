@@ -49,6 +49,31 @@ try {
       const card = await vf.evaluate(() => ({ shown: [...document.querySelectorAll('#card')].filter(e => !e.hidden).length, title: document.getElementById('cardTitle')?.textContent }));
       rep.check(`${w}: tapping the chip opens the shared character card in the viewer (one card, titled with the name)`, card.shown === 1 && card.title.includes(WHO), JSON.stringify(card));
       await B.shot(P.page, OUT, `${w}-person-card`);
+      // hover never moves the selection: select a room from the viewer's list, hover another room in the page, the card still names the selected one
+      await vf.evaluate(() => { document.querySelectorAll('#cardEmpty .v3rooms details').forEach(d => d.setAttribute('open', '')); window.ViewerDrawer.setTab('pl', 'half'); }); await B.wait(300);
+      await vf.evaluate(() => [...document.querySelectorAll('#cardEmpty .v3room')].find(b => b.textContent === '体能训练室')?.click()); await B.wait(1200);
+      const sel0 = await vf.evaluate(() => document.getElementById('cardTitle').textContent);
+      const other = await ef.evaluate(() => { const r = window.__estate.rect('room_b1_18'); return r && { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 }; });
+      const off = await (await vf.$('#estate')).boundingBox();
+      if (other) { await P.page.mouse.move(off.x + other.x, off.y + other.y, { steps: 4 }); await B.wait(700); }
+      const sel1 = await vf.evaluate(() => ({ title: document.getElementById('cardTitle').textContent, cards: [...document.querySelectorAll('#card')].filter(e => !e.hidden).length }));
+      const sel2 = await ef.evaluate(() => ({ pinned: window.__estate.pinned()?.name, tip: document.getElementById('tip').textContent }));
+      rep.check(`${w}: hover never changes the selection: the card keeps the selected room, one card element`, sel0.includes('体能训练室') && sel1.title === sel0 && sel1.cards === 1 && sel2.pinned === '体能训练室', JSON.stringify({ sel0, sel1, sel2 }));
+      // occlusion: from a low angle the labels behind the walls are display: none; from above none are
+      await ef.evaluate(() => { window.__estate.setMode('ext'); }); await B.wait(2500);
+      await ef.evaluate(() => { window.__estate.view(-0.25, 0.05); }); await B.wait(1200);
+      const top = await ef.evaluate(() => ({ occl: document.querySelectorAll('.lbl.occl').length, ms: window.__estate.occl?.ms }));
+      await ef.evaluate(() => { window.__estate.view(-0.25, 1.33); }); await B.wait(1200);
+      const low = await ef.evaluate(() => ({ occl: [...document.querySelectorAll('.lbl.occl')].filter(e => getComputedStyle(e).display === 'none').length, ms: window.__estate.occl?.ms, rounds: window.__estate.occl?.rounds }));
+      rep.check(`${w}: an occluded label has display: none (exterior from a low camera: labels behind the house), none are hidden from above, a round costs <= 2 ms`, top.occl === 0 && low.occl > 0 && low.ms <= 2, JSON.stringify({ top, low }));
+      // x-ray view: the floor tags do not overlap each other (N10 4); room labels of stacked floors may share a screen area in x-ray
+      await ef.evaluate(() => window.__estate.setMode('xray')); await B.wait(3500);
+      const xr = await ef.evaluate(() => { const rs = [...document.querySelectorAll('.lbl.floor')].filter(e => e.style.display !== 'none' && getComputedStyle(e).display !== 'none' && e.firstChild?.getBoundingClientRect().height).map(e => ({ t: e.textContent, r: e.firstChild.getBoundingClientRect() })); let n = 0; const bad = [];
+        for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) { const a = rs[i].r, b = rs[j].r; if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { n++; bad.push(rs[i].t + '|' + rs[j].t); } } return { labels: rs.length, overlaps: n, bad: bad.slice(0, 4) }; });
+      rep.check(`${w}: in the x-ray view the floor tags do not overlap each other (N10 4)`, xr.overlaps === 0 && xr.labels >= 2, JSON.stringify(xr));
+      const clip = await ef.evaluate(() => [...document.querySelectorAll('.lbl.floor')].filter(e => getComputedStyle(e).display !== 'none' && !e.classList.contains('occl') && e.firstChild.getBoundingClientRect().height).map(e => e.firstChild.getBoundingClientRect()).filter(r => r.left < 0 || r.right > innerWidth).length);
+      rep.check(`${w}: in the x-ray view no floor tag is clipped by the screen edge`, clip === 0, String(clip));
+      await B.shot(P.page, OUT, `${w}-xray`);
       // idle: no animation frame for 2 s
       await vf.evaluate(() => ViewerDebug.closeCard?.()); await P.page.mouse.move(2, 2);
       await ef.evaluate(() => { window.__raf = 0; const o = window.requestAnimationFrame; window.requestAnimationFrame = f => { window.__raf++; return o.call(window, f); }; });

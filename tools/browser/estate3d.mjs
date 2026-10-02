@@ -99,7 +99,7 @@ try {
       const outer = document.getElementById('fpsMeter');
       return { outerVisible: !!outer && outer.style.display !== 'none' };
     });
-    const innerFps = fr2 ? await fr2.evaluate(() => { const s = document.getElementById('stats'); return { innerVisible: s?.style.display === 'block' }; }) : null;
+    const innerFps = fr2 ? await fr2.evaluate(() => { const s = document.getElementById('stats'); return { innerVisible: !!s && getComputedStyle(s).display === 'block' }; }) : null;
     rep.check('FPS 只留一份（外层顶栏让位给子页自己的读数）', !fpsDup.outerVisible && innerFps?.innerVisible, JSON.stringify({ fpsDup, innerFps }));
     await P.close();
     const Q2 = await B.newPage('desktop'); await B.openEstate(Q2, { stats: false }); await Q2.page.reload({ waitUntil: 'commit' }); await Q2.page.waitForFunction(() => window.__ffAt, null, { timeout: 90000 });

@@ -38,15 +38,19 @@ export function projectV2(pack, { base = '', remoteOn = false } = {}) {
   const tree = buildTree(pack?.nodes, { title: pack?.title }), views = viewsOf(pack), implicit = !(isObj(pack?.views) && Object.keys(pack.views).length), ui = isObj(pack?.ui) ? pack.ui : {};
   const registry = { start: '', groups: {}, maps: {} }, files = {}, problems = [], pid = str(pack?.id) || 'pack';
   const prim = id => { const v = viewIdsOf(tree, views, id)[0]; return v ? views[v] : null; };
-  const owners = new Map();   // node id -> its view (projected kinds only)
+  const owners = new Map(), scenes = [];   // node id -> its view (projected kinds only); the 3D views [node id, manifest path]
   for (const id of tree.ids()) {
     const v = prim(id); if (!v) continue;
-    if (v.kind === 'model3d') { problems.push({ code: 'view-3d-not-shown', id }); continue; }
+    if (v.kind === 'model3d') {   // S7-3: a 3D view with a manifest opens in the building page (rooms, floors, people); one without is not shown
+      const mf = under(base, str(v.manifest)); if (!str(v.manifest) || !mf || !safeId(id)) { problems.push({ code: str(v.manifest) ? 'view-path' : 'view-3d-not-shown', id }); continue; }
+      scenes.push([id, mf]); continue;
+    }
     if (MAP_KINDS.has(v.kind) && safeId(id)) owners.set(id, v);
   }
   const homeOf = id => tree.ancestors(id).find(a => owners.has(a)) ?? null;   // the map a node is drawn on
   const nameOf = id => str(tree.get(id)?.name);
   const en = id => str(tree.get(id)?.i18n?.en?.name);
+  for (const [id, mf] of scenes) registry.maps[id] = { title: nameOf(id), ...(en(id) ? { title_en: en(id) } : {}), kind: 'estate', src: 'estate/index.html', scene3d: mf, markers: {} };
   const meta = (id, at) => {
     const n = tree.get(id), alias = [...new Set([nameOf(id), ...(Array.isArray(n.alias) ? n.alias : []), ...Object.values(isObj(n.i18n) ? n.i18n : {}).map(l => l?.name)].filter(str))];
     return { name: nameOf(id), ...(en(id) ? { name_en: en(id) } : {}), ...(str(n.sub) ? { sub: n.sub } : {}), alias, ...(id !== at && owners.has(id) ? { link: { map: id, marker: id } } : {}), ...(Array.isArray(n.media) && n.media.length ? { gallery: { id } } : {}) };

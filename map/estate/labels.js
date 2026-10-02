@@ -7,6 +7,7 @@ const ROUND_MS = 250, PER_FRAME = 12, EPS = 0.35;
 /** segment (p -> p + d * len) against an axis-aligned box (slab method); true when it crosses the box's inside */
 const AXES = ['x', 'y', 'z'];
 export function hitsBox(p, d, len, b) {
+  if (AXES.every((k) => p[k] > b.min[k] && p[k] < b.max[k])) return false;   // an anchor inside a box (a label of the building itself) is not behind it
   let t0 = EPS, t1 = len;
   for (const k of AXES) {
     const lo = b.min[k], hi = b.max[k], o = p[k], v = d[k];
@@ -20,15 +21,16 @@ const box = (x0, x1, y0, y1, z0, z1) => ({ min: { x: x0, y: y0, z: z0 }, max: { 
 
 /**
  * createLabelGuard({ THREE, camera, floors, building, cut, mode, isFloor, labels, now }):
- *   floors    [{ y, z }] floor levels (three y; z = level above the ground floor); building { x0, x1, z0, z1 } the outer footprint in three x / z
+ *   floors    [{ y, z, box? }] floor levels (three y; z = level above the ground floor; box = the floor's footprint { x0, x1, z0, z1 } in three x / z); building { x0, x1, z0, z1 } the outer footprint in three x / z
  *   mode()    'ext' | 'xray' | a floor index;  labels()  [{ el, anchor: Object3D, hot }] the labels that are on this round (anchor.getWorldPosition); a hot (hovered or selected) label is never hidden
  *   tick(now) -> true while a round is running; dirty() marks the scene as changed (camera moved, mode changed, labels changed)
  */
 export function createLabelGuard({ THREE, camera, floors, building, cut = 1.5, top = 4.5, mode, labels }) {
   const fwd = new THREE.Vector3(), pos = new THREE.Vector3(), key = new THREE.Matrix4(), last = new THREE.Matrix4(), dir = { x: 0, y: 0, z: 0 };
   let dirty = true, lastMode = null, lastRun = -1e9, cursor = 0, work = null, lastCost = 0, rounds = 0, lastZoom = 0;
-  const slab = (i) => box(building.x0, building.x1, floors[i].y - 0.35, floors[i].y, building.z0, building.z1);
-  const walls = (i) => { const y0 = floors[i].y, y1 = y0 + cut, t = 0.6, { x0, x1, z0, z1 } = building;
+  const own = (i) => floors[i].box || building;   // a floor's own footprint (a basement is smaller than the block above it)
+  const slab = (i) => { const b = own(i); return box(b.x0, b.x1, floors[i].y - 0.35, floors[i].y, b.z0, b.z1); };
+  const walls = (i) => { const y0 = floors[i].y, y1 = y0 + cut, t = 0.6, { x0, x1, z0, z1 } = own(i);
     return [box(x0 - t, x0, y0, y1, z0 - t, z1 + t), box(x1, x1 + t, y0, y1, z0 - t, z1 + t), box(x0, x1, y0, y1, z0 - t, z0), box(x0, x1, y0, y1, z1, z1 + t)]; };
   const occluders = (m) => {
     if (m === 'ext') return [box(building.x0, building.x1, floors[0].y, floors[floors.length - 1].y + top, building.z0, building.z1)];
@@ -57,17 +59,19 @@ export function createLabelGuard({ THREE, camera, floors, building, cut = 1.5, t
     if (cursor >= list.length) { for (const [el, hidden] of out) el.classList.toggle('occl', hidden); rounds++; window.__estate && (window.__estate.occl = { ms: +lastCost.toFixed(3), labels: list.length, rounds }); work = null; lastCost = 0; return false; }
     return true;
   }
-  return { tick, dirty: () => { dirty = true; }, rounds: () => rounds, occluders, hitsBox };
+  // a changed scene (dirty) drops the round that was running
+  return { tick, dirty: () => { dirty = true; work = null; cursor = 0; }, rounds: () => rounds, occluders, hitsBox };
 }
 
-/** the floor tags of the x-ray view get a vertical pass: a tag that overlaps the one above shifts down by the overlap (--dy), a tag that would leave the screen is hidden; tags = [{ el, span }] */
+/** the floor tags of the x-ray view get a vertical pass: a tag that overlaps the one above shifts down by the overlap (--dy), a tag clipped by the left edge slides right (--dx), a tag that would leave the screen is hidden; tags = [{ el, span }] */
 export function separateTags(tags) {
-  for (const t of tags) { t.span.style.setProperty('--dy', '0px'); t.el.classList.remove('occl'); }
+  for (const t of tags) { t.span.style.setProperty('--dy', '0px'); t.span.style.setProperty('--dx', '0px'); t.el.classList.remove('occl'); }
   const rs = tags.filter((t) => t.el.style.display !== 'none').map((t) => ({ t, r: t.span.getBoundingClientRect() })).filter((x) => x.r.height > 0).sort((a, b) => a.r.top - b.r.top);
   let bottom = -1e9;
   for (const x of rs) {
     const shift = Math.max(0, bottom + 2 - x.r.top);
-    x.t.span.style.setProperty('--dy', shift + 'px'); x.t.el.classList.toggle('occl', x.r.bottom + shift > innerHeight - 4);
+    x.t.span.style.setProperty('--dy', shift + 'px'); x.t.span.style.setProperty('--dx', Math.max(0, 4 - x.r.left) + 'px');   // a tag whose anchor sits near the left edge (phones) slides back into view
+    x.t.el.classList.toggle('occl', x.r.bottom + shift > innerHeight - 4);
     if (!x.t.el.classList.contains('occl')) bottom = x.r.bottom + shift;
   }
 }

@@ -31,6 +31,7 @@ body.shell3d #dock{display:flex}
 body.shell3d #evbar:not([hidden]){display:flex!important}
 body.shell3d #zHome{display:none}
 #layers button[data-act]{color:var(--accent)}
+.kc{display:inline-block;width:12px;height:12px;border-radius:var(--r-s);background:var(--kc);margin-right:var(--sp-3);vertical-align:-1px;border:1px solid var(--glass-line)}
 .v3rooms details{border-top:1px solid var(--line)}.v3rooms summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--ink-2)}
 .v3rooms .v3room{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-s);cursor:pointer;font-size:var(--fs-control)}
 .v3rooms .v3room:hover{background:var(--surface-2)}.v3rooms .v3room:focus-visible{box-shadow:var(--focus-ring)}
@@ -85,6 +86,7 @@ function insets() {
 
 // ---- lifecycle (called by subpage3d-host.mjs) ----
 export const active = () => S.on;
+export const holds = name => !!S.sent?.some(p => p.name === name);
 export function attach(sendFn) { Object.assign(S, { on: true, ready: false, floors: [], rooms: [], kinds: [], mode: 'ext', floor: null, sent: null, insets: '' }); send = sendFn; document.body.classList.add('shell3d'); paint(); }
 export function detach() { if (!S.on) return; S.on = false; S.ready = false; send = () => {}; document.body.classList.remove('shell3d'); $('#v3menu').hidden = true; $('#zoom #lblTog')?.setAttribute('aria-pressed', 'true'); S.labels = true; }
 export function ready(d) {
@@ -136,7 +138,7 @@ function refreshList() {
 export function people() {
   if (!S.on || !S.ready) return;
   const cv = plugins.CharactersView; if (!cv?.rows) return;
-  const nodeOf = t => { try { return hereRes(t)?.node || eventGeo()?.place(t)?.node || null; } catch (e) { return null; } };
+  const mine = new Set(S.rooms.map(r => r.node)), nodeOf = t => { try { return [hereRes(t)?.node, eventGeo()?.place(t)?.node].find(n => mine.has(n)) || null; } catch (e) { return null; } };   // the same node resolution as the 2D map: the located node of a v1 pack, the tree's place of a v2 pack
   const list = buildEstatePeople({ rows: cv.rows, rooms: S.rooms, nodeOf });
   if (S.sent && sameList(list, S.sent)) return;
   S.sent = list; send({ type: 'estate:people', items: list });
@@ -149,4 +151,4 @@ export function decorate(el, name) {
   const ex = $('#card .extra'), box = roomList(rooms, [], r => { const a = document.createElement('a'); a.dataset.go = mp; a.dataset.focus = r.name; document.body.append(a); a.click(); a.remove(); });
   ex.append(box);
 }
-register('EstateShell', { people, active, fromPage, decorate });
+register('EstateShell', { people, active, holds, fromPage, decorate });

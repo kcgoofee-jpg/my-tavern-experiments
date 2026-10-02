@@ -162,7 +162,7 @@ def main():
     def excluded_paths_ignored():
         term = "const x = '庄园 天城 tc_upper';\nel.style.color = 'red';\nconst z = { zIndex: 9 };\n"
         root = fake_root({
-            'map/packs/eden/data.mjs': term, 'map/data/x.mjs': term, 'map/estate/main.js': term,
+            'map/packs/eden/data.mjs': term, 'map/data/x.mjs': term, 'map/estate/plan.js': term, 'map/estate/vendor/v.js': term,
             'map/vendor/lib.mjs': term, 'map/props/prop_a/scene.mjs': term, 'map/section.js': term,
             'map/world.html': term, 'map/tavern/test-page.html': term, 'tests/a.mjs': term, 'tools/b.mjs': term,
             'map/app/ok.mjs': 'export const a = 1;\n'})
@@ -171,7 +171,14 @@ def main():
         for fn in (gate.check_terms, gate.check_zindex, gate.check_inline_style, gate.check_line_count):
             bad, _ = fn(baseline={}, root=root)
             assert not bad, f'{fn.__name__} 扫了范围外路径：{bad}'
-    case('忽略：packs / data / estate / vendor / props 子目录 / 原型 / tests / tools', excluded_paths_ignored)
+    case('忽略：packs / data / estate 的 plan.js 与 vendor / props 子目录 / 原型 / tests / tools', excluded_paths_ignored)
+
+    def estate_page_in_scope():
+        root = fake_root({'map/estate/main.js': "const x = '庄园';\n", 'map/estate/index.html': "<b>天城</b>\n", 'map/estate/presence.js': "// 伊甸\n"})
+        names = sorted(p.relative_to(root).as_posix() for p in gate.engine_files(root))
+        assert names == ['map/estate/index.html', 'map/estate/main.js', 'map/estate/presence.js'], f'3D 页应在范围内：{names}'
+        bad, _ = gate.check_terms(baseline={}, root=root); assert len(bad) >= 2, f'页面里的卡词应被拦：{bad}'
+    case('范围：3D 页（main.js / presence.js / labels.js / terrain.js / index.html）在引擎范围内，卡词被拦', estate_page_in_scope)
 
     def engine_scope_covers():
         root = fake_root({r: 'x\n' for r in (
@@ -300,9 +307,9 @@ def main():
         bad, n = gate.check_tc_globals(root=root)
         assert n == 1 and len(bad) == 4, f'应拦 4 处（TCthreeFX2 小写第三字母不是 TC<大写>），实际 {len(bad)}：{bad}'
         assert 'map/app/a.mjs:1:' in bad[0] and 'map/app/a.mjs:4:' in bad[3], f'行号不对：{bad}'
-        root = fake_root({'map/estate/main.js': "window.TCthreeFX = {};\n", 'tools/browser/x.mjs': "window.TCEvents;\n"})
+        root = fake_root({'map/estate/plan.js': "window.TCthreeFX = {};\n", 'tools/browser/x.mjs': "window.TCEvents;\n"})
         bad, n = gate.check_tc_globals(root=root)
-        assert not bad and n == 0, f'引擎范围外（庄园页 / 工具）不该被扫：{bad}'
+        assert not bad and n == 0, f'引擎范围外（plan.js / 工具）不该被扫：{bad}'
         bad, n = gate.check_tc_globals()
         assert not bad and n > 100, f'仓库现状有旧 TC* 全局或扫描面太小：{bad[:3]} {n}'
     case('拦截：新引擎代码里的 window.TC* / P.TC*（硬零；注释、庄园页、工具不计）；仓库现状零', tc_globals_rules)
@@ -327,7 +334,7 @@ def main():
         root = fake_root({'map/core/x.mjs': "// 庄园\nexport const a = 1;\n"})
         bad, _ = gate.check_comment_terms(baseline={'comment_terms': {'map/core/x.mjs': 5}}, root=root)
         assert bad and 'map/core/x.mjs:1:' in bad[0], f'map/core 注释卡词应硬零：{bad}'
-        root = fake_root({'map/packs/eden/a.mjs': "// 庄园\n", 'map/estate/m.js': "// 庄园\n", 'tools/t.mjs': "// 庄园\n", 'map/app/ok.mjs': "// 中性\n"})
+        root = fake_root({'map/packs/eden/a.mjs': "// 庄园\n", 'map/estate/plan.js': "// 庄园\n", 'tools/t.mjs': "// 庄园\n", 'map/app/ok.mjs': "// 中性\n"})
         bad, _ = gate.check_comment_terms(baseline={}, root=root)
         assert not bad, f'范围外路径（设定包 / 庄园页 / 工具）不该被扫：{bad}'
         base = gate.load_baseline()

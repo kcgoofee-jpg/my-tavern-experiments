@@ -29,7 +29,6 @@ export function roomCard(r, ctx) {
   if (r.access && zhOnly(r.access)) rows.push([T('v3.access', '出入'), r.access]);
   const src = c.querySelector('.src'); src.replaceChildren(fieldRows(rows));
   const ex = c.querySelector('.extra');
-  if (r.node) { const a = h('a', null, T('gallery', '图集')); a.dataset.gallery = r.node; a.setAttribute('role', 'button'); a.tabIndex = 0; ex.append(a); }
   if (ctx.back) { const b = h('button', 'btn v3back', T('v3.back', '回到建筑')); b.type = 'button'; b.dataset.v3back = '1'; ex.append(b); }
   customBlock(ex, r);
 }

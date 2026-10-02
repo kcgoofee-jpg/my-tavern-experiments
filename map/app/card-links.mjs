@@ -6,9 +6,10 @@
 // 点击走查看器全局的 [data-go] 委托（document click → go(map)，data-focus = 落点标记）。
 export function linkHtml(l, { REG, nm, t, esc }, kind = 'go') {
   if (!l || typeof l !== 'object' || !REG?.maps?.[l.map] || REG.maps[l.map].status === 'planned') return '';
-  const fallback = kind === '3d' ? t('v3.enter') : t('goto', { title: nm(REG.maps[l.map], 'title') });
-  const label = (nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
-  return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${kind === '3d' ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
+  const fallback = kind === '3d' || isScene3d(REG.maps[l.map]) ? t('v3.enter') : t('goto', { title: nm(REG.maps[l.map], 'title') });
+  const scene = kind === '3d' || isScene3d(REG.maps[l.map]);   // S7-3 U-31: a link into a 3D page is the one action 「3D 查看」
+  const label = (scene ? fallback : nm(l, 'label') || fallback).replace(/\s*[→›>]\s*$/, '');
+  return `<a data-go="${esc(l.map)}" data-focus="${esc(l.marker || '')}"${scene ? ' data-link3d="1"' : ''} role="button" tabindex="0">${esc(label)}</a>`;
 }
 /** 这张图是不是「微观三维场景」（kind=estate：主场景剖面 / props 通用三维查看器都算）——只看注册表条目的版本，节点树在手时用 sceneOf */
 export const isScene3d = (m) => !!m && m.kind === 'estate' && m.status !== 'planned';

@@ -41,7 +41,7 @@ try {
       await vf.evaluate(() => { const c = document.querySelector('#optEdit'); if (c?.checked) c.click(); }); await B.wait(300);
       await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(7000);
       const v2 = await audit(vf), ef = await (await vf.$('#estate'))?.contentFrame(), est = ef ? await audit(ef) : { n: 0, nbad: 1, bad: ['no estate frame'] };
-      rep.check(`${w}: estate view open: viewer and 3D page controls all have names`, v2.nbad === 0 && est.nbad === 0 && est.n > 0, JSON.stringify({ viewer: v2, estate: est }));
+      rep.check(`${w}: estate view open: viewer controls all have names; the 3D page is chrome-less (no controls of its own, S7-3)`, v2.nbad === 0 && v2.n > 0 && est.nbad === 0 && est.n === 0, JSON.stringify({ viewer: v2, estate: est }));
       rep.check(`${w}: no page errors`, P.errors.filter(e => !/404|favicon/.test(e)).length === 0, P.errors.slice(0, 3).join(' | '));
     } finally { await P.close(); }
   }

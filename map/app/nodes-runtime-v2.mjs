@@ -21,7 +21,7 @@ export function makeRuntimeV2(pack, registry) {
     crumbs: id => [...ancestors(id).reverse(), id],
     children: id => ids.filter(k => up.get(k) === id),
     levels: id => (tree.has(id) ? levelsOf(tree, views, ui, id).filter(isMap) : []),
-    isScene: () => false,
+    isScene: id => kind(id) === 'model3d',
     strip: () => [],
   };
 }

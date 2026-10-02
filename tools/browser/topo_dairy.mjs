@@ -16,6 +16,9 @@ const ready = id => p.waitForFunction(id => { if (ViewerDebug.currentMapId !== i
 const frame = () => B.estateFrame(p);
 const crumbs = () => p.evaluate(() => ({ links: [...document.querySelectorAll('#crumbs a')].map(a => a.dataset.go), here: document.querySelector('#crumbs b')?.textContent || '' }));
 const live = () => p.evaluate(() => ({ frames: document.querySelectorAll('#stage iframe').length, lease: window.Lease3dApi?.live() }));
+/** S7-3: the zone card is the viewer's shared place card (the page only reports the pick): pick the zone as a user tap would, then read the card in the viewer */
+const pickZone = async id => { await focusZone(id); await p.evaluate(id => document.querySelector('#estate').contentWindow.__estate.pick(id), id); };
+const viewerCard = () => p.evaluate(() => ({ h3: document.getElementById('cardTitle')?.textContent || '', n: document.querySelectorAll('#card:not([hidden]) .extra [data-go]').length, btn: document.querySelector('#card:not([hidden]) .extra [data-go]')?.textContent || '' }));
 const focusZone = id => p.evaluate(id => document.querySelector('#estate').contentWindow.postMessage({ type: 'estate:room', name: id }, '*'), id);   // 宿主发给三维页的那条消息，按区域 id
 // 读当前那个 iframe（不握旧的 frame 句柄：返回庄园时三维页换 iframe，CI 上旧句柄可能已脱离；S7-2 后 CI 偶发 'pinned' of undefined）
 const pinnedZone = () => p.evaluate(() => { try { return document.querySelector('#estate')?.contentWindow?.__estate?.pinned?.()?.id ?? null; } catch (e) { return null; } });
@@ -40,18 +43,19 @@ try {
   // ---- 进入庄园：农场区域卡带「进入三维」----
   await p.evaluate(() => ViewerDebug.go('eden_estate')); await ready('eden_estate');
   const F = await frame();
-  await focusZone('dairy');
-  await F.waitForSelector('#card .enter3d', { timeout: 10000 }).catch(() => {});
-  const cardTxt = await F.evaluate(() => ({ h3: document.querySelector('#card h3')?.textContent || '', btn: document.querySelector('#card .enter3d')?.textContent || '', n: document.querySelectorAll('#card .enter3d').length }));
+  await pickZone('dairy');
+  await p.waitForSelector('#card:not([hidden]) .extra [data-go]', { timeout: 10000 }).catch(() => {});
+  const cardTxt = await viewerCard();
   rep.check('farm_card_has_enter_action', cardTxt.n === 1 && /进入三维/.test(cardTxt.btn), JSON.stringify(cardTxt));
-  const other = await F.evaluate(() => { window.__estate.focus('主楼'); return { h3: document.querySelector('#card h3')?.textContent || '', n: document.querySelectorAll('#card .enter3d').length }; });
+  await F.evaluate(() => window.__estate.pick('主楼')); await B.wait(800);
+  const other = await viewerCard();
   rep.check('other_zone_has_no_action', other.n === 0, JSON.stringify(other));
-  await focusZone('dairy');
-  await F.waitForSelector('#card .enter3d', { timeout: 10000 });
+  await pickZone('dairy');
+  await p.waitForSelector('#card:not([hidden]) .extra [data-go]', { timeout: 10000 });
   await snap('estate_farm_card');
 
   // ---- 进入：卡上的按钮 ----
-  await F.locator('#card .enter3d').click();
+  await p.locator('#card .extra [data-go]').click();
   await ready('dairy');
   let c = await crumbs();
   rep.check('enter_by_button_breadcrumb', JSON.stringify(c.links) === '["world","tc_upper","eden_estate"]' && c.here === (await p.evaluate(() => ViewerDebug.mapRegistry.maps.dairy.title)), JSON.stringify(c));
@@ -96,11 +100,11 @@ try {
   // 375 px 一次
   await p.setViewportSize({ width: 375, height: 812 });
   await p.evaluate(() => ViewerDebug.go('eden_estate')); await ready('eden_estate');
-  const F3 = await frame(); await focusZone('dairy');
-  await F3.waitForSelector('#card .enter3d', { state: 'attached', timeout: 10000 }).catch(() => {});
-  rep.check('phone_card_has_action', await F3.evaluate(() => !!document.querySelector('#card .enter3d')));
+  await frame(); await pickZone('dairy');
+  await p.waitForSelector('#card:not([hidden]) .extra [data-go]', { state: 'attached', timeout: 10000 }).catch(() => {});
+  rep.check('phone_card_has_action', await p.evaluate(() => !!document.querySelector('#card:not([hidden]) .extra [data-go]')));
   await snap('estate_farm_card_375');
-  await F3.evaluate(() => document.querySelector('#card .enter3d').click()); await ready('dairy');
+  await p.evaluate(() => document.querySelector('#card .extra [data-go]').click()); await ready('dairy');
   rep.check('phone_enter_ok', await p.evaluate(() => ViewerDebug.currentMapId === 'dairy'));
   await snap('dairy_view_375');
 } catch (e) { rep.check('probe_ran', false, String(e.message).split('\n')[0]); }

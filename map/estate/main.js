@@ -21,6 +21,7 @@ import { normSchedule, placesAt } from '../core/routine.mjs';
 import { normClock } from '../core/clock.mjs';
 import { createCycle as createDayNight, apply as applyDayNight, applyGrade } from '../three/daynight.mjs';   // Part 9-1：昼夜环境（光 + 烘焙调色）
 import { registerFX } from '../three/particles.mjs';                                                          // Part 9-2：fx 槽位粒子（雨雪 / 以太极光）
+import { splitWalls } from './terrain.js';   // 地面陡面的石砌材质
 import { createPresence } from './presence.js';   // S7-3：人物头像（聊天里落在房间里的人 + 日程里的人）
 import { createLabelGuard, separateTags } from './labels.js';   // S7-3：被楼体挡住的标注隐掉；X 光视图的楼层签不重叠
 import { LayerRegistry } from '../core/layer-registry.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
@@ -159,68 +160,6 @@ const floorLabel = (i) => FL()[i]?.label || FLOORS[i].id;
 const floorName = (i) => (floorLabel(i) === FLOORS[i].id ? FLOORS[i].id : `${FLOORS[i].id} · ${floorLabel(i)}`);
 const BLD = () => Estate3D.building(MAN, LANG);
 
-/* ---------------- 挡土墙 / 陡坡：地面贴图是俯视烘焙，竖直面上被拉成条纹 → 陡面拆出来，改用按世界坐标平铺的石砌材质 ---------------- */
-function stoneTex() {
-  const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
-  g.fillStyle = '#8f877a'; g.fillRect(0, 0, N, N);   // 灰缝
-  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const rows = 8, rh = N / rows;
-  for (let r = 0; r < rows; r++) {
-    let x = r % 2 ? -rh * 0.9 : 0;
-    while (x < N) {
-      const w = rh * (1.3 + rnd() * 1.1), l = 150 + rnd() * 34 | 0;
-      g.fillStyle = `rgb(${l + 14},${l + 8},${l - 4})`;
-      for (const dx of [0, -N, N]) g.fillRect(x + dx + 1.5, r * rh + 1.5, w - 3, rh - 3);
-      x += w;
-    }
-  }
-  const im = g.getImageData(0, 0, N, N), d = im.data;   // 细颗粒
-  for (let i = 0; i < d.length; i += 4) { const n = (rnd() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
-  g.putImageData(im, 0, 0);
-  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); return t;
-}
-function splitWalls(o) {
-  const g = o.geometry, pos = g.attributes.position, idx = g.index, uvA = g.attributes.uv; if (!idx || !uvA) return;
-  const ground = o.name.startsWith('ground'), rock = o.name.startsWith('rock'), u0 = new THREE.Vector2(), u1 = new THREE.Vector2(), u2 = new THREE.Vector2();
-  o.updateWorldMatrix(true, false);
-  // 岩体：外圈悬崖保留岩石贴图；岛内台地之间的挡土墙（离外缘远）才换石砌。按 72 个方位记外缘半径
-  const NB = 72, rim = new Float32Array(NB), _w = new THREE.Vector3(), bin = (x, z) => ((Math.floor((Math.atan2(z, x) + Math.PI) / (2 * Math.PI) * NB) % NB) + NB) % NB;
-  if (rock) for (let i = 0; i < pos.count; i++) { _w.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); const k = bin(_w.x, _w.z); rim[k] = Math.max(rim[k], Math.hypot(_w.x, _w.z)); }
-  const keep = [], wall = [], a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
-  for (let i = 0; i < idx.count; i += 3) {
-    const i0 = idx.getX(i), i1 = idx.getX(i + 1), i2 = idx.getX(i + 2);
-    a.fromBufferAttribute(pos, i0).applyMatrix4(o.matrixWorld); b.fromBufferAttribute(pos, i1).applyMatrix4(o.matrixWorld); c.fromBufferAttribute(pos, i2).applyMatrix4(o.matrixWorld);
-    n.subVectors(c, b).cross(a.clone().sub(b)).normalize();
-    const h = Math.max(a.y, b.y, c.y) - Math.min(a.y, b.y, c.y);
-    let bad = ground;
-    if (rock) { const cx = (a.x + b.x + c.x) / 3, cz = (a.z + b.z + c.z) / 3; bad = Math.hypot(cx, cz) < rim[bin(cx, cz)] - 45; }
-    else if (!ground && Math.abs(n.y) < 0.42 && h > 0.4) {   // 分区烘焙：贴图坐标在竖直方向被压扁（条纹）的竖直面才换
-      u0.fromBufferAttribute(uvA, i0); u1.fromBufferAttribute(uvA, i1); u2.fromBufferAttribute(uvA, i2);
-      const e1 = b.clone().sub(a), e2 = c.clone().sub(a), f1 = u1.clone().sub(u0), f2 = u2.clone().sub(u0);
-      const det = f1.x * f2.y - f1.y * f2.x;
-      if (Math.abs(det) < 1e-12) bad = true;
-      else { const T = e1.clone().multiplyScalar(f2.y).addScaledVector(e2, -f1.y).divideScalar(det), Bt = e2.clone().multiplyScalar(f1.x).addScaledVector(e1, -f2.x).divideScalar(det);
-        const lt = T.length(), lb = Bt.length(); bad = Math.min(lt, lb) / Math.max(lt, lb) < 0.12; }
-    }
-    if (bad && Math.abs(n.y) < 0.42 && h > 0.25 && a.y > 8) wall.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z); else keep.push(i0, i1, i2);   // a.y > 8：岛体侧面（岩壁）不动
-  }
-  if (!wall.length) return;
-  g.setIndex(keep);
-  const wg = new THREE.BufferGeometry(), P = new Float32Array(wall), uv = new Float32Array(P.length / 3 * 2), col = new Float32Array(P.length);
-  const sun = new THREE.Vector3(-0.55, 0.5, 0.45).normalize(), S = 1 / 3.2;   // 一块石纹贴图 = 3.2 m
-  for (let t = 0; t < P.length; t += 9) {
-    a.fromArray(P, t); b.fromArray(P, t + 3); c.fromArray(P, t + 6); n.subVectors(c, b).cross(a.clone().sub(b)).normalize();
-    const alongX = Math.abs(n.x) < Math.abs(n.z), k = 0.62 + 0.38 * Math.max(0, n.dot(sun));
-    for (let v = 0; v < 3; v++) { const j = t + v * 3, q = j / 3 * 2; uv[q] = (alongX ? P[j] : P[j + 2]) * S; uv[q + 1] = P[j + 1] * S; col[j] = col[j + 1] = col[j + 2] = k; }
-  }
-  wg.setAttribute('position', new THREE.BufferAttribute(P, 3)); wg.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); wg.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const wm = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ map: stoneTex(), vertexColors: true, side: THREE.DoubleSide }));
-  wm.name = 'ground_walls'; o.userData.walls = wm; STAT.walls = (STAT.walls || 0) + wall.length / 9;
-  scene.add(wm);   // 顶点已换到世界坐标
-  SITE_EXTRA.push(wm);
-}
-
 /* ---------------- 背景：渐变天空 + 云海（上层封面同一套暖白云、淡蓝天；深色主题压暗） ---------------- */
 const SKY = { dark: ['#27324a', '#6d6f7c', '#b9a78f'], light: ['#8fb6d8', '#d9e3ea', '#f4ead6'] };
 let skyTex = null, cloudMat = null;
@@ -303,7 +242,7 @@ siteG.traverse((o) => {
   if (shell) darkBack(o.material, [0.55, 0.52, 0.47]);   // 剖切面：浅灰截面（原先近黑，F2 剖切时翼楼成了黑块）
   MESH[o.name] = o; STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
 });
-GROUNDS.forEach(splitWalls);
+GROUNDS.forEach((o) => splitWalls(o, { THREE, renderer, scene, STAT, SITE_EXTRA }));
 scene.add(siteG);
 addBackdrop(siteG);
 const HOUSE_SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
@@ -320,7 +259,7 @@ for (const o of [...SITE_MESHES, ...HOUSE_SHELL, ...SITE_EXTRA]) {
 const FX_REG = new LayerRegistry();
 const { engine: fx3d } = registerFX(FX_REG, {
   THREE, scene, quality: LOW ? .4 : 1, pixelRatio: DPR, reducedMotion: REDUCED, id: 'particles3d', order: 40,
-  ortho: true,           // 庄园是正交相机：点精灵不按距离衰减（不然粒子会被拉到几百米外缩成尘埃）
+  ortho: true,           // 这页是正交相机：点精灵不按距离衰减（不然粒子会被拉到几百米外缩成尘埃）
   box: [400, 180, 400],  // 整岛尺度（默认盒 60×40×60 米只够一间房）
   overrides: {           // 大场景微调：粒子调大调亮，极光当天幕
     rain: { size: 8, opacity: .6 }, snow: { size: 10 }, sand: { size: 14, opacity: .35 },
@@ -683,7 +622,7 @@ function updateLabelSet() {
   for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
   guard.dirty(); wake();
 }
-const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => ({ y: f.y, z: f.z })), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
+const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => { const b = polyBox((CARD.rooms || []).filter((r) => r.floor === f.id)); return { y: f.y, z: f.z, box: { x0: b.x0, x1: b.x1, z0: -b.y1, z1: -b.y0 } }; }), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
   labels: () => labelSet.map((it) => ({ el: it.label.element, anchor: it.label, hot: it === pinned || it === hover })) });   // 一条射线对几个包围盒：不碰模型网格
 const FTAGS = floorTags.map((o) => ({ el: o.element, span: o.element.firstChild }));
 const tagPass = () => { if (mode === 'xray') separateTags(FTAGS); };
@@ -1028,11 +967,11 @@ let hoverEv = null, hoverRaf = 0;
 function doHover() {
   hoverRaf = 0; const e = hoverEv; if (!e) return;
   const pr = pickProp(e.clientX, e.clientY);
-  if (pr) { if (hover) { hover = null; showHi(hiHover, null); wake(); } renderer.domElement.style.cursor = 'pointer'; showPropTip(pr, e.clientX + 16, e.clientY + 14); return; }
+  if (pr) { if (hover) { hover = null; showHi(hiHover, null); wake(); } renderer.domElement.classList.add('pick'); showPropTip(pr, e.clientX + 16, e.clientY + 14); return; }
   const it = pickAt(e.clientX, e.clientY);
   if (it !== hover) { hover = it; showHi(hiHover, it && it !== pinned ? it : null); wake(); }
   if (it) showCard(it, e.clientX + 16, e.clientY + 14); else hideCard();
-  renderer.domElement.style.cursor = it ? 'pointer' : '';
+  renderer.domElement.classList.toggle('pick', !!it);
 }
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse' || e.buttons) return;
@@ -1098,7 +1037,7 @@ window.addEventListener('message', (e) => {
     renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); wake(); }
   else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light'); paintSky(); }
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
-  else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.style.display = d.on ? 'block' : 'none'; if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); wake(); }
+  else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.classList.toggle('on', d.on); if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); wake(); }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
   else if (d.type === 'estate:media' && d.rooms && typeof d.rooms === 'object') {   // K-R101：包图片按房间名；https 的只在宿主说开关开着时才给地址
     PICS = Object.fromEntries(Object.entries(d.rooms).map(([name, p]) => [name, Array.isArray(p) ? p.filter((x) => x && typeof x.id === 'string').map((x) => ({ id: x.id, item: x.item, url: nodePictures({ [x.id]: x.item }, [x.id], { base: '', remoteOn: d.remote === true })[0]?.url ?? null })) : []]));
@@ -1111,7 +1050,7 @@ function setLang(l) { LANG = l; card.dataset.lang = LANG; buildNav(); relabel();
 addEventListener('resize', () => { frustum(); renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); camera.zoom = clamp(camera.zoom, minZoom, maxZoom); camera.updateProjectionMatrix(); wake(); });
 
 /* ---------------- 循环（按需渲染） ---------------- */
-const statsEl = $('#stats'); if (STATS) statsEl.style.display = 'block';
+const statsEl = $('#stats'); if (STATS) statsEl.classList.add('on');
 let frames = 0, fpsT = performance.now(), fps = 0, first = true, lastInfo = { calls: 0, triangles: 0 }, lastPulse = 0, lastPropPulse = 0;
 let paused = false, resumeT = 0, disposed = false;
 /** I-05: stop the loop and release the renderer and its GL context (pagehide does not fire on a parked frame, so the viewer asks with estate:dispose) */
@@ -1199,6 +1138,8 @@ function onFirstFrame() {
 window.__estate = {
   setMode: (m) => setMode(parseFloor(m) ?? m, { fly: true }), focus: (n) => { const it = findByName(n); if (it) focusItem(it); return !!it; },
   find: (n) => { const it = findByName(n); return it ? { kind: it.kind, name: it.d.name, id: it.d.id, floor: it.floor != null ? FLOORS[it.floor].id : null } : null; },
+  pick: (n) => { const it = findByName(n) || ITEMS.find((x) => x.kind === 'area' && x.d.id === n); if (it) { focusItem(it); postSelect(it); } return !!it; },   // 点选（探针用）：选中并告诉查看器
+  view: (theta, phi) => { tween = null; placeCam(controls.target, theta, phi); wake(); },   // 机位（探针用）：绕目标的方位 / 俯仰角
   focusCard: (c) => focusRoomMsg(c.name, c), mode: () => mode, houseState: () => houseState, pinned: () => pinned && { kind: pinned.kind, name: pinned.d.name, id: pinned.d.id },
   tier: () => tier, dpr: () => DPR, paused: () => paused, cam: () => ({ ...CAM, rotating: controls.autoRotate }),
   stats: () => ({ ...lastInfo, depth: depthLabel(renderer.getContext()), near: camera.near, far: camera.far, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length, tier, low: LOW, files: STAT, times: TB, firstFrameMs: window.__estate.firstFrameMs, tris: STAT.tris }),

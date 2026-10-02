@@ -106,6 +106,7 @@ const CharactersView = (() => {
   // 飞过去：在别的图上就先切图，打开后再平移；只知道层的，切到那一层就好
   async function fly(name) {
     const c = items.find(x => x.name === name); flyName = null; if (!c) return;
+    if (plugins.EstateShell?.holds?.(name)) { card([c]); return; }   // a person drawn in the open 3D building: the card opens here, no flight to the 2D map
     const w = await where(c); if (!w) { card([c]); return; }
     if (w.map !== currentMapId) { flyName = name; if (typeof closeCard === 'function') closeCard(); setPendingFocus(null); go(w.map); return; }
     if (w.nx == null) { card([c]); return; }

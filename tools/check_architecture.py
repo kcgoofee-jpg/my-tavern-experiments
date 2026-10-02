@@ -44,7 +44,7 @@
   python3 tools/check_architecture.py --init-baseline     账本不存在时首次生成
   python3 tools/check_architecture.py --update-baseline   下调账本到当前计数；绝不抬高数字、绝不加新文件，有增长即拒绝
 
-引擎范围（ENGINE_GLOBS）之外永不扫描：map/vendor/、map/estate/（伊甸包页）、map/props/*/（逐道具数据）、
+引擎范围（ENGINE_GLOBS）之外永不扫描：map/vendor/、map/estate/ 下的 vendor / model / assets 等（S7-3 起 map/estate/*.js 与 index.html 在范围内）、map/props/*/（逐道具数据）、
 map/packs/、map/data/、map/section.js、viewer.html 以外的 map/*.html、map/_proto/、map/tavern/test-*.html、
 tests/、tools/。
 
@@ -70,6 +70,7 @@ ENGINE_GLOBS = [
     'map/core/*.mjs', 'map/app/*.mjs', 'map/tavern/*.mjs', 'map/tavern/eden-map.js',
     'map/ui/*.js', 'map/ui/*.mjs', 'map/three/*.mjs', 'map/*.mjs',
     'map/viewer.html', 'map/props/viewer3d.html',
+    'map/estate/main.js', 'map/estate/presence.js', 'map/estate/labels.js', 'map/estate/terrain.js', 'map/estate/index.html',   # S7-3 T9: the 3D page is the engine's interior viewer now (the first pack's words live in its manifest and data)
 ]
 COMMENT_EXTRA_GLOBS = ['map/ui/*.css']   # 检查 8 在引擎文件之外多扫的样式表（令牌表的注释）
 I18N_FILES = ['map/i18n/zh.json', 'map/i18n/en.json']   # 检查 4 额外扫这两本词典的「值」

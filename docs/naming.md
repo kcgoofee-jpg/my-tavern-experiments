@@ -324,6 +324,7 @@ The vocabulary the code, the plan and the docs share. The first four entities af
 | Term | Meaning | Where it lives today | Do not confuse with |
 |---|---|---|---|
 | **Spatial OS / Spatial Map** | Neutral product name decided in D5: a card-agnostic engine plus data packs. | Plan, brief; not yet in code (code still says `EdenMap`, table C). | `Eden Map`, the first pack's product name. |
+| **presence chip** | The 32 px avatar button a 3D building shows for a person located in one of its rooms (`estate:people`, `map/estate/presence.js`); people drawn from the routine schedule are the same chip dimmed. Not the 2D map's avatar frame (`.chm`). | `core/estate-people.mjs`, `docs/ui-refactor.md` U-27 / U-28. | A pin, a marker. |
 | **engine** | Code that knows nothing about any card (`map/core`, `app`, `tavern`, `ui`, `three`, `map/*.mjs`, the two pages). | `ENGINE_GLOBS` in `tools/check_architecture.py`. | A pack (data). |
 | **pack** | Data describing one card's world: a manifest plus the files it points at. The engine reads it and never executes it. | `map/packs/<id>/manifest.json`; the first pack `eden` also uses `map/data/`; `town` is the fictional example. | A "package" on npm (`tiancheng-map-assets`). |
 | **host** | The TavernHelper script `map/tavern/eden-map.js` running in the tavern page. Owns the `Mvu` / `SillyTavern` access through `MVUBridge`. | `map/tavern/*`. | `app/host.mjs`, which lives in the viewer and handles host messages (renamed `host-messages`). |
