@@ -31,7 +31,7 @@ export function createLife() {
 
 /** 幂等：脚本被重复注入（换卡、热重载）时先清掉上一份的元素和全部监听，只留一个悬浮按钮、一套监听 */
 export function takeOver(pdoc, ID, scriptOwner) {
-  try { window.parent.__edenMapCleanup?.(); } catch (e) {}
+  try { window.parent.__edenMapCleanup?.(); } catch (e) { /* host page not reachable: nothing to do */ }
   pdoc.getElementById(ID)?.remove();
   // 地基 A2：父页面上的节点都打 data-eden-owner；启动时清掉不属于本实例的（子 iframe 被异常移除、pagehide 没派发时留下的孤儿）
   try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') !== scriptOwner || el.id === ID) el.remove(); } catch (e) {}
@@ -219,7 +219,7 @@ export function mount(pdoc, ID, scriptOwner) {
   pdoc.body.appendChild(root);
   const clk = root.querySelector('.em-clock'); mountClockPop(clk, { lang: () => { try { return localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; } } });   // U-FIX-4：点时钟 = 时段弹层（窄屏同时展开时间）
   const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
-  const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {} const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
+  const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
   new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();
   // N10 (5): the replay bar docks as a glass-1 bar above the drawer peek; the viewer shifts its dock up by the bar's height (--tl-h on the viewer's root, the frame is same-origin)
   const tl = root.querySelector('.em-tl'), fr = root.querySelector('.em-frame'), setTl = () => { try { fr.contentDocument?.documentElement.style.setProperty('--tl-h', tl.hidden ? '0px' : (tl.offsetHeight + 8) + 'px'); } catch (e) {} };

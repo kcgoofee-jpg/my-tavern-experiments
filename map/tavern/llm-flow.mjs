@@ -18,9 +18,9 @@ export function createLlmFlow(host) {
   // 响应必须过 W4 op 沙盒（sanitize 链 → parse → 水位）才可能落到地图；OP_EVENT 是会话级叠加（src='op'，20 楼衰减），
   // OP_SUGGEST 只弹提示永不自动进聊天流（裁决 2/3）；OP_CLUE / OP_MARKER 经 tavern/nav-ops.mjs 盖楼层与地图章、会话级留存，发给查看器的 nav-ops 图层（K-R86）。
   let plannerGatewayModule = null, LLMm = null, MSGm = null;
-  import(scriptBase + 'tavern/planner-gateway.mjs').then(m => { plannerGatewayModule = m; navSchedule(); }).catch(() => {});
-  import(scriptBase + 'tavern/llm-gateway.mjs').then(m => { LLMm = m; }).catch(() => {});
-  import(scriptBase + 'tavern/msgtext.mjs').then(m => { MSGm = m; }).catch(() => {});
+  import(scriptBase + 'tavern/planner-gateway.mjs').then(m => { plannerGatewayModule = m; navSchedule(); }).catch(e => console.warn('[map] llm-flow: planner-gateway import failed', e));
+  import(scriptBase + 'tavern/llm-gateway.mjs').then(m => { LLMm = m; }).catch(e => console.warn('[map] llm-flow: llm-gateway import failed', e));
+  import(scriptBase + 'tavern/msgtext.mjs').then(m => { MSGm = m; }).catch(e => console.warn('[map] llm-flow: msgtext import failed', e));
   let navLed = { lastAt: 0 }, navSeen = { seen: [] }, navT = 0, navNext = 0, opEvents = [], opOv = NO.EMPTY, opSent = NO.sig(NO.EMPTY);
   function sendOps(force) {   // K-R86: the session's clues and markers to the viewer's nav-ops layer, when they changed (force: a fresh viewer, only if there is something)
     opOv = NO.age(opOv, host.floorNow); const s = NO.sig(opOv);
@@ -91,8 +91,8 @@ export function createLlmFlow(host) {
   // 只动 wbsync.BOOK 附加书里带 extra.eden_id 的条目（extra.eden_jit 标记 JIT 关的；用户关的记 ignore 永不再碰）。
   // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
   let worldbookJitModule = null, WBSm = null, jitWatermark = null, jitBusy = false;
-  import(scriptBase + 'tavern/worldbook-jit.mjs').then(m => { worldbookJitModule = m; }).catch(() => {});
-  import(scriptBase + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(() => {});
+  import(scriptBase + 'tavern/worldbook-jit.mjs').then(m => { worldbookJitModule = m; }).catch(e => console.warn('[map] llm-flow: worldbook-jit import failed', e));
+  import(scriptBase + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(e => console.warn('[map] llm-flow: worldbook-sync import failed', e));
   async function jitRound() {
     if (jitBusy || !worldbookJitModule || !WBSm || !host.SpatialM || life.dead || lsGet('edenMapWbJit') !== '1') return;
     const getBook = thFn('getWorldbook'), updBook = thFn('updateWorldbookWith');
@@ -131,7 +131,7 @@ export function createLlmFlow(host) {
   // ⌖事实 标签 → 附加书关键词触发条目（map.fact.<hash>，内容照抄原文）；LRU + 墓碑（用户删除永不复活）；
   // 已写 id 记水位（edenMapWbXtalCfg.written）→ 消息窗口重放幂等。默认关（edenMapWbXtal）。
   let worldbookCrystallizeModule = null, xtalBusy = false, xtalCfg = null;
-  import(scriptBase + 'tavern/worldbook-crystallize.mjs').then(m => { worldbookCrystallizeModule = m; }).catch(() => {});
+  import(scriptBase + 'tavern/worldbook-crystallize.mjs').then(m => { worldbookCrystallizeModule = m; }).catch(e => console.warn('[map] llm-flow: worldbook-crystallize import failed', e));
   const xtalCfgOf = () => {
     if (xtalCfg) return xtalCfg;
     try { xtalCfg = JSON.parse(lsGet('edenMapWbXtalCfg') || '{}') || {}; } catch (e) { xtalCfg = {}; }
@@ -139,7 +139,7 @@ export function createLlmFlow(host) {
     if (!xtalCfg.written || typeof xtalCfg.written !== 'object') xtalCfg.written = {};
     return xtalCfg;
   };
-  const xtalSave = () => { try { lsSet('edenMapWbXtalCfg', JSON.stringify(xtalCfgOf())); } catch (e) {} };
+  const xtalSave = () => { try { lsSet('edenMapWbXtalCfg', JSON.stringify(xtalCfgOf())); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } };
   function xtalClear() { const c = xtalCfgOf(); c.written = {}; xtalSave(); host.facts.xtal.written = 0; }   // C8 sub-option: forget what was written (the tombstones stay)
   async function xtalRound() {
     if (xtalBusy || !worldbookCrystallizeModule || !WBSm || !host.mvuReaders || life.dead || lsGet('edenMapWbXtal') !== '1') return;

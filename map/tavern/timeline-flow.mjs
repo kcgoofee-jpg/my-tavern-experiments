@@ -9,8 +9,8 @@ export function createTimelineFlow(host) {
   // ---------------- 时间轴回放（Part 5-4，tavern/timeline.mjs）：标题栏 ⏱ 进出，拖动滑块把地图退回那一楼 ----------------
   const tlBtn = root.querySelector('.em-tl-btn'), tlEl = root.querySelector('.em-tl'), tlR = root.querySelector('.em-tl-r'), tlV = root.querySelector('.em-tl-v');
   let timelineModule = null, tlOn = false; const tlCache = new Map();
-  let keyframesModule = null; import(scriptBase + 'tavern/keyframes.mjs').then(m => { keyframesModule = m; }).catch(() => {});
-  import(scriptBase + 'tavern/timeline.mjs').then(m => { timelineModule = m; if (host.floorNow >= 0) tlBtn.hidden = false; }).catch(() => {});
+  let keyframesModule = null; import(scriptBase + 'tavern/keyframes.mjs').then(m => { keyframesModule = m; }).catch(e => console.warn('[map] timeline-flow: keyframes import failed', e));
+  import(scriptBase + 'tavern/timeline.mjs').then(m => { timelineModule = m; if (host.floorNow >= 0) tlBtn.hidden = false; }).catch(e => console.warn('[map] timeline-flow: timeline import failed', e));
   // W3 关键帧缓存（tavern/keyframes.mjs，可丢弃缓存：删掉 eden_map.关键帧 从原文重算逐项一致）：
   // 原料 = walk 变更点表（tlWalk，只增量前进），压缩视图挂聊天变量 eden_map.关键帧。拖拽吃缓存不打桥——
   // 200+ 楼的聊天拖时间轴不再每楼都问一遍 perFloorStat / getRaw。

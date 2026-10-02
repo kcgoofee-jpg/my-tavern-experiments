@@ -24,12 +24,12 @@ export function createHostChecks(host) {
   const wbBook = async () => { try { const man = await MAN, m = await import(scriptBase + 'tavern/worldbook-sync.mjs'); if (man) m.setPrefix(worldbookPrefix(man, PACK_ID)); return man ? m.BOOK : ''; } catch (e) { return ''; } };   // 自检文案里的书名（= 世界书附加条目那本）
   async function updateFacts() {   // 正式版才查；一天最多一次（不论成败），结果记在本机
     if (!VER || !swappable || !SC.swapVer(host.entryUrl, VER)) return null;
-    let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) {}
+    let c = null; try { c = JSON.parse(lsGet(UPD_KEY)); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
     if (SC.dueCheck(c?.at, Date.now())) {
       let latest = c?.latest || null;
       try { const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 8000);
         const r = await cdnFetch(SC.UPDATE_API(REPO), { signal: ctl.signal }).finally(() => clearTimeout(to));
-        if (r.ok) latest = SC.latestTag(await r.json()) || latest; } catch (e) {}
+        if (r.ok) latest = SC.latestTag(await r.json()) || latest; } catch (e) { console.warn('[map] host-checks: update-tag fetch failed', e); }
       c = { at: Date.now(), latest }; lsSet(UPD_KEY, JSON.stringify(c));
     }
     return c?.latest ? { current: VER, latest: c.latest, channel: updChannel() } : null;
@@ -81,7 +81,7 @@ export function createHostChecks(host) {
     splash = splashModule.openSplash({ root, id: ID, pdoc, ver: VER, en: host.uiLang === 'en', name: HS('app.name', host.uiLang === 'en'), about: { version: bi?.version || SCRIPT.version || VER, code: bi?.code || SCRIPT.code, channel: channel(), ref: SCRIPT.ref || host.refOf() }, store: localStorage, cap: window.parent.__splashCap || 25,
       checks: () => runCheck().then(() => checkItems),
       tasks: [
-        { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !host.alive && !host.ghost) preload().catch(() => {}); return preP; } },
+        { key: 'map', zh: '地图程序与当前一层的图块', en: 'Map program and current-layer tiles', run: () => { if (panel.hidden && !host.alive && !host.ghost) preload().catch(e => console.warn('[map] host-checks: map preload failed', e)); return preP; } },
         { key: 'clouds', zh: '云图', en: 'Cloud sprites', skip: lite, run: () => Promise.all([1, 2, 3, 4, 5, 6].map(k => get(`art/clouds/puff${k}.png`))) },
       ],
       onStart: () => { splash = null; if (panel.hidden || host.ghost) { if (host.ghost) endGhost(true); panel.hidden = false; loadViewer(); } }, onClose: () => { splash = null; if (updWait) setTimeout(showUpdPrompt, 600); } });
@@ -146,17 +146,17 @@ export function createHostChecks(host) {
   function switchToHead(h) { try { window.parent.location.reload(); } catch (e) { console.warn('[eden-map] 刷新页面失败', e); } }
   async function autoCheck() {
     SC ??= await import(scriptBase + 'tavern/selfcheck.mjs').catch(() => null); if (!SC?.autoCheckPlan || life.dead) return;
-    let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) {}   // 挂在宿主页上：换版本 / 重注入脚本不重复查
+    let lastAt = 0; try { lastAt = window.parent.__edenMapCheckAt || 0; } catch (e) { /* host page not reachable: nothing to do */ }   // 挂在宿主页上：换版本 / 重注入脚本不重复查
     if (SC.autoCheckPlan({ enabled: lsGet(AUTO_CHECK_KEY) !== '0', channel: channel(), lastAt, now: Date.now() }) === 'skip') return;
-    try { window.parent.__edenMapCheckAt = Date.now(); } catch (e) {}
+    try { window.parent.__edenMapCheckAt = Date.now(); } catch (e) { /* host page not reachable: nothing to do */ }
     const r = await checkUpdate(); if (r.status === 'fail') return;
     const { latest, code, min, reason } = r;
     const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER, v = SC.updateVerdict(cur, latest, updChannel());
     if (life.dead) return;
     // 强制更新：最新正式版声明了 min_version 且当前更旧 → 常驻提示，只能「本次关闭」（按会话记，下次加载再弹），没有「此版本不再提示」
-    let closed = null; try { closed = window.parent.__edenMapForceClosed || null; } catch (e) {}
+    let closed = null; try { closed = window.parent.__edenMapForceClosed || null; } catch (e) { /* host page not reachable: nothing to do */ }
     if (SC.mustUpdate(cur, min)) { if (closed !== min) { updPrompt = { ...v, latest: v.latest || min, current: cur, code, min, reason, force: true, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest || min)}/CHANGELOG.md` }; showUpdPrompt(); } return; }
-    let later = null; try { later = window.parent.__edenMapUpdLater || null; } catch (e) {}
+    let later = null; try { later = window.parent.__edenMapUpdLater || null; } catch (e) { /* host page not reachable: nothing to do */ }
     if (!SC.shouldPrompt(v, lsGet(UPD_SKIP_KEY)) || v.latest === later || updEl?.isConnected) return;
     updPrompt = { ...v, code, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest)}/CHANGELOG.md` }; showUpdPrompt();
   }
@@ -171,7 +171,7 @@ export function createHostChecks(host) {
         const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
         const acts = pdoc.createElement('div'); acts.className = 'em-acts nt-acts';
         const cl = pdoc.createElement('button'); cl.type = 'button'; cl.className = 'em-later'; cl.textContent = F.close;
-        cl.onclick = () => { try { window.parent.__edenMapForceClosed = u.min; } catch (e) {} t.remove(); };   // 只记在这次页面上：刷新后再弹
+        cl.onclick = () => { try { window.parent.__edenMapForceClosed = u.min; } catch (e) { /* host page not reachable: nothing to do */ } t.remove(); };   // 只记在这次页面上：刷新后再弹
         acts.append(cl); t.append(acts);
       }, true, { level: 0, key: 'upd' });   // P0：没有 ×，只有「本次关闭」（次按钮）
     }
@@ -180,7 +180,7 @@ export function createHostChecks(host) {
       t.classList.add('em-upd'); t.__upd = u;
       const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
       const acts = pdoc.createElement('div'); acts.className = 'em-acts nt-acts';
-      const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) {} t.remove(); };
+      const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) { /* host page not reachable: nothing to do */ } t.remove(); };
       const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };
       if (T.act) { const go = pdoc.createElement('button'); go.type = 'button'; go.className = 'em-go nt-pri'; go.textContent = T.act;
         go.onclick = () => { t.remove(); if (T.actKind === 'reload') { try { window.parent.location.reload(); } catch (e) { try { location.reload(); } catch (x) {} } } else switchVersion(); }; acts.append(go); }
@@ -194,7 +194,7 @@ export function createHostChecks(host) {
     import(url).catch(e => { console.warn('[eden-map] 切换到新版本失败', e); window.parent.__edenMapSwitch = switchedFrom; });
   }
   async function switchBranch(br) {   // 设置「更新与版本」→ 版本分支（main / preview 双轨）：本次会话从目标分支重载同一个脚本，新实例 takeOver 接管这一份；长期使用请重新导入该分支的脚本
-    if (!host.dataSourceRegistryModule) { try { host.dataSourceRegistryModule = await import(scriptBase + 'tavern/data-source-registry.mjs'); } catch (e) {} }
+    if (!host.dataSourceRegistryModule) { try { host.dataSourceRegistryModule = await import(scriptBase + 'tavern/data-source-registry.mjs'); } catch (e) { console.warn('[map] host-checks: data-source-registry import failed', e); } }
     const url = host.dataSourceRegistryModule ? host.dataSourceRegistryModule.branchUrl(host.entryUrl, br) : null;
     if (!url || life.dead) return;
     window.parent.__edenMapSwitch = scriptBase;

@@ -28,8 +28,8 @@ export function createStashFlow(host) {
   // 失败报告环是会话级内存态（tavern/check-failure-report.mjs，纯模块），经 eden-map-events 注入数组追加一行。
   // 开关 edenMapDice 默认关 = 行为与今天完全一致（不掷骰、必得手）。
   let rngModule = null, FRm = null; const frState = { list: [] };
-  import(scriptBase + 'core/rng.mjs').then(m => { rngModule = m; }).catch(() => {});
-  import(scriptBase + 'tavern/check-failure-report.mjs').then(m => { FRm = m; }).catch(() => {});
+  import(scriptBase + 'core/rng.mjs').then(m => { rngModule = m; }).catch(e => console.warn('[map] stash-flow: rng import failed', e));
+  import(scriptBase + 'tavern/check-failure-report.mjs').then(m => { FRm = m; }).catch(e => console.warn('[map] stash-flow: check-failure-report import failed', e));
   const diceOn = () => lsGet('edenMapDice') === '1' && rngModule && FRm;
 
   // W11 四域结算账本 + 时序守卫（docs/plans/llm-campaign.md；对齐「领域分账 / 渐进纠错」口径）：
@@ -44,17 +44,17 @@ export function createStashFlow(host) {
   const settleCarry = { domains: [], floor: null };   // 待结算跨轮携带（未决的域带进下一轮，≤4；参考卡 pending-domain carry）
   // W12 虚拟账本槽位：宿主 stat_data 里一个背包字段都没有时，地图自己的账（stash.slot）记下每一件拾取事实。**不写宿主 stat_data**
   // （卡的 MVU 带 zod 结构，未知键会被丢掉还可能触发校验报错，见 ledger.mjs 的同一段注释）。
-  import(scriptBase + 'core/ledger.mjs').then(m => { ledgerModule = m; }).catch(() => {});
+  import(scriptBase + 'core/ledger.mjs').then(m => { ledgerModule = m; }).catch(e => console.warn('[map] stash-flow: ledger import failed', e));
   import(scriptBase + 'tavern/settlement-guard.mjs').then(m => {
     VSG = m.createGate({ hasMvu: () => host.mvuBridge.mvuPresent(), epoch: () => host.mvuBridge.varUpdateSeq() });
-  }).catch(() => {});
+  }).catch(e => console.warn('[map] stash-flow: settlement-guard import failed', e));
   const gate = () => VSG;
   function gateFlush(why = 'round') { try { return gate()?.flush(why) || null; } catch (e) { return null; } }
   // 任务一（第二步）客观动作强制反思探测：正文里**写明的**物理获取动作也是事实来源——主模型因为「卡里没有
   // 背包字段」在 UpdateVariable 里漏掉道具时，这里把动作本身补成一条 loot 事实，交给同一套漏项审计 + 强制入账。
   // 纯计算在 core/pickup.mjs（node 单测 tests/auto_stash.test.mjs）；这里只做取数与副作用。
   const vocab = () => getProfile().pickup;   // K-R77：包的拾取词（内核词表之外的追加 / 关闭 / 严格类 / 非物品）；第一个包不声明 = 空
-  let pickupModule = null; import(scriptBase + 'core/pickup.mjs').then(m => { pickupModule = m; }).catch(() => {});
+  let pickupModule = null; import(scriptBase + 'core/pickup.mjs').then(m => { pickupModule = m; }).catch(e => console.warn('[map] stash-flow: pickup import failed', e));
   /** 已知物品名（世界藏物表 + 已经在账上的东西）：命中即视为「具体物品名词」，不必带引号 / 量词 */
   function knownItems() {
     const s = new Set(worldNames());
@@ -109,7 +109,7 @@ export function createStashFlow(host) {
   }
   // K-R78 结算记录（I-04）：开关 edenMapLedgerWrite 默认关——关着时不产生事实、不读任何东西。开着：日程里属于某个名册组的人的位置、聊天里解析出的事件，
   // 经同一个漏项审计只补**空缺**，记进地图自己的聊天变量 <chat var>.ledger（从不写卡的 stat_data）；写入走和背包同一条保存（saveRoot），在结算闸门放行点。
-  let recordModule = null, ledgerRecord = null; import(scriptBase + 'core/settlement-record.mjs').then(m => { recordModule = m; }).catch(() => {});
+  let recordModule = null, ledgerRecord = null; import(scriptBase + 'core/settlement-record.mjs').then(m => { recordModule = m; }).catch(e => console.warn('[map] stash-flow: settlement-record import failed', e));
   function settleRecord() {
     if (lsGet('edenMapLedgerWrite') !== '1' || !recordModule || !ledgerModule) return;
     try {
@@ -178,8 +178,8 @@ export function createStashFlow(host) {
   // 统一背包（tavern/stash-store.mjs，K-R74）：聊天变量 eden_map.stash；地点卡显示 + 注入摘要，模型据此演「回房间取东西」。
   // 加载时由 root-store.loadCustom 迁移旧键并赋值（stash 在那之前是 null：折叠与写入都等它）。
   let stashStoreModule = null, stashRecomputeModule = null;
-  import(scriptBase + 'tavern/stash-store.mjs').then(m => { stashStoreModule = m; sendInv(); }).catch(() => {});
-  import(scriptBase + 'tavern/stash-recompute.mjs').then(m => { stashRecomputeModule = m; }).catch(() => {});
+  import(scriptBase + 'tavern/stash-store.mjs').then(m => { stashStoreModule = m; sendInv(); }).catch(e => console.warn('[map] stash-flow: stash-store import failed', e));
+  import(scriptBase + 'tavern/stash-recompute.mjs').then(m => { stashRecomputeModule = m; }).catch(e => console.warn('[map] stash-flow: stash-recompute import failed', e));
   let stash = null, sentCard = '';
   /** 卡自己的物品表（只读）：包的 vars.inventory，否则探路找到的真字段；都没有 = null */
   function cardRows() {
@@ -205,9 +205,9 @@ export function createStashFlow(host) {
   // 拿到手的东西由背包的 id 对账——不再在地上发光。藏物表晚于迁移到达时，补一次 retag（旧行里认得出的升格为地图拾取）。
   let worldModule = null, world = null, worldRaw = null;
   const worldArrived = () => { sendStash(); if (stashStoreModule && stash) { const r = stashStoreModule.retag(stash, worldIds()); if (r.changed) { stash = r.stash; changedInv(); } } };
-  import(scriptBase + 'core/stash.mjs').then(m => { worldModule = m; if (worldRaw) { world = m.normStash(worldRaw); worldArrived(); } }).catch(() => {});
+  import(scriptBase + 'core/stash.mjs').then(m => { worldModule = m; if (worldRaw) { world = m.normStash(worldRaw); worldArrived(); } }).catch(e => console.warn('[map] stash-flow: stash import failed', e));
   { const sp = PACK_IN?.manifest?.data?.stash; if (sp) { const sb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';
-    cdnFetch(host.BASE + sb + sp).then(r => r.ok ? r.json() : null).then(j => { worldRaw = j; if (worldModule && j) { world = worldModule.normStash(j); worldArrived(); } }).catch(() => {}); } }
+    cdnFetch(host.BASE + sb + sp).then(r => r.ok ? r.json() : null).then(j => { worldRaw = j; if (worldModule && j) { world = worldModule.normStash(j); worldArrived(); } }).catch(e => console.warn('[map] stash-flow: stash world fetch failed', e)); } }
   function sendStash() { if (host.alive && worldModule) post({ type: 'eden-map:stash', items: worldModule.rows(world || {}, {}) }); }
   return {
     changedInv, get FRm() { return FRm; }, frState, gate, gateFlush, injectAction, get stash() { return stash; }, set stash(v) { stash = v; }, get ledgerRecord() { return ledgerRecord; }, set ledgerRecord(v) { ledgerRecord = v; }, get stashStoreModule() { return stashStoreModule; },

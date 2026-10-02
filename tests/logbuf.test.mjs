@@ -97,3 +97,9 @@ test('install() wraps a console-like target and still calls the original', () =>
   assert.ok(calls.some(a => a[0] === 'via-fake'));   // 原始实现仍被调用
   logbuf.clear();
 });
+
+test('an Error argument is stored as name: message (JSON.stringify would give {})', () => {
+  logbuf.clear();
+  logbuf.push('warn', ['[map] x: y failed', new TypeError('boom')]);
+  assert.equal(logbuf.lines().at(-1).text, '[map] x: y failed TypeError: boom');
+});

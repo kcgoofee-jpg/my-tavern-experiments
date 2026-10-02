@@ -21,7 +21,7 @@ export function createHostApi(host) {
   let roomsKnown = null, TRNm = null, transitMod = null;
   function emit(ev, data) { for (const f of subs[ev]) { try { f(data); } catch (e) { console.warn('[EdenMap]', e); } } }
   const hx = () => (TRNm ??= import(scriptBase + 'core/transit.mjs'));   // 途中地点的切分与胶囊文字（核心的纯函数，不需要节点树）
-  hx().then(m => { transitMod = m; setTimeout(push, 0); }).catch(() => {});
+  hx().then(m => { transitMod = m; setTimeout(push, 0); }).catch(e => console.warn('[map] host-api: transit module import failed', e));
   let charactersParseModule = null; const chx = () => (charactersParseModule ??= import(scriptBase + 'tavern/characters-parse.mjs'));
   const inner = () => { if (!host.alive) return null; try { const w = frame.contentWindow; if (!w?.EdenMap) return null; fnGuard('EdenMap.__chat', w.__edenMapChat, 1)?.(chatId()); return w.EdenMap; } catch (e) { return null; } };   // G6：跨窗口拿到的是查看器的 EdenMap——每个调用点先过守卫（handoff 准则 1）
   function knowRooms() { try { const g = fnGuard('EdenMap.getRooms', inner()?.getRooms, 0); const r = g ? g().rooms : null; if (r?.length) roomsKnown = r; } catch (e) {} }

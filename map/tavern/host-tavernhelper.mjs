@@ -36,7 +36,7 @@ export function packNs(scriptBase = '') {
   const wrapLS = get => ({ getItem: k => get().getItem(NS(k)), setItem: (k, v) => get().setItem(NS(k), v), removeItem: k => get().removeItem(NS(k)), key: i => { const k = get().key(i), p = 'tcp.' + PACK_ID + '.'; return typeof k !== 'string' ? k : k.startsWith(p) ? 'edenMap' + k.slice(p.length) : k.startsWith('edenMap') || k === 'edenEstateLabels' ? null : k; }, get length() { return get().length; } });
   const LS = PACK_IN ? wrapLS(() => localStorage) : null;   // eden：下面的 LS 调用走原生 localStorage（同一对象，行为不变）
   // lsGet 的别名回退与 core/storage.mjs get 同一规则：包命名空间空着时读 edenMap* 历史档（只读不写回）
-  const lsGet = k => { try { return (LS || localStorage).getItem(k) ?? (PACK_IN ? localStorage.getItem(k) : null); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) {} };
+  const lsGet = k => { try { return (LS || localStorage).getItem(k) ?? (PACK_IN ? localStorage.getItem(k) : null); } catch (e) { return null; } }, lsSet = (k, v) => { try { (LS || localStorage).setItem(k, v); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } };
   // 包清单（Promise）：注入包自带；内置的第一个包按路径取（scriptBase = .../map/）。取不到 = null，各处按「包没声明」静默处理
   const MAN = PACK_IN?.manifest ? Promise.resolve(PACK_IN.manifest) : scriptBase ? cdnFetch(scriptBase + 'packs/' + PACK_ID + '/manifest.json').then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null);
   return { PACK_IN, PACK_ID, MAN, NS, wrapLS, LS, lsGet, lsSet };
@@ -55,7 +55,7 @@ export function createPrefs(LS) {
   // 本机值变了（宿主自己写、或查看器同源写）→ 有差异才写脚本变量
   let prefT = 0;
   const prefSync = () => { clearTimeout(prefT); prefT = setTimeout(() => { if (!prefObj) return; let ch = false; const nx = { ...prefObj };
-    for (const k of PREF_KEYS) { let l = null; try { l = lsRaw()?.getItem(k) ?? null; } catch (e) {} if (l == null) { if (k in nx) { delete nx[k]; ch = true; } } else if (String(nx[k]) !== l) { nx[k] = l; ch = true; } }
+    for (const k of PREF_KEYS) { let l = null; try { l = lsRaw()?.getItem(k) ?? null; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } if (l == null) { if (k in nx) { delete nx[k]; ch = true; } } else if (String(nx[k]) !== l) { nx[k] = l; ch = true; } }
     if (!ch) return; prefObj = nx; try { const u = thFn('updateVariablesWith'); if (u) u(v => { v.eden_prefs = nx; return v; }, { type: 'script' }); else thFn('insertOrAssignVariables')?.({ eden_prefs: nx }, { type: 'script' }); } catch (e) {} }, 300); };
   const onStorage = e => { if (!e.key || PREF_KEYS.some(k => e.key === k || e.key.endsWith('.' + k.slice(7)))) prefSync(); };
   return { PREF_KEYS, obj: () => prefObj, sync: prefSync, onStorage, stop: () => clearTimeout(prefT) };
@@ -111,7 +111,7 @@ export function createWbAuto(deps) {
   let wbBusy = null, wbAgain = false, wbMissAt = null;
   function wbAuto() { if (wbBusy) { wbAgain = true; return wbBusy; } return (wbBusy = wbAutoRun().finally(() => { wbBusy = null; if (wbAgain && !life.dead) { wbAgain = false; wbAuto(); } })); }
   async function wbAutoRun() {
-    try { (LS || localStorage).removeItem('edenMapWbAuto'); } catch (e) {}   // 旧的手动「自动同步」开关（默认关）作废：新总开关默认开
+    try { (LS || localStorage).removeItem('edenMapWbAuto'); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }   // 旧的手动「自动同步」开关（默认关）作废：新总开关默认开
     if (!wbOn() || life.dead) return null;
     const W = await wbMod(), ship = await wbShip(); if (!W || !ship) return null;
     // 书不在、本机成功同步过、且同一会话两次检查（间隔 ≥ 5 秒）都没看到 → 当作用户删的，立墓碑；单次没看到只重建
@@ -221,7 +221,7 @@ export function createWbAuto(deps) {
       if ('nav' in P) put('edenMapNav', P.nav ? (CADENCE.includes(+lsGet('edenMapNavCadence')) ? +lsGet('edenMapNavCadence') : '1') : '0');   // W5 领航员（默认关；同意在卡片里给）
       else if ('navCadence' in P && navOn() && CADENCE.includes(+P.navCadence)) put('edenMapNav', +P.navCadence);   // 节奏：存成毫秒（intervalOf 的数字形态）
       if ('navConsent' in P) { put('edenMapNavConsent', P.navConsent ? '1' : '0'); if (!P.navConsent) put('edenMapNav', '0'); }
-      if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg), sv = navSaved(); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || sv.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) {} }   // 表单里没填钥匙 = 沿用存着的
+      if ('navCfg' in P && typeof P.navCfg === 'string') { try { const o = JSON.parse(P.navCfg), sv = navSaved(); if (o && typeof o === 'object' && !Array.isArray(o)) put('edenMapNavCfg', JSON.stringify({ provider: String(o.provider || ''), key: String(o.key || sv.key || ''), base: String(o.base || ''), model: String(o.model || '') })); } catch (e) { /* unparsable value: keep the default */ } }   // 表单里没填钥匙 = 沿用存着的
       if ('stateOmit' in P && Array.isArray(P.stateOmit)) put('edenMapStateOmit', JSON.stringify(P.stateOmit.filter(k => FIELDS.includes(k))));   // 状态行：不要的字段
       if ('spatialDepth' in P) put('edenMapSpatialDepth', Math.max(0, Math.min(20, Math.round(+P.spatialDepth) || 0)));
       if ('spatialBudget' in P) put('edenMapSpatialBudget', Math.max(60, Math.min(240, Math.round(+P.spatialBudget) || 120)));
@@ -231,7 +231,7 @@ export function createWbAuto(deps) {
     if (op === 'wb-inspect') return sendTh({ wb: await wbStatus(true) });
     if (op === 'wb-write') { setTomb(false); const r = await wbWrite({ where: ['global', 'char', 'chat'].includes(d.where) ? d.where : null, migrate: typeof d.migrate === 'string' ? d.migrate : null }); return sendTh({ wb: await wbStatus(true), result: { ok: r.ok, reason: r.reason || null, bound: r.bound || null } }); }
     if (op === 'wb-rebind' && ['global', 'char', 'chat'].includes(d.where)) { const W = await wbMod(); const ok = !!W && await W.bind(thFn, W.BOOK, d.where); if (ok) lsSet('edenMapWbWhere', d.where); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? null : 'error' } }); }
-    if (op === 'wb-remove') { const W = await wbMod(); const ok = !!W && await W.removeBook(thFn); if (ok) { setTomb(true); wbLast = null; try { (LS || localStorage).removeItem('edenMapWbSync'); } catch (e) {} prefSync(); } return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
+    if (op === 'wb-remove') { const W = await wbMod(); const ok = !!W && await W.removeBook(thFn); if (ok) { setTomb(true); wbLast = null; try { (LS || localStorage).removeItem('edenMapWbSync'); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } prefSync(); } return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
     if (op === 'wb-del-legacy' && typeof d.name === 'string') { const W = await wbMod(); const ok = !!W && await W.deleteLegacy(thFn, d.name); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
     if (op === 'wb-peek' && typeof d.name === 'string') {   // W8 地点卡「世界书档案」胶囊：附加书里按名字 / 触发词匹配条目，回摘要（只读）
       const W = await wbMod();

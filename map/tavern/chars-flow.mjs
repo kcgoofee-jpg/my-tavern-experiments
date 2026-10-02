@@ -37,16 +37,16 @@ export function createCharsFlow(host) {
     onTableUpdate: () => { pushSoon(); recomputeSoon(); },
     onRoster: () => sendChars(), fetchJSON: rel => cdnFetch(host.BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), onProfile: () => { sendVarMap(); push(); recomputeSoon(); sendChars(); },   // 包的变量与名册声明（清单 vars + 叠加层，K-R69）由桥取；到之前按字段名自动找
   });
-  import(scriptBase + 'tavern/spatial-contract.mjs').then(async m => { locateM = m; await host.reg?.(); if (!life.dead) push(); }).catch(() => {});   // reg 在入口里晚于本工厂初始化：模块异步到了以后再取，不在装配时碰
+  import(scriptBase + 'tavern/spatial-contract.mjs').then(async m => { locateM = m; await host.reg?.(); if (!life.dead) push(); }).catch(e => console.warn('[map] chars-flow: spatial-contract import failed', e));   // reg 在入口里晚于本工厂初始化：模块异步到了以后再取，不在装配时碰
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   mvuBridge.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
-  let imagegenBridgeModule = null; import(scriptBase + 'tavern/imagegen-bridge.mjs').then(m => { imagegenBridgeModule = m; }).catch(() => {});   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
+  let imagegenBridgeModule = null; import(scriptBase + 'tavern/imagegen-bridge.mjs').then(m => { imagegenBridgeModule = m; }).catch(e => console.warn('[map] chars-flow: imagegen-bridge import failed', e));   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
   mvuBridge.roster.use('baibai', { rows: () => imagegenBridgeModule ? imagegenBridgeModule.characters().list : [] });
   // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu-readers.mjs 的硬编码数组）：包声明了才取；
   // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
   MAN.then(man => { const rp = man?.data?.roster, rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 路径读自包清单 data.roster；没声明 = 没有兜底行
-    if (rp) return cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (mvuBridge.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(() => {});
+    if (rp) return cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (mvuBridge.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(e => console.warn('[map] chars-flow: fallback members fetch failed', e));
   // K-R106: the pack's media source (a card-script picture table + chat tags): read at run time, recomputed each round, nothing stored; it asks again whenever the characters are sent
   const gallery = createGalleryFlow({ get alive() { return host.alive; }, get floorNow() { return host.floorNow; }, get frame() { return host.frame; }, life, lsGet: (...a) => host.lsGet(...a), mvuBridge, post });
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
@@ -77,13 +77,13 @@ export function createCharsFlow(host) {
   clockEl.addEventListener('em-period', () => pushMvu());   // U-FIX-4：胶囊里换了时段 → 重推（签名变了才发）
 
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
-  let tripsParseModule = null; import(scriptBase + 'tavern/trips-parse.mjs').then(m => { tripsParseModule = m; }).catch(() => {});
+  let tripsParseModule = null; import(scriptBase + 'tavern/trips-parse.mjs').then(m => { tripsParseModule = m; }).catch(e => console.warn('[map] chars-flow: trips-parse import failed', e));
 
   // NPC 日常漫游（Part 5-3，core/routine.mjs）：包数据 manifest.data.routine 的日程表；聊天没提到的人物按世界时刻落在该在的地方
-  let routineModule = null, rtSched = null; import(scriptBase + 'core/routine.mjs').then(m => { routineModule = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); sendRoutine(); recomputeSoon(50); } }).catch(() => {});
+  let routineModule = null, rtSched = null; import(scriptBase + 'core/routine.mjs').then(m => { routineModule = m; if (rtCfg) { rtSched = m.normSchedule(rtCfg); sendRoutine(); recomputeSoon(50); } }).catch(e => console.warn('[map] chars-flow: routine import failed', e));
   let rtCfg = null;
   { const rp = PACK_IN?.manifest?.data?.routine; if (rp) { const rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 与保底名册同一算法：eden 的路径相对 map/，其它包相对 packs/<id>/
-    cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (routineModule && j) { rtSched = routineModule.normSchedule(j); sendRoutine(); recomputeSoon(50); } }).catch(() => {}); } }
+    cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { rtCfg = j; if (routineModule && j) { rtSched = routineModule.normSchedule(j); sendRoutine(); recomputeSoon(50); } }).catch(e => console.warn('[map] chars-flow: routine config fetch failed', e)); } }
   // Part 8-2：日程表整张推给查看器——那边用确定性时钟（core/walk.mjs）自己挪人，不再等宿主推 MVU 变动
   function sendRoutine() { if (host.alive && rtSched) post({ type: 'eden-map:routine', schedule: rtCfg || rtSched }); }
   function computeTrips(msgs) {

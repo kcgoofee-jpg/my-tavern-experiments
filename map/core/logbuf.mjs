@@ -16,10 +16,11 @@ let buf = [], past = [], meta = null, lastSave = 0;
 
 const store = {
   get(k) { try { return globalThis.localStorage?.getItem(k) || null; } catch (e) { return null; } },
-  set(k, v) { try { globalThis.localStorage?.setItem(k, v); } catch (e) {} },   // 配额满 / 隐私模式：静默放弃，日志仍在内存里
+  set(k, v) { try { globalThis.localStorage?.setItem(k, v); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } },   // 配额满 / 隐私模式：静默放弃，日志仍在内存里
 };
 
-const one = a => { try { return typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a); } catch (e) { return String(a); } };
+const one = a => { try { if (a instanceof Error) return a.message ? `${a.name}: ${a.message}` : a.name;   // Error 对象 JSON.stringify 是 {}：留名字与消息（不带堆栈），否则「失败了」的日志什么也看不出
+    return typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a); } catch (e) { return String(a); } };
 function norm(args) {
   // OpenSeadragon 等库按 printf 风格打日志（'Ignoring tile %s …: %s', 瓦片对象）：先把 %s/%d/%f 用后面的参数填掉
   // 再存，否则反馈报告里整行都是裸 %s + 一坨 JSON（用户 2026-09-29 反馈实测）。
