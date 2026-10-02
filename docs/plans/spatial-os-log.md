@@ -1818,3 +1818,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT PLACE-1-design ===
+status: DONE
+items: 1 one place record (fields, three source layers, where each lives, migration) ✓ | 2 地点 tab content ✓ | 3 archive = synced entry, one entry per room decided with numbers ✓ | 4 one shared editor, chat variable, per-chat custom book, override not delete ✓ | 5 revisions ✓ | 6 「要不要重做自定义」 ✓ | 7 PLACE-1a / PLACE-1b step specs with tests and probes ✓ | 8 D44 in both plan editions ✓
+commits: see git log of the push (one commit: docs(place): place record design)
+pushed: yes (head number in the chat report)
+tests: node 1545/1546 (1 skipped as before; no code change) | smoke PASS | arch PASS | probes: none (design only)
+deviations: rooms with only a name and a floor (13 of 84 nodes: corridors, plant rooms, porches) get no worldbook entry; such an entry adds no information and its generic keys would fire constantly. Their archive says there is no description yet and offers 编辑. City landmarks keep their line in the three bearing entries instead of a new entry each.
+blocker: none
+open: duplicate 3D label 「医疗与改造室」: the room table has one record, the cause is not located yet (PLACE-1b item 5, probe estate_labels_unique)
+cleanup: done
+=== END ===
