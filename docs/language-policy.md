@@ -1,5 +1,20 @@
 # Language policy
 
+## 2026-10-02 update (D18): Chinese is canonical until the S10 split
+
+Until the repo splits at S10, **Chinese is the canonical edition of user-facing decision documents**: the plan
+(`docs/plans/spatial-os.zh.md`), the agent brief (`docs/agent-brief.zh.md`), the status lines at the top of
+`docs/todo.md`, and reports. English editions are optional and may lag; they are filled in in one batch at the
+split. Prompts stay English with a Chinese note. Code comments and tool output keep following the file's existing
+language. This supersedes the English-first rule below for those documents; the rest of this file still describes
+how the gates behave.
+
+Gate consequence: `tools/check_doc_language.py` (a warning, not a failure, since D17) lets a new Chinese `*.md`
+pass when it has no `*.zh.md` sibling, because then it is itself the Chinese edition. A `foo.md` that has a
+`foo.zh.md` next to it is the English edition and is still expected to be English.
+
+## Original policy (2026-09-29)
+
 Decided 2026-09-29. This repo goes English from here on, **incrementally** — no big-bang
 translation of what already exists.
 

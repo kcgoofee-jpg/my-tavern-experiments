@@ -57,6 +57,11 @@ def main():
     check("tools 下的 md 不豁免", not m.exempt("tools/README.md"))
     check("ALLOW 里的路径豁免", all(m.exempt(p) for p in m.ALLOW))
 
+    # --- D18: Chinese canonical until the S10 split ---
+    check("中文正本（无 .zh.md 同伴）放行", m.chinese_canonical("docs/new-plan.md", {"docs/new-plan.md"}))
+    check("有 .zh.md 同伴的 .md 是英文版，仍受门控", not m.chinese_canonical("docs/x.md", {"docs/x.md", "docs/x.zh.md"}))
+    check(".zh.md 自己不算正本判定对象", not m.chinese_canonical("docs/x.zh.md", {"docs/x.zh.md"}))
+
     print(f"自测：{'全部通过' if not fails else str(len(fails)) + ' 项失败'}")
     return 1 if fails else 0
 

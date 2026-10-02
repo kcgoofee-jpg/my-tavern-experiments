@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Language gate: new documents must be written in English.
 
-Policy (2026-09-29, see docs/language-policy.md):
+Policy (2026-09-29, amended 2026-10-02 by D18 — Chinese canonical until the S10 split; see docs/language-policy.md):
   * NEW documents are written in English.
   * NEW prose added to an existing document is English too.  (Not checked here: which
     hunks are "new" is not machine-decidable in a useful way.)
@@ -88,6 +88,12 @@ def cjk_ratio(text):
     return len(CJK_RE.findall(body)) / len(body)
 
 
+def chinese_canonical(path, tracked):
+    """D18: until the S10 split Chinese is canonical, so a `foo.md` with no `foo.zh.md` next to it is itself the
+    Chinese edition and may be Chinese. With a `foo.zh.md` sibling it is the English edition: the gate applies."""
+    return path.endswith(".md") and not path.endswith(".zh.md") and (path[:-3] + ".zh.md") not in tracked
+
+
 def exempt(path):
     if path in ALLOW:
         return True
@@ -110,6 +116,7 @@ def main():
 
     old = set(git("ls-tree", "-r", "--name-only", tag).splitlines())
     files = tracked_markdown()
+    tracked = set(files)
     new_docs = [f for f in files if f not in old and not exempt(f)]
 
     bad = []
@@ -120,7 +127,9 @@ def main():
         except OSError:
             continue
         r = cjk_ratio(text)
-        if r >= THRESHOLD:
+        if r >= THRESHOLD and chinese_canonical(f, tracked):
+            skipped.append((f, r))   # D18: Chinese canonical document without an English edition
+        elif r >= THRESHOLD:
             bad.append((f, r))
         else:
             skipped.append((f, r))

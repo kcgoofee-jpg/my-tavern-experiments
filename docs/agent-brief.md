@@ -2,7 +2,7 @@
 
 > Rules only. No status lives in this file: current state is in `docs/todo.md` §0 and the execution log
 > `docs/plans/spatial-os-log.md`; the last session's handoff is `docs/handoff.md`.
-> Chinese edition: `docs/agent-brief.zh.md` (this English file is canonical).
+> Until the S10 split the Chinese edition `docs/agent-brief.zh.md` is canonical (D18); this English file mirrors it and may lag.
 
 ## 1. What this repo is, and what to read
 
@@ -13,6 +13,8 @@
   step id (S0, S1, …).
 - Read order: this file → `docs/ARCHITECTURE.md` (module map, data flow, entity protocol) → `docs/naming.md`
   (glossary, after S0.4) → `docs/todo.md` → only then grep further.
+- **State repo facts only from `origin/preview` after `git fetch`.** The main checkout lags (it is the render
+  dispatcher's home); never read status, counts or file contents from it.
 
 ## 2. Engine rules (Spatial OS)
 
@@ -33,8 +35,12 @@
 5. **Never write the card's `stat_data`** (its MVU schema rejects unknown keys) and never touch the user's own
    worldbooks — only our add-on book and entries carrying our `extra.eden_id` marker. The map's own state lives in
    the pack's chat variable (`eden_map` for eden).
-6. **Silent self-heal, no blocking dialogs.** Missing dependencies degrade quietly; never show "go set X in the
-   backend" blockers. New toggles default to off and are registered: storage key in `map/core/storage.mjs`,
+6. **Quiet for the user, never silent for the log.** Missing dependencies degrade quietly and nothing blocks the
+   user with a dialog ("go set X in the backend" is forbidden), but every caught failure is recorded through
+   `core/logbuf.mjs` (or `console.warn`, which logbuf captures) with a short tag naming the module, so it reaches the
+   feedback report. An empty catch stays only where the failure is expected and harmless (storage quota, private
+   mode, a JSON parse with a defined default) and carries a comment saying why; `tools/check_architecture.py` counts
+   empty catches per file and the count may only shrink. New toggles default to off and are registered: storage key in `map/core/storage.mjs`,
    protocol field in `map/core/protocol.mjs` SCHEMA, zh + en strings.
 7. **No academic citations in source.** `map/**` and `tests/**` describe mechanisms only (no paper names, venues,
    arXiv / DOI); references live in `docs/plans/llm-campaign.md` §10. Enforced by `check_citations` in the watchdog.
@@ -99,18 +105,19 @@
   pushed: yes | not pushed   (chat report: add the head #N the push printed; the log copy is committed before the push)
   tests: node <pass>/<total> | smoke PASS/FAIL | arch PASS/FAIL | probes: <name>=PASS/FAIL …
   deviations: none | <what differs from the prompt and why>
-  blocker: none | <verbatim error, first 20 lines> / <what you tried> / <options A, B>
-  open: none | <questions that need a decision>
+  open: none | <questions that need a decision; when BLOCKED: verbatim error (first 20 lines), what you tried, options A / B>
   cleanup: done
   === END ===
   ```
 
   When blocked, stop with `status: BLOCKED` — do not guess your way forward.
-- **Language:** new documents in `docs/` are English, with a Chinese edition in `*.zh.md`; pre-policy documents are
-  grandfathered, never bulk-translated. Code comments and tool output follow the file's existing language. Gate:
-  `tools/check_doc_language.py`; en/zh structure gate: `tools/check_zh_mirror.py`; policy: `docs/language-policy.md`.
+- **Language (D18, until the S10 split):** Chinese is canonical for user-facing decision documents (plan, brief,
+  todo status line, reports); English editions are optional and may lag; prompts stay English with a Chinese note.
+  Pre-policy documents are never bulk-translated. Code comments and tool output follow the file's existing language.
+  Warning gates: `tools/check_doc_language.py`, `tools/check_zh_mirror.py`; policy: `docs/language-policy.md`.
 - **Checklist-style documents:** one item per line; finished items are struck through in place
-  (`~~…~~ ✅ <date> <sha>`), never deleted; one status line at the top.
+  (`~~…~~ ✅ <date> <sha>`), never deleted; one status line at the top. The status at the top of `docs/todo.md`
+  is rewritten (not appended) at the end of each step and stays within 5 short lines.
 - Images meant for the user are copied to `~/eden-map-review/` (archive only; never blocks the flow).
 
 ## 6. Render line

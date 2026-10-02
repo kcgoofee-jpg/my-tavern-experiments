@@ -1,6 +1,6 @@
 # 代理速查 — 伊甸地图 → Spatial OS（每个任务先读这一页，别的按需 grep）
 
-> 本文件是 docs/agent-brief.md 的中文版，英文版为准。
+> S10 拆仓之前以本中文版为准（D18）；`docs/agent-brief.md` 是英文镜像，可能滞后。
 >
 > 只放规则，不放状态：当前状态看 `docs/todo.md` §0 和执行日志 `docs/plans/spatial-os-log.md`；上一次会话的交接看 `docs/handoff.md`。
 
@@ -9,6 +9,7 @@
 - 这是给 SillyTavern / TavernHelper 聊天用的地图层，2026-09-30 起正从单卡工具重构为通用的 **Spatial OS**：与卡无关的引擎 + 数据**包**。第一个包是 `eden`；`town` 是虚构的示例包。
 - 依据：`docs/plans/spatial-os.md`（中文版 `.zh.md`）。工作按提示词一份一份推进，按步骤编号（S0、S1……）。
 - 阅读顺序：本文件 → `docs/ARCHITECTURE.md`（模块地图、数据流、实体协议）→ `docs/naming.md`（术语表，S0.4 之后）→ `docs/todo.md` → 之后才 grep。
+- **仓库事实只以 `git fetch` 之后的 `origin/preview` 为准。** 主工作区会落后（它是渲染派工的家）；状态、计数、文件内容都不要从它读。
 
 ## 2. 引擎铁律（Spatial OS）
 
@@ -17,7 +18,7 @@
 3. **单向数据流。** MVUBridge（`map/tavern/mvu-bridge.mjs`，全仓唯一允许碰 `Mvu` / `SillyTavern` 全局的模块）→ ContextPipeline（`map/tavern/context.mjs`）→ 账本（`map/core/ledger.mjs`）→ 协议（`map/core/protocol.mjs`）→ 查看器。查看器只向上发意图，不写宿主状态。
 4. **聊天记录是唯一真相。** 地图显示的一切都必须能从聊天楼层重算；缓存（关键帧、藏物）随时可丢，重算结果必须逐项一致。文本里没有明确的实物动作，就不许凭空造状态。
 5. **绝不写卡的 `stat_data`**（它的 MVU schema 会拒绝未知键），也不碰用户自己的世界书——只动我们的附加书，以及带我们 `extra.eden_id` 标记的条目。地图自己的状态存在包的聊天变量里（伊甸是 `eden_map`）。
-6. **静默自愈，不弹阻塞对话框。** 缺依赖就悄悄降级；不许出现「去后台设置 X」这类拦路提示。新开关默认关，并且要登记：存储键进 `map/core/storage.mjs`，协议字段进 `map/core/protocol.mjs` 的 SCHEMA，中英文案齐备。
+6. **对用户安静，对日志不沉默。** 缺依赖就悄悄降级，不弹阻塞对话框（不许出现「去后台设置 X」这类拦路提示）；但每个被捕获的失败都要经 `core/logbuf.mjs`（或被它截获的 `console.warn`）记下，带一个点名模块的短标签，这样它才会进反馈报告。空 catch 只留给「预期且无害」的失败（存储配额、隐私模式、有明确默认值的 JSON 解析），并且要写注释说明原因；`tools/check_architecture.py` 按文件统计空 catch，只许减少。新开关默认关，并且要登记：存储键进 `map/core/storage.mjs`，协议字段进 `map/core/protocol.mjs` 的 SCHEMA，中英文案齐备。
 7. **源码不放学术引用。** `map/**` 和 `tests/**` 只写机制（不留论文名、期刊、arXiv / DOI）；参考文献存在 `docs/plans/llm-campaign.md` §10。由看门狗的 `check_citations` 机检。
 8. **绝不审查聊天内容。** 用户内容原样解析、原样落点；未知类型回落到中性的「其他」。
 
@@ -57,15 +58,14 @@
   pushed: yes | not pushed   (chat report: add the head #N the push printed; the log copy is committed before the push)
   tests: node <pass>/<total> | smoke PASS/FAIL | arch PASS/FAIL | probes: <name>=PASS/FAIL …
   deviations: none | <what differs from the prompt and why>
-  blocker: none | <verbatim error, first 20 lines> / <what you tried> / <options A, B>
-  open: none | <questions that need a decision>
+  open: none | <questions that need a decision; when BLOCKED: verbatim error (first 20 lines), what you tried, options A / B>
   cleanup: done
   === END ===
   ```
 
   被卡住就停下，写 `status: BLOCKED`——不许猜着往下做。
-- **语言：** `docs/` 里的新文档用英文，中文版放 `*.zh.md`；政策之前的旧文档保持原样，不批量翻译。代码注释和工具输出跟随文件已有的语言。门控：`tools/check_doc_language.py`；中英结构门控：`tools/check_zh_mirror.py`；政策：`docs/language-policy.md`。
-- **清单类文档：** 每条独立成行；做完的原地划删除线（`~~…~~ ✅ <日期> <sha>`），不删除；文首一行写状态说明。
+- **语言（D18，S10 拆仓之前）：** 给用户看的决策文档（计划、简报、todo 状态行、报告）以中文为正本；英文版可选、可滞后；提示词仍用英文加中文说明。政策之前的旧文档不批量翻译。代码注释和工具输出跟随文件已有的语言。警告类门控：`tools/check_doc_language.py`、`tools/check_zh_mirror.py`；政策：`docs/language-policy.md`。
+- **清单类文档：** 每条独立成行；做完的原地划删除线（`~~…~~ ✅ <日期> <sha>`），不删除；文首一行写状态说明。`docs/todo.md` 顶部的状态每个步骤结束时重写（不是追加），保持在 5 行以内。
 - 给用户看的图拷贝到 `~/eden-map-review/`（只存档，不阻塞流程）。
 
 ## 6. 渲染线
