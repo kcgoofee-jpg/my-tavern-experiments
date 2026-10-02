@@ -44,7 +44,7 @@ try {
       if (kind === 'estate') continue;                               // 庄园单独测
       const t0 = Date.now();
       await p.evaluate(id => { window.__drawn = ViewerDebug.currentMapId === id; ViewerDebug.osdViewer.addOnceHandler('open', () => ViewerDebug.osdViewer.addOnceHandler('tile-drawn', () => { window.__drawn = true; })); }, L.go);
-      await p.locator(`#layers button[data-go="${L.go}"]`).click().catch(() => {});
+      await B.pickLevel(p, L.go).catch(() => {});
       await p.waitForFunction(() => window.__drawn, null, { timeout: 15000 }).catch(() => {});
       await B.wait(300);
       const s = await B.viewerState(p);

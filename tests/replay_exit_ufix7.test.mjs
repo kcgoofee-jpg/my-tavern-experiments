@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTimelineFlow } from '../map/tavern/timeline-flow.mjs';
 
-const el = () => ({ dataset: {}, setAttribute() {}, removeAttribute() {}, hidden: true, value: '', max: '', textContent: '', classList: { add() {}, remove() {} }, addEventListener(t, f) { (this.on ??= {})[t] = f; }, querySelector() { return el(); } });
+const el = () => ({ dataset: {}, setAttribute() {}, removeAttribute() {}, hidden: true, value: '', max: '', textContent: '', classList: { add() {}, remove() {}, contains() { return false; } }, addEventListener(t, f) { (this.on ??= {})[t] = f; }, querySelector() { return el(); } });
 
 test('leaving the replay bar re-sends the current place to the viewer', async () => {
   const parts = { '.em-tl-btn': el(), '.em-tl': el(), '.em-tl-r': el(), '.em-tl-v': el() };

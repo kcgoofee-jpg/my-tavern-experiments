@@ -56,9 +56,10 @@ export function createTimelineFlow(host) {
     post({ type: 'eden-map:trips', items });
   }
   function tlScrub(f) {
-    f = Math.max(0, Math.min(host.floorNow, Math.round(f))); rpFloor = f; paintReplay();
+    f = Math.max(0, Math.min(host.floorNow, Math.round(f))); rpFloor = f;
     const st = timelineModule ? timelineModule.liveAtNewest(tlState(f), f, host.floorNow, () => mvuBridge.here()) : tlState(f);   // SW2-04: the newest floor shows the live place
     tlV.textContent = [`聊天第 ${f} 楼`, st?.time, st?.here].filter(Boolean).join(' · ');   // U-FIX-5 R-01 / D1-01：楼号在最前（窄时截掉的是地点，不是楼号），写明是聊天楼层
+    rpTime = st?.time || ''; paintReplay();
     if (!st || !host.alive) return;
     post({ type: 'eden-map:here', value: st.here, replay: true });   // 查看器只重画；探索记录已被 replay 静默
     post({ type: 'eden-map:chars', v: 1, floor: f, items: st.chars, replay: true });
@@ -67,10 +68,10 @@ export function createTimelineFlow(host) {
   // HEADER-1: while the replay is on, the host clock and the place pill show one clear 「回放」 state (accent outline, tooltip "showing floor N"), not the live values beside the past ones
   const RP = { zh: ['回放', f => `显示聊天第 ${f} 楼，不是当下`], en: ['Replay', f => `Showing message #${f}, not the latest`] };
   const rpEls = () => [root.querySelector('.em-here'), root.querySelector('.em-clock')].filter(Boolean);
-  let rpFloor = -1;
+  let rpFloor = -1, rpTime = '';   // the clock shows the replayed time, the pill the word 「回放」: both outlined, neither is live
   function paintReplay() {
     const on = tlOn, [word, tip] = RP[host.uiLang === 'en' ? 'en' : 'zh']; root.classList.toggle('em-replay', on);
-    for (const el of rpEls()) { if (on) { el.dataset.rp = word; el.title = tip(rpFloor); el.setAttribute('aria-label', word + ' · ' + tip(rpFloor)); } else { delete el.dataset.rp; el.removeAttribute('aria-label'); } }
+    for (const el of rpEls()) { if (on) { const lab = el.classList.contains('em-clock') && rpTime ? rpTime : word; el.dataset.rp = lab; el.title = tip(rpFloor); el.setAttribute('aria-label', word + ' · ' + lab + ' · ' + tip(rpFloor)); } else { delete el.dataset.rp; el.removeAttribute('aria-label'); } }
   }
   root.addEventListener('em-replay-repaint', () => { if (tlOn) paintReplay(); });
   function tlEnter() { if (!timelineModule || host.floorNow < 1) return; tlOn = true; tlEl.hidden = false; tlBtn.classList.add('on'); tlR.max = host.floorNow; tlR.value = host.floorNow; tlScrub(host.floorNow); }

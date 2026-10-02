@@ -63,6 +63,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `compat-v1.mjs` | schema 1 → schema 2 的内存转换：已加载的 v1 包（清单与数据文件）变成带内联块的 schema 2 包。纯函数，不取不写任何文件。由下面三个 `compat-v1-*` 文件组成。 |
 | `custom-book.mjs` | 本聊天的自定义世界书：一条名字对照的常驻索引，加每个有文字的地点一条关键词条目（正文来自 `entryText`）。 |
 | `custom-record.mjs` | 玩家在一个地点上的字段（K-R135）：说明、事实、基于指纹、楼层、有界撤销、恢复、键迁移；逐字段盖在记录上。 |
+| `crumb-menu.mjs` | 面包屑切换菜单的内容：当前图的同级各层与带三维页的子地点，方向键步进。纯函数。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `drawer-tabs.mjs` | 抽屉页签规则（K-R72）：内核页签集合、`tabOrder(ui.tabs)`，以及对抽屉类对象的唯一一套显示 / 隐藏 / 回退顺序（纯函数）。 |
 | `entities.mjs` | 实体协议（K-R71、K-R73）：`personOf` / `eventOf` 适配器、`presentAt`、打开视图的层级（`levelMode`）与在场组的分节（`peopleSections`）（纯函数）。 |
@@ -161,6 +162,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `color-vision-mode.mjs` | 色觉模式：安全色板、类 / 属性开关、广播给子页。 |
 | `control-column.mjs` | 控制列：层切换条与缩放旁的 `#dock`、标注开关、设置首页的三个动作（上一级、当前位置、关闭地图）。 |
 | `coordinates.mjs` | 坐标换算：代码地图坐标（1600 × 1000）→ 底图归一化坐标（`toImg`）。 |
+| `credits-extra.mjs` | 设置「版权申明」页的两段：当前地图的素材来源、相关项目链接。 |
+| `crumb-menu.mjs` | 面包屑最后一节的层切换菜单：同级各层与当前图下带三维页的子地点（HEADER-1，D36）。 |
 | `current-pack.mjs` | 当前设定包，启动时解析一次（活绑定 `PACK`、`packData(键)`）。 |
 | `data-mapping-settings.mjs` | 设置「数据与映射」页：本机存储占用与当前数据来源（只读）。 |
 | `declared-layers.mjs` | 宣告式图层宿主（K-R79–K-R84）：把设定包的新图层登记到图层注册表、问 `registry.applicable`、用积木绘制、可见性存在 `edenMapLayers`、给图例供条目。 |
@@ -186,7 +189,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `load-progress.mjs` | 整屏加载层的进度，共用 `ui/progress.mjs`。 |
 | `local-props-view.mjs` | 内核图层 `local-props` 与 `EdenMap` 的道具方法（K-R88）：按聊天存在 `edenMap:chat:<聊天 id>:props` 的摆放，平面地图上图片画成 `<img>`、glb 画成 `cube` 图标，点一下摆放。 |
 | `locate.mjs` | 初始视角与当前地点：`focusStart`、`markHere`、`hereRes`（基于 `place-resolver.mjs`）、`drawnAt`、`jumpHere`。 |
-| `map-level-nav.mjs` | 层导航：层切换条、上一级、Esc 处理、单字符快捷键。 |
+| `map-level-nav.mjs` | 层导航：面包屑、三维楼层条、Esc 处理、单字符快捷键。 |
 | `map-switch.mjs` | 地图切换：可注册包装的 `go`、快照、地图外壳、另一版底图。 |
 | `markers.mjs` | 标记与地点卡：落点、跟踪、打开 / 关闭卡片、世界图与点位图叠加。 |
 | `nav-ops-view.mjs` | 内核图层 `nav-ops`（K-R86，I-04）：来自 `eden-map:ops` 的领航员线索与标注，按地名或盖章地图上的坐标摆放；只在本次会话里存在。 |
@@ -211,6 +214,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `route-plan-view.mjs` | 查看器里的路线规划（K-R111、K-R113）：地点卡上的路线链接、计划卡、内核图层 `route-plan`（用户的计划实线、建议路线虚线）、`eden-map:here` 时的重新规划与到达、宿主的回发 `eden-map:route`；发出 `eden-map:route-plan`。 |
 | `scale-handoff.mjs` | 世界图与城市层之间的尺度交接，以及周边过渡环。 |
 | `screen-reader-announce.mjs` | 读屏播报（aria-live）：同一时刻的几条合并成一句。 |
+| `settings-head.mjs` | 设置页眉里的搜索框；手机上收成一个图标。 |
 | `settings-pages.mjs` | 设置页的行表（S7-1）：每个子页的行第一次打开该页时才造（启动路径上不造），`onBuilt` / `onShow` 钩子，静态搜索索引。 |
 | `settings-wire.mjs` | 设置各行的处理器，页建好后才挂；启动就要生效的存储开关（减少动态、花屏特效、小地图、动作模式、编辑模式）直接读写存储。 |
 | `settings.mjs` | 设置弹层：分页、分区注册、搜索、关于 / 检查更新、自检。 |

@@ -434,8 +434,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (!panel.hidden && alive) post({ type: 'eden-map:chat', id: chatId() });   // 当前聊天 id：本机自定义叫法按聊天分开存（E6）
     if (!panel.hidden && alive && here !== sent) { sent = here; post({ type: 'eden-map:here', value: here, bg: ghost }); }
     if (here !== emHere) { emHere = here; emit('here', { value: here }); emitMoved(here); RF.onHere(here); }
-    pushMvu();
-    if (root.classList.contains('em-replay')) root.dispatchEvent(new Event('em-replay-repaint'));   // a replay is on: the pill and the clock keep the replay state
+    pushMvu(); if (root.classList.contains('em-replay')) root.dispatchEvent(new Event('em-replay-repaint'));   // a replay is on: the pill and the clock keep the replay state
   }
   let pushT = 0;
   const pushSoon = (ms = 150) => { clearTimeout(pushT); pushT = setTimeout(push, ms); };

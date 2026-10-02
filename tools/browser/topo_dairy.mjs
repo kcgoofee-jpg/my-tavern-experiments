@@ -14,7 +14,7 @@ const snap = async name => { if (SHOTS) await B.shot(p, SHOTS, name); };
 // 三维页就绪：庄园（__estate）或通用三维查看器（__viewer3dProbe.ready）
 const ready = id => p.waitForFunction(id => { if (ViewerDebug.currentMapId !== id || document.querySelectorAll('#stage iframe').length !== 1) return false; const f = document.querySelector('#estate.on'); try { return !!(f && (f.contentWindow.__estate || f.contentWindow.__viewer3dProbe?.ready)); } catch (e) { return false; } }, id, { timeout: T });
 const frame = () => B.estateFrame(p);
-const crumbs = () => p.evaluate(() => ({ links: [...document.querySelectorAll('#crumbs a')].map(a => a.dataset.go), here: document.querySelector('#crumbs b')?.textContent || '' }));
+const crumbs = () => p.evaluate(() => ({ links: [...document.querySelectorAll('#crumbs a')].map(a => a.dataset.go), here: document.querySelector('#crumbs b')?.textContent?.trim() || '' }));
 const live = () => p.evaluate(() => ({ frames: document.querySelectorAll('#stage iframe').length, lease: window.Lease3dApi?.live() }));
 /** S7-3: the zone card is the viewer's shared place card (the page only reports the pick): pick the zone as a user tap would, then read the card in the viewer */
 const pickZone = async id => { await focusZone(id); await p.evaluate(id => document.querySelector('#estate').contentWindow.__estate.pick(id), id); };
@@ -63,9 +63,9 @@ try {
   await snap('dairy_view');
 
   // ---- 返回：上一级按钮 → 庄园，聚焦农场 ----
-  const up = await p.evaluate(() => { const b = document.getElementById('upBtn'); return { go: b.dataset.go, focus: b.dataset.focus || '', hidden: b.hidden }; });
-  rep.check('up_button_targets_estate_and_farm', up.go === 'eden_estate' && up.focus === 'dairy' && !up.hidden, JSON.stringify(up));
-  await p.locator('#upBtn').click();
+  const up = await p.evaluate(() => { const b = document.querySelector('#crumbs a[data-go="eden_estate"]'); return { go: b?.dataset.go, focus: b?.dataset.focus || '', noUpBtn: !document.getElementById('upBtn') }; });
+  rep.check('breadcrumb_targets_estate_and_farm_and_no_up_button', up.go === 'eden_estate' && up.focus === 'dairy' && up.noUpBtn, JSON.stringify(up));   // HEADER-1: the breadcrumb is the one 「up」
+  await p.locator('#crumbs a[data-go="eden_estate"]').click();
   await ready('eden_estate');
   await waitPinned('dairy');
   rep.check('back_focuses_farm', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
@@ -82,7 +82,7 @@ try {
   let xy = await proj();
   for (let i = 0; i < 40; i++) { const n = await proj(); const still = Math.abs(n.x - xy.x) < .5 && Math.abs(n.y - xy.y) < .5; xy = n; if (still && n.x > 0 && n.x < n.w && n.y > 0 && n.y < n.h) break; await F2.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); }
   const off = await (await F2.frameElement()).boundingBox();
-  await p.waitForFunction(() => document.getElementById('upBtn'), null, { timeout: 5000 });
+  await p.waitForFunction(() => document.getElementById('crumbs'), null, { timeout: 5000 });
   await p.mouse.dblclick(off.x + xy.x, off.y + xy.y);
   await ready('dairy').catch(() => {});
   rep.check('enter_by_double_click', await p.evaluate(() => ViewerDebug.currentMapId === 'dairy'), JSON.stringify(xy));
@@ -96,7 +96,7 @@ try {
   rep.check('focus_survives_location_refresh', (await pinnedZone()) === 'dairy', String(await pinnedZone()));
   // 直接返回上层不带落点：庄园之外的面包屑不带 data-focus
   await p.evaluate(() => ViewerDebug.go('tc_upper')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_upper', null, { timeout: T });
-  rep.check('flat_crumbs_carry_no_focus', await p.evaluate(() => !document.querySelector('#crumbs a[data-focus]') && !document.getElementById('upBtn').dataset.focus));
+  rep.check('flat_crumbs_carry_no_focus', await p.evaluate(() => !document.querySelector('#crumbs a[data-focus]') ));
   // 375 px 一次
   await p.setViewportSize({ width: 375, height: 812 });
   await p.evaluate(() => ViewerDebug.go('eden_estate')); await ready('eden_estate');

@@ -15,6 +15,13 @@ async function run(preset, shotName) {
     const q = s => p.evaluate(s2 => { const e = document.querySelector(s2); return e ? { text: e.textContent, hidden: e.hidden, w: e.getBoundingClientRect().width } : null; }, s);
     const tag = `[${preset}]`;
     const name = await q('#profName'); rep.check(`${tag} section shows the recommended profile, not modified`, name?.text === '推荐' && (await q('#profMod'))?.hidden === true, JSON.stringify(name));
+    // HEADER-1: one collapsed row 「方案：推荐 ▾」 (one line), expanded in place and remembered; the search sits in the sheet header
+    const row = await p.evaluate(() => { const h = document.getElementById('profHead').getBoundingClientRect(); return { h: Math.round(h.height), bodyHidden: document.getElementById('profBody').hidden, expanded: document.getElementById('profHead').getAttribute('aria-expanded') }; });
+    rep.check(`${tag} the profile row is one collapsed line by default`, row.bodyHidden && row.expanded === 'false' && row.h <= 56, JSON.stringify(row));
+    const srch = await p.evaluate(() => { const h = document.querySelector('#setPop .sheet-h').getBoundingClientRect(), q = document.getElementById('setQ'), b = document.querySelector('#setPop .hqbtn'); const vis = e => e && e.offsetParent !== null; return { inHeader: !!q.closest('.sheet-h'), headTop: Math.round(h.top), reach: vis(q) || vis(b) }; });
+    rep.check(`${tag} the search (or its icon on a phone) is reachable in the header at the top`, srch.inHeader && srch.reach, JSON.stringify(srch));
+    await p.click('#profHead'); await B.wait(150);
+    rep.check(`${tag} the row expands in place and the state is remembered`, await p.evaluate(() => !document.getElementById('profBody').hidden && LocalStore.get('edenMapProfOpen') === '1'));
     rep.check(`${tag} no horizontal overflow on the settings sheet`, await p.evaluate(() => { const s = document.getElementById('setPop'); return s.scrollWidth <= s.clientWidth + 1; }));
     // choose the lean profile: stored keys change, marker stays off, a message says how many
     await p.selectOption('#profSel', 'lean'); await B.wait(600);
@@ -36,9 +43,9 @@ async function run(preset, shotName) {
     rep.check(`${tag} 恢复推荐默认 clears every preference key`, ['edenMapRM', 'edenMapNoFx', 'edenMapPortraits', 'edenMap3dQ'].every(k => back[k] === null) && !/"0"/.test(back.edenMapLayers || '') && (back.edenMapTierV2 ?? 'auto') === 'auto' && (await q('#profName'))?.text === '推荐', JSON.stringify(back));
     await p.selectOption('#profSel', await p.evaluate(() => [...document.querySelectorAll('#profSel option')].find(o => o.textContent === '我的方案').value)); await B.wait(600);
     rep.check(`${tag} choosing the saved profile restores its values`, (await p.evaluate(() => LocalStore.get('edenMapTheme'))) === 'light' && (await p.evaluate(() => LocalStore.get('edenMapRM'))) === 'on');
-    // keyboard: the picker is reachable by Tab from the search field
-    await p.focus('#setQ'); let hit = false; for (let i = 0; i < 12 && !hit; i++) { await p.keyboard.press('Shift+Tab'); hit = await p.evaluate(() => document.activeElement?.id === 'profSel'); }
-    rep.check(`${tag} the picker is reachable by keyboard (Shift+Tab from the search field)`, hit);
+    // keyboard: the picker is reachable by Tab from the profile row
+    await p.focus('#profHead'); let hit = false; for (let i = 0; i < 12 && !hit; i++) { await p.keyboard.press('Tab'); hit = await p.evaluate(() => document.activeElement?.id === 'profSel'); }
+    rep.check(`${tag} the picker is reachable by keyboard (Tab from the profile row)`, hit);
     await B.shot(p, OUT, shotName);
     rep.check(`${tag} no page errors`, P.errors.filter(e => /profile/i.test(String(e))).length === 0, String(P.errors.slice(0, 2)));
   } finally { await P.ctx.close().catch(() => {}); }

@@ -42,7 +42,9 @@ export const TABLE = [
     { k: 'more', o: 20, h: sw('optCharMore', 'char_more', '人物卡显示更多资料', '人物卡里可展开的一栏：代号、社会身份、身高 / 体重、知情度、饰物（字段在「变量映射」里指定或关闭）', 'char_more_hint', ' checked') },
     { k: 'src', o: 30, h: `<div class="hrow"><span data-i18n="s.ch_src">人物来源</span><span id="chSrc" class="muted"></span></div>` },
   ] },
-  { page: 'data', rows: [{ k: 'stor', o: 0, h: `<div id="storBox"></div>` }] },
+  { page: 'data', rows: [
+    { k: 'wc', o: 0, h: `<div class="hrow" id="wcRow"><span data-i18n="s.wc">本聊天词云</span><a class="btn" id="wcGo" href="https://wordcloud.davidzhao.top" target="_blank" rel="noopener" data-i18n="s.wc_go">用词云看这段聊天</a></div><small data-i18n="s.wc_hint">先在酒馆里导出聊天：管理聊天文件，导出 .jsonl，再把文件拖进词云页。词云在浏览器里本地生成，地图不上传任何东西。</small>` },
+    { k: 'stor', o: 10, h: `<div id="storBox"></div>` }] },
   { page: 'update', rows: [
     { k: 'about', o: 0, h: `<div id="aboutBox"></div><div id="branchBox"></div>` },
     { k: 'line', o: 20, h: `<div class="hrow" id="lineRow"><span data-i18n="s.line">加载线路</span><button type="button" class="btn" id="linePick" data-i18n="s.line_pick">选择线路</button></div><small id="lineNow" class="na"></small>` },

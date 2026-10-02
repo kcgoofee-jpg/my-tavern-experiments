@@ -148,6 +148,11 @@ N9, N10 and N11 overlap on the estate page; each item has exactly one owner:
    phone dock carry icons only; the words live in `aria-label` and a tooltip. Visible words appear only in cards,
    menus and sheets (a menu item may be a word). A level / floor strip shows the short code (F3, B1) and puts the
    full name in `aria-label` and `title`. A button that needs words to be understood belongs in a menu, not in a stack.
+6. **One piece of information, one action, once per screen** (HEADER-1, D37). A fact (the current place, an event
+   count, the load state, the map's source line) and an action (locate me, go up, switch level, close, put a name on the
+   map) each have exactly one visible home on a screen. The home is the one that serves it best: switching levels is the
+   breadcrumb's last crumb, locating is the icon of the zoom stack, closing is the host's ×, a count lives on its tab.
+   Before adding a control, search the screen for the same fact or action; if it exists, move it, do not copy it.
 
 ### 2.2 Colour and glass tokens (Dark Frost Glass)
 

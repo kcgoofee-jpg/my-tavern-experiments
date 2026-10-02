@@ -46,8 +46,8 @@ try {
     await B.wait(400);
     await vf.evaluate(() => ViewerDebug.closeCard());   // 打开时飞到新事态会开卡片，卡片抽屉开着时停靠栏让位
     await vf.locator('#thumbBtn').click(); await B.wait(300);
-    const hasClose = await vf.evaluate(() => !document.querySelector('#actClose').hidden);
-    await vf.locator('#actClose').click(); await B.wait(500);
+    const hasClose = !(await vf.evaluate(() => !!document.querySelector('#actClose'))) && await p.locator('#eden-map-root .em-close').isVisible();   // HEADER-1: the host × is the one close
+    await p.locator('#eden-map-root .em-close').click(); await B.wait(500);
     const st = await p.evaluate(() => ({ hidden: document.querySelector('#eden-map-root .em-panel').hidden, pos: localStorage.getItem('edenMapFabPos') }));
     rep.check(`${preset} 地图抽屉「关闭地图」关掉面板`, hasClose && st.hidden, JSON.stringify(st));
     const f1 = await fabBox(p);

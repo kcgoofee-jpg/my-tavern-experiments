@@ -15,6 +15,7 @@ import { placeLayers } from './drawer-glue.mjs';
 import { toggleLabels } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
 import { anchorIn, crumbs, parentMap, strip } from './nodes-runtime.mjs';
+import { focusSearch } from './settings-head.mjs';
 import { close as closeCrumbMenu, isOpen as crumbMenuOpen, paintSwitcher, refreshMenu } from './crumb-menu.mjs';
 import * as EstateShell from './estate-shell.mjs';   // S7-3: while a 3D page is open the strip shows the building's floors
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起
@@ -84,7 +85,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'm') { SettingsApi.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
   else if (k === ',') SettingsApi.open('home');   // S7-2: settings
   else if ((k === '1' || k === '2' || k === '3') && estate && EstateShell.onKey(k)) { /* S7-3: 3D view modes 1 exterior, 2 x-ray, 3 section (the last floor) */ }
-  else if (k === '/') { SettingsApi.open('home'); setTimeout(() => $('#setQ')?.focus(), 30); }
+  else if (k === '/') { SettingsApi.open('home'); setTimeout(focusSearch, 30); }
   else if (k === '?') { SettingsApi.open('adv'); kbdHelp(true); }
   else return;
   e.preventDefault();

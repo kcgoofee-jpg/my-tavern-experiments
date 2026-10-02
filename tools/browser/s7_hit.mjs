@@ -52,19 +52,19 @@ try {
       await vf.evaluate(() => ViewerDebug.showSet(false)); await B.wait(300);
       // the layer action: wherever it opens, > 0 visible rows, and the info button is not covered
       await vf.evaluate(() => { document.getElementById('layBtn').click(); }); await B.wait(600);
-      const lay = await vf.evaluate(() => { const lp = document.getElementById('layPop'), sp = document.getElementById('setPop'), ci = document.getElementById('creditBtn'); const vis = e => e && !e.hidden && e.getClientRects().length > 0;
+      const lay = await vf.evaluate(() => { const lp = document.getElementById('layPop'), sp = document.getElementById('setPop'), ci = document.querySelector('#crumbs .cur'); const vis = e => e && !e.hidden && e.getClientRects().length > 0;
         const popRows = vis(lp) ? [...lp.querySelectorAll('label.tg')].filter(l => l.offsetParent).length : 0, setRows = vis(sp) ? [...sp.querySelectorAll('#layList label.tg')].filter(l => l.offsetParent).length : 0;
         const r = ci.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { popOpen: vis(lp), setOpen: vis(sp), popRows, setRows, infoCovered: !(top === ci || ci.contains(top)) && vis(lp) }; });
-      rep.check(`${w}: the layer action opens a list with > 0 visible rows (${preset === 'phone' ? 'the 地图与图层 page' : 'the popover'}), never an empty popover; the info button is not covered`, (lay.popOpen ? lay.popRows > 0 : lay.setOpen && lay.setRows > 0) && !lay.infoCovered && (preset !== 'phone' || (!lay.popOpen && lay.setOpen)), JSON.stringify(lay));
+      rep.check(`${w}: the layer action opens a list with > 0 visible rows (${preset === 'phone' ? 'the 地图与图层 page' : 'the popover'}), never an empty popover; the crumb switcher is not covered`, (lay.popOpen ? lay.popRows > 0 : lay.setOpen && lay.setRows > 0) && !lay.infoCovered && (preset !== 'phone' || (!lay.popOpen && lay.setOpen)), JSON.stringify(lay));
       await vf.evaluate(() => { ViewerDebug.showLay(false); ViewerDebug.showSet(false); }); await B.wait(300);
-      // the info button: the centre hits the control, a click opens its credit and does not reach the map (no card opens)
-      const info = await vf.evaluate(async () => { const ci = document.getElementById('creditBtn'); if (!ci || ci.hidden) return { none: true }; const r = ci.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      // the crumb switcher: the centre hits the control, a click opens its menu and does not reach the map (no card opens)
+      const info = await vf.evaluate(async () => { const ci = document.querySelector('#crumbs .cur'); if (!ci) return { none: true }; const r = ci.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         let osdClicks = 0; const h = () => { osdClicks++; }; document.getElementById('osd').addEventListener('click', h, true); ci.click(); await new Promise(r => setTimeout(r, 300)); document.getElementById('osd').removeEventListener('click', h, true);
-        return { hit: top === ci || ci.contains(top), opened: ci.getAttribute('aria-expanded') === 'true', card: document.getElementById('card')?.hidden === false, w: Math.round(r.width), h: Math.round(r.height) }; });
-      rep.check(`${w}: the info button is hit at its centre, opens its credit and opens no card`, info.none || (info.hit && info.opened && !info.card), JSON.stringify(info));
+        const opened = ci.getAttribute('aria-expanded') === 'true'; if (opened) ci.click();
+        return { hit: top === ci || ci.contains(top), opened, card: document.getElementById('card')?.hidden === false, w: Math.round(r.width), h: Math.round(r.height) }; });
+      rep.check(`${w}: the crumb switcher is hit at its centre, opens its menu and opens no card`, info.none || (info.hit && info.opened && !info.card), JSON.stringify(info));
       // the blur budget
-      await vf.evaluate(() => { document.getElementById('creditBtn').getAttribute('aria-expanded') === 'true' && document.getElementById('creditBtn').click(); });
       const bl = await B.shot ? await (async () => { const a = await blur(vf), h = await P.page.evaluate(() => { let n = 0, area = 0; const vw = innerWidth * innerHeight; for (const e of document.querySelectorAll('*')) { const cs = getComputedStyle(e), bf = cs.backdropFilter || cs.webkitBackdropFilter; if (bf && bf !== 'none' && e.offsetParent !== null) { const r = e.getBoundingClientRect(); n++; area += r.width * r.height; } } return { n, pct: +(100 * area / vw).toFixed(1) }; }); return { viewer: a, host: h }; })() : null;
       const n = bl.viewer.n + bl.host.n, pct = bl.viewer.pct + bl.host.pct;
       rep.check(`${w}: blur budget: <= 4 blurred elements, <= 12 % of the viewport${preset === 'phone' ? ', 0 at the phone preset (coarse pointer)' : ''}`, preset === 'phone' ? n === 0 : n <= 4 && pct <= 12, JSON.stringify(bl));

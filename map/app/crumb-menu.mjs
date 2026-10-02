@@ -84,3 +84,6 @@ export function paintSwitcher() {
 }
 /** the events or the place changed: redraw an open menu */
 export function refreshMenu() { if (isOpen()) fill(); }
+
+/** read-only view of the current level list for tests and probes (no DOM, no menu opened) */
+window.CrumbMenuApi = Object.freeze({ levels: () => model().levels.map(l => ({ ...l })), scenes: () => model().scenes.map(s => ({ ...s })), isOpen });

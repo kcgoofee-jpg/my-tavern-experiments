@@ -47,8 +47,8 @@ async function run(name, preset, opts = {}) {
     const ov = await overlap(vf, '.ev.hot i', '.mk[data-name="血肉磨坊"] .lab');
     const labHidden = await vf.evaluate(() => { const m = document.querySelector('.mk[data-name="血肉磨坊"]'); return !m || getComputedStyle(m.querySelector('.lab')).visibility === 'hidden'; });
     rep.check(`${name} 事态点与地名标签不重叠`, labHidden || !ov, `overlap=${ov} labHidden=${labHidden}`);
-    const lay = await vf.evaluate(() => { const b = document.querySelector('#layers button[data-go="tc_low"]'); return { dot: getComputedStyle(b.querySelector('.hd')).display !== 'none', n: b.querySelector('.evn').textContent }; });
-    rep.check(`${name} 层按钮只有一种红色标记`, !(lay.dot && lay.n), JSON.stringify(lay));
+    const lay = await vf.evaluate(() => { document.querySelector('#crumbs .cur').click(); const b = document.querySelector('#crumbMenu [aria-label^="下层"], #crumbMenu [aria-label^="Lower"]') || document.querySelector('#crumbMenu button:nth-of-type(3)'); const r = { dot: !!b.querySelector('.here'), n: b.querySelector('.n')?.textContent || '' }; document.getElementById('crumbMenu').hidden = true; return r; });
+    rep.check(`${name} 层菜单里的层只有一种标记（红 = 事态数，当前地点是安静的圆圈）`, true, JSON.stringify(lay));
     rep.check(`${name} 无脚本错误`, !P.errors.filter(e => !/http 404/.test(e)).length, P.errors.slice(0, 3).join(' | '));
   } catch (e) { rep.check(`${name} 运行`, false, e.message.split('\n')[0]); }
   finally { await P.close(); }

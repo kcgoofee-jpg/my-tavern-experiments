@@ -30,7 +30,7 @@ try {
     await wait(1200);
     await pg.evaluate(() => localStorage.setItem('tcp.town.Hint', '1'));
     const s1 = await pg.evaluate(() => ({ cur: ViewerDebug.currentMapId, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length,
-      layers: [...document.querySelectorAll('#layers button')].map(b => b.dataset.go), names: [...document.querySelectorAll('.mk')].map(e => e.dataset.name) }));
+      layers: (() => { document.querySelector('#crumbs .cur')?.click(); const l = [...document.querySelectorAll('#crumbMenu [role=menuitemradio]')].map(b => b.dataset.go || 'cur'); document.getElementById('crumbMenu')?.setAttribute('hidden', ''); return l; })(), names: [...document.querySelectorAll('.mk')].map(e => e.dataset.name) }));
     ok(`${preset}：首图 = town_hill，3 个地点，层切换器 2 层`, s1.cur === 'town_hill' && s1.pack === 'town' && s1.marks === 3 && s1.layers.length === 2, s1);
     await shot(pg, out, `town_hill_${preset}`);
     await pg.evaluate(ev => EventsView.set({ type: 'eden-map:events', items: ev, floor: 6 }), items.map(e => ({ ...e, isNew: true })));
@@ -63,7 +63,7 @@ try {
     const H = await openHost(P, { here: '码头·鱼市', pack, msgs: [{ message_id: 3, message: '夜里。<span style="display:none">⌖火灾｜码头·鱼市｜2｜鱼市仓库起火｜巡夜队</span>' }] });
     await H.open(); await wait(1500);
     const vf = await H.viewer();
-    if (vf) { await vf.evaluate(() => document.getElementById('hereGo')?.click()); await wait(2500); }
+    if (vf) { await vf.evaluate(() => document.getElementById('zHome')?.click()); await wait(2500); }
     const v = vf ? await vf.evaluate(() => ({ cur: ViewerDebug.currentMapId, pack: document.documentElement.dataset.pack, marks: document.querySelectorAll('.mk').length, here: document.querySelector('.mk.here')?.dataset.name || '' })) : null;
     const inj = await H.injected(), vars = await H.vars();
     ok(`${preset} 宿主：面板里是包的地图；「当前位置」跳到码头并高亮鱼市`, v?.pack === 'town' && /^town_/.test(v.cur) && v.here === '鱼市', v || {});

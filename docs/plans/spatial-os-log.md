@@ -1903,4 +1903,14 @@ blocker: none (paused)
 open: Q-29; resume list in docs/extension-study.md §8 (WebKit cold x3, real Mac TT install / update / chat switch, TT chat surface, real-model MVU round, phone); prototype + raw results in ~/eden-map-review/ext-study/proto/
 installed: prototype extension eden-map-ext 0.0.3 only in the isolated ST data root under the session scratchpad (default-user/extensions); nothing installed or changed in the user TT or in the user own ST data
 cleanup: done (own ST server on port 8000, local git server and test drivers stopped by PID)
+=== RESULT HEADER-1 ===
+status: DONE
+items: A NAV-1 1-6 ✓ (breadcrumb switcher with sibling levels, 3D children, here-mark, event badge, keys; 2D strip, its place entry, 「3D 查看」 and the red level dot gone; 3D floor strip kept; quick-layer row gone; D36) | B 1 locate icon also in 3D, header button gone ✓ | 2 ✓ | 3 ✓ | 4 ✓ | 5 ✓ | 6 ✓ | 7 ✓ | 8 ✓ | 9 ✓ | 10 ✓ (credits page: this map's source line + 「相关项目」) | 11 ✓ (cause: the host engine had no room plan; fixed through the plan, test on 「地下二层 惩罚室」) | 12 ✓ | 13 ✓ (SCAN_VER 6; rule narrower than "never": a counted quantifier keeps 「一把刀」) | 14 ✓ | 15 ✓ | 16 ✓ (D37, ui-refactor §2.1 item 6, en + zh)
+commits: see git log of the push (two commits: feat(header) part 1, then probes / docs / log)
+pushed: yes (head number in the chat report)
+tests: node 1551/1552 (2 skipped, 0 fail; +2 new, none removed) | smoke PASS | arch PASS (viewer.html 618 -> 585 lines) | probes: header_1=PASS header_host=PASS profile1=PASS topo_dairy=PASS v096=PASS s7_hit=PASS ui092=PASS e7=PASS e7_host=PASS replay_i17=PASS pack_town=PASS fix3=PASS ui3d1=PASS estate_kbd=PASS estate_generic=PASS estate_presence=PASS (red once under parallel load, green solo) unmapped096=PASS drawer_1=PASS accept=PASS drawer_stash=PASS events_fx=PASS uiv2_shots=PASS a11y_tree=PASS
+deviations: item 13 narrower than the prompt's "never": a one-character name behind a counted quantifier (「一把刀」) is still an item, only the bare 「身」 start is dropped; the phone shows the search as an icon that expands in place (prompt allows it); probes that clicked removed controls were rewritten (e7, e7_host, replay_i17, pack_town, topo_dairy, accept via new lib `pickLevel`, ui092, v096, s7_hit, fix3, profile1)
+blocker: none
+open: the breadcrumb menu on a flat map with many 3D pages (tc_mid lists 17) is a long scrolling list; a filter or grouping is a design question for later
+cleanup: done
 === END ===

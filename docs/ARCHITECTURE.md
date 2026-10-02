@@ -82,6 +82,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `compat-v1.mjs` | Schema 1 → schema 2 in memory: a loaded v1 pack (manifest and data files) becomes a schema-2 pack with inline blocks. Pure; nothing is fetched or written. Assembled from the three `compat-v1-*` files. |
 | `custom-book.mjs` | The chat's custom world book: one constant index of name pairs plus one keyword entry per place with text (bodies from `entryText`). |
 | `custom-record.mjs` | The player's fields on one place (K-R135): description, facts, base fingerprints, floor, bounded undo, restore, key migration; laid over a record field by field. |
+| `crumb-menu.mjs` | What the breadcrumb switcher offers: sibling levels and child 3D pages of the open map, arrow-key stepping. Pure. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
 | `drawer-tabs.mjs` | Drawer tab rules (K-R72): the kernel tab set, `tabOrder(ui.tabs)`, and the one show / hide / fallback sequence on a drawer-like object (pure). |
 | `entities.mjs` | Entity protocol (K-R71, K-R73): `personOf` / `eventOf` adapters, `presentAt`, the level of the open view (`levelMode`) and the present group's sections (`peopleSections`) (pure). |
@@ -181,6 +182,8 @@ mutable state is written only by its declaring module through `set*()`.
 | `color-vision-mode.mjs` | Colour-vision mode: safe palette, class/attribute switches, broadcast to sub-pages. |
 | `control-column.mjs` | Control column: the `#dock` next to the layer strip and zoom, the label toggle, the three actions of the settings home (up one level, current place, close map). |
 | `coordinates.mjs` | Coordinate conversion: code map coordinates (1600 × 1000) to normalized base-map coordinates (`toImg`). |
+| `credits-extra.mjs` | Two sections of Settings, Copyright: the open map's source line and the related project links. |
+| `crumb-menu.mjs` | The breadcrumb's last crumb as the level switcher: a menu of the sibling levels and the child 3D pages (HEADER-1, D36). |
 | `current-pack.mjs` | The current pack, resolved once at startup (live binding `PACK`, `packData(key)`). |
 | `data-mapping-settings.mjs` | Settings "data and mapping" page: local storage usage and current data sources (read only). |
 | `declared-layers.mjs` | The declared-layer host (K-R79..K-R84): registers a pack's new layers on the LayerRegistry, asks `registry.applicable`, draws through the blocks, keeps the visibility in `edenMapLayers`, feeds the legend rows. |
@@ -206,7 +209,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `load-progress.mjs` | Progress of the full-screen loading layer, sharing `ui/progress.mjs`. |
 | `local-props-view.mjs` | The kernel layer `local-props` and the prop methods of `EdenMap` (K-R88): placements per chat in `edenMap:chat:<chat id>:props`, images as `<img>` and a glb as the `cube` icon on flat maps, click-to-place. |
 | `locate.mjs` | Initial view and current place: `focusStart`, `markHere`, `hereRes` (over `place-resolver.mjs`), `drawnAt`, `jumpHere`. |
-| `map-level-nav.mjs` | Layer navigation: layer switcher strip, up one level, Esc handling, single-key shortcuts. |
+| `map-level-nav.mjs` | Level navigation: breadcrumb, the 3D floor strip, Esc handling, single-key shortcuts. |
 | `map-switch.mjs` | Map switching: `go` with registrable wrappers, snapshot, map chrome, alternate base map. |
 | `markers.mjs` | Markers and place cards: placement, tracking, show / close card, world-map and point-map overlays. |
 | `nav-ops-view.mjs` | The kernel layer `nav-ops` (K-R86, I-04): the navigator's clues and marks from `eden-map:ops`, placed by place name or by coordinates on their stamped map; session only. |
@@ -231,6 +234,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `route-plan-view.mjs` | Route planning in the viewer (K-R111, K-R113): the route link on a place card, the plan card, the kernel layer `route-plan` (the user's plan solid, suggestions dashed), re-planning and arrival on `eden-map:here`, the host's echo `eden-map:route`; sends `eden-map:route-plan`. |
 | `scale-handoff.mjs` | Scale hand-off between the world map and the city layers, plus the surrounding transition ring. |
 | `screen-reader-announce.mjs` | Screen-reader announcements (aria-live): several same-moment lines merge into one sentence. |
+| `settings-head.mjs` | The settings search field in the sheet header; collapses to an icon on a phone. |
 | `settings-pages.mjs` | Settings page table (S7-1): the rows of every settings page, built the first time the page opens (never on the boot path), `onBuilt` / `onShow` hooks, the static search index. |
 | `settings-wire.mjs` | Handlers of the settings rows, attached when their page is built; the stored switches that must act at boot (reduce motion, no-glitch, minimap, action mode, edit mode) read storage directly. |
 | `settings.mjs` | Settings overlay: pages, section registration, search, about / update check, self-check. |

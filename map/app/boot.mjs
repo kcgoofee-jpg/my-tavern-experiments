@@ -49,6 +49,7 @@ import { subpageSession, estateLook, estatePlan, retryEstate } from './subpage3d
 import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
+import './settings-head.mjs';   // HEADER-1: the settings search field moves into the sheet header
 import './profile-section.mjs';   // PROFILE-1: the settings-profile section on Settings home (registers its own onBuilt hook)
 import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
 import { firstRunHint } from './notice-layer.mjs';

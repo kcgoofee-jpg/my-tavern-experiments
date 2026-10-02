@@ -66,6 +66,7 @@ export const KEYS = {
   'edenMapOn:': { pref: true, owner: 'core/parked.mjs', prefix: true },
   // 设置方案（PROFILE-1，core/profiles.mjs）：JSON { active, list: [{ id, name, values }] }；方案本身不是偏好（不会被存进方案里）
   edenMapProfiles: { pref: false, owner: 'core/profiles.mjs' },
+  edenMapProfOpen: { pref: false, owner: 'app/profile-section.mjs', def: '0' },   // HEADER-1: the settings-profile row is collapsed unless the user opened it on this device
   // 反馈日志环形缓冲（core/logbuf.mjs）：当前会话滚动日志 + 上次会话归档（最多 4 份），0.9.7
   edenMapLogCur: { pref: false, owner: 'core/logbuf.mjs' }, edenMapLogPast: { pref: false, owner: 'core/logbuf.mjs' },
 };

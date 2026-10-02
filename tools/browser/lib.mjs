@@ -131,8 +131,14 @@ export const viewerState = page => page.evaluate(() => ({
   base: (() => { try { const s = ViewerDebug.osdViewer.world.getItemAt(0)?.source; return s?.tilesUrl || s?.url || ''; } catch (e) { return ''; } })(),
   card: document.querySelector('#card')?.hidden === false ? document.querySelector('#card h2')?.textContent || '' : null,
   estateOn: !!document.querySelector('#estate.on'),
-  layers: [...document.querySelectorAll('#layers button')].map(b => ({ go: b.dataset.go, on: b.classList.contains('on'), disabled: b.disabled })),
+  layers: (window.CrumbMenuApi?.levels() || []).map(l => ({ go: l.id, on: l.on, disabled: l.planned })),   // HEADER-1: the levels live in the breadcrumb menu (no floating strip)
 }));
+/** HEADER-1: switch level the way a user does: open the breadcrumb menu, pick the level */
+export async function pickLevel(page, id) {
+  if (await page.evaluate(id => ViewerDebug.currentMapId === id, id)) return;   // already there: the current level has no link in the menu
+  if (!(await page.evaluate(() => !!window.CrumbMenuApi?.isOpen()))) await page.locator('#crumbs .cur').click();
+  await page.locator(`#crumbMenu [data-go="${id}"]`).click();
+}
 // 切到某张图，等底图第一张瓦片画出（庄园等 #estate.on）；返回用时 ms
 export async function goMap(page, id, timeout = 30000) {
   const t0 = Date.now();

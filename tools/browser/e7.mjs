@@ -134,7 +134,7 @@ try {
     rep.check('设置记在本机：刷新后仍是右手', st.hand === 'right' && st.pref === 'right', JSON.stringify(st));
     await B.goMap(p, 'eden_estate', 60000); await B.wait(1500);
     // S7-3：庄园在同一个壳里，控制列、抽屉与「⋯」照常存在（不再让给独立的三维页）
-    const row = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, set: !!document.querySelector('#setBtn').offsetParent, sheet: document.querySelector('#evbar').hidden }));
+    const row = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, set: !!(document.querySelector('#thumbBtn').offsetParent || document.querySelector('#setBtn').offsetParent), sheet: document.querySelector('#evbar').hidden }));
     rep.check('庄园：同一个壳里控制列与「⋯」仍在', row.dock !== 'none' && row.set, JSON.stringify(row));
     await jpg(p, 'estate_right');
     await P.close();
@@ -147,10 +147,8 @@ try {
     await P.page.evaluate(() => { window.__msgs = []; addEventListener('message', e => window.__msgs.push(e.data?.type)); });
     await f.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 20000 }).catch(() => {});
     await f.locator('#thumbBtn').click(); await B.wait(300);
-    const vis = await f.evaluate(() => !document.querySelector('#actClose').hidden);
-    await f.locator('#actClose').click(); await B.wait(300);
-    const msgs = await P.page.evaluate(() => window.__msgs);
-    rep.check('嵌入时抽屉里有「关闭地图」，点了发 eden-map:esc', vis && msgs.includes('eden-map:esc'), msgs.filter(m => /esc|state/.test(m || '')).join(','));
+    const gone = await f.evaluate(() => !document.querySelector('#actClose') && !document.querySelector('#actHere'));
+    rep.check('HEADER-1: the ⋯ home has no close-map and no locate row (the host × and the zoom locate icon are the ones)', gone, '');
     await P.close();
   });
 
@@ -204,8 +202,8 @@ try {
     const P = await B.newPage('desktop', { tier: 'save', init: [() => { try { localStorage.setItem('edenMapHand', 'left'); } catch (e) {} }] });
     const p = P.page; await B.openViewer(P, { map: 'tc_mid' }); await B.wait(600);
     const d = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, thumb: getComputedStyle(document.querySelector('#thumbBtn')).display,
-      zoom: document.querySelector('#zoom').getBoundingClientRect().right, lay: document.querySelector('#layers').getBoundingClientRect().left }));
-    rep.check('桌面：控制列右下，层切换器在控制列里，没有「⋯」', d.dock === 'flex' && d.thumb === 'none' && d.zoom > 1300 && d.lay > 1200, JSON.stringify(d));
+      zoom: document.querySelector('#zoom').getBoundingClientRect().right, lay: document.querySelector('#layers').hidden }));
+    rep.check('桌面：控制列右下，没有浮动层切换条（HEADER-1：切层在面包屑里），没有「⋯」', d.dock === 'flex' && d.thumb === 'none' && d.zoom > 1300 && d.lay === true, JSON.stringify(d));
     await P.close();
   });
 } finally {

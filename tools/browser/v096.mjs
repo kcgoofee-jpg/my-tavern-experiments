@@ -28,18 +28,14 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await snap(p, 'world_375');
   // 2 覆盖物可收起：署名是 ⓘ、缩放按钮在触屏上不显示、层切换器收成一个
   await B.goMap(p, 'tc_mid'); await B.wait(1500);
-  const ui = await ev(p, () => ({ credit: document.getElementById('credit').hidden, cbtn: !!document.getElementById('creditBtn')?.offsetParent,
-    zoom: getComputedStyle(document.getElementById('zoom')).display }));
-  rep.check('credit_collapsed', ui.credit && ui.cbtn, JSON.stringify(ui));
+  const ui = await ev(p, () => ({ zoom: getComputedStyle(document.getElementById('zoom')).display, noInfo: !document.getElementById('creditBtn'), strip: document.getElementById('layers').hidden }));
+  rep.check('no_info_button_and_no_floating_strip', ui.noInfo && ui.strip, JSON.stringify(ui));   // HEADER-1: the credit text is in Settings, the levels are in the breadcrumb menu
   rep.check('zoom_in_thumb_column', ui.zoom === 'flex', ui.zoom);   // UI v2 §10.1：手机控制列常驻 ⋯ + − ⌂
-  await p.click('#creditBtn'); const open1 = await ev(p, () => !document.getElementById('credit').hidden);
-  rep.check('credit_expands', open1);
-  const vis = () => ev(p, () => [...document.querySelectorAll('#layers button')].filter(b => b.offsetParent && getComputedStyle(b).display !== 'none').length);
-  rep.check('layers_compact', await vis() === 1, String(await vis()));
-  await p.click('#layers button.on'); await B.wait(200);
-  rep.check('layers_expand', await vis() >= 3, String(await vis()));
-  await p.mouse.click(180, 300); await B.wait(200);
-  rep.check('layers_recollapse', await vis() === 1);
+  await p.click('#crumbs .cur'); await B.wait(200);
+  const lv = await ev(p, () => ({ open: !document.getElementById('crumbMenu').hidden, n: document.querySelectorAll('#crumbMenu [role=menuitemradio]').length }));
+  rep.check('crumb_menu_lists_levels_on_phone', lv.open && lv.n >= 3, JSON.stringify(lv));
+  await p.keyboard.press('Escape'); await B.wait(200);
+  rep.check('crumb_menu_closes_on_esc', await ev(p, () => document.getElementById('crumbMenu').hidden));
   await snap(p, 'mid_375');
   // 3 切层：重取景到本层核心区（fix3），转场结束后不留云 / 快照
   const before = await ev(p, () => { const c = ViewerDebug.osdViewer.viewport.getCenter(true); return [c.x, c.y, ViewerDebug.osdViewer.viewport.getZoom(true)]; });
@@ -107,9 +103,8 @@ const ev = (p, f, a) => p.evaluate(f, a);
 {
   const P = await B.newPage('desktop'), p = P.page;
   await B.openViewer(P, { map: 'tc_upper' }); await B.wait(1500);
-  const d = await ev(p, () => ({ zoom: getComputedStyle(document.getElementById('zoom')).display, credit: document.getElementById('credit').hidden,
-    layers: [...document.querySelectorAll('#layers button')].filter(b => getComputedStyle(b).display !== 'none').length }));
-  rep.check('desktop_zoom_and_layers', d.zoom !== 'none' && d.layers >= 3 && d.credit, JSON.stringify(d));
+  const d = await ev(p, () => ({ zoom: getComputedStyle(document.getElementById('zoom')).display, layers: window.CrumbMenuApi.levels().length, strip: document.getElementById('layers').hidden }));
+  rep.check('desktop_zoom_and_layers', d.zoom !== 'none' && d.layers >= 3 && d.strip, JSON.stringify(d));
   await ev(p, () => ViewerDebug.go('tc_mid')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_mid' && !document.querySelector('.tier-snap'), null, { timeout: 5000 }).catch(() => {});
   rep.check('desktop_tier_switch_clears', await ev(p, () => !document.querySelector('.tier-snap, #clCover.run')));
   await ev(p, () => { ViewerDebug.osdViewer.viewport.zoomTo(ViewerDebug.osdViewer.viewport.getMinZoom(), null, true); ViewerDebug.osdViewer.viewport.applyConstraints(true); }); await B.wait(1000);

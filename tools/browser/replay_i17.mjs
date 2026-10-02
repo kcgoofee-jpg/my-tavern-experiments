@@ -24,10 +24,10 @@ try {
     console.log(`  floor ${i + 1} top-bar time: ${JSON.stringify(c)}`);
     rep.check(`floor ${i + 1}: top-bar time = 世界.当前时刻 (${FL[i][0]})`, !!c && !c.hidden && c.text === want, JSON.stringify(c));
   }
-  const loc = await vf.evaluate(() => ({ here: document.querySelector('#here')?.value || '', hereGo: !document.querySelector('#hereGo')?.hidden,
+  const loc = await vf.evaluate(() => ({ here: document.querySelector('#here')?.value || '', hereGo: !!document.querySelector('#zHome')?.offsetParent,
     named: [...document.querySelectorAll('.mk.here')].map(e => e.dataset.name), unmapped: !!document.querySelector('#umBtn:not([hidden]), .um-chip:not([hidden])') }));
   console.log('  location label:', JSON.stringify(loc));
-  rep.check('location: label keeps the text as written, realm placed (current-position button shown, not unmapped)', loc.here === PLACE && loc.hereGo, JSON.stringify(loc));
+  rep.check('location: label keeps the text as written, realm placed (locate icon shown, not unmapped)', loc.here === PLACE && loc.hereGo, JSON.stringify(loc));
   await vf.evaluate(() => SettingsApi.open('ai')); await B.wait(2000);   // S7-1: the preview is the status line card's text block
   const pv = await vf.evaluate(() => document.querySelector('#thInjPreview')?.textContent || '');
   console.log('  injection preview:', pv); console.log('  injected:', JSON.stringify(await H.injected()));

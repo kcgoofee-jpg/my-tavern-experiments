@@ -84,8 +84,7 @@ try {
   // 上层 ⓘ：只有一个提示；fps 不压顶栏
   await vf.evaluate(() => { SettingsApi.open('home'); document.querySelector('#setX')?.click(); ViewerDebug.go('tc_upper'); }); await B.wait(2000);
   const cr = await vf.evaluate(() => { const els = [...document.querySelectorAll('[title]')].filter(e => /署名|credit|作者|渲染/i.test(e.title) && e.offsetParent); return els.map(e => e.id || e.className).join(','); });
-  const crTip = await vf.evaluate(() => [...document.querySelectorAll('.credit, #credit, .cr-i')].filter(e => e.title && e.offsetParent && e.querySelector('[role=tooltip], .tip')).length);
-  rep.check('credit', crTip === 0, cr);
+  rep.check('credit', !(await vf.evaluate(() => !!document.getElementById('creditBtn'))), cr);   // HEADER-1: no info button on the map
   // 庄园 B2 剖切
   await P.page.evaluate(() => caches?.delete?.('eden-estate-glb')).catch(() => {});
   await vf.evaluate(() => ViewerDebug.go('eden_estate')); await B.wait(900); await B.shot(P.page, OUT, 'estate-loading' + sfx);
