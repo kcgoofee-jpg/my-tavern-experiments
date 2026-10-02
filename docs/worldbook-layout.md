@@ -1,7 +1,8 @@
 # Worldbook add-on layout (WB-2)
 
-Status: layout decided and shipped 2026-10-02 (D45). Chinese edition: `worldbook-layout.zh.md` (plain words, the user's reading copy).
-Not measured yet: the tag rate of the new rules position on real models (see section 6).
+Status: layout decided and shipped 2026-10-02 (D45); re-verified against a real Mac TT request on 2026-10-03 (§2b). Chinese edition:
+`worldbook-layout.zh.md` (plain words, the user's reading copy).
+Still not measured: a controlled tag-rate A/B on real models (section 6; the live numbers we do have are in section 5b).
 
 ## 1. Why this exists
 
@@ -27,6 +28,23 @@ world info as in Mac TT: scan depth 2, budget 100 %, recursive on, character str
 How SillyTavern orders: entries are sorted by order, descending, then inserted so that the final text is ascending (lower order first, higher order
 nearest the chat). At-depth entries with the same depth and role merge into one message; system messages come last at a depth, so at depth 0 the
 card's user block is followed by any system block. Depth counts messages from the end (0 after the latest message, 1 before it).
+
+## 2b. The same order in the user's own Mac TT (2026-10-03)
+
+The table above comes from a test SillyTavern. The player's Mac TT behaves the same way; this is one of its own requests, read from the request log
+(`llm-api-551.request.json`, 152 messages, model 假流式-gemini-3.8-flash, Eden card with its own book, the add-on as an extra character book, the
+player's preset). Reproduce with `python3 tools/wb_prompt_order.py <request.json> <book.json> <book.json>` (add `--all` when the book's switches have
+been changed since the capture, as the on-demand mounting had):
+
+| Where | What lands there |
+|---|---|
+| message 5 of 152 (user, 59 265 characters) | the card's "before" entries (orders 100-400) and "after" entries (306-309), then our two constants (901 event types, 902 place vocabulary) - one block, in ascending order |
+| message 147 | the card's depth-4 output format (order 100, 1700 characters) |
+| message 151, the last one | the keyword entries that were on, in ascending order: 937, 938, 1018 - then the card's depth-0 variable rules (200, user, 4157 characters) - then our rules (900, user, 762 characters), last in the request |
+
+Two things worth knowing from this: our rules really are the last thing the model reads, right after the card's own end-of-reply rules, and Mac TT
+delivers the depth-1 and depth-0 blocks as one final user message (keyword entries first, then the depth-0 entries by order). That is why the trigger set
+can change every turn without moving the rules: both live after the whole history.
 
 ## 3. What the cache needs (CCST, read only)
 
@@ -82,11 +100,28 @@ without a wrapper, tail off) layout A rewrites everything on every trigger chang
 changes nothing in the cache (K1, rules at depth 2, measured the same as B). Limits: one chat, one preset, one scripted route, dry-run (no turn capture),
 `use_resume` on; with `use_resume` off CCST folds the whole history into one string and nothing caches regardless of layout.
 
+## 5b. Tag rate in live traffic (not an A/B)
+
+Counted from the player's own Eden chat on 2026-10-03 (one chat, one model, one swipe per floor, counts only, no chat text read out): the map rewrote the
+add-on at 01:08 with the shipped layout, so the replies after that floor ran on layout B.
+
+| Window | Replies | With a map tag |
+|---|---|---|
+| the whole chat before the rewrite | 73 | 6 |
+| the 7 replies right before it | 7 | 5 (two tags each) |
+| the 11 replies after it (layout B) | 11 | 9 (two to five tags each) |
+
+Read it as "no regression", not as a win: the add-on was missing from the book between 19:26 on 2026-10-02 and the rewrite, so the earlier rows mix a
+missing book and the old depth-2 rules, and the player did not ask for tags in either window (no `（OOC…）` reminder, nothing pasted). Layout B did not
+stop the model writing tags; whether it writes more of them is what section 6 has to settle.
+
 ## 6. Not measured
 
-Tag rate of layout B against A on real models (profile gg in Mac TT) could not be run: the user was typing on the machine and the background click was
-refused. The reason for the move is the 1-in-17 rate above, not a measurement. To run it: import the two books under other names, bind one at a time as
-a global book in a new Eden chat, send the two WB-1 seed turns and 3 swipes each, count `⌖` lines in the saved chat file.
+Tag rate of layout B against A on real models (profile gg in Mac TT) still has not been run as a controlled A/B: the player's Mac TT was in use
+(the app had been open for minutes and a chat was growing), and driving their live roleplay chat is not acceptable. What we have instead is section 5b.
+To run the A/B: import the two books under other names, bind one at a time as a global book in a new Eden chat, send the two WB-1 seed turns and 3
+swipes each, count `⌖` lines in the saved chat file. On the same machine the layout itself can be checked without any model call, on any request the
+player already sent: `python3 tools/wb_prompt_order.py <request log>/llm-api-NNN.request.json <book.json> <book.json> --all`.
 
 ## 7. What a pack author should do
 
@@ -104,3 +139,10 @@ No. The map updates the book in place by entry id on every open. An install from
 table, the old "map character location" entry is dropped as an unedited duplicate (kept, lowered, if edited), entries are re-enabled except the ones the JIT
 switched off while it is on, and from WB-2 on their positions follow the shipped layout. A renamed old book (the manual import with a version in its name) is
 migrated to the stable name and its bindings, and left in place. Duplicates cannot appear: entries are matched by id, not by name.
+
+Checked on the player's Mac TT on 2026-10-03: the book was gone from the world folder twice on the evening of 2026-10-02, and the map recreated it by
+itself at 01:08 on 2026-10-03 (its readme entry carries that write time) and re-attached it to the Eden card as an extra character book. No deletion
+tombstone was set, so nothing in the map had blocked the recreation, and nothing in the map deletes this book except the "unbind" button in the settings
+page (which also sets a tombstone, and would have kept it away). The rest of the map only deletes per-chat books whose name ends in six hex digits and
+that carry the map's own entry name, which this book does not. A book deleted outside the map therefore comes back on the next map open; no trace of the
+deletion survives in the TavernHelper log.

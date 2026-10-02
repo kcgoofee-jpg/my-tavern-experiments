@@ -66,6 +66,7 @@ step "角色卡清洗单测（tools/clean_card.py，V3 容错解析 / 载荷零�
 step "CDN 预热单测（增量 / 全量 / 重度升级 / 后台脱离，见 tests/test_warm_cdn.py）" python3 tests/test_warm_cdn.py
 step "浮雕微资产单测（tools/make_relief_maps.py：确定性 + 入库资产 = 生成器输出）" python3 tests/test_relief_maps.py
 step "烘焙导出单测（blender/export_optimized.py：LOD / Draco / KTX2 / 体积预算）" python3 tests/test_export_optimized.py
+step "世界书版面顺序对拍单测（条目落在第几条消息，见 tools/wb_prompt_order.py）" python3 tools/test_wb_prompt_order.py
 step "node --test tests/($(command ls tests/*.test.mjs | wc -l | tr -d ' ') 个)" node --test tests/*.test.mjs
 
 inline_check() {
