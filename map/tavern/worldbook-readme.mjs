@@ -36,8 +36,8 @@ const TXT = {
     del: '[Delete the old book?] No. Every time the map opens or its version changes, it updates this book in place by entry id: old entries get the new text, retired ones drop to the lowest priority, entries you edited are kept as they are. You may delete it; the map builds it again.',
     self: '[This entry] Always disabled, never sent to the model, costs no tokens; rewritten on every write.',
     count: (n, c, k, on, off) => `[In the book now] ${n} entries: ${c} constant, ${k} keyword-triggered; ${on} on and ${off} off when last written (this entry not counted).`,
-    jitOn: '[Why some are off] "Worldbook JIT" is on: the map keeps only the keyword entries near your current place enabled and switches the rest off on purpose, swapping them as you move. Each switch changes what the model receives, which hurts the prompt cache; turn it off and every entry is on again.',
-    jitOff: '[Why some are off] "Worldbook JIT" is off: every entry the map ships is on. Any entry that is off, you turned off.',
+    jitOn: '[Why some are off] "Load worldbook entries on demand" is on: the map keeps only the keyword entries near your current place enabled and switches the rest off on purpose, swapping them as you move. Each switch changes what the model receives, which hurts the prompt cache; turn it off and every entry is on again.',
+    jitOff: '[Why some are off] "Load worldbook entries on demand" is off: every entry the map ships is on. Any entry that is off, you turned off.',
     bug: '[With a bug report, send] this entry\'s name (it carries the version and build), the "Last write" line, and the worldbook row of Settings > Data & mapping.',
   },
 };

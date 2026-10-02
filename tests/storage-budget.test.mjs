@@ -86,4 +86,10 @@ t('updatePromptText 主按钮：跟随 / 最新 = 刷新载入；钉版本 = 本
   assert.equal(updatePromptText('0.9.7', 'tag').actKind, 'switch'); assert.equal(updatePromptText('0.9.7', 'locked').act, null);
   assert.equal(updatePromptText('0.9.7', 'follow', true).act, 'Reload');
 });
+t('COPY-1 更新提示正文：notes 是用户能感知的变化（最多两行、原样短句），没有 notes 就只有「怎么更新」；标题不带构建编码', () => {
+  const T = updatePromptText('0.9.7', 'follow', false, {}, ['人物栏同名合并更稳。', '新增「安保」开关。', '第三行不会出现。']);
+  assert.deepEqual(T.notesLines, ['人物栏同名合并更稳。', '新增「安保」开关。']);
+  assert.deepEqual(updatePromptText('0.9.7', 'follow').notesLines, []);
+  assert.equal(updatePromptText('0.9.7', 'follow').title, '地图有新版 v0.9.7');   // 没有 · S1-…
+});
 console.log(`${n} 项通过`);

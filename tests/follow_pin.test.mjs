@@ -50,11 +50,11 @@ test('resolveFollow 带回 head.json 的提交时间 at', async () => {
   assert.equal(h.build, 7); assert.equal(h.at, '2026-10-01T06:24:52Z');
 });
 
-test('buildLine：当前构建 head #N · sha7 · 时间（head 的提交时间，没有就标「加载于」）', () => {
+test('buildLine：当前构建 head #N · 时间（head 的提交时间，没有就标「加载于」；COPY-1：sha 不上屏，只进诊断复制）', () => {
   const tx = (k, d, v) => d.replace(/\{(\w+)\}/g, (_, n) => v?.[n] ?? '');
   const at = new Date(2026, 9, 1, 14, 24).toISOString();
-  assert.equal(buildLine({ build: 202, sha: SHA, at }, tx, 0), '当前构建 head #202 · a225973 · 2026-10-01 14:24');
-  assert.equal(buildLine({ build: 202, sha: SHA }, tx, new Date(2026, 9, 2, 9, 5).getTime()), '当前构建 head #202 · a225973 · 加载于 2026-10-02 09:05');
-  assert.equal(buildLine({ sha: SHA }, tx, 0).startsWith('当前构建 head #? · a225973'), true);
+  assert.equal(buildLine({ build: 202, sha: SHA, at }, tx, 0), '当前构建 head #202 · 2026-10-01 14:24');
+  assert.equal(buildLine({ build: 202, sha: SHA }, tx, new Date(2026, 9, 2, 9, 5).getTime()), '当前构建 head #202 · 加载于 2026-10-02 09:05');
+  assert.equal(buildLine({ sha: SHA }, tx, 0), '');
   assert.equal(buildLine({}, tx), ''); assert.equal(buildLine(null, tx), '');
 });

@@ -98,7 +98,7 @@ export function createHostChecks(host) {
     toastWait = false; lsSet(TOAST_KEY, key);
     // UI v2：P1 横幅「自检发现 N 项需要注意」→「查看」打开地图设置「更新与版本」（同一版本、同一组警告只出一次）
     const warns = checkItems.filter(i => i.status === 'warn'), L = host.uiLang === 'en' ? 'en' : 'zh';
-    hostToast(host.uiLang === 'en' ? `Map self-check: ${warns.length} item(s) need attention` : `地图自检发现 ${warns.length} 项需要注意`, warns.map(w => '⚠ ' + w[L]), 0, null, false,
+    hostToast(host.uiLang === 'en' ? `Map self-check: ${warns.length} item(s) need attention` : `地图自检发现 ${warns.length} 项需要注意`, warns.map(w => w[L]), 0, null, false,
       { key: 'selfcheck', actions: [{ label: host.uiLang === 'en' ? 'View' : '查看', primary: true, run: () => openSettings('update') }] });
   }
   let setQ = null;   // 面板还没就绪时排队，eden-map:ready 后发（和 flyQ 一样）
@@ -138,7 +138,7 @@ export function createHostChecks(host) {
     if (life.dead || updateChannel({ channel: channel(), ref: SCRIPT.ref || host.refOf?.() }) !== 'follow' || !(SCRIPT.ref || host.refOf?.())) return;
     const h = await followHead(); if (!followNewer(h) || h.sha === followSeen || life.dead) return;
     followSeen = h.sha; const en = host.uiLang === 'en';
-    hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [(en ? `Latest build #${h.build} · ` : `分支最新构建 #${h.build} · `) + String(h.sha).slice(0, 7)], 0, t => {
+    hostToast(en ? 'Update available — reload to load it' : '有更新，刷新载入', [en ? 'Reload the Tavern page to use it.' : '刷新酒馆页面就会用上。'], 0, t => {
       t.classList.add('em-upd', 'em-follow'); const acts = pdoc.createElement('div'), b = pdoc.createElement('button'); acts.className = 'em-acts nt-acts'; b.className = 'nt-pri';
       b.type = 'button'; b.textContent = en ? 'Reload' : '刷新载入'; b.onclick = () => switchToHead(h); acts.append(b); t.append(acts); }, true);
   }
@@ -155,10 +155,10 @@ export function createHostChecks(host) {
     if (life.dead) return;
     // 强制更新：最新正式版声明了 min_version 且当前更旧 → 常驻提示，只能「本次关闭」（按会话记，下次加载再弹），没有「此版本不再提示」
     let closed = null; try { closed = window.parent.__edenMapForceClosed || null; } catch (e) { /* host page not reachable: nothing to do */ }
-    if (SC.mustUpdate(cur, min)) { if (closed !== min) { updPrompt = { ...v, latest: v.latest || min, current: cur, code, min, reason, force: true, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest || min)}/CHANGELOG.md` }; showUpdPrompt(); } return; }
+    if (SC.mustUpdate(cur, min)) { if (closed !== min) { updPrompt = { ...v, latest: v.latest || min, current: cur, code, min, reason, force: true, changelog: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest || min)}/CHANGELOG.md` }; showUpdPrompt(); } return; }
     let later = null; try { later = window.parent.__edenMapUpdLater || null; } catch (e) { /* host page not reachable: nothing to do */ }
     if (!SC.shouldPrompt(v, lsGet(UPD_SKIP_KEY)) || v.latest === later || updEl?.isConnected) return;
-    updPrompt = { ...v, code, notes: `https://github.com/${REPO}/blob/${SC.tagOf(v.latest)}/CHANGELOG.md` }; showUpdPrompt();
+    updPrompt = { ...v, code, notes: r.notes || [] }; showUpdPrompt();
   }
   function showUpdPrompt() {
     if (!updPrompt || life.dead) return;
@@ -168,17 +168,17 @@ export function createHostChecks(host) {
       const F = SC.forceText(u.current, u.min, u.latest, updChannel(), u.reason, host.uiLang === 'en', { script: HS('app.script', host.uiLang === 'en') });
       return hostToast(F.title, F.lines, 0, t => {
         t.classList.add('em-upd', 'em-force'); t.__upd = u;
-        const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
+        const a = pdoc.createElement('a'); a.href = u.changelog || u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = F.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
         const acts = pdoc.createElement('div'); acts.className = 'em-acts nt-acts';
         const cl = pdoc.createElement('button'); cl.type = 'button'; cl.className = 'em-later'; cl.textContent = F.close;
         cl.onclick = () => { try { window.parent.__edenMapForceClosed = u.min; } catch (e) { /* host page not reachable: nothing to do */ } t.remove(); };   // 只记在这次页面上：刷新后再弹
         acts.append(cl); t.append(acts);
       }, true, { level: 0, key: 'upd' });   // P0：没有 ×，只有「本次关闭」（次按钮）
     }
-    const T = SC.updatePromptText(u.latest, updChannel(), host.uiLang === 'en', { script: HS('app.script', host.uiLang === 'en') });
-    hostToast(T.title + (u.code ? ` · ${u.code}` : ''), [T.how], 0, t => {
+    // COPY-1：标题就是版本号；正文 = 一两行「这次改了什么」（build.json 的 notes，正式版发版时写）+ 怎么更新；构建编码与提交号不上屏（诊断在 设置 › 关于）
+    const T = SC.updatePromptText(u.latest, updChannel(), host.uiLang === 'en', { script: HS('app.script', host.uiLang === 'en') }, Array.isArray(u.notes) ? u.notes : []);
+    hostToast(T.title, [...T.notesLines, T.how], 0, t => {
       t.classList.add('em-upd'); t.__upd = u;
-      const a = pdoc.createElement('a'); a.href = u.notes; a.target = '_blank'; a.rel = 'noopener'; a.textContent = T.notes; const d = pdoc.createElement('div'); d.append(a); t.append(d);
       const acts = pdoc.createElement('div'); acts.className = 'em-acts nt-acts';
       const later = pdoc.createElement('button'); later.type = 'button'; later.className = 'em-later'; later.textContent = T.later; later.onclick = () => { try { window.parent.__edenMapUpdLater = u.latest; } catch (e) { /* host page not reachable: nothing to do */ } t.remove(); };
       const skip = pdoc.createElement('button'); skip.type = 'button'; skip.className = 'em-skip'; skip.textContent = T.skip; skip.onclick = () => { lsSet(UPD_SKIP_KEY, u.latest); t.remove(); };

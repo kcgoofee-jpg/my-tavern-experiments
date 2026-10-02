@@ -50,9 +50,9 @@ export function openSplash(o) {
   el.querySelector('h2').textContent = splashTitle(o.name, o.ver, o.en);   // o.name：包的名字（host-strings app.name）
   el.querySelector('.x').textContent = '×'; el.querySelector('.x').setAttribute('aria-label', L('关闭（后台继续加载）', 'Close (loading continues)'));
   el.querySelector('.go').textContent = L('开始', 'Start');
-  // v0.9.6：页脚写版本、构建号、跟随方式（o.about = { version, code, channel, ref }）
+  // v0.9.6：页脚写版本、跟随方式（o.about = { version, code, channel, ref }；构建编码是内部诊断号，COPY-1 不上屏）
   { const a = o.about || {}, ch = { tag: L('固定版本', 'pinned'), follow: L('跟随 ', 'following ') + (a.ref || ''), ref: L('预览 ', 'preview ') + (a.ref || ''), local: L('本地', 'local') }[a.channel] || '';
-    el.querySelector('.vf').textContent = [(a.version || o.ver) ? 'v' + (a.version || o.ver) : '', a.code || '', ch].filter(Boolean).join(' · ');
+    el.querySelector('.vf').textContent = [(a.version || o.ver) ? 'v' + (a.version || o.ver) : '', ch].filter(Boolean).join(' · ');
     el.querySelector('.vf').style.cssText = 'margin-top:10px;font:11px/1.4 ui-monospace,Menlo,monospace;opacity:.7;text-align:center'; }
   root.appendChild(el); markSeen(o.store, o.ver);   // 显示过就算（不因为没点关闭而每次都弹）
   const ul = el.querySelector('ul.ck'), tk = el.querySelector('ul.tk'), bar = el.querySelector('.pb'), stEl = el.querySelector('.st'), pcEl = el.querySelector('.pc');
@@ -62,7 +62,8 @@ export function openSplash(o) {
   const li = (cls, mark, text, hint, list = ul) => { const x = pdoc.createElement('li'); x.className = cls; x.innerHTML = '<b></b><span></span>' + (hint ? '<small></small>' : '');
     x.querySelector('b').textContent = mark; x.querySelector('span').textContent = text; if (hint) x.querySelector('small').textContent = hint; list.appendChild(x);
     if (RM) x.classList.add('on'); else requestAnimationFrame(() => requestAnimationFrame(() => x.classList.add('on'))); return x; };
-  const MARK = { ok: '✓', warn: '⚠', skip: '–', info: 'i' };
+  // COPY-1：状态不用 ✓ / ⚠ 之类的符号字形，一律中性圆点——状态由行的颜色类和文字本身表达（读屏有 aria-label 吗？没有：这一列是纯装饰位）
+  const MARK = { ok: '·', warn: '·', skip: '·', info: '·' };
   stEl.textContent = L('自检中…', 'Checking…');
   // 自检：逐项打勾（每项 300 ms；减少动态效果时一次出齐）
   o.checks().then(async items => {
@@ -75,7 +76,7 @@ export function openSplash(o) {
   for (const t of o.tasks) {
     const row = li(t.skip ? 'skip' : 'load', t.skip ? '–' : '…', L(t.zh, t.en) + (t.skip ? L('（省流：跳过）', ' (data saver: skipped)') : ''), '', tk);
     if (t.skip) continue;
-    Promise.resolve().then(t.run).then(() => { row.className = 'ok on'; row.querySelector('b').textContent = '✓'; }, () => { row.className = 'warn on'; row.querySelector('b').textContent = '⚠'; })
+    Promise.resolve().then(t.run).then(() => { row.className = 'ok on'; row.querySelector('b').textContent = '·'; }, () => { row.className = 'warn on'; row.querySelector('b').textContent = '·'; })
       .finally(() => { tasksDone++; });
   }
   // 进度：朝上限慢慢爬（到不了 100，除非真的都完了）；超过 cap 秒收尾

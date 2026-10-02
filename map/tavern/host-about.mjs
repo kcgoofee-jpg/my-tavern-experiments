@@ -71,7 +71,8 @@ export function createAbout(d = {}) {
         .then(r => (r && r.ok ? r.json() : null)).catch(() => null);
       const cur = SC.buildVer(await buildNow()) || SCRIPT.version || VER;
       return { ...SC.updateVerdict(cur, latest, channel()), code: lb?.code || null, min: lb?.min_version || null,
-        reason: lb?.force_reason || '', notes: `https://github.com/${REPO}/blob/${SC.tagOf(latest)}/CHANGELOG.md` };
+        reason: lb?.force_reason || '', notes: Array.isArray(lb?.notes) ? lb.notes : [],
+        changelog: `https://github.com/${REPO}/blob/${SC.tagOf(latest)}/CHANGELOG.md` };
     } catch (e) { return { status: 'fail' }; }
   }
 

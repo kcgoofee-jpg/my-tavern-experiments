@@ -97,28 +97,28 @@ export function evaluate(f) {
 
   const m = f.mvu, HP = (m && m.path) || '', HPz = HP ? `「${HP}」` : '当前地点变量', HPe = HP ? `"${HP}"` : 'the location variable';   // 路径由设定包 / 变量映射给出；都缺时只说「当前地点变量」
   const db = f.db || null;   // 表格数据库插件（tavern/tabledb-bridge.mjs）：null = 没检测到
-  if (!m && db?.location) out.push(item('mvu', 'skip', 'MVU 变量框架未加载：当前地点改读数据库插件的表', 'MVU not loaded: current location comes from the table database plugin'));
-  else if (!m) out.push(item('mvu', 'warn', 'MVU 变量框架未加载：地图无法跟随当前地点', 'MVU not loaded: the map cannot follow the current location'));
-  else if (!m.stat) out.push(item('mvu', 'skip', '这个聊天还没有 MVU 变量（新聊天？）', 'No MVU variables in this chat yet (new chat?)'));
+  if (!m && db?.location) out.push(item('mvu', 'skip', '聊天变量框架未加载：当前地点改读数据库插件的表', 'Chat-variable framework not loaded: the current location comes from the table database plugin'));
+  else if (!m) out.push(item('mvu', 'warn', '聊天变量框架未加载：地图无法跟随当前地点', 'Chat-variable framework not loaded: the map cannot follow the current location'));
+  else if (!m.stat) out.push(item('mvu', 'skip', '这个聊天还没有变量（新聊天？）', 'No chat variables in this chat yet (new chat?)'));
   else if (!m.here) {
     const c = (m.candidates || []).join('、');
-    out.push(item('mvu', 'warn', `MVU 里没有${HPz}${c ? `（是不是改名成了 ${c}？）` : ''}：地图无法跟随当前地点`,
-      `MVU has no ${HPe}${c ? ` (renamed to ${(m.candidates || []).join(', ')}?)` : ''}: the map cannot follow the current location`));
+    out.push(item('mvu', 'warn', `变量里没有${HPz}${c ? `（是不是改名成了 ${c}？）` : ''}：地图无法跟随当前地点`,
+      `The chat variables have no ${HPe}${c ? ` (renamed to ${(m.candidates || []).join(', ')}?)` : ''}: the map cannot follow the current location`));
   } else {
     const sn = m.snap, back = sn && sn.floor >= 0 && sn.top > sn.floor;   // 最新楼没有快照，用的是更早一楼的（与地图同一份）
-    out.push(item('mvu', 'ok', `MVU${HPz}可读${back ? `（最新一楼还没有变量快照，用第 ${sn.floor} 楼的）` : ''}`, `MVU ${HPe} readable${back ? ` (the latest floor has no snapshot yet; using floor ${sn.floor})` : ''}`));
+    out.push(item('mvu', 'ok', `聊天变量${HPz}可读${back ? `（最新一楼还没有变量快照，用第 ${sn.floor} 楼的）` : ''}`, `Chat variables ${HPe} readable${back ? ` (the latest floor has no snapshot yet; using floor ${sn.floor})` : ''}`));
   }
   if (m && m.stat && m.fields) {   // v0.9.3：人物栏 / 世界时间 / 着装读的字段；缺了不算错，只说明哪些功能不显示
     const F = [['present', '在场人物', 'present characters', '人物栏只用聊天标签', 'panel uses chat tags only'], ['clock', '世界时间', 'world clock', '不显示世界时间与夜色', 'no clock or night tint'], ['outfit', '着装', 'outfit', '不显示着装', 'no outfit line']];
     const miss = F.filter(f => !m.fields[f[0]]);
-    out.push(miss.length ? item('mvu_fields', 'skip', `MVU 没有 ${miss.map(f => f[1]).join('、')}：${miss.map(f => f[3]).join('；')}`, `MVU lacks ${miss.map(f => f[2]).join(', ')}: ${miss.map(f => f[4]).join('; ')}`)
-      : item('mvu_fields', 'ok', 'MVU 在场人物 / 世界时间 / 着装可读', 'MVU present characters / clock / outfit readable'));
+    out.push(miss.length ? item('mvu_fields', 'skip', `变量里没有 ${miss.map(f => f[1]).join('、')}：${miss.map(f => f[3]).join('；')}`, `The chat variables lack ${miss.map(f => f[2]).join(', ')}: ${miss.map(f => f[4]).join('; ')}`)
+      : item('mvu_fields', 'ok', '在场人物 / 世界时间 / 着装可读', 'Present characters / clock / outfit readable'));
   }
   // v0.9.5 变量映射：现在用哪种读法（设置「变量映射」可改）
-  if (f.varmode === 'mvu') out.push(item('varmap', 'ok', HP ? `读法：MVU（地点 ${HP}）` : '读法：MVU', HP ? `Mode: MVU (location ${HP})` : 'Mode: MVU'));
-  else if (f.varmode === 'mvu-partial') out.push(item('varmap', 'warn', '有 MVU，但没找到地点字段：到设置「变量映射」里选一个', 'MVU found, but no location field: pick one under Settings → Variable mapping'));
-  else if (f.varmode === 'tags' && f.db?.location) out.push(item('varmap', 'skip', '读法：当前地点读数据库插件的表；事态、人物读聊天标签（没有 MVU）', 'Mode: location from the table database plugin; events and people from chat tags (no MVU)'));
-  else if (f.varmode === 'tags') out.push(item('varmap', 'skip', '读法：聊天标签（没有 MVU；事态、人物、当前地点都从聊天里的标签读）', 'Mode: chat tags (no MVU; events, people and location come from chat tags)'));
+  if (f.varmode === 'mvu') out.push(item('varmap', 'ok', HP ? `读法：聊天变量（地点 ${HP}）` : '读法：聊天变量', HP ? `Mode: chat variables (location ${HP})` : 'Mode: chat variables'));
+  else if (f.varmode === 'mvu-partial') out.push(item('varmap', 'warn', '有变量，但没找到地点字段：到设置「变量映射」里选一个', 'Chat variables found, but no location field: pick one under Settings → Variable mapping'));
+  else if (f.varmode === 'tags' && f.db?.location) out.push(item('varmap', 'skip', '读法：当前地点读数据库插件的表；事态、人物读聊天标签（没有变量）', 'Mode: location from the table database plugin; events and people from chat tags (no chat variables)'));
+  else if (f.varmode === 'tags') out.push(item('varmap', 'skip', '读法：聊天标签（没有变量；事态、人物、当前地点都从聊天里的标签读）', 'Mode: chat tags (no chat variables; events, people and location come from chat tags)'));
   if ('vars' in f) out.push(f.vars ? item('vars', 'ok', '自定义名称存在聊天变量（跟着聊天走）', 'Custom names stored in chat variables')
     : item('vars', 'warn', '酒馆助手没有聊天变量接口：自定义名称只存本机浏览器（请更新酒馆助手）', 'No TavernHelper chat-variable API: custom names stay in this browser only (update TavernHelper)'));
 
@@ -161,9 +161,9 @@ export function evaluate(f) {
   if (f.host && (f.host.th || f.host.st)) out.push(item('host', 'info', `酒馆助手 ${f.host.th || '?'} · 酒馆 ${f.host.st || '?'}`, `TavernHelper ${f.host.th || '?'} · SillyTavern ${f.host.st || '?'}`));
   if (f.regex) out.push(f.regex.hidesVars ? item('regex', 'ok', `角色卡正则 ${f.regex.n} 条：变量更新块在显示时隐藏`, `${f.regex.n} character regex(es): variable-update blocks hidden in display`)
     : item('regex', 'skip', `角色卡正则 ${f.regex.n} 条：没有隐藏变量更新块的显示正则（只影响正文显示，地图照常读取）`, `${f.regex.n} character regex(es): none hides variable-update blocks in display (display only; the map still reads them)`));
-  // 交互方式 (d) 标签对账：MVU 与正文地点标签不一致的楼层（以 MVU 为准，这里只列出来）
-  if (Array.isArray(f.conflicts) && f.conflicts.length) out.push(item('conflict', 'info', `地点不一致 ${f.conflicts.length} 楼（按 MVU）：${f.conflicts.slice(-3).map(c => `#${c.floor} MVU「${c.mvu}」≠ 标签「${c.tag}」`).join('；')}`,
-    `${f.conflicts.length} floor(s) where the location tag disagrees with MVU (MVU wins): ${f.conflicts.slice(-3).map(c => `#${c.floor} MVU "${c.mvu}" vs tag "${c.tag}"`).join('; ')}`));
+  // 交互方式 (d) 标签对账：变量与正文地点标签不一致的楼层（以变量为准，这里只列出来）
+  if (Array.isArray(f.conflicts) && f.conflicts.length) out.push(item('conflict', 'info', `地点不一致 ${f.conflicts.length} 楼（以变量为准）：${f.conflicts.slice(-3).map(c => `第 ${c.floor} 楼 变量「${c.mvu}」≠ 标签「${c.tag}」`).join('；')}`,
+    `${f.conflicts.length} floor(s) where the location tag disagrees with the chat variables (the variables win): ${f.conflicts.slice(-3).map(c => `floor ${c.floor}: variables "${c.mvu}" vs tag "${c.tag}"`).join('; ')}`));
   // 交互方式 (e) 检查点：上次确认的楼层 / swipe 和现在对不上（中途被杀、切了 swipe）→ 已从聊天记录重新推导
   if (f.checkpoint && f.checkpoint.reason && !['match', 'none'].includes(f.checkpoint.reason)) out.push(item('checkpoint', 'info', `上次确认到第 ${f.checkpoint.floor} 楼（${{ ahead: '之后的楼层还没有变量快照', swiped: '那一楼换了 swipe', missing: '那一楼已不存在' }[f.checkpoint.reason] || f.checkpoint.reason}），已从聊天记录重新推导`,
     `Last confirmed floor ${f.checkpoint.floor} (${{ ahead: 'later floors have no variable snapshot yet', swiped: 'that floor was swiped', missing: 'that floor no longer exists' }[f.checkpoint.reason] || f.checkpoint.reason}); re-derived from chat`));
@@ -235,11 +235,12 @@ export function autoCheckPlan({ enabled = true, channel = 'local', lastAt = 0, n
 }
 /** 要不要弹「地图有新版」：有新版、不是用户说过「此版本不再提示」的那个版本 */
 export const shouldPrompt = (verdict, skipVer) => verdict?.status === 'new' && !!verdict.latest && verdict.latest !== skipVer;
-/** 提示文案：怎么更新取决于脚本是跟随分支（刷新即可）还是钉了版本（重新导入） */
-export function updatePromptText(latest, channel, en = false, names = {}) {   // names.script：导入的脚本名（host-strings app.script），没给就是中性默认
+/** 提示文案：怎么更新取决于脚本是跟随分支（刷新即可）还是钉了版本（重新导入）；notes = 这次更新用户能感知的变化（正式版 build.json 的 notes，1–3 行短句） */
+export function updatePromptText(latest, channel, en = false, names = {}, notes = []) {   // names.script：导入的脚本名（host-strings app.script），没给就是中性默认
   const follow = channel === 'follow', script = names.script || (en ? '[Map] Spatial Map' : '【地图】空间地图');
   return {
     title: en ? `New map version ${fmtVer(latest)}` : `地图有新版 ${fmtVer(latest)}`,
+    notesLines: notes.slice(0, 2),   // 一两行「这次改了什么」；没有就只说怎么更新
     how: channel === 'latest' ? (en ? 'Reload the Tavern page to use it (the script always loads the latest release).' : '刷新酒馆页面就会用上（脚本每次加载最新正式版）')
       : channel === 'locked' ? (en ? 'You locked the current version: turn off "Lock current version" in map settings › About, then reload.' : '你锁定了当前版本：到地图设置「关于」关掉「锁定当前版本」再刷新')
       : follow ? (en ? 'Your script follows the branch: reload the Tavern page to use it.' : '你的脚本跟随分支：刷新酒馆页面就会用上')

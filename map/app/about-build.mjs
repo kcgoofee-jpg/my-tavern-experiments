@@ -4,13 +4,13 @@
 const pad = n => String(n).padStart(2, '0');
 const stamp = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-/** about: { build, sha, at }；tx(key, fallback, vars) = 文案查找；loadedAt = 加载时间（Date 或毫秒）。没有构建号 / 提交号 = 没有这一行（返回 ''）。 */
+/** about: { build, sha, at }；tx(key, fallback, vars) = 文案查找；loadedAt = 加载时间（Date 或毫秒）。没有构建号 = 没有这一行（sha 只进诊断复制，不上屏——COPY-1）。 */
 export function buildLine(about, tx, loadedAt = Date.now()) {
-  const a = about || {}, hasN = Number.isInteger(a.build), sha = a.sha ? String(a.sha).slice(0, 7) : '';
-  if (!hasN && !sha) return '';
+  const a = about || {}, hasN = Number.isInteger(a.build);
+  if (!hasN) return '';
   const at = a.at ? new Date(a.at) : null, ok = at && !isNaN(at);
   const when = ok ? stamp(at) : tx('about.build_loaded', '加载于 {t}', { t: stamp(new Date(loadedAt)) });
-  return tx('about.build_line', '当前构建 head #{n} · {sha} · {t}', { n: hasN ? a.build : '?', sha: sha || '?', t: when });
+  return tx('about.build_line', '当前构建 head #{n} · {t}', { n: a.build, t: when });
 }
 
 /** buildDate(about, loadedAt) -> 'YYYY-MM-DD'（提交时间；没有就用加载时间） */

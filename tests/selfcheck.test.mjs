@@ -87,8 +87,8 @@ t('v0.9.3：MVU 字段缺了只提示（skip）、聊天变量接口、EJS 条�
 t('N14 c：最新楼没有快照、更早一楼有 → 只有一种说法（MVU 可读 + 用第几楼），不再同时说「还没有 MVU 变量」', () => {
   const f = { ...good, varmode: 'mvu', mvu: { stat: true, here: true, candidates: [], snap: { floor: 66, top: 68, state: 'stale' } }, checkpoint: { floor: 66, reason: 'ahead' } };
   const r = evaluate(f), zh = r.map(i => i.zh).join('\n');
-  assert.equal(st(r).mvu, 'ok'); assert.match(r.find(i => i.id === 'mvu').zh, /用第 66 楼的/); assert.doesNotMatch(zh, /还没有 MVU 变量/);
-  assert.match(r.find(i => i.id === 'varmap').zh, /^读法：MVU/);
+  assert.equal(st(r).mvu, 'ok'); assert.match(r.find(i => i.id === 'mvu').zh, /用第 66 楼的/); assert.doesNotMatch(zh, /还没有变量（新聊天）/);
+  assert.match(r.find(i => i.id === 'varmap').zh, /^读法：聊天变量/);
   assert.doesNotMatch(evaluate({ ...good, mvu: { stat: true, here: true, candidates: [], snap: { floor: 68, top: 68 } } }).find(i => i.id === 'mvu').zh, /楼/);
 });
 console.log(`\n${n} passed`);

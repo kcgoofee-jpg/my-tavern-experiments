@@ -78,11 +78,12 @@ test('followUpdate：跟随分支头指针比对，取不到即 fail', async () 
 test('checkUpdate：正式版标签比对，按注入的 selfcheck 裁决', async () => {
   const SC = { UPDATE_API: r => `https://data.jsdelivr.com/v1/packages/gh/${r}`, latestTag: () => 'map-v0.9.9', tagOf: t => t,
     buildVer: b => b?.version, updateVerdict: (cur, latest) => ({ status: 'new', latest, current: cur }) };
-  const { ab, calls } = mk({ SC, data: url => (url.includes('@map-v0.9.9') ? { code: 200, min_version: '0.9.0', force_reason: 'x' } : null) });
+  const { ab, calls } = mk({ SC, data: url => (url.includes('@map-v0.9.9') ? { code: 200, min_version: '0.9.0', force_reason: 'x', notes: ['人物栏同名合并更稳。'] } : null) });
   const v = await ab.checkUpdate();
   assert.equal(v.status, 'new');
   assert.equal(v.code, 200); assert.equal(v.min, '0.9.0'); assert.equal(v.reason, 'x');
-  assert.match(v.notes, /blob\/map-v0\.9\.9\/CHANGELOG\.md/);
+  assert.deepEqual(v.notes, ['人物栏同名合并更稳。']);   // COPY-1：notes = build.json 里给用户看的短句
+  assert.match(v.changelog, /blob\/map-v0\.9\.9\/CHANGELOG\.md/);
   assert.ok(calls.some(u => typeof u === 'string' && u.includes('fastly') === false));
 });
 

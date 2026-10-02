@@ -46,6 +46,19 @@ const UFIX = {
 };
 const BOOK = '伊甸地图·自定义';   // what the viewer fills {book} with for the first pack (worldbook prefix + 「·自定义」, app/custom.mjs)
 const fill = (s, script) => String(s).split('{book}').join(BOOK).split('{script}').join(script);
+// COPY-1 (D47, docs/copy-style.md): the wording pass rewrites these keys on purpose (no MVU / glyph marks / 一键 / 我们 on screen; sha leaves the about line). A changed key must
+// have exactly the value pinned here (zh, en) for the first pack; every other key is still byte-identical to the frozen dictionaries.
+const COPY1 = {
+  'ch.src_mvu': ['聊天变量', 'Chat variables'], 'ch.infer_pre': ['剧情还没开始：这是卡的初始在场表，开始后按聊天标签和变量更新', "Story not started: card's initial present list; updates via tags and chat variables once play begins"],
+  'um.done': ['「{n}」已放到「{k}」', '“{n}” placed on “{k}”'], 'vm.mode_mvu': ['聊天变量', 'Chat variables'],
+  'vm.mode_partial': ['聊天变量（没找到地点字段）', 'Chat variables (no location field found)'], 'vm.mode_tags': ['聊天标签（没有变量）', 'Chat tags (no chat variables)'],
+  'here_ph': ['模拟当前地点', 'Mock the current place'], 'ev.glitch': ['数据链路受扰', 'Data link disrupted'],
+  'selfcheck.wb_go': ['写入世界书', 'Write to worldbook now'], 'about.build_line': ['当前构建 head #{n} · {t}', 'Current build head #{n} · {t}'],
+  's.sc_warn': ['自检 {n} 项需要注意', '{n} self-check item(s) need attention'], 's.src_mvu': ['聊天变量', 'Chat variables'],
+  's.mode_mvu': ['聊天变量全部字段', 'Chat variables, all fields'], 's.mode_mvu_partial': ['聊天变量部分字段', 'Chat variables, some fields'],
+  's.chsrc_mvu': ['聊天变量', 'Chat variables'], 'ch.pre_tip': ['还没选开局：下面是卡的初始变量，选了开局后按剧情更新', "No opening chosen yet: these are the card's initial variables; they update once you pick an opening"],
+  'fc.wbJit.more': ['大世界里能省上下文；只动地图自己的附加世界书里的条目。代价：每次换地点都会改变发给模型的内容，让提示缓存从这一处起重写，所以默认关着；不缺上下文就别开。', "Saves context on large worlds; touches only entries of the map's own add-on book. Cost: every change of place alters what the model receives and makes the prompt cache rewrite from that point, so it is off by default; leave it off unless context is short."],
+};
 
 for (const lang of ['zh', 'en']) {
   test(`the first pack sees ${lang} exactly as before (${lang === 'en' ? 'except the T6 polish' : 'every key'})`, () => {
@@ -57,6 +70,7 @@ for (const lang of ['zh', 'en']) {
       if (!(k in dict)) { miss.push(k); continue; }
       if (k in UFIX) { assert.equal(dict[k], UFIX[k][lang === 'zh' ? 0 : 1], k + ' has its U-FIX-5 value'); continue; }
       if (k in S7.changed) { assert.equal(dict[k], S7.changed[k][lang === 'zh' ? 0 : 1], k + ' has its S7-1 value'); continue; }
+      if (k in COPY1) { assert.equal(dict[k], COPY1[k][lang === 'zh' ? 0 : 1], k + ' has its COPY-1 value'); continue; }
       const now = fill(dict[k], script), was = fill(old, script);   // the old zh text of a key that already took {book} still holds the placeholder
       if (lang === 'en' && k in T6) { assert.notEqual(now, was, `${k} is on the T6 list and must differ`); continue; }
       if (now !== was) diff.push(k);

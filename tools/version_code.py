@@ -4,7 +4,7 @@
 #   赛季（系列）：VERSION 写 S<n>:X.Y.Z 时取 n，否则 1；换系列 = 版本号从 0 重新数（docs/versioning.md）。
 #   版本：VERSION 的 主.次.修订 → 主 + 次 + 两位修订，0.7.1 → 0701，1.12.3 → 11203；
 #         带第 4 段小修补丁时加 p<补丁>：0.9.6.1 → 0906p1（标签 map-v0.9.6.1）。
-#   build.json 里手写的 min_version / force_reason（强制更新：低于 min_version 的版本弹「已停止支持」）原样保留。
+#   build.json 里手写的 min_version / force_reason（强制更新：低于 min_version 的版本弹「已停止支持」）与 notes（这次更新用户能感知的变化，1–3 行短句，COPY-1 的更新提示正文）原样保留。
 #   通道：R 正式、B 公测、T 内测、D 开发（默认 R）。
 #   构建号：分支提交数 + 1（即将提交的这次），四位补零；同一提交可以用 git rev-list 反查。
 #   尾号（运行时）：I iOS/iPadOS、A 安卓、M macOS、W Windows、S 其他。
@@ -27,7 +27,7 @@ old = {}
 try: old = json.load(open(out, encoding='utf-8'))
 except Exception: pass
 b = {'code': code, 'version': ver}
-for k in ('min_version', 'force_reason'):
+for k in ('min_version', 'force_reason', 'notes'):
     if k in old: b[k] = old[k]
 json.dump(b, open(out, 'w'), ensure_ascii=False)
 print(code)

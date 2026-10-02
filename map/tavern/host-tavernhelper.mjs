@@ -148,9 +148,9 @@ export function createWbAuto(deps) {
         lsSet('edenMapWbNoticeVer', v); gset('eden_wb_notice', v); toasted = true;
         const p = r.plan, en = deps.uiLang() === 'en';
         hostToast(r.action === 'sync' ? (en ? 'Map worldbook add-on updated' : '地图世界书附加条目已更新') : (en ? 'Map worldbook add-on installed' : '已自动装好地图世界书附加条目'),
-          [en ? `${p.fromLabel || '—'} → ${p.toLabel}` : `${p.fromLabel || '—'} → ${p.toLabel}（新增 ${p.add.length}、更新 ${p.update.length}、保留你改过的 ${p.keep.length + p.conflict.length}）`,
-           ...(p.conflict.length ? [en ? `${p.conflict.length} entries you edited also changed upstream (kept yours)` : `你改过，上游也改了：${p.conflict.slice(0, 4).join('、')}${p.conflict.length > 4 ? ' …' : ''}（保留你的）`] : []),
-           en ? 'Turn off in Settings › Data & mapping' : '可在 设置 › 数据与映射 关掉'], 9000);
+          [en ? `${p.add.length} added, ${p.update.length} updated; ${p.keep.length + p.conflict.length} you edited kept as they are.`
+              : `新增 ${p.add.length} 条、更新 ${p.update.length} 条；你改过的 ${p.keep.length + p.conflict.length} 条保持原样。`,
+           ...(p.conflict.length ? [en ? `${p.conflict.length} entries you edited also changed upstream (kept yours)` : `你改过、上游也改了的条目：${p.conflict.slice(0, 4).join('、')}${p.conflict.length > 4 ? ' …' : ''}（保留你改的）`] : [])], 9000);
       }
     }
     await chatVerRemind(ship.ver, toasted);
@@ -163,7 +163,7 @@ export function createWbAuto(deps) {
     let prev; try { prev = thFn('getVariables')({ type: 'chat' })?.eden_wb_ver; } catch (e) { return; }
     if (prev === cur) return;
     const W = await wbMod(); if (id !== chatId() || life.dead) return;
-    if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.uiLang() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.uiLang() === 'en' ? `${prev} → ${cur}. Old places / names still work; retired entries were only lowered in priority.` : `${prev} → ${cur}。旧地名照样认；新版不再用的条目只降了优先级，没删。`], 8000); }, late ? 9500 : 0);
+    if (W?.chatReminder(prev, cur)) setTimeout(() => { if (!life.dead && id === chatId()) hostToast(deps.uiLang() === 'en' ? 'Map worldbook changed since this chat' : '这个聊天之后地图世界书换了版本', [deps.uiLang() === 'en' ? 'Old places and names still work; retired entries were only lowered in priority, none deleted.' : '旧地名照样认；新版不再用的条目只降了优先级，没删。'], 8000); }, late ? 9500 : 0);
     try { await thFn('insertOrAssignVariables')({ eden_wb_ver: cur }, { type: 'chat' }); } catch (e) {}
   }
   const FIELDS = ['here', 'present', 'time', 'trips'], CADENCE = [120000, 300000, 600000];

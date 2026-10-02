@@ -69,7 +69,7 @@ test('JIT on: the readme counts what the JIT switched off and says why; the Engl
   const r = await W.sync(t.fn, SHIP, { consent: true, jit: true, ...o0, lang: 'en' });
   assert.ok(r.ok && r.wrote);
   const rd = t.B[W.BOOK][0];
-  assert.match(rd.content, /5 off when last written/); assert.match(rd.content, /"Worldbook JIT" is on/); assert.match(rd.name, /^Readme · /);
+  assert.match(rd.content, /5 off when last written/); assert.match(rd.content, /"Load worldbook entries on demand" is on/); assert.match(rd.name, /^Readme · /);
   assert.equal(rd.enabled, false);
   assert.equal(t.B[W.BOOK].filter(e => e.enabled === false).length, 6);   // the five the JIT keeps off + the readme
 });
