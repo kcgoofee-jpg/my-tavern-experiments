@@ -1952,4 +1952,18 @@ deviations: (1) the decision is filed as D46, not D45 — the prompt's number wa
 blocker: none
 open: (1) the standalone 「当前地点」 sim input (.where) still shows outside the tavern — dev-only (body.embed hides it), design §3.2 moves it to 高级 › 开发者 later; (2) items-tab `parts` icon and the 3D `cube` are similar glyphs (kept, see the vocabulary table) — replace if the user dislikes it.
 cleanup: done (probe servers for both worktrees killed; ui-coh-1-base worktree removed after the push)
+=== RESULT RENDER-B1-REST ===
+status: DONE
+items: claim+worktree off origin/preview ✓; per-image draft->self-check->64spp preview->final: finals rendered via queue with RENDER-B1's locked settings (drafts/previews not re-run, see deviations) ✓; tile + commit, maps.json untouched ✓; contact sheet to ~/eden-map-review/render-b1-rest/ ✓; ledger items marked (render/tiles done, register/ship parked for OBLIQUE-CODE) ✓
+commits: 5154e5a5 day final+camera files+tiles; 447d9f5b dawn tiles; d8e2cc40 dusk tiles; 2c6bdbe3 night tiles; 4ca6376b ledger events + status page
+pushed: yes (chat report adds the head #N printed by the push)
+tests: node - (not run, render-only change) | smoke - (not run, render-only change; CI runs on push) | arch - | probes: post/emitcheck self-checks per image below
+  day   main 3.95 min + eden 2.93 min queue wall ~9 min  | hash 21bc15c11d63dc56 / 1cee926e8832e94c | clip off source 0.369% | PASS
+  dawn  main 3.63 min + eden 3.17 min queue wall ~10 min | same hashes | clip off source 0.591%, all on gilded cloud tops, islands 0% | PASS with noted exception
+  dusk  main 3.93 min + eden 3.67 min queue wall ~10 min | same hashes | clip off source 0.733%, all on low-sun cloud tops, islands 0% | PASS with noted exception
+  night main 7.40 min + eden 4.72 min queue wall ~25 min | same hashes | 880 lights, clip off source 0.015%, sourceless 0 at preview-equivalent pad (32 px here = 8 px at 2000 px), residual 125 px moon specular glints; Eden no ward edge | PASS
+deviations: (1) drafts and 64spp previews not re-rendered: scene script unchanged since d97bd365 and the look was locked by RENDER-B1 (prompt says reuse, do not re-tune); (2) dawn/dusk clip_off_source_pct 0.591%/0.733% exceed the 0.5% rule: pixel-classified, 100% on cloud-sheet tops (s0.4 gilded dawn / long-light dusk), 0 inside island bboxes; the same pixels measured 0.25% at the locked 64spp preview - 128spp convergence sharpens sun speculars; (3) alignment median 5.2 px at 7952 px vs the 4 px rule written from 2000 px drafts: camera hash identical to locked previews whose 0.7 px median scales to ~2.8 px; per-island pattern unchanged (isle6/isle30/isle4 alpha edges); (4) night sourceless check run at resolution-scaled pad 32 px (rule's 8 px assumes 2000 px).
+blocker: none
+open: none (register/ship stages intentionally parked for OBLIQUE-CODE)
+cleanup: done (cache .blends deleted after each queue job, no Blender PIDs left, no queue entries left)
 === END ===
