@@ -17,7 +17,7 @@ for k, v in zip(a[::2], a[1::2]):
     A[k.lstrip('-')] = v
 for ob in list(bpy.data.objects):
     bpy.data.objects.remove(ob, do_unlink=True)
-obs = [o for o in medical_b2.build(f1_z=0.0) if o and o.type in ('MESH', 'CURVE')]
+obs = [o for o in medical_b2.build(f1_z=0.0, for_web=True) if o and o.type in ('MESH', 'CURVE')]
 vl = bpy.context.view_layer
 bpy.ops.object.select_all(action='DESELECT')
 for o in obs:

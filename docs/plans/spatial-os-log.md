@@ -1647,3 +1647,15 @@ blocker: none
 open: U-FIX-4 needs the design intent of the top-bar clock (popover with a period switch or not); the floating 「世界地图」 button moved from the right to the left side after the first map open — unclear whether the sweep caused it (the 惯用手 setting is the same as at the start)
 cleanup: done
 === END ===
+
+=== RESULT E-13b ===
+status: DONE
+items: 1 (builder-side dedupe: drop hidden internal faces, merge duplicate floor layers into room slab, lift stacked layers >= 0.03m, offset furniture bases) ✓ · 2 (rebuild house.glb through builder pipeline; size 588 130 bytes <= 718 930 cap) ✓ · 3 (audit_coplanar: pairs 19 481 [-62.9%], fights 4 808 [-56.1%], baseline ledger updated, smoke PASS) ✓ · 4 (visual check: item E6 6-mode sweep B2/B1/F1/F2/F3/exterior 100% pixel-identical in ~/eden-map-review/tt/e13b/) ✓ · 5 (RESULT in log; push preview) ✓
+commits: b221570b fix(estate3d): builder-side coplanar dedupe and 3D flicker elimination (E-13b)
+pushed: yes (chat report: add the head #N the push printed; the log copy is committed before the push)
+tests: node 1446/1447 pass (1 skipped) | smoke PASS | arch PASS | probes: estate_flicker=PASS (30/30 identical, depth 24), e13b_sweep=PASS (6/6 modes 100% identical)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===

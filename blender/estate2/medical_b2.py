@@ -104,20 +104,26 @@ def mats():
 class Kit:
     """按材质分桶的 bmesh；最后一次性成对象。坐标 = 庄园坐标（z 已含 B2 楼面）。"""
 
-    def __init__(self, col, z0, prefix):
+    def __init__(self, col, z0, prefix, for_web=False):
         self.col, self.z0, self.pre, self.b = col, z0, prefix, {}
+        self.for_web = for_web
 
     def bm(self, k):
         if k not in self.b:
             self.b[k] = bmesh.new()
         return self.b[k]
 
-    def box(self, k, x0, y0, z0, x1, y1, z1):
+    def box(self, k, x0, y0, z0, x1, y1, z1, cap_bottom=True):
         bm = self.bm(k); z0 += self.z0; z1 += self.z0
         x0, x1 = min(x0, x1), max(x0, x1); y0, y1 = min(y0, y1), max(y0, y1)
+        if self.for_web and z0 <= self.z0 + 0.005:
+            cap_bottom = False
         vs = [bm.verts.new(v) for v in [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
                                          (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]]
-        for f in [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]:
+        faces = [(4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+        if cap_bottom:
+            faces.insert(0, (0, 3, 2, 1))
+        for f in faces:
             bm.faces.new([vs[i] for i in f])
 
     def cyl(self, k, x, y, z0, z1, r, seg=24, axis='z', r2=None):
@@ -163,7 +169,8 @@ def shell(K, r, gaps):
     """房间壳：地面卷材、四周圆弧踢脚（卷材上翻 10 cm，45° 近似）、墙板竖缝、吊顶 + LED 平板。
     gaps: {'S'|'N'|'W'|'E': [(起, 止)]}（沿 x / y 增向）。墙画在房间内侧半厚，相邻房间各画一次（合成一堵 0.2 m 墙）。"""
     x0, x1, y0, y1 = r; t = WALL_T / 2
-    K.box('vinyl', x0, y0, -0.02, x1, y1, 0.0)
+    if not K.for_web:
+        K.box('vinyl', x0, y0, -0.02, x1, y1, 0.0)
     for side, (a0, b0, a1, b1) in dict(S=(x0, y0 + t / 2, x1, y0 + t / 2), N=(x0, y1 - t / 2, x1, y1 - t / 2),
                                         W=(x0 + t / 2, y0, x0 + t / 2, y1), E=(x1 - t / 2, y0, x1 - t / 2, y1)).items():
         wall(K, a0, b0, a1, b1, gaps.get(side, ()), t=t)
@@ -175,14 +182,14 @@ def shell(K, r, gaps):
         K.box('vinyl_dk', ix0 + 0.2, ny - 0.015, 0.0, ix1 - 0.2, ny + 0.015, 0.002)
     for (a, b, c, d) in ((ix0, iy0, ix1, iy0 + 0.06), (ix0, iy1 - 0.06, ix1, iy1), (ix0, iy0, ix0 + 0.06, iy1), (ix1 - 0.06, iy0, ix1, iy1)):
         K.box('vinyl_dk', a, b, 0.0, c, d, 0.1)                            # 圆弧踢脚（上翻卷材）
-    for x in _steps(ix0, ix1, 1.2):                                        # 墙板竖缝（1.2 m 模数）
-        for yy, s in ((iy0, 1), (iy1, -1)):
-            K.box('seam', x - 0.004, yy, 0.1, x + 0.004, yy + s * 0.004, CLEAR)
-    for y in _steps(iy0, iy1, 1.2):
-        for xx, s in ((ix0, 1), (ix1, -1)):
-            K.box('seam', xx, y - 0.004, 0.1, xx + s * 0.004, y + 0.004, CLEAR)
-    K.box('ceil', x0, y0, CLEAR, x1, y1, CLEAR + 0.05)
-    # 吊顶 LED：0.6 × 1.2 平板，整片满布（门口 / 无影灯正上方让开由调用方处理）
+    if not K.for_web:
+        for x in _steps(ix0, ix1, 1.2):                                        # 墙板竖缝（1.2 m 模数）
+            for yy, s in ((iy0, 1), (iy1, -1)):
+                K.box('seam', x - 0.004, yy, 0.1, x + 0.004, yy + s * 0.004, CLEAR)
+        for y in _steps(iy0, iy1, 1.2):
+            for xx, s in ((ix0, 1), (ix1, -1)):
+                K.box('seam', xx, y - 0.004, 0.1, xx + s * 0.004, y + 0.004, CLEAR)
+        K.box('ceil', x0, y0, CLEAR, x1, y1, CLEAR + 0.05)
     return ix0, ix1, iy0, iy1
 
 
@@ -192,6 +199,8 @@ def _steps(a, b, s):
 
 
 def led_grid(K, x0, x1, y0, y1, nx, ny, w=1.2, d=0.6, skip=None):
+    if K.for_web:
+        return
     for i in range(nx):
         for j in range(ny):
             cx = x0 + (x1 - x0) * (i + 0.5) / nx; cy = y0 + (y1 - y0) * (j + 0.5) / ny
@@ -545,7 +554,7 @@ def emergency_kit_station(K, x, y, face=1):
 
 
 # ---------------------------------------------------------------- 组装
-def build(col=None, f1_z=None):
+def build(col=None, f1_z=None, for_web=False):
     """在 col（默认新建「B2_医疗中心」集合）里建四间房；返回对象列表。"""
     if f1_z is None:
         try:
@@ -559,22 +568,23 @@ def build(col=None, f1_z=None):
 
     # --- 无菌处置室 (8..20, 1.5..8)
     x0, x1, y0, y1 = R['无菌处置室']
-    K = Kit(col, z0, 'b2_cleanroom')
+    K = Kit(col, z0, 'b2_cleanroom', for_web=for_web)
     ix0, ix1, iy0, iy1 = shell(K, R['无菌处置室'], {'S': [(8.3, 9.7)], 'W': [(1.4, 3.0)]})   # 南墙 → 缓冲更衣间；西墙 y 2.9–4.5 患者转运门
     tx, ty = 14.0, 4.9
     led_grid(K, ix0 + 0.3, ix1 - 0.3, iy0 + 0.3, iy1 - 0.3, 6, 5, skip=lambda cx, cy: abs(cx - tx) < 1.8 and abs(cy - ty) < 1.9)
-    cw, cd = 1.5, 1.6                                                          # 层流送风天花（HEPA 散流板 3.0 × 3.2 m）+ 0.1 m 导流裙边
-    K.box('seam', tx - cw, ty - cd, CLEAR - 0.03, tx + cw, ty + cd, CLEAR - 0.001)
-    K.box('led_soft', tx - cw + 0.05, ty - cd + 0.05, CLEAR - 0.035, tx + cw - 0.05, ty + cd - 0.05, CLEAR - 0.03)
-    for a in (-1, 1):
-        K.box('brushed', tx - cw - 0.02, ty + a * cd - 0.02, CLEAR - 0.13, tx + cw + 0.02, ty + a * cd + 0.02, CLEAR)
-        K.box('brushed', tx + a * cw - 0.02, ty - cd - 0.02, CLEAR - 0.13, tx + a * cw + 0.02, ty + cd + 0.02, CLEAR)
-    for i in range(1, 6):                                                      # 散流板分格
-        K.box('seam', tx - cw + 0.05, ty - cd + i * 2 * cd / 6 - 0.006, CLEAR - 0.037, tx + cw - 0.05, ty - cd + i * 2 * cd / 6 + 0.006, CLEAR - 0.035)
+    if not for_web:
+        cw, cd = 1.5, 1.6                                                          # 层流送风天花（HEPA 散流板 3.0 × 3.2 m）+ 0.1 m 导流裙边
+        K.box('seam', tx - cw, ty - cd, CLEAR - 0.03, tx + cw, ty + cd, CLEAR - 0.001)
+        K.box('led_soft', tx - cw + 0.05, ty - cd + 0.05, CLEAR - 0.035, tx + cw - 0.05, ty + cd - 0.05, CLEAR - 0.03)
+        for a in (-1, 1):
+            K.box('brushed', tx - cw - 0.02, ty + a * cd - 0.02, CLEAR - 0.13, tx + cw + 0.02, ty + a * cd + 0.02, CLEAR)
+            K.box('brushed', tx + a * cw - 0.02, ty - cd - 0.02, CLEAR - 0.13, tx + a * cw + 0.02, ty + cd + 0.02, CLEAR)
+        for i in range(1, 6):                                                      # 散流板分格
+            K.box('seam', tx - cw + 0.05, ty - cd + i * 2 * cd / 6 - 0.006, CLEAR - 0.037, tx + cw - 0.05, ty - cd + i * 2 * cd / 6 + 0.006, CLEAR - 0.035)
+        surgical_light(K, tx, ty + 0.2)
+        ceiling_boom(K, tx - 1.1, ty + 1.2, -0.9, 0.3, 'anesthesia')
+        ceiling_boom(K, tx + 1.2, ty + 1.2, 1.0, 0.2, 'equipment')
     op_table(K, tx, ty)
-    surgical_light(K, tx, ty + 0.2)
-    ceiling_boom(K, tx - 1.1, ty + 1.2, -0.9, 0.3, 'anesthesia')
-    ceiling_boom(K, tx + 1.2, ty + 1.2, 1.0, 0.2, 'equipment')
     crash_cart(K, 10.0, 2.25)
     ventilator(K, 11.6, 5.9)
     anesthesia_machine(K, tx - 0.75, ty + 1.95)                               # 头端麻醉机
@@ -598,7 +608,7 @@ def build(col=None, f1_z=None):
     obs += K.done(M)
 
     # --- 缓冲更衣间 (14..20, -3..1.5)
-    K = Kit(col, z0, 'b2_anteroom')
+    K = Kit(col, z0, 'b2_anteroom', for_web=for_web)
     ax0, ax1, ay0, ay1 = shell(K, R['缓冲更衣间'], {'N': [(2.3, 3.7)], 'S': [(2.3, 3.7)]})
     led_grid(K, ax0 + 0.3, ax1 - 0.3, ay0 + 0.3, ay1 - 0.3, 3, 3)
     hermetic_door(K, 17.0, ay0 - 0.02 + 0.16, 'x', state='amber')             # 南门（主人通道前室侧）：互锁，另一扇开时亮琥珀
@@ -622,7 +632,7 @@ def build(col=None, f1_z=None):
     obs += K.done(M)
 
     # --- 器械洗消间 (8..14, -3..1.5)
-    K = Kit(col, z0, 'b2_sterile_proc')
+    K = Kit(col, z0, 'b2_sterile_proc', for_web=for_web)
     shell(K, R['器械洗消间'], {'W': [(2.5, 3.9)]})
     led_grid(K, 8.4, 13.6, -2.6, 1.1, 3, 3)
     sterilizer(K, 8.3, -2.9 + 0.1, face=1)
@@ -631,7 +641,7 @@ def build(col=None, f1_z=None):
     obs += K.done(M)
 
     # --- 医疗中心前厅 (4..8, -3..8)
-    K = Kit(col, z0, 'b2_med_lobby')
+    K = Kit(col, z0, 'b2_med_lobby', for_web=for_web)
     shell(K, R['医疗中心前厅'], {'S': [(1.3, 2.9)], 'E': [(2.5, 3.9), (5.9, 7.5)]})
     led_grid(K, 4.4, 7.6, -2.6, 7.6, 2, 7)
     reception(K, 4.4, 6.6, 3.2)

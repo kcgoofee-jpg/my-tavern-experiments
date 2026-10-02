@@ -57,10 +57,16 @@ class Mesh:
             self.c.append((col[0] * f, col[1] * f, col[2] * f))
         self.i += [k, k + 1, k + 2, k, k + 2, k + 3]
 
-    def box(self, x0, y0, z0, x1, y1, z1, col, ao=None):
+    def box(self, x0, y0, z0, x1, y1, z1, col, ao=None, cap_top=None, cap_bottom=None):
+        if cap_bottom is None:
+            cap_bottom = not any(abs(z0 - fl_z) < 0.015 for fl_z in (-9.0, -4.5, 0.0, 4.5, 9.0))
+        if cap_top is None:
+            cap_top = not any(abs(z1 - (fl_z + 4.2)) < 0.015 for fl_z in (-9.0, -4.5, 0.0, 4.5, 9.0))
         P = lambda x, y, z: (x, y, z)
-        self.quad(P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1), col)           # 顶
-        self.quad(P(x0, y1, z0), P(x1, y1, z0), P(x1, y0, z0), P(x0, y0, z0), col)           # 底
+        if cap_top:
+            self.quad(P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1), col)           # 顶
+        if cap_bottom:
+            self.quad(P(x0, y1, z0), P(x1, y1, z0), P(x1, y0, z0), P(x0, y0, z0), col)           # 底
         self.quad(P(x0, y0, z0), P(x1, y0, z0), P(x1, y0, z1), P(x0, y0, z1), col, ao)       # -y
         self.quad(P(x1, y1, z0), P(x0, y1, z0), P(x0, y1, z1), P(x1, y1, z1), col, ao)       # +y
         self.quad(P(x0, y1, z0), P(x0, y0, z0), P(x0, y0, z1), P(x0, y1, z1), col, ao)       # -x
@@ -75,7 +81,7 @@ class Mesh:
         self.quad(P(x0, y1, z0), P(x0, y0, z0), P(x0, y0, z1), P(x0, y1, z1), col, ao)       # -x
         self.quad(P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), P(x1, y0, z1), col, ao)       # +x
 
-    def obox(self, p0, p1, t, z0, z1, col, ao=None):
+    def obox(self, p0, p1, t, z0, z1, col, ao=None, cap_top=None, cap_bottom=None):
         """沿 p0→p1 的墙段（厚 t，居中）。"""
         p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
         d = p1 - p0; L = np.linalg.norm(d)
@@ -84,8 +90,14 @@ class Mesh:
         u = d / L; n = np.array([-u[1], u[0]]) * t / 2
         A, B, C, D = p0 - n, p1 - n, p1 + n, p0 + n   # 底面四角（逆时针）
         V = lambda q, z: (q[0], q[1], z)
-        self.quad(V(A, z1), V(B, z1), V(C, z1), V(D, z1), col)
-        self.quad(V(D, z0), V(C, z0), V(B, z0), V(A, z0), col)
+        if cap_bottom is None:
+            cap_bottom = not any(abs(z0 - fl_z) < 0.015 for fl_z in (-9.0, -4.5, 0.0, 4.5, 9.0))
+        if cap_top is None:
+            cap_top = not any(abs(z1 - (fl_z + 4.2)) < 0.015 for fl_z in (-9.0, -4.5, 0.0, 4.5, 9.0))
+        if cap_top:
+            self.quad(V(A, z1), V(B, z1), V(C, z1), V(D, z1), col)
+        if cap_bottom:
+            self.quad(V(D, z0), V(C, z0), V(B, z0), V(A, z0), col)
         self.quad(V(A, z0), V(B, z0), V(B, z1), V(A, z1), col, ao)
         self.quad(V(C, z0), V(D, z0), V(D, z1), V(C, z1), col, ao)
         self.quad(V(D, z0), V(A, z0), V(A, z1), V(D, z1), col, ao)
@@ -132,7 +144,7 @@ class Mesh:
         self.quad(a0, a1, b1, b0, col, ao)
         self.quad(d0, c0, c1, d1, col, ao)
 
-    def prism(self, poly, z0, z1, col):
+    def prism(self, poly, z0, z1, col, side_faces=True):
         """多边形楼板（凸或 L 形都用耳切三角化）+ 侧面。"""
         pts = [tuple(map(float, p)) for p in poly]
         if _signed_area(pts) < 0:
@@ -149,9 +161,10 @@ class Mesh:
             self.p.append((x, y, z0)); self.n.append((0, 0, -1)); self.c.append(dark)
         for a, b, c in tri:
             self.i += [k + a, k + c, k + b]
-        for j in range(len(pts)):
-            a, b = pts[j], pts[(j + 1) % len(pts)]
-            self.quad((a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1), dark)
+        if side_faces:
+            for j in range(len(pts)):
+                a, b = pts[j], pts[(j + 1) % len(pts)]
+                self.quad((a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1), (a[0], a[1], z1), dark)
 
     def cyl(self, cx, cy, r, z0, z1, col, n=16):
         for j in range(n):
@@ -312,12 +325,12 @@ def wall_pieces(M, s, t, z, openings, windows):
         h0, h1 = max(h0, x), min(h1, L)
         if h1 <= h0:
             continue
-        M.obox(P(x), P(h0), t, z, z + WALL_H, col, z)
+        M.obox(P(x), P(h0), t, z, z + WALL_H, col, z, cap_bottom=False, cap_top=False)
         if zb > 0:
-            M.obox(P(h0), P(h1), t, z, z + zb, col, z)
-        M.obox(P(h0), P(h1), t, z + zt, z + WALL_H, col, z)
+            M.obox(P(h0), P(h1), t, z, z + zb, col, z, cap_bottom=False, cap_top=True)
+        M.obox(P(h0), P(h1), t, z + zt, z + WALL_H, col, z, cap_bottom=True, cap_top=False)
         x = h1
-    M.obox(P(x), P(L), t, z, z + WALL_H, col, z)
+    M.obox(P(x), P(L), t, z, z + WALL_H, col, z, cap_bottom=False, cap_top=False)
 
 
 # ---------------------------------------------------------------- 竖向交通 / 结构
@@ -364,10 +377,10 @@ def cores(M, fl, z):
 def lift(M, x0, y0, w, d, z):
     """电梯井：三面薄壁（开口朝 −y / 走廊）+ 深色轿厢。"""
     t = 0.12
-    M.box(x0, y0 + d - t, z, x0 + w, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z)
-    M.box(x0, y0, z, x0 + t, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z)
-    M.box(x0 + w - t, y0, z, x0 + w, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z)
-    M.box(x0 + 0.2, y0 + 0.2, z + 0.05, x0 + w - 0.2, y0 + d - 0.2, z + 2.3, LIFT)
+    M.box(x0, y0 + d - t, z, x0 + w, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z, cap_bottom=False, cap_top=False)
+    M.box(x0, y0, z, x0 + t, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z, cap_bottom=False, cap_top=False)
+    M.box(x0 + w - t, y0, z, x0 + w, y0 + d, z + WALL_H, (0.72, 0.72, 0.72), z, cap_bottom=False, cap_top=False)
+    M.box(x0 + 0.2, y0 + 0.2, z + 0.05, x0 + w - 0.2, y0 + d - 0.2, z + 2.3, LIFT, cap_bottom=False)
 
 
 def spiral(M, cx, cy, r, z, rise, n=16):
@@ -384,17 +397,17 @@ PIERS = ((-10, -9), (10, -9), (-10, 3), (10, 3))   # 穹顶四墩（B2–F3 贯�
 
 def structure(M, fl, z):
     for px, py in PIERS:
-        M.box(px - 0.6, py - 0.6, z, px + 0.6, py + 0.6, z + WALL_H, PIER, z)
+        M.box(px - 0.6, py - 0.6, z, px + 0.6, py + 0.6, z + WALL_H, PIER, z, cap_bottom=False, cap_top=False)
     if fl.startswith('B'):   # 地下柱网（与 F1 墙线对齐）
         for px in (-20, -10, 0, 10, 20):
             for py in (-14, -6, -3, 8):
                 if (px, py) in PIERS:
                     continue
-                M.box(px - 0.35, py - 0.35, z, px + 0.35, py + 0.35, z + WALL_H, PIER, z)
+                M.box(px - 0.35, py - 0.35, z, px + 0.35, py + 0.35, z + WALL_H, PIER, z, cap_bottom=False, cap_top=False)
     if fl == 'F3':   # 鼓座转换梁框 20 × 12 m（F3 顶板下）
         zt = z + WALL_H
         for (x0, y0, x1, y1) in ((-10, -9.4, 10, -8.6), (-10, 2.6, 10, 3.4), (-10.4, -9, -9.6, 3), (9.6, -9, 10.4, 3)):
-            M.box(x0, y0, zt - 0.9, x1, y1, zt, PIER)
+            M.box(x0, y0, zt - 0.9, x1, y1, zt, PIER, cap_top=False)
     if fl == 'F1':
         for i in range(6):   # 门廊 6 柱
             M.cyl(-7.2 + i * 2.88, -24.0, 0.45, z, z + 2 * FH - SLAB, (0.93, 0.91, 0.86), 16)
@@ -451,37 +464,31 @@ def build_b1_furn(F, z):
     # ========================================================================
     # 1. 地面材质分区与地毯铺装 (严格阶梯式叠高 ≥0.03m + pad 无底面防共面撕裂)
     # ========================================================================
-    # --- B1-C01 主调教室地面：外围黑胡桃实木 (z..z+0.03)，金边地毯底板 (z+0.03..z+0.06)，中央提花天鹅绒深红地毯 + 马鞍皮防护地垫 (z+0.06..z+0.09)
-    F.pad(-9.8, -13.8, z, -0.2, -6.2, z + 0.03, C_WOOD_WALNUT)
-    F.pad(-7.6, -12.4, z + 0.03, -2.4, -8.0, z + 0.06, C_CARPET_GOLD)
-    F.pad(-7.4, -12.2, z + 0.06, -2.6, -8.2, z + 0.09, C_CARPET_BURGUNDY)
-    F.pad(-8.2, -13.7, z + 0.06, -4.0, -12.3, z + 0.09, C_LEATHER_DK)
+    # --- B1-C01 主调教室地面：金边地毯底板 (z+0.035..z+0.040)，中央提花天鹅绒深红地毯 + 马鞍皮防护地垫 (z+0.075..z+0.080)
+    F.pad(-7.6, -12.4, z + 0.035, -2.4, -8.0, z + 0.040, C_CARPET_GOLD)
+    F.pad(-7.4, -12.2, z + 0.075, -2.6, -8.2, z + 0.080, C_CARPET_BURGUNDY)
+    F.pad(-8.2, -13.7, z + 0.075, -4.0, -12.3, z + 0.080, C_LEATHER_DK)
 
-    # --- B1-C02 私人调教室地面：外围黑胡桃木地板 (z..z+0.03)，波斯羊毛金边地毯 (z+0.03..z+0.06)，深酒红毯芯 + 马鞍皮跑道 (z+0.06..z+0.09)
-    F.pad(0.15, -13.85, z, 3.65, -6.15, z + 0.03, C_WOOD_WALNUT)
-    F.pad(0.30, -13.65, z + 0.03, 3.50, -6.35, z + 0.06, C_CARPET_GOLD)
-    F.pad(0.40, -13.55, z + 0.06, 3.40, -6.45, z + 0.09, C_CARPET_BURGUNDY)
-    F.pad(0.70, -12.4, z + 0.06, 2.90, -8.4, z + 0.09, C_LEATHER_DK)
+    # --- B1-C02 私人调教室地面：波斯羊毛金边地毯 (z+0.035..z+0.040)，深酒红毯芯 + 马鞍皮跑道 (z+0.075..z+0.080)
+    F.pad(0.30, -13.65, z + 0.035, 3.50, -6.35, z + 0.040, C_CARPET_GOLD)
+    F.pad(0.40, -13.55, z + 0.075, 3.40, -6.45, z + 0.080, C_CARPET_BURGUNDY)
+    F.pad(0.70, -12.4, z + 0.075, 2.90, -8.4, z + 0.080, C_LEATHER_DK)
 
-    # --- B1-C04 性技巧训练室地面：浅色天然软木榻榻米地面 (z..z+0.03)，金边压条 (z+0.03..z+0.06)，灰蓝硅胶拉伸定位垫 (z+0.06..z+0.09)
-    F.pad(3.9, -13.8, z, 6.75, -6.2, z + 0.03, C_FLOOR_TATAMI)
-    F.pad(4.25, -12.25, z + 0.03, 5.95, -8.75, z + 0.06, C_CARPET_GOLD)
-    F.pad(4.30, -12.20, z + 0.06, 5.90, -8.80, z + 0.09, (0.24, 0.32, 0.38))
+    # --- B1-C04 性技巧训练室地面：金边压条 (z+0.035..z+0.040)，灰蓝硅胶拉伸定位垫 (z+0.075..z+0.080)
+    F.pad(4.25, -12.25, z + 0.035, 5.95, -8.75, z + 0.040, C_CARPET_GOLD)
+    F.pad(4.30, -12.20, z + 0.075, 5.90, -8.80, z + 0.080, (0.24, 0.32, 0.38))
 
-    # --- B1-C03 体能训练室地面：EPDM 硫化高密度抗震黑灰橡胶地垫 (z..z+0.03)，白色场馆边界线 (z+0.03..z+0.06)
-    F.pad(-7.8, -2.8, z, -2.2, 6.8, z + 0.03, C_FLOOR_RUBBER)
-    F.pad(-7.6, -2.6, z + 0.03, -7.5, 6.6, z + 0.06, (0.88, 0.88, 0.88))
-    F.pad(-2.5, -2.6, z + 0.03, -2.4, 6.6, z + 0.06, (0.88, 0.88, 0.88))
-    F.pad(-7.6, -2.6, z + 0.03, -2.4, -2.5, z + 0.06, (0.88, 0.88, 0.88))
-    F.pad(-7.6, 6.5, z + 0.03, -2.4, 6.6, z + 0.06, (0.88, 0.88, 0.88))
+    # --- B1-C03 体能训练室地面：白色场馆边界线 (z+0.035..z+0.040)
+    F.pad(-7.6, -2.6, z + 0.035, -7.5, 6.6, z + 0.040, (0.88, 0.88, 0.88))
+    F.pad(-2.5, -2.6, z + 0.035, -2.4, 6.6, z + 0.040, (0.88, 0.88, 0.88))
+    F.pad(-7.6, -2.6, z + 0.035, -2.4, -2.5, z + 0.040, (0.88, 0.88, 0.88))
+    F.pad(-7.6, 6.5, z + 0.035, -2.4, 6.6, z + 0.040, (0.88, 0.88, 0.88))
 
-    # --- B1-C05 恒温酒窖地面：比利时蓝石板 / 老白橡实木拼花 (z..z+0.03)，品酒台织物地毯 (z+0.03..z+0.06)
-    F.pad(-13.8, -2.8, z, -8.2, 1.8, z + 0.03, (0.30, 0.24, 0.18))
-    F.pad(-11.8, -1.0, z + 0.03, -9.2, 0.6, z + 0.06, (0.18, 0.26, 0.20))
+    # --- B1-C05 恒温酒窖地面：品酒台织物地毯 (z+0.035..z+0.040)
+    F.pad(-11.8, -1.0, z + 0.035, -9.2, 0.6, z + 0.040, (0.18, 0.26, 0.20))
 
-    # --- 更衣 / 淋浴间地面：干区大理石瓷砖 (z..z+0.03)，湿区淋浴间缅甸水润柚木防滑木格栅 (z+0.03..z+0.06)
-    F.pad(10.2, -13.8, z, 15.8, -6.2, z + 0.03, (0.85, 0.84, 0.82))
-    F.pad(13.4, -13.6, z + 0.03, 15.7, -9.6, z + 0.06, C_FLOOR_TEAK)
+    # --- 更衣 / 淋浴间地面：湿区淋浴间缅甸水润柚木防滑木格栅 (z+0.035..z+0.040)
+    F.pad(13.4, -13.6, z + 0.035, 15.7, -9.6, z + 0.040, C_FLOOR_TEAK)
 
     # ========================================================================
     # 2. 主调教室 B1-C01 核心家具与设施深度构造
@@ -1225,8 +1232,12 @@ def build_b1_furn(F, z):
     # (5) 东墙中北侧：主人专属入墙式器具密柜 & UV-C 恒温精油吧台 (Armamentarium Vitrine)
     # (a) 内缩式黑胡桃木踢脚与柜体框架
     F.box(3.24, -10.18, z + 0.10, 3.66, -8.22, z + 0.18, C_WOOD_WALNUT)
-    # 到顶碳化黑胡桃木主柜体与两侧收口门套
-    F.box(3.22, -10.20, z + 0.18, 3.68, -8.20, z + 2.70, C_WOOD_WALNUT)
+    # 到顶碳化黑胡桃木主柜体框架（背板 + 顶板 + 南北侧板 + 底板，内部空心容纳抽屉与壁龛）
+    F.box(3.64, -10.20, z + 0.18, 3.68, -8.20, z + 2.70, C_WOOD_WALNUT)         # 东背板
+    F.box(3.22, -10.20, z + 2.66, 3.68, -8.20, z + 2.70, C_WOOD_WALNUT)         # 顶板
+    F.box(3.22, -10.20, z + 0.18, 3.68, -10.16, z + 2.70, C_WOOD_WALNUT)        # 南侧板
+    F.box(3.22, -8.24, z + 0.18, 3.68, -8.20, z + 2.70, C_WOOD_WALNUT)         # 北侧板
+    F.box(3.22, -10.20, z + 0.18, 3.68, -8.20, z + 0.22, C_WOOD_WALNUT)         # 底板
 
     # (b) 下部双门 UV-C 杀菌抽屉组 (黑色碳钛面板 + 活化荧光除菌狭缝)
     F.box(3.20, -10.16, z + 0.18, 3.22, -8.24, z + 0.86, (0.12, 0.12, 0.13))
@@ -1528,12 +1539,20 @@ def build_b1_furn(F, z):
     # ========================================================================
     # 6. 恒温酒窖 B1-C05 (-14..-8, -3..2)
     # ========================================================================
-    # (1) 6.1 双面到顶老白橡酒架框架与陈列红酒瓶列阵 (底座抬高至 z+0.10)
-    F.box(-13.70, 1.20, z + 0.10, -8.30, 1.80, z + 3.24, C_WOOD_WALNUT)
-    F.box(-13.70, -2.60, z + 0.10, -13.00, 1.00, z + 3.24, C_WOOD_WALNUT)
-    # 踢脚防潮收口
-    F.box(-13.72, 1.18, z + 0.10, -8.28, 1.82, z + 0.20, (0.08, 0.08, 0.08))
-    F.box(-13.72, -2.62, z + 0.10, -12.98, 1.02, z + 0.20, (0.08, 0.08, 0.08))
+    # (1) 6.1 双面到顶老白橡酒架框架与陈列红酒瓶列阵 (底座抬高至 z+0.10，柜体起于 z+0.20 踢脚之上)
+    # 踢脚防潮收口 (z+0.10..z+0.20)
+    F.box(-13.70, 1.20, z + 0.10, -8.30, 1.80, z + 0.20, (0.08, 0.08, 0.08))
+    F.box(-13.70, -2.60, z + 0.10, -13.00, 1.00, z + 0.20, (0.08, 0.08, 0.08))
+    # 北面酒架框架 (空心框：背板 + 顶板 + 侧立板)
+    F.box(-13.70, 1.75, z + 0.20, -8.30, 1.80, z + 3.24, C_WOOD_WALNUT)         # 北背板
+    F.box(-13.70, 1.20, z + 3.20, -8.30, 1.80, z + 3.24, C_WOOD_WALNUT)         # 顶板
+    F.box(-13.70, 1.20, z + 0.20, -13.65, 1.80, z + 3.24, C_WOOD_WALNUT)        # 西立柱
+    F.box(-8.35, 1.20, z + 0.20, -8.30, 1.80, z + 3.24, C_WOOD_WALNUT)          # 东立柱
+    # 西面酒架框架 (空心框：西背板 + 顶板 + 南北立柱)
+    F.box(-13.70, -2.60, z + 0.20, -13.65, 1.00, z + 3.24, C_WOOD_WALNUT)        # 西背板
+    F.box(-13.70, -2.60, z + 3.20, -13.00, 1.00, z + 3.24, C_WOOD_WALNUT)        # 顶板
+    F.box(-13.70, -2.60, z + 0.20, -13.00, -2.55, z + 3.24, C_WOOD_WALNUT)       # 南立柱
+    F.box(-13.70, 0.95, z + 0.20, -13.00, 1.00, z + 3.24, C_WOOD_WALNUT)         # 北立柱
     # 6层展示层板 + 横卧红酒瓶阵列 (深绿瓶身 + 金红热缩锡箔帽)
     for bz in np.linspace(z + 0.49, z + 2.99, 6):
         F.box(-13.65, 1.25, bz - 0.02, -8.35, 1.75, bz + 0.02, C_WOOD_OAK)
@@ -1555,8 +1574,8 @@ def build_b1_furn(F, z):
 
     # (3) 6.4 恒温恒湿机房与全景观察视窗 (南侧，底座抬高至 z+0.10)
     F.box(-13.70, -2.80, z + 0.10, -9.00, -2.10, z + 2.54, C_WHITE_CAB)
-    F.box(-13.60, -2.78, z + 0.30, -9.10, -2.12, z + 2.44, C_GLASS_CYAN)
-    F.box(-11.50, -2.12, z + 1.20, -10.50, -2.08, z + 1.60, C_SCREEN_GLOW)
+    F.box(-13.60, -2.105, z + 0.30, -9.10, -2.095, z + 2.44, C_GLASS_CYAN)
+    F.box(-11.50, -2.095, z + 1.20, -10.50, -2.055, z + 1.60, C_SCREEN_GLOW)
 
     # (4) 6.3 劳伦黑金大理石品酒吧台与真皮高脚吧台椅 (中岛区，底座抬高至 z+0.10)
     F.box(-11.50, -0.70, z + 0.10, -9.50, 0.30, z + 0.95, C_WOOD_WALNUT)
@@ -1612,29 +1631,24 @@ def build_b2_furn(F, z):
     # ========================================================================
     # 1. 地面材质分区与工业警戒标识 (严格阶梯式叠高 ≥0.03m + pad 无底面防共面撕裂)
     # ========================================================================
-    # --- 惩罚室 B2-C01 地面：重载防滑钢板 (z..z+0.03)，警戒区底板 (z+0.03..z+0.06)，水牢周边黑黄 45度警戒斑马线 (z+0.06..z+0.09)
-    F.pad(-9.8, -13.8, z, -5.2, -6.2, z + 0.03, (0.18, 0.19, 0.20))
-    F.pad(-9.8, -13.8, z + 0.03, -8.2, -10.3, z + 0.06, C_HAZARD_YEL)
-    F.pad(-9.7, -13.7, z + 0.06, -8.3, -10.4, z + 0.09, C_HAZARD_BLK)
+    # --- 惩罚室 B2-C01 地面：警戒区底板 (z+0.035..z+0.040)，水牢周边黑黄 45度警戒斑马线 (z+0.075..z+0.080)
+    F.pad(-9.8, -13.8, z + 0.035, -8.2, -10.3, z + 0.040, C_HAZARD_YEL)
+    F.pad(-9.7, -13.7, z + 0.075, -8.3, -10.4, z + 0.080, C_HAZARD_BLK)
 
-    # --- 医疗与改造室 B2-C02 地面：无菌防滑浅灰青环氧地坪 (z..z+0.03)，白色无菌分界线 (z+0.03..z+0.06)，手术中心区 (z+0.06..z+0.09)
-    F.pad(-4.8, -13.8, z, 1.1, -6.2, z + 0.03, C_FLOOR_EPOXY)
-    F.pad(-3.0, -12.0, z + 0.03, -0.6, -8.6, z + 0.06, (0.92, 0.94, 0.94))
-    F.pad(-2.9, -11.9, z + 0.06, -0.7, -8.7, z + 0.09, C_FLOOR_EPOXY)
+    # --- 医疗与改造室 B2-C02 地面：白色无菌分界线 (z+0.035..z+0.040)，手术中心区 (z+0.075..z+0.080)
+    F.pad(-3.0, -12.0, z + 0.035, -0.6, -8.6, z + 0.040, (0.92, 0.94, 0.94))
+    F.pad(-2.9, -11.9, z + 0.075, -0.7, -8.7, z + 0.080, C_FLOOR_EPOXY)
 
-    # --- 档案室 B2-C03 地面：防静电架空地板网格 (z..z+0.03)，查阅区真皮地垫 (z+0.03..z+0.06)
-    F.pad(10.2, -13.8, z, 15.8, -10.8, z + 0.03, C_FLOOR_GRID)
-    F.pad(11.8, -12.3, z + 0.03, 14.2, -10.7, z + 0.06, C_LEATHER_DK)
+    # --- 档案室 B2-C03 地面：查阅区真皮地垫 (z+0.035..z+0.040)
+    F.pad(11.8, -12.3, z + 0.035, 14.2, -10.7, z + 0.040, C_LEATHER_DK)
 
-    # --- 储藏室 B2-C04 地面：防潮工业重载环氧地坪 (z..z+0.03)，通道分装区地坪垫 (z+0.03..z+0.06)
-    F.pad(10.2, -10.5, z, 15.8, -6.2, z + 0.03, (0.24, 0.26, 0.28))
-    F.pad(12.0, -9.0, z + 0.03, 14.0, -7.2, z + 0.06, (0.32, 0.35, 0.38))
+    # --- 储藏室 B2-C04 地面：通道分装区地坪垫 (z+0.035..z+0.040)
+    F.pad(12.0, -9.0, z + 0.035, 14.0, -7.2, z + 0.040, (0.32, 0.35, 0.38))
 
-    # --- 机电设备间与结界发生器地面：深灰工业防静电环氧地坪 (z..z+0.03)，结界核心黄黑防爆警戒环 (z+0.03..z+0.09)
-    F.pad(-13.8, -2.8, z, 3.8, 7.8, z + 0.03, (0.20, 0.22, 0.24))
-    F.pad(-7.2, 0.8, z + 0.03, -2.8, 5.2, z + 0.06, C_HAZARD_YEL)
-    F.pad(-7.0, 1.0, z + 0.06, -3.0, 5.0, z + 0.09, (0.16, 0.17, 0.18))
-    F.pad(-6.8, -1.7, z + 0.03, -3.2, -0.6, z + 0.06, C_LEATHER_DK)
+    # --- 机电设备间与结界发生器地面：结界核心黄黑防爆警戒环 (z+0.035..z+0.080)
+    F.pad(-7.2, 0.8, z + 0.035, -2.8, 5.2, z + 0.040, C_HAZARD_YEL)
+    F.pad(-7.0, 1.0, z + 0.075, -3.0, 5.0, z + 0.080, (0.16, 0.17, 0.18))
+    F.pad(-6.8, -1.7, z + 0.035, -3.2, -0.6, z + 0.040, C_LEATHER_DK)
 
 
     # ========================================================================
@@ -2136,14 +2150,35 @@ def build_b2_furn(F, z):
 
 
 
+ROOM_FLOOR_COL = {
+    ('B1', '主调教室'): C_WOOD_WALNUT,
+    ('B1', '私人调教室'): C_WOOD_WALNUT,
+    ('B1', '性技巧训练室'): C_FLOOR_TATAMI,
+    ('B1', '体能训练室'): C_FLOOR_RUBBER,
+    ('B1', '恒温酒窖'): (0.30, 0.24, 0.18),
+    ('B1', '更衣 / 淋浴'): (0.85, 0.84, 0.82),
+    ('B2', '惩罚室'): (0.18, 0.19, 0.20),
+    ('B2', '医疗与改造室'): C_FLOOR_EPOXY,
+    ('B2', '档案室'): C_FLOOR_GRID,
+    ('B2', '储藏室'): (0.24, 0.26, 0.28),
+    ('B2', '机电设备间'): (0.20, 0.22, 0.24),
+}
+
+
 def build_floor(fl):
     rooms = [r for r in FP.ROOMS if r['floor'] == fl]
     z = ZF[fl]
     S, F = Mesh(), Mesh()
     for r in rooms:   # 楼板
-        S.prism(r['poly'], z - SLAB, z, KIND_COL.get(r['kind'], KIND_COL['open']))
+        col = ROOM_FLOOR_COL.get((fl, r['name']), KIND_COL.get(r['kind'], KIND_COL['open']))
+        S.prism(r['poly'], z - SLAB, z, col, side_faces=False)
     wall_rooms = [r for r in rooms if r['block'] != 'porch' and r['kind'] != 'medical']   # 门廊是敞开柱廊，不出墙；医疗中心（kind=medical）的墙 / 门 / 设备由 medical_b2.py 出（medical_web.py）
     segs = walls_for(wall_rooms)
+    dark_slab = (0.75, 0.73, 0.70)
+    for s in segs:
+        if s['ext']:
+            S.quad((s['a'][0], s['a'][1], z - SLAB), (s['b'][0], s['b'][1], z - SLAB),
+                   (s['b'][0], s['b'][1], z), (s['a'][0], s['a'][1], z), dark_slab)
     doors = doors_for(wall_rooms, segs)
     # 外墙开门：门廊 → 大厅（正门）、北廊楼 → 后庭
     for k, s in enumerate(segs):
