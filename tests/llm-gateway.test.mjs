@@ -72,3 +72,24 @@ test('钥匙脱敏：日志与界面只留头尾', () => {
   assert.equal(r.headers.authorization, 'Bea••••ijkl');
   assert.equal(r.provider, 'openai', '非敏感字段原样保留');
 });
+
+test('FIX-B6：每家的默认模型与请求形状（url、头、正文）', () => {
+  const msg = [{ role: 'user', content: 'hi' }];
+  const c = buildRequest({ provider: 'claude', key: 'K' }, msg);
+  assert.equal(c.url, 'https://api.anthropic.com/v1/messages');
+  assert.equal(c.headers['anthropic-dangerous-direct-browser-access'], 'true');
+  assert.equal(c.headers['x-api-key'], 'K');
+  assert.equal(c.body.model, 'claude-haiku-4-5');
+  assert.deepEqual(c.body.messages, msg);
+  const g = buildRequest({ provider: 'gemini', key: 'K' }, msg);
+  assert.equal(g.url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=K');
+  assert.equal(g.headers['anthropic-dangerous-direct-browser-access'], undefined);
+  assert.equal(g.body.model, undefined);
+  const o = buildRequest({ provider: 'openai', key: 'K' }, msg);
+  assert.equal(o.url, 'https://api.openai.com/v1/chat/completions');
+  assert.equal(o.headers.authorization, 'Bearer K');
+  assert.equal(o.headers['anthropic-dangerous-direct-browser-access'], undefined);
+  assert.equal(o.body.model, 'gpt-4.1-mini');
+  const d = buildRequest({ provider: 'deepseek', key: 'K' }, msg);
+  assert.equal(d.body.model, 'deepseek-chat');
+});

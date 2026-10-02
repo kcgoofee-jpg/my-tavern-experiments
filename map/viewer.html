@@ -385,7 +385,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .lg dd { margin: 0 0 var(--sp-3); font-size: var(--fs-small); color: var(--muted); }
   /* 纵深 U16 / U17：标签与图钉包在 .mki 里，视差位移（--px/--py）与漂浮只动这一层（.mk 的 transform 是 OSD 定位用的） */
   .mk .mki { display: flex; flex-direction: column; align-items: center; transform: translate(var(--px, 0px), var(--py, 0px)); }
-  .mk .lab { opacity: var(--lab, 1); translate: var(--ldx, 0px) 0; }   /* --ldx: declutter slides a name back inside the map edge (U-FIX-5 U-01) */
+  .mk .lab { opacity: var(--lab, 1); translate: var(--ldx, 0px) var(--ldy, 0px); }   /* --ldx / --ldy: declutter slides a name back inside the map edge (U-FIX-5 U-01, SW2-07) */
   .mk:hover, .mk:focus-visible { z-index: var(--zv-markers-hover); }
   .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
   /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */

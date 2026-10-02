@@ -75,3 +75,10 @@ export function walk(from, to, deps = {}, step = 1) {
 
 /** 这一楼有没有得看：有地点 / 有时刻 / 有人，三条里有任意一条就算有（拖到没内容的一楼不至于连标题都不给） */
 export const hasState = s => !!s && (!!s.here || !!s.time || !!(s.chars && s.chars.length));
+
+/** SW2-04: replay at the newest floor equals the live place — when the floor-state walk found no place there, the live one (a getter) fills in; older floors and floors with a place are untouched. */
+export function liveAtNewest(st, f, floorNow, live) {
+  if (!st || st.here || !(f >= floorNow)) return st;
+  const here = safe(() => str(typeof live === 'function' ? live() : live, 120), '');
+  return here ? { ...st, here } : st;
+}

@@ -58,6 +58,7 @@ onBuilt('people', () => {
 export function setInjectMode(v) { put('edenMapInject', v); window.__injectMode = v; paintSegs(); document.body.classList.toggle('inject', v !== 'off'); window.MarkersApi?.closeCard?.(); }
 onBuilt('update', () => { $('#linePick').onclick = () => { showSet(false); post({ type: 'eden-map:line-pick' }); }; });
 onBuilt('adv', () => {
+  { const dv = $('#devBox'); if (dv && ![...dv.children].some(r => r.tagName !== 'SUMMARY' && !r.hidden && getComputedStyle(r).display !== 'none')) dv.hidden = true; }   // SW2-06: a group with no row to show draws no heading
   sw('#optEdit', 'edenMapEdit', false, v => setEdit(v)); sw('#optPackRemote', 'edenMapPackRemote', false, () => reproject(true));   // S9b：编辑模式与「加载包里用链接给出的图片」（K-R100 / K-R101，默认关）
   sw('#optKeys', 'edenMapKeys', false); sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定）
   sw('#optFps', 'edenMapDebugFps', false, v => { setFpsMeter(v); estateLook(); });

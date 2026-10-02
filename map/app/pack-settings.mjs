@@ -32,11 +32,15 @@ function current(box) {
   box.append(row(el('span', null, T('pack.now', '当前')), el('b', null, PACK?.title || p?.manifest?.title || p?.id || '')));
   box.append(el('small', 'na', [T(...SRC[src] || SRC.default), trust === 'foreign' ? T('pack.trust_foreign', '外来包') : T('pack.trust_shipped', '随地图发布'), n ? T('pack.problems', '{n} 条提示', { n }) : ''].filter(Boolean).join(' · ')));
 }
-function choices(box, idx) {
-  const p = tc(), cur = p?.source === 'choice' ? p.id : '', auto = !p || p.source !== 'choice';
+/** The index packs join the choice row when the index arrives (SW2-03: the row, its height and everything below it are already placed, so the page does not move) */
+function fillPacks(seg, idx) {
+  const p = tc(), cur = p?.source === 'choice' ? p.id : '';
+  for (const r of Array.isArray(idx?.packs) ? idx.packs : []) if (r && typeof r.id === 'string') seg.append(btn(String(r.i18n?.[LANG]?.title || r.title || r.id), () => send({ kind: 'index', id: r.id }), cur === r.id));
+}
+function choices(box) {
+  const p = tc(), auto = !p || p.source !== 'choice';
   const seg = el('div', 'packpick'); seg.setAttribute('role', 'group');
   seg.append(btn(T('pack.auto', '自动'), () => send({ kind: 'automatic' }), auto));
-  for (const r of Array.isArray(idx?.packs) ? idx.packs : []) if (r && typeof r.id === 'string') seg.append(btn(String(r.i18n?.[LANG]?.title || r.title || r.id), () => send({ kind: 'index', id: r.id }), cur === r.id));
   box.append(el('div', null, T('pack.pick', '为这张卡选包')), seg);
   const url = el('input'); url.type = 'url'; url.setAttribute('aria-label', T('pack.url', '包地址（https）')); url.placeholder = 'https://';
   box.append(row(url, btn(T('pack.url_go', '载入'), () => { const v = url.value.trim(); if (v) send({ kind: 'url', url: v }); })));
@@ -47,6 +51,7 @@ function choices(box, idx) {
     try { send({ kind: 'file', text: await f.text() }); } catch (e) { show(['fetch']); }
   });
   box.append(row(btn(T('pack.file', '选择文件'), () => file.click()), file, btn(T('pack.reset', '恢复自动'), () => send({ kind: 'automatic' }))));
+  return seg;
 }
 function llm(box) {
   const l = tc()?.llm; if (tc()?.trust !== 'foreign' || !l?.has) return;
@@ -86,13 +91,13 @@ export async function renderPackBox() {
   box.replaceChildren(el('b', null, T('pack.title', '地图包')));
   if (window.top === window) { box.append(el('small', 'na', T('pack.solo', '单独打开地图时不适用：包由酒馆里的脚本按角色卡选择'))); return; }
   current(box);
-  let idx = null; try { idx = await getJSON('packs/index.json'); } catch (e) {}
-  if (!box.isConnected) return;
-  choices(box, idx); llm(box); exportBox(box);
+  const seg = choices(box); llm(box); exportBox(box);
   const note = el('small', 'na', refused); note.id = 'packNote'; note.setAttribute('role', 'status'); box.append(note);
+  let idx = null; try { idx = await getJSON('packs/index.json'); } catch (e) {}
+  if (box.isConnected) fillPacks(seg, idx);
 }
 
 if (typeof window !== 'undefined' && window.top !== window) {
-  const css = document.createElement('style'); css.textContent = '.packpick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}.packpick .btn[aria-pressed=true]{border-color:var(--accent,currentColor)}'; document.head.appendChild(css);
+  const css = document.createElement('style'); css.textContent = '.packpick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;min-height:70px;align-content:flex-start}@media (pointer:coarse),(max-width:640px){.packpick{min-height:94px}}.packpick .btn[aria-pressed=true]{border-color:var(--accent,currentColor)}'; document.head.appendChild(css);
   busOn({ key: 'pack-ui.hostMsg', type: 'message', fn: e => { const r = e.data?.type === 'eden-map:th-state' && e.data.result?.pack; if (r && (window.__isFromHost ? window.__isFromHost(e) : e.source === window.parent)) show(Array.isArray(r.problems) ? r.problems : ['fetch']); } });
 }

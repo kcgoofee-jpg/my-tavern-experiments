@@ -813,7 +813,7 @@
   "fc.xtal_clear": "Clear the written list (keeps deletions)",
   "fc.nav.provider": "Provider",
   "fc.nav.base": "Base URL",
-  "fc.nav.model": "Model",
+  "fc.nav.model": "Model (the default is editable; type any model id)",
   "fc.nav.key": "Key",
   "fc.nav.key_saved": "Saved (leave empty to keep it)",
   "fc.nav.test": "Test connection",

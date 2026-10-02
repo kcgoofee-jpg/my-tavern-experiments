@@ -23,6 +23,9 @@ test('H2-01: a room alone, or with its building, reads 「楼 · 房间」; a pl
 test('S-04: a tool path in the creator note is not shown; a plain note is untouched', () => {
   assert.equal(cleanNotes('作者原创（参数见 tavern/scripts/tune_x_card.py）。欢迎游玩'), '作者原创。欢迎游玩');
   assert.doesNotMatch(cleanNotes('本卡由 tools/a/b.sh 调整'), /\.sh/);
+  assert.equal(cleanNotes('作者原创，脚本 tavern/scripts/tune_x_card.py'), '作者原创');   // SW2-02: no dangling lead word
+  assert.equal(cleanNotes('作者原创。脚本：tools/a/b.sh。欢迎'), '作者原创。欢迎');
+  assert.doesNotMatch(cleanNotes('作者原创，脚本 tavern/scripts/tune_x_card.py'), /脚本/);
   assert.equal(cleanNotes('plain note, v1.5'), 'plain note, v1.5');
   assert.doesNotMatch(pick({ data: { name: 'x', creator_notes: '<p>see scripts/tune.py</p>' } }).notes, /tune\.py/);
 });

@@ -191,9 +191,12 @@ C7 and C8 show `未生效：附加世界书未安装` with a link button that op
 
 - Replaces `window.prompt` (`tavernhelper-settings.mjs` L93–96) with an inline form: provider `<select>` from
   `llm-gateway.mjs PROVIDERS` (labels from i18n, ids unchanged), base URL (`type=url`, prefilled from the provider), model
-  (text, prefilled), key (`type=password`, `autocomplete=off`, never echoed back: the host returns only
+  (text, prefilled with a current, cheap default per provider: `claude-haiku-4-5`, `gemini-2.5-flash`, `gpt-4.1-mini`,
+  `deepseek-chat`; the label says the id is editable; FIX-R2), key (`type=password`, `autocomplete=off`, never echoed back: the host returns only
   `navCfg: { provider, base, model, hasKey }`). Save posts the existing `prefs.navCfg` JSON string, so the host side
   (`host-tavernhelper.mjs` L177) is unchanged.
+- The Claude request also carries `anthropic-dangerous-direct-browser-access: true` (the browser-origin opt-in the API
+  requires; FIX-R2).
 - **Test connection**: a new host op `eden-map:th` `op: 'nav-test'`. R0 (U-11, P2-1): the op carries the form's current
   values `cfg: { provider, base, model, key? }` (no key = use the saved one); the host builds one request with them
   (`llm-gateway buildRequest`, messages `[{ role: 'user', content: 'ping' }]`, `maxTokens: 8`, 15 s timeout), uses them

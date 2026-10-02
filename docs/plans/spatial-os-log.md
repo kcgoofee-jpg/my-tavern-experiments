@@ -1721,5 +1721,14 @@ pushed: yes (head #N in the chat report)
 tests: node 1490/1491 (1 skipped) | smoke PASS | arch PASS | probes: none (docs only)
 deviations: 12 items instead of ~10 (several group 2–3 ids that are one decision for the user, 20 ids in all); the P sheet was bulk-confirmed 2026-10-01 but is included because that confirmation came without a plain-words digest; no decision changed
 open: the user fills 保留 / 改 for the 12 items
+=== RESULT FIX-R2 ===
+status: DONE
+items: U-FIX-8 SW2-02 ✓ · SW2-03 ✓ · SW2-04 ✓ · SW2-05 ✓ · SW2-06 ✓ · SW2-07 ✓ · FIX-B6 ✓ (Claude browser header, defaults claude-haiku-4-5 / gemini-2.5-flash / gpt-4.1-mini, editable-model label, per-provider request-shape test; readText already covers the four response shapes)
+commits: (this commit) fix(ui): sweep-2 P2 batch U-FIX-8 and advisor provider defaults FIX-B6
+pushed: yes (head #N in the chat report)
+tests: node 1495 total (1494 pass + 1 skipped; was 1489 + 1 at INV-1; +6 new) | smoke PASS | arch PASS | probes: ufix_r2=PASS (SW2-03 and 04 and 07 fail on the old tree) ufix_r1=PASS s7_hit=PASS replay_i17=PASS cg_gallery=PASS
+deviations: SW2-06 could not be reproduced in the stub (the three rows render); fixed as a guard: a developer group with no visible row hides with its heading. SW2-03 reserves two button rows for the pack choice row (70 px desktop, 94 px touch) and places the rest of the box before the index arrives.
+blocker: none
+open: SW2-06 and SW2-02 / 05 re-check in TT on the next sweep
 cleanup: done
 === END ===

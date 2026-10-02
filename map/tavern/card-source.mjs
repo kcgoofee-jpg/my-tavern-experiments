@@ -9,8 +9,10 @@ const OURS = e => !!(e && e.extra && typeof e.extra === 'object' && (e.extra.ede
 
 // U-FIX-5 S-04: a creator note can carry a tool's file path (`scripts/tune_x.py`); the credits page shows the note without such paths (a bracketed aside holding one goes whole)
 const PATH = String.raw`[\w.\-]+(?:[\/\\][\w.\-]+)+\.(?:py|js|mjs|cjs|ts|sh|bat|ps1|json|ya?ml|txt|md)\b`;
+// SW2-02: the lead word of a path clause (脚本 / script …) goes with the path
 export const cleanNotes = s => String(s || '').replace(new RegExp(String.raw`[（(\[【][^（）()\[\]【】]*?${PATH}[^（）()\[\]【】]*?[）)\]】]`, 'gi'), ' ')
-  .replace(new RegExp(PATH, 'gi'), ' ').replace(/\s+([，。；,.;])/g, '$1').replace(/[，,；;:：]\s*([。.]|$)/g, '$1').replace(/\s+/g, ' ').trim();
+  .replace(new RegExp(String.raw`(?:(?:脚本|工具|script|tool)\s*[:：]?\s*)?` + PATH, 'gi'), ' ')
+  .replace(/\s+([，。；,.;])/g, '$1').replace(/[，,；;:：]\s*([。.]|$)/g, '$1').replace(/。{2,}/g, '。').replace(/\s+/g, ' ').trim();
 
 /** One card object (the host's character record, with or without a `data` wrapper) -> { name, creator, version, avatar, tags, notes, src, spatialOs } or null when it names nothing. */
 export function pick(c, src) {

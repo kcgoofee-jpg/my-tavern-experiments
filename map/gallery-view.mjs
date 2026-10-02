@@ -33,8 +33,8 @@ const GalleryView = (() => {
   const str = (v, n) => (typeof v === 'string' ? [...v].slice(0, n).join('') : '');
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
   function thumb(url, label) {
-    const i = el('img', 'cg-th'); i.alt = ''; i.loading = 'lazy'; i.decoding = 'async'; i.referrerPolicy = 'no-referrer'; if (label) i.title = label;
-    i.addEventListener('error', () => { i.hidden = true; }); i.src = url; return i;
+    const i = el('img', 'cg-th ld'); i.alt = ''; i.loading = 'lazy'; i.decoding = 'async'; i.referrerPolicy = 'no-referrer'; if (label) i.title = label;
+    i.addEventListener('load', () => i.classList.remove('ld')); i.addEventListener('error', () => { i.hidden = true; }); i.src = url; return i;   // SW2-05: `ld` = a neutral placeholder tile until the picture has loaded
   }
   function fromHost(d) {
     if (!d || d.on === false) { table = null; scenes = []; cats = []; }
@@ -112,6 +112,7 @@ const GalleryView = (() => {
   #card .cg-row .cg-pl{order:3;flex:1 1 100%;text-align:left;background:none;border:0;padding:0;color:var(--accent,inherit);font:inherit;cursor:pointer;min-height:32px;text-decoration:underline;overflow-wrap:anywhere}
   #card .cg-row small.cg-pl{text-decoration:none;color:var(--muted,inherit)}
   #card .cg-row .cg-th{order:2;margin-left:auto;width:48px;height:64px;object-fit:cover;border-radius:var(--r-s,4px);background:var(--surface-2,rgba(255,255,255,.06))}
+  #card .cg-grid .cg-th.ld,#card .cg-row .cg-th.ld{background:linear-gradient(135deg,var(--glass-2),var(--glass-line));border:1px solid var(--glass-line);box-sizing:border-box}
   @media (pointer:coarse),(max-width:640px){#card .cg-cat>summary{min-height:44px}#card .cg-row .cg-pl{min-height:44px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   try { (window.requestIdleCallback || setTimeout)(() => post({ type: 'eden-map:media-ask' })); } catch (e) { /* no host */ }

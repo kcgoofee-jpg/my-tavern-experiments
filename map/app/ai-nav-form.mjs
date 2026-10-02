@@ -32,7 +32,7 @@ export function navForm(s, api) {
   for (const c of CAD) { const o = el('option', '', tr('fc.nav.cad_' + c, CADZH[c])); o.value = c; cad.append(o); }
   cad.id = 'thNavCad'; cad.addEventListener('change', () => setPrefs({ navCadence: +cad.value }));
   const acts = el('div', 'fcact'); acts.append(test, save);
-  form.append(field('fc.nav.provider', '服务商', sel), field('fc.nav.base', '接口地址', base), field('fc.nav.model', '模型', model), field('fc.nav.key', '密钥', key), acts, cost, res);
+  form.append(field('fc.nav.provider', '服务商', sel), field('fc.nav.base', '接口地址', base), field('fc.nav.model', '模型（默认值可直接改成别的型号）', model), field('fc.nav.key', '密钥', key), acts, cost, res);
   const ctext = el('small', '', tr('fc.nav.consent', 'AI 参谋会按你的设置在后台调用你自己的 API，给出地图建议；请求只发往你填的端点，会消耗你的额度。'));
   consent.append(ctext, agree, why); after.append(field('fc.nav.cadence', '运行间隔', cad), stats, wd);
   s.append(form, consent, after); api.ST = null;

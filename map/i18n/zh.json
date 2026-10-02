@@ -813,7 +813,7 @@
   "fc.xtal_clear": "清空已写入记录（保留墓碑）",
   "fc.nav.provider": "服务商",
   "fc.nav.base": "接口地址",
-  "fc.nav.model": "模型",
+  "fc.nav.model": "模型（默认值可直接改成别的型号）",
   "fc.nav.key": "密钥",
   "fc.nav.key_saved": "已保存（留空沿用）",
   "fc.nav.test": "测试连接",

@@ -5,9 +5,9 @@
 // 兼容四家：OpenAI（含一切 /v1/chat/completions 兼容端：DeepSeek、Moonshot、本地 llama.cpp…）、
 // Claude（x-api-key + anthropic-version）、Gemini（?key= 查询串）、以及完全自定义的兼容端点。
 export const PROVIDERS = [
-  { id: 'openai', label: 'OpenAI / 兼容端点', base: 'https://api.openai.com/v1', path: '/chat/completions', auth: 'bearer', model: 'gpt-4o-mini' },
-  { id: 'claude', label: 'Claude', base: 'https://api.anthropic.com/v1', path: '/messages', auth: 'header', header: 'x-api-key', version: '2023-06-01', model: 'claude-3-5-haiku-latest' },
-  { id: 'gemini', label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta', path: '/models/{model}:generateContent', auth: 'query', queryKey: 'key', model: 'gemini-1.5-flash' },
+  { id: 'openai', label: 'OpenAI / 兼容端点', base: 'https://api.openai.com/v1', path: '/chat/completions', auth: 'bearer', model: 'gpt-4.1-mini' },
+  { id: 'claude', label: 'Claude', base: 'https://api.anthropic.com/v1', path: '/messages', auth: 'header', header: 'x-api-key', version: '2023-06-01', model: 'claude-haiku-4-5' },
+  { id: 'gemini', label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta', path: '/models/{model}:generateContent', auth: 'query', queryKey: 'key', model: 'gemini-2.5-flash' },
   { id: 'deepseek', label: 'DeepSeek', base: 'https://api.deepseek.com/v1', path: '/chat/completions', auth: 'bearer', model: 'deepseek-chat' },
   { id: 'custom', label: '自定义兼容端点', base: '', path: '/chat/completions', auth: 'bearer', model: '' },
 ];
@@ -36,7 +36,7 @@ export function buildRequest(cfg = {}, messages = [], opts = {}) {
   const headers = { 'content-type': 'application/json' };
   let url = base + path;
   if (p.auth === 'bearer') headers.authorization = `Bearer ${key}`;
-  else if (p.auth === 'header') { headers[p.header || 'x-api-key'] = key; if (p.version) headers['anthropic-version'] = p.version; }
+  else if (p.auth === 'header') { headers[p.header || 'x-api-key'] = key; if (p.version) headers['anthropic-version'] = p.version; if (p.id === 'claude') headers['anthropic-dangerous-direct-browser-access'] = 'true'; }
   else if (p.auth === 'query') url += (url.includes('?') ? '&' : '?') + `${p.queryKey || 'key'}=${encodeURIComponent(key)}`;
   else headers.authorization = `Bearer ${key}`;   // 自定义：默认按兼容端点的 bearer 走
   const maxTokens = Math.max(1, Math.min(8192, Number(opts.maxTokens) || 512));

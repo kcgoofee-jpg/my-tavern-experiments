@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { floorOf, floorState, walk, hasState } from '../map/tavern/timeline.mjs';
+import { floorOf, floorState, walk, hasState, liveAtNewest } from '../map/tavern/timeline.mjs';
 import { HOST_SRC } from './_host_src.mjs';
 
 const LP = '/世界/当前地点';
@@ -91,4 +91,13 @@ test('hasState / 接线：有地点或有人或有时钟就算有；宿主按本
   for (const g of ['window', 'document', 'localStorage', 'Mvu', 'SillyTavern', 'postMessage']) {
     assert.ok(!new RegExp(`\\b${g}\\b`).test(src), `不该出现 ${g}`);
   }
+});
+
+test('SW2-04：回放停在最新一楼时显示当下地点，旧楼与已有地点的楼不动', () => {
+  const st = { floor: 5, here: '', time: '', chars: [] };
+  assert.equal(liveAtNewest(st, 5, 5, () => '主卧').here, '主卧');
+  assert.equal(liveAtNewest(st, 4, 5, () => '主卧').here, '', '旧楼不借当下的地点');
+  assert.equal(liveAtNewest({ ...st, here: '客厅' }, 5, 5, () => '主卧').here, '客厅');
+  assert.equal(liveAtNewest(st, 5, 5, () => { throw new Error('x'); }), st, '取不到当下地点：原样');
+  assert.equal(liveAtNewest(null, 5, 5, () => '主卧'), null);
 });
