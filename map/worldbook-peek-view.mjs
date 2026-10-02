@@ -17,7 +17,7 @@ const WorldbookPeekView = (() => {
     if (!box || openPlace !== name) return;   // 用户已经换了卡
     if (!Array.isArray(items) || !items.length) { box.querySelector('.wb-out').textContent = uiTextOr('wb.none', '附加书里没有这个地点的条目。'); return; }
     box.querySelector('.wb-out').innerHTML = items.map(it =>
-      `<div class="wb-item"><b>${esc(it.name)}</b><p>${esc(String(it.summary || '').slice(0, TRIM))}</p></div>`).join('');
+      `<div class="wb-item"><div><b>${esc(it.name)}</b></div><div>${esc(String(it.summary || '').slice(0, TRIM))}</div></div>`).join('');   // 条目名单独一行（TT sweep-2：名字和正文粘在一起）
   }
 
   function decorate(el, title) {
