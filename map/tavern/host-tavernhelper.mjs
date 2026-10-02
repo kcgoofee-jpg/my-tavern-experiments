@@ -3,6 +3,7 @@
 // 模块地图见 docs/agent-brief.md「模块地图」。
 // 地基 A1（docs/tavernhelper-audit.md §6）：所有外部请求走这一个包装——不带凭据、不带 Referer；与 tavern/tavernhelper-api.mjs cdnFetch 同一规则（tests/cdnfetch.test.mjs 对照、并禁止裸 fetch）
 import { worldbookPrefix } from '../core/pack.mjs';
+import { peekItems } from '../core/wb-peek.mjs';
 import { healthOf, healthSum } from './feature-health.mjs';
 export const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
 // 窗口函数取法（地基 A3）：全局优先，其次 TavernHelper 命名空间
@@ -238,12 +239,7 @@ export function createWbAuto(deps) {
       let items = null;
       if (getBook) {
         try {
-          const entries = await getBook(W.BOOK);
-          const nm = d.name.replace(/\s+/g, '');
-          items = (Array.isArray(entries) ? entries : [])
-            .filter(e => e?.enabled !== false && ((e?.name || '').replace(/\s+/g, '').includes(nm) || (e?.strategy?.keys || e?.key || []).some(k => String(k || '').replace(/\s+/g, '').includes(nm) || nm.includes(String(k || '').replace(/\s+/g, '')))))
-            .slice(0, 3)
-            .map(e => ({ name: e?.name || '（无标题）', summary: String(e?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() }));
+          items = peekItems(await getBook(W.BOOK), d.name, { noTitle: '（无标题）' });   // U-FIX-1：脚本 / 模板条目不外露正文（core/wb-peek.mjs）
         } catch (e) { items = null; }
       }
       return post({ type: 'eden-map:wb-peek', name: d.name, items });
