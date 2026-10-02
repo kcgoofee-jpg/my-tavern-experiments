@@ -2,6 +2,7 @@
 // cleanup 本身仍在入口组装（它要停入口里的计时器 / 观察器），这里只负责登记到 window.parent.__edenMapCleanup 与 pagehide。
 import { fnOk, thFn } from './host-tavernhelper.mjs';
 import { hostTokensCss } from './host-tokens.mjs';
+import { mountClockPop } from './clock-view.mjs';
 
 /** 换版本 / 关脚本时旧实例必须彻底停掉（2026-09-27 接手 review P1）。所有 eventOn 走 listen 登记句柄；kill() 之后旧实例的所有出口都变成空操作。 */
 /** N10 (7): the place chain of the status line reads with a spaced middle dot between its parts (a display change only; the title keeps the raw text) */
@@ -140,6 +141,15 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-bar .em-clock[data-band="night"] { --em-band-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z'/%3E%3C/svg%3E"); }
   #${ID} .em-bar .em-clock svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   #${ID} .em-bar .em-clock[hidden] { display: none; }
+  #${ID} .em-bar .em-clock { cursor: pointer; }
+  #${ID} .em-bar .em-clock[data-view] { box-shadow: inset 0 0 0 1px var(--em-accent); color: var(--em-accent); }   /* U-FIX-4: a previewed period, not the chat's */
+  #${ID} .em-bar .em-clock-pop { position: absolute; top: calc(100% + 4px); right: 6px; display: flex; flex-direction: column; min-width: 168px; padding: 6px; border-radius: 12px; background: var(--glass-2, var(--em-bg)); border: 1px solid var(--line, rgba(255,255,255,.12)); box-shadow: var(--elev-panel); font: 13px/1.3 var(--em-font); color: var(--em-ink); }
+  #${ID} .em-bar .em-clock-pop[hidden] { display: none; }
+  #${ID} .em-bar .em-clock-pop b { padding: 4px 8px 6px; font-size: 12px; color: var(--em-muted); font-weight: 600; }
+  #${ID} .em-bar .em-clock-pop button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  #${ID} .em-bar .em-clock-pop button:hover, #${ID} .em-bar .em-clock-pop button:focus-visible { background: var(--surface-2); }
+  #${ID} .em-bar .em-clock-pop button[aria-checked="true"] { color: var(--em-accent); font-weight: 700; }
+  #${ID} .em-bar .em-clock-pop button[aria-checked="true"]::before { content: '✓ '; }
   #${ID} .em-body { position: relative; min-height: 0; contain: strict; }
   #${ID} iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--em-bg); }
   /* 地图程序就绪前的加载遮罩（就绪后由地图自己显示瓦片进度） */
@@ -201,13 +211,13 @@ export function mount(pdoc, ID, scriptOwner) {
   <span class="em-badge" hidden></span>
 </button>
 <div class="em-panel" hidden>
-  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" role="img" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><i class="em-dot" role="img" data-st="loading"></i><button class="em-line" title="切换加载线路"></button><button class="em-tl-btn" title="时间轴回放" aria-label="时间轴回放" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4M10.2 9.4 8 8V4.8"/></svg></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <div class="em-bar" role="toolbar"><b class="em-title">新历 2088</b><span class="em-clock" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg><span class="em-clock-t"></span></span><span class="em-here"></span><i class="em-dot" role="img" data-st="loading"></i><button class="em-line" title="切换加载线路"></button><button class="em-tl-btn" title="时间轴回放" aria-label="时间轴回放" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4M10.2 9.4 8 8V4.8"/></svg></button><button class="em-close" aria-label="关闭"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <div class="em-body"><iframe class="em-frame" title="地图"></iframe><div class="em-load" hidden><div><span class="txt">加载地图 0%</span><div class="bar"><i></i></div><div class="hint"></div><div class="acts" hidden><button class="retry">重试</button><button class="swap">换线路</button></div></div></div>
     <div class="em-pick" hidden><div><h3>选择加载线路</h3><p>地图图片较多，按你的网络选一条更快的线路；之后可以点标题栏的「线路」切换</p><div class="row"></div></div></div></div>
   <div class="em-tl" hidden><span class="em-tl-l">回放</span><input class="em-tl-r" type="range" min="0" max="0" step="1" value="0" aria-label="时间轴：拖动回到过去的楼层"><span class="em-tl-v"></span><button class="em-tl-x" aria-label="退出回放">×</button></div>
 </div>`;
   pdoc.body.appendChild(root);
-  const clk = root.querySelector('.em-clock'); clk.addEventListener('click', () => clk.classList.toggle('em-open'));
+  const clk = root.querySelector('.em-clock'); mountClockPop(clk, { lang: () => { try { return localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; } } });   // U-FIX-4：点时钟 = 时段弹层（窄屏同时展开时间）
   const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
   const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) {} const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
   new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();

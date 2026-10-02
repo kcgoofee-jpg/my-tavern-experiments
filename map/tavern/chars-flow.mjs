@@ -6,6 +6,7 @@ import { MVUBridge } from './mvu-bridge.mjs';
 import { getProfile } from './pack-profile.mjs';
 import { cdnFetch } from './host-tavernhelper.mjs';
 import { createGalleryFlow } from './gallery-flow.mjs';
+import { applyView, paint as paintView } from './clock-view.mjs';
 export const DEPS = [
   'GEN', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'UI', 'clockEl', 'emit', 'life', 'loadCustom', 'post', 'push', 'pushSoon', 'recomputeSoon',
   'runCheck', 'saveRoot', 'BASE', 'CHM', 'uiLang', 'alive', 'chars', 'checkP', 'custom', 'customChat', 'floorNow', 'rep', 'roster', 'transitMod', 'reg', 'regNow',
@@ -60,10 +61,11 @@ export function createCharsFlow(host) {
   function pushMvu() {
     if (!mvuReaders) return;
     clock = mvuBridge.clock();   // { date, time, period, short, full, night, tod, pre }
-    const cs = JSON.stringify(clock);
+    const shown = applyView(clock);   // U-FIX-4：时钟胶囊里选了时段 → 只换地图的看法（tod / night / view），时间与对外的 clock 事件仍是聊天的
+    const cs = JSON.stringify(shown);
     if (cs !== clockSig) { clockSig = cs; const cap = (UI[host.uiLang] || UI.zh).clock; clockEl.hidden = !clock.short; clockEl.lastChild.textContent = clock.short + (clock.pre ? (host.uiLang === 'en' ? ' · pre-start' : ' · 开局前') : '');   // 用户 2026-09-28：时钟图标 + 「世界时间」提示，日期写成「1月3日」
-      clockEl.title = (clock.full ? cap + '：' + clock.full : cap) + (clock.pre ? (host.uiLang === 'en' ? ' (before an opening is chosen: card initial values)' : '（开局前 · 卡初始值：还没选开局，时间 / 地点 / 人物来自卡的 MVU 初始变量）') : ''); clockEl.setAttribute('aria-label', clockEl.title); clockEl.dataset.band = clock.tod || (clock.night ? 'night' : 'day'); emit('clock', { ...clock }); sentClock = null; }
-    if (host.alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...clock }); }
+      clockEl.title = (clock.full ? cap + '：' + clock.full : cap) + (clock.pre ? (host.uiLang === 'en' ? ' (before an opening is chosen: card initial values)' : '（开局前 · 卡初始值：还没选开局，时间 / 地点 / 人物来自卡的 MVU 初始变量）') : ''); clockEl.setAttribute('aria-label', clockEl.title); clockEl.dataset.band = shown.tod || (shown.night ? 'night' : 'day'); paintView(clockEl, host.uiLang); emit('clock', { ...clock }); sentClock = null; }
+    if (host.alive && sentClock !== clockSig) { sentClock = clockSig; post({ type: 'eden-map:clock', ...shown }); }
     const o = mvuBridge.outfit(), os = JSON.stringify(o.items);
     if (os !== outfitSig) { outfitSig = os; outfitNow = o.items; emit('outfit', { items: o.items ? { ...o.items } : null, text: o.text }); sentOutfit = null; }
     if (host.alive && sentOutfit !== outfitSig) { sentOutfit = outfitSig; post({ type: 'eden-map:outfit', items: outfitNow, text: o.text }); }
@@ -71,6 +73,7 @@ export function createCharsFlow(host) {
     if (paths.length || layerSig) { const lv = mvuBridge.layerValues(paths), ls = JSON.stringify(lv); if (ls !== layerSig) { layerSig = ls; sentLayer = null; } if (host.alive && sentLayer !== layerSig) { sentLayer = layerSig; post({ type: 'eden-map:layer-data', values: lv }); } }
   }
   let sentClock = null, sentOutfit = null, layerSig = '', sentLayer = null;
+  clockEl.addEventListener('em-period', () => pushMvu());   // U-FIX-4：胶囊里换了时段 → 重推（签名变了才发）
 
   // v0.9.5 行程：最近 30 楼每楼的地点（MVU 那一楼的变量，拿不到就读原文里的 JSONPatch）+ 人物标签 → 最近 5 段（玩家、人物各 5），存进 eden_map.行程
   let tripsParseModule = null; import(scriptBase + 'tavern/trips-parse.mjs').then(m => { tripsParseModule = m; }).catch(() => {});

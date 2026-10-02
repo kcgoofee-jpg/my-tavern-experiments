@@ -118,7 +118,7 @@ function hook() {
   busOn({ key: 'declared.hostMsg', type: 'message', fn: e => {
     if (!window.__isFromHost?.(e)) return;
     const t = e.data?.type;
-    if (t === 'eden-map:clock') { night = !!e.data.night; try { period = periodOf(normClock(e.data).min).id; } catch (x) {} later(); }
+    if (t === 'eden-map:clock') { night = !!e.data.night; try { period = e.data.view || periodOf(normClock(e.data).min).id; } catch (x) {} later(); }
     else if (t === 'eden-map:layer-data') { setValues(e.data.values); later(); }
     else if (['eden-map:events', 'eden-map:chars', 'eden-map:stash', 'eden-map:inv', 'eden-map:here'].includes(t)) later();
   } });
