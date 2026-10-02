@@ -1892,4 +1892,15 @@ deviations: scene script is blender/upper_oblique.py (not tiancheng_upper.py TC_
 blocker: none
 open: (1) sun direction: s0.2 names tc.SUN_ROT but describes a south-west sun; batches 2-3 must use project.OBLIQUE_SUN_AZ = 225 to match, or the coordinator picks the other; (2) the queue saves a 1.2 GB unused cache .blend per job (deleted my own); (3) remaining batch 1: four 128 spp finals + Eden insets, camera files, tiles, ledger (docs/render-runbook.md, todo RENDER-B1-rest)
 cleanup: done
+=== RESULT EXT-STUDY ===
+status: PARTIAL (paused by the user 2026-10-02)
+items: 1 TH dependency inventory ✓ | 2 prototype + measurements ✓ on local ST (Chromium + WebKit), ✗ Mac TT (first access request denied; second time a generation was running; then paused), ✗ phone | 3 distribution / update / coexistence ✓ | 4 gains and costs ✓ (preliminary) | 5 recommendation ✓ preliminary A | 6 docs/extension-study.md interim, todo EXT-STUDY (paused) + Q-29 ✓
+commits: see git log of the push (one commit: docs(ext-study): interim extension study, paused)
+pushed: yes
+tests: node 1548/1549 (1 skipped as before; docs only) | smoke PASS | arch PASS | probes: none (docs only; prototype measured with its own driver)
+deviations: measurements on an isolated local SillyTavern 1.19 + Playwright instead of Mac TT; WebKit cold 42.9 s (script) vs 4.8 s (extension) is a single sample; the two forms loaded adjacent builds (#302 script, #301 extension)
+blocker: none (paused)
+open: Q-29; resume list in docs/extension-study.md §8 (WebKit cold x3, real Mac TT install / update / chat switch, TT chat surface, real-model MVU round, phone); prototype + raw results in ~/eden-map-review/ext-study/proto/
+installed: prototype extension eden-map-ext 0.0.3 only in the isolated ST data root under the session scratchpad (default-user/extensions); nothing installed or changed in the user TT or in the user own ST data
+cleanup: done (own ST server on port 8000, local git server and test drivers stopped by PID)
 === END ===
