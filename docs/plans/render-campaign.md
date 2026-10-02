@@ -2,7 +2,7 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T10:25:18Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T11:44:59Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
@@ -124,7 +124,7 @@ Below-gate (user spot-check): none
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
 | 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
 | 22 | `base:world` | basemap | done | - |  |  | Final-spec audit / re-render of base map world |
-| 23 | `obl:tc_upper:day` | basemap | open | audit |  |  | Upper oblique base, day: islands only with alpha (D41) |
+| 23 | `obl:tc_upper:day` | basemap | open | render |  |  | Upper oblique base, day: islands only with alpha (D41) |
 | 24 | `obl:tc_upper:dawn` | variant | blocked | render |  |  | Upper oblique, dawn period: islands only with alpha (D41) |
 | 25 | `obl:tc_upper:dusk` | variant | blocked | render |  |  | Upper oblique, dusk period: islands only with alpha (D41) |
 | 26 | `obl:tc_upper:night` | variant | blocked | render |  |  | Upper oblique, night period: islands only with alpha (D41) |

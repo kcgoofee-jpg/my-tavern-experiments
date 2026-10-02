@@ -570,3 +570,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-02T10:25:18Z,var:tc_upper_city:night,tiles,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
 2026-10-02T10:25:18Z,var:tc_upper_city:night,register,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
 2026-10-02T10:25:18Z,var:tc_upper_city:night,ship,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:38:44Z,obl:tc_upper:day,audit,claim,render-b1,,
+2026-10-02T11:44:54Z,obl:tc_upper:day,audit,done,render-b1,,"orthographic branch (blender/project.py, oblique.ortho_camera), blender/upper_oblique.py, grey + colour drafts 2000/16 and 64 spp previews x4 periods; frame 7952x4970 hash 21bc15c11d63dc56; finals handed off (docs/render-runbook.md)"
+2026-10-02T11:44:59Z,obl:tc_upper:day,render,release,render-b1,,

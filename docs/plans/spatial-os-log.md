@@ -1879,5 +1879,17 @@ numbers: room entries added 72 (5364 characters, 63 tokens average, 99 at most; 
 deviations: (1) entry ids use hyphens (map.room.room-b2-03): the published-id gate (tests/wbsync_auto.test.mjs) allows only [a-z0-9.-]. (2) 73 rooms have text (72 table nodes + the sub-room 衣帽间), 12 nodes are name-only (the design said 71 / 13); the sub-room merges into the existing 地点-衣帽间 entry, so 72 new entries. (3) floors are not nodes: the parent chain ends with a synthetic floor item {id: "<parent>#<floor>", floor}. (4) key migration (standard name -> node id) is a tested pure function (custom-record migrateKeys) but not wired into loadCustom: every reader of the custom data (custom-names-view, picker, extension API, tag replay) still keys by standard name and would break; PLACE-1b rewires them together. (5) the custom book entry bodies use the pack record only when a pack is passed (host has no place pack yet); without it the player's own text goes in. (6) two existing tests were adjusted for the new shapes (wbsync_auto legacy-id migration test uses the entries that had an older number; host_split root-store interface and createWorldbook call).
 blocker: none
 open: none
+=== RESULT RENDER-B1 ===
+status: PARTIAL (process and look locked on the Mac, handed off by coordinator decision 2026-10-02)
+items: 1 claim + worktree ✓ (claim released for the next executor) | 2 shared ortho camera + camera file + transparent film ✓ | 3 per period draft -> self-check ✓, 64 spp preview ✓, final ✗ (handed off) | 4 self-check ✓ on drafts / previews, contact sheet ~/eden-map-review/render-b1/contact_prev64.jpg ✓ | 5 tiles / camera files / ledger done ✗ (handed off; audit stage recorded) | 6 queue respected ✓ (drafts only; the four queued finals were cancelled before they rendered)
+commits: d673996e render(upper-oblique): orthographic shared camera, upper tier oblique scene, self-check tools (D41 batch 1)
+         (next) docs(render): batch 1 runbook, todo, ledger audit, RESULT RENDER-B1
+pushed: yes (head #N in the chat report)
+tests: node 1548/1549 (0 fail) | smoke PASS | arch PASS | probes: none (no viewer change)
+render: 27 jobs, 46.5 Mac-min (drafts 2000/16, previews 2000/64, dairy.blend); frame 7952x4970 px (3498.88 x 2186.8 m), camera hash 21bc15c11d63dc56 in all four periods; Eden inset 4078x3380 px at 0.22 m/px
+self-check (64 spp previews): alignment median 0.7 px (best side per island) | clip off light sources: day 0.23 %, dawn 0.25 %, dusk 0.35 %, night 0.23 % | night sourceless bright spots 4 regions / 35 px, all beside emitters | night: every island has warm windows and cool beacons, Eden no ward edge
+deviations: scene script is blender/upper_oblique.py (not tiancheng_upper.py TC_OBLIQUE as the ledger hint says) because the card islands live as 3D assets in blender/islands/*.py and Eden in estate2; Eden got three sub-cones with its three cores (setting s9.4) because the estate2 base cone hides behind the island in a 35 deg view; sun from the south-west (s0.2 text: side light, shadows to the north-east) while tc.SUN_ROT is a north-west sun
+blocker: none
+open: (1) sun direction: s0.2 names tc.SUN_ROT but describes a south-west sun; batches 2-3 must use project.OBLIQUE_SUN_AZ = 225 to match, or the coordinator picks the other; (2) the queue saves a 1.2 GB unused cache .blend per job (deleted my own); (3) remaining batch 1: four 128 spp finals + Eden insets, camera files, tiles, ledger (docs/render-runbook.md, todo RENDER-B1-rest)
 cleanup: done
 === END ===
