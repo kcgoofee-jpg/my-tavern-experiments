@@ -11,7 +11,7 @@ English edition: [README.md](README.md)（以英文版为准）
 
 ## 状态
 
-Spatial OS 重构，阶段 A（契约与通用化）：S0–S3 已完成，下一步 S4；实时状态见 [`docs/todo.md`](docs/todo.md) §0。
+实时状态见 [`docs/todo.md`](docs/todo.md) 顶部的状态块（本 README 不再写阶段状态）。
 **跟随线：`preview`**——每次推送都先落在这条线上。当前发布版本 `0.9.7`（标签 `map-v0.9.7`），重构结束前暂缓发新版。
 
 ## 安装

@@ -25,7 +25,7 @@ step() { local name=$1; shift; local t=$SECONDS
   if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "✗ $name"; tail -15 "$TMP/out" | sed 's/^/    /'; FAIL=1; fi; }
 # D17：文档类关口只警告——失败时打印 ⚠ + 输出，永不置 FAIL（只拦会坏产品的东西）
 warn_step() { local name=$1; shift; local t=$SECONDS
-  if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "⚠ $name（仅警告）"; tail -15 "$TMP/out" | sed 's/^/    /'; fi; }
+  if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "⚠ ${name}（仅警告）"; tail -15 "$TMP/out" | sed 's/^/    /'; fi; }
 
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）

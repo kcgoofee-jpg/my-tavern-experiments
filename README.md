@@ -12,8 +12,7 @@ engine that knows no card, plus data **packs**. The first pack describes the car
 
 ## Status
 
-Spatial OS refactor, stage A (contract and generalisation): steps S0–S3 are done, S4 is next; the live state is in
-[`docs/todo.md`](docs/todo.md) §0. **Follow line: `preview`** — every push lands there first. Current release:
+The live state is the status block at the top of [`docs/todo.md`](docs/todo.md) (this README carries no stage status). **Follow line: `preview`** — every push lands there first. Current release:
 `0.9.7` (tag `map-v0.9.7`), on hold until the refactor ends.
 
 ## Install
