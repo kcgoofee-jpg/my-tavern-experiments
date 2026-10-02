@@ -133,6 +133,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `vision.mjs` | 视线锥几何：守卫视野被墙段截断、巡逻环、点是否被看见的判定。 |
 | `vocab.mjs` | 内核的发现词表（K-R38、K-R42）：变量、人物行、名册槽位的分语言字段名词表，不含任何卡的名字。 |
 | `walk.mjs` | 确定性时钟 tick 与任意维插值行走器（禁止瞬移，减少动态效果时一步到位）。 |
+| `wb-peek.mjs` | 地点卡「世界书档案」的摘要（W8，U-FIX-1）：普通条目取可读正文；模板条目只取一句写这个地点的散文，脚本本身不外露。 |
 | `weather.mjs` | 天气核心：预设表、由剧情与时钟推天气、粒子场与闪电时序。 |
 | `yaml-shape.mjs` | 卡的变量初始化文本的形状：JSON 或一个小的 YAML 子集，别的一概不收（K-R94）。纯函数。 |
 
@@ -240,6 +241,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `characters-parse.mjs` | 人物栏：从聊天标签和 MVU 变量找出人物及其最新位置。 |
 | `chars-flow.mjs` | 宿主的人物与世界时间流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。`createCharsFlow(host)`。 |
 | `check-failure-report.mjs` | 检定失败报告环：结构化报告在下一轮注入，让剧情顺着客观事实走。 |
+| `clock-view.mjs` | 时钟胶囊的时段弹层（U-FIX-4）：跟随聊天时间，或在地图上预览某个时段（`view`、`tod`、`night`）；只在本次会话有效，聊天时间不变。 |
 | `compose-templates.mjs` | 聊天输入模板（「去这里」「追问这件事」）：填进输入框，从不发送。 |
 | `context.mjs` | ContextPipeline：消息窗口规范化、轮次计算、自定义标签重放、行程；纯数据进出。 |
 | `data-source-registry.mjs` | 数据来源注册表：宿主从哪些地方读聊天状态，供设置与 `EdenMap.sources()` 枚举。 |

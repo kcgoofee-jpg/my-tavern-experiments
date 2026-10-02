@@ -152,6 +152,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `vision.mjs` | Vision-cone geometry: guard fields of view clipped by wall segments, patrol rings, point-visibility tests. |
 | `vocab.mjs` | The kernel's discovery vocabulary (K-R38, K-R42): per-language field-name words for variables, person rows and roster slots; no card names. |
 | `walk.mjs` | Deterministic clock tick and an N-dimensional interpolating walker (no teleporting; reduced motion snaps). |
+| `wb-peek.mjs` | The place card's worldbook-archive summary (W8, U-FIX-1): readable text from a plain entry; from a template entry only a prose string about the place, never the script. |
 | `weather.mjs` | Weather core: preset table, weather from story and clock, particle field and lightning timing. |
 | `yaml-shape.mjs` | The shape of a card's variable initialisation text: JSON or a small YAML subset, nothing else (K-R94). Pure. |
 
@@ -260,6 +261,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `characters-parse.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
 | `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
 | `check-failure-report.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
+| `clock-view.mjs` | The clock chip's period popover (U-FIX-4): follow the chat time or preview one period band on the map (`view`, `tod`, `night`); session only, the chat time is unchanged. |
 | `compose-templates.mjs` | Chat-input templates ("go here", "ask about this"): fill the input box, never send. |
 | `context.mjs` | ContextPipeline: message window normalization, round computation, custom tag replay, trips; pure data in and out. |
 | `data-source-registry.mjs` | Data source registry: where the host reads chat state from, for settings and `EdenMap.sources()`. |
