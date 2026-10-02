@@ -48,3 +48,13 @@ test('X-01: eden-map:esc may name its source; the host closes the replay bar fir
   assert.equal(check({ type: 'eden-map:clock', view: 'day' }).ok, true);
   assert.match(readFileSync(R('map/tavern/eden-map.js'), 'utf8'), /e\.data\.from === 'key' && !TL\.tlEl\.hidden\) TL\.tlExit\(\)/);
 });
+
+test('HEADER-1: 「<floor word> <room>」 reads as the room with the pack\'s room plan; the plan joins the engine per call, the plain registry is unchanged', () => {
+  const plan = JSON.parse(readFileSync(R('map/data/eden_estate_rooms.json'), 'utf8'));
+  assert.equal(chainOf(reg, '地下二层 惩罚室', plan), '伊甸庄园 · 惩罚室');
+  assert.equal(chainOf(reg, '地下二层惩罚室', plan), '伊甸庄园 · 惩罚室');
+  assert.equal(chainOf(reg, '惩罚室', plan), '伊甸庄园 · 惩罚室');
+  assert.equal(chainOf(reg, '地下二层', plan), null, 'a floor word alone is not a room');
+  assert.equal(chainOf(reg, '主卧'), '伊甸庄园 · 主卧', 'without a plan nothing changes');
+  assert.equal(chainOf(reg, '地下二层 惩罚室'), null, 'the plain registry does not know the plan rooms');
+});

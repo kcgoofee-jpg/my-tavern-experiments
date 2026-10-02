@@ -234,21 +234,18 @@ const EventsView = (() => {
     const top = list.filter(live).sort((a, b) => (b.last || 0) - (a.last || 0))[0] || list[0];
     S.label('ev', `<i class="shp ${shp(top ? grpOf(top) : '其他')}" style="--c:${top ? lk(top)[1] : 'var(--muted)'}" aria-hidden="true"></i>${esc(uiTextOr('ev.tab', '事态'))} <em>${n || list.length}</em>${fresh ? `<b class="nd" aria-label="${esc(uiTextOr('ev.bar_new', '{n} 条新', { n: fresh }))}"></b>` : ''}`, { n: n || list.length, fresh });
     const sum = bar.querySelector('.evsum');
-    if (sum) sum.innerHTML = `<span class="sum">${esc(n ? uiTextOr('ev.bar_live', '{n} 起进行中', { n }) : uiTextOr('ev.bar_none', '暂无进行中'))}${list.length !== n ? ' · ' + esc(uiTextOr('ev.bar_total', '共 {n} 起事态', { n: list.length })) : ''}${hid ? ' · ' + esc(uiTextOr('ev.filtered', '已隐藏 {n} 类', { n: hid })) : ''}</span>${fresh ? `<span class="new">${esc(uiTextOr('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}`;
+    const sumParts = [n ? '' : uiTextOr('ev.bar_none', '暂无进行中'), n && list.length !== n ? uiTextOr('ev.bar_total', '共 {n} 起事态', { n: list.length }) : '', hid ? uiTextOr('ev.filtered', '已隐藏 {n} 类', { n: hid }) : ''].filter(Boolean);   // HEADER-1: no number the tab already shows
+    if (sum) sum.innerHTML = `${sumParts.length ? `<span class="sum">${esc(sumParts.join(' · '))}</span>` : ''}${fresh ? `<span class="new">${esc(uiTextOr('ev.bar_new', '{n} 条新', { n: fresh }))}</span>` : ''}`;
     // 图例：9 个大类都列出（没有事件的变淡），数字 = 该类条数；点一下隐藏 / 恢复
     const cnt = {}; for (const e of list) cnt[grpOf(e)] = (cnt[grpOf(e)] || 0) + 1;   // 用筛选后的：默认关的类型不涨图例数字（整组关掉的组照列，off.has(g)）
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
-    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
-      + (hintOnce() ? `<small>${esc(uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示');
+    bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" title="${esc(uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示'))}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join(''); bar.querySelector('.evleg').setAttribute('aria-label', uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示'));   // HEADER-1: the explanation is the chips' tooltip and the group's name, not a line of its own
     const hidN = raw().filter(e => listed(e) && isHid(e)); if (!hidN.length) showHid = false;
     bar.querySelector('.evleg').insertAdjacentHTML('beforeend', HX.hiddenToggle(hidN.length, showHid));
     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
     bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(uiTextOr('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(uiTextOr('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? uiTextOr('ev.feed', '数据源') : uiTextOr('ev.floor', '聊天第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button>${HX.hideBtn(evKey(e), uiTextOr('ev.hide', '隐藏这条'))}</li>`).join('')
       + (showHid ? hidN.map(e => HX.hiddenRow(evKey(e), [tn(e.cat), whereHere(e), e.text].filter(Boolean).map(esc).join(' · '))).join('') : '');
   }
-  // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
-  let hintSeen = null;
-  function hintOnce() { if (!isOpenNow()) return false; if (hintSeen === null) { try { hintSeen = !!LocalStore.get('edenMapLegHint'); LocalStore.set('edenMapLegHint', '1'); } catch (e) { hintSeen = true; } } return !hintSeen; }
   function updateToggle() {
     // P3-C：「事态」行由 LayerRegistry 菜单渲染（app/layer-host.mjs renderLayerMenu）；这里只更新计数文案与显隐
     const tg = document.getElementById('tgEvents'); if (!tg) return;
@@ -311,6 +308,7 @@ const EventsView = (() => {
   #evbar .chtab .shp{width:10px;height:10px;border-radius:50%;background:transparent;box-shadow:inset 0 0 0 2px currentColor}
   #evbar [role=tab] .nd{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--alert);margin-left:2px;box-shadow:0 0 0 2px var(--surface)}
   #evbar .evsum{display:flex;gap:var(--sp-4,8px);align-items:baseline;padding:var(--sp-2,4px) var(--sp-3,6px) var(--sp-3,6px);font-size:var(--fs-small,12px);color:var(--ink-2)}
+  #evbar .evsum:empty{display:none}
   #evbar .sum{font-variant-numeric:tabular-nums;min-width:0}
   #evbar .new{color:var(--accent);font-weight:700;white-space:nowrap}
   #evbar ol{list-style:none;margin:0;padding:0 var(--sp-1,2px) var(--sp-3,6px)}

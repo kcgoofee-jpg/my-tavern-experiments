@@ -28,7 +28,8 @@ export function createCharsFlow(host) {
   // I-21：场景头里的地点认不认得出节点（K-R105）：节点树定位模块与注册表都到了才算；之前一律「认不出」= 沿用变量值（旧行为），到了再推一次
   let locateM = null;
   const resolves = place => { try { return !!(locateM && host.regNow && locateM.locate(host.regNow, place)); } catch (e) { return false; } };
-  const placeText = place => { try { return locateM && host.regNow ? locateM.chainOf(host.regNow, place) : null; } catch (e) { return null; } };   // U-FIX-5 H2-01：地点栏「楼 · 房间」
+  let roomPlan = null;   // the pack's layered room plan (manifest data.rooms): the place pill reads 「<floor word> <room>」 as the room (HEADER-1); a late arrival re-draws the pill
+  const placeText = place => { try { return locateM && host.regNow ? locateM.chainOf(host.regNow, place, roomPlan) : null; } catch (e) { return null; } };   // U-FIX-5 H2-01：地点栏「楼 · 房间」
   const mvuBridge = new MVUBridge({
     life, pack: PACK_IN, packId: PACK_ID, manifest: MAN, resolves,
     lang: () => (host.uiLang === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,
@@ -39,6 +40,7 @@ export function createCharsFlow(host) {
     onRoster: () => sendChars(), fetchJSON: rel => cdnFetch(host.BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), onProfile: () => { sendVarMap(); push(); recomputeSoon(); sendChars(); },   // 包的变量与名册声明（清单 vars + 叠加层，K-R69）由桥取；到之前按字段名自动找
   });
   import(scriptBase + 'tavern/spatial-contract.mjs').then(async m => { locateM = m; await host.reg?.(); if (!life.dead) push(); }).catch(e => console.warn('[map] chars-flow: spatial-contract import failed', e));   // reg 在入口里晚于本工厂初始化：模块异步到了以后再取，不在装配时碰
+  MAN.then(man => { const rp = man?.data?.rooms; if (!rp || rp === 'builtin') return; return cdnFetch(host.BASE + (PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/') + rp).then(r => r.ok ? r.json() : null).then(j => { if (j?.rooms) { roomPlan = j; if (!life.dead) push(); } }); }).catch(e => console.warn('[map] chars-flow: room plan fetch failed', e));
   // P3-B 名册装配（core/roster.mjs）：mvu / table-db / fallback 三个来源桥里已注册；chat / baibai 只有宿主有——
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   mvuBridge.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });

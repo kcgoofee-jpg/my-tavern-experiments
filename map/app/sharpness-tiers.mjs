@@ -236,7 +236,7 @@ export function declutter() { clearTimeout(declT); declT = setTimeout(() => {
   const tier = e => { if (e.classList.contains('lhide')) return; const lr = box(e.querySelector('.lab')); if (lr && (lr.right < 0 || lr.left > innerWidth || lr.bottom < 0 || lr.top > innerHeight)) return; const t = tierOf(++placed, caps); e.classList.toggle('l1', t === 'l1'); if (!t && rank(e) > 0) e.classList.add('lhide'); };   // L1 names stay visible on far islands (the upper tier shows its major places at the default zoom); the caps hide the rest
   // 控制列（手机半开抽屉时横排贴在抽屉上沿）当障碍：压在它下面的地名收起，不再被按钮盖住（v2 门控遗留）
   const dk = $('#dock'), dockR = []; if (dk && !dk.hidden && getComputedStyle(dk).display !== 'none') for (const c of dk.children) { const r = c.offsetParent && box(c); if (r) { kept.push(r); dockR.push(r); } }
-  for (const sel of ['#foot', '#hereGo', 'header']) { const x = $(sel), r = x && x.offsetParent !== null && box(x); if (r) kept.push(r); }   // more HUD rects are obstacles (N10 9): the level strip and the zoom column are in the dock above
+  for (const sel of ['header']) { const x = $(sel), r = x && x.offsetParent !== null && box(x); if (r) kept.push(r); }   // more HUD rects are obstacles (N10 9): the level strip and the zoom column are in the dock above
   for (const e of sorted.filter(e => rank(e) <= 1)) { place(e, box(e.querySelector('.lab')), false); if (rank(e) === 0) e.classList.remove('lhide'); tier(e); }   // the player's place and the open card are never hidden
   for (const e of words.filter(e => e.classList.contains('realm'))) { const r = box(e.querySelector('b')); if (r) kept.push(r); }
   // v0.9.2：事态标题先于普通地名：事态点所在的地名收起，只留一条标签（事态标题）

@@ -113,7 +113,13 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-bar .em-here .em-more { flex: none; margin-left: 2px; color: var(--em-ink); }
   #${ID} .em-bar .em-here.em-full .em-nm { white-space: normal; }
   #${ID} .em-bar .em-here.em-unm { color: var(--em-ink); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-  #${ID} .em-bar .em-here.em-unsure { opacity: .6; font-style: italic; }
+  /* replay on: the clock and the place pill read 「回放」 (accent outline) instead of the live values */
+  #${ID}.em-replay .em-bar .em-here[data-rp], #${ID}.em-replay .em-bar .em-clock[data-rp] { box-shadow: inset 0 0 0 1px var(--em-accent); color: var(--em-accent); border-radius: 999px; padding-inline: 10px; }
+  #${ID}.em-replay .em-bar .em-here[data-rp] > *, #${ID}.em-replay .em-bar .em-clock[data-rp] > * { display: none; }
+  #${ID}.em-replay .em-bar .em-clock[data-rp]::after { display: none; }
+  #${ID}.em-replay .em-bar .em-here[data-rp]::before, #${ID}.em-replay .em-bar .em-clock[data-rp]::before { content: attr(data-rp); font-weight: 700; }
+  #${ID} .em-bar .em-here.em-unsure { color: var(--em-ink); }   /* pending / stale: normal ink, a hollow ring after the name, the reason in the tooltip (HEADER-1) */
+  #${ID} .em-bar .em-here.em-unsure::after { content: ''; flex: none; box-sizing: border-box; width: 7px; height: 7px; margin-left: 6px; border: 1.5px solid currentColor; border-radius: 50%; }
   #${ID} .em-bar .em-here:empty { display: none; }
   #${ID} .em-bar .em-here.em-full { white-space: normal; max-width: 60%; line-height: 1.35; padding: 4px 0; }   /* 触屏没有悬停：点一下看全文 */
   #${ID} .em-bar button { font: inherit; cursor: pointer; }
@@ -223,9 +229,11 @@ export function mount(pdoc, ID, scriptOwner) {
   pdoc.body.appendChild(root);
   const clk = root.querySelector('.em-clock'); mountClockPop(clk, { lang: () => { try { return localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { return 'zh'; } } });   // U-FIX-4：点时钟 = 时段弹层（窄屏同时展开时间）
   const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
-  const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
+  const viewerStuck = () => { try { return !!root.querySelector('.em-frame')?.contentDocument?.querySelector('#tierState.stuck'); } catch (e) { return false; } };   // HEADER-1: the viewer's stuck load shows on this one dot (the viewer's own dot hides when embedded)
+  const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } const st = viewerStuck() ? 'fail' : ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
   new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();
-  dot.addEventListener('click', () => { if (dot.dataset.st === 'fail') root.querySelector('.em-line')?.click(); });   // failed: the reason and the way out is the line picker (the load overlay keeps its retry / swap buttons)
+  { const f0 = root.querySelector('.em-frame'), watch = () => { try { const t = f0.contentDocument?.querySelector('#tierState'); if (t) new MutationObserver(paintDot).observe(t, { attributes: true, attributeFilter: ['class'] }); } catch (e) { /* cross-origin frame: no viewer state to mirror */ } paintDot(); }; f0.addEventListener('load', watch); watch(); }
+  dot.addEventListener('click', () => { if (viewerStuck()) { try { root.querySelector('.em-frame').contentDocument.querySelector('#tierState').click(); } catch (e) { /* frame gone */ } } else if (dot.dataset.st === 'fail') root.querySelector('.em-line')?.click(); });   // stuck viewer: its own retry; failed load: the reason and the way out is the line picker (the load overlay keeps its retry / swap buttons)
   // N10 (5): the replay bar docks as a glass-1 bar above the drawer peek; the viewer shifts its dock up by the bar's height (--tl-h on the viewer's root, the frame is same-origin)
   const tl = root.querySelector('.em-tl'), fr = root.querySelector('.em-frame'), setTl = () => { try { fr.contentDocument?.documentElement.style.setProperty('--tl-h', tl.hidden ? '0px' : (tl.offsetHeight + 8) + 'px'); } catch (e) {} };
   new MutationObserver(setTl).observe(tl, { attributes: true, attributeFilter: ['hidden'] }); fr.addEventListener('load', setTl);

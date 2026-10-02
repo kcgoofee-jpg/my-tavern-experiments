@@ -91,7 +91,6 @@ function fitIn(r, immediately) { const f = frameRect(r, osdViewer.viewport.getCo
 export const ALIAS = {};   // 世界图地点名 → 落在它里面的词；boot.mjs 按每个地点的 here_words 建，再并进它的各层地图 / 地标别名
 export function markHere(v) {
   v = (v || '').replace('{{user}}', '');
-  $('#hereGo').hidden = !hereRes(v);
   // 解析出的落点也算：主场景里的任何地方 → 上层的「主场景」标记与世界图的「主城」；主城任一层 → 「主城」；地标 → 该标记
   const r = hereRes(v), m = currentMapId && mapRegistry.maps[currentMapId];
   const extra = new Set();
@@ -121,6 +120,7 @@ export function jumpHere(v) {   // 只由「当前位置」按钮调用（不再
   if (!r || !mapRegistry?.maps[r.map] || mapRegistry.maps[r.map].status === 'planned') return false;
   // 本次会话主场景三维加载失败过、或省流设备：落到它的平面替身（上层的主场景地标），地点卡里有「进入主场景」
   if (isScene(r.map) && (estFail || leanBg())) { const sub = estateStandIn(r.map); if (sub) r = { ...r, map: sub.map, marker: sub.marker }; }
+  if (r.map === currentMapId && isScene(r.map)) { estateRoom(); return true; }   // HEADER-1: in a 3D page the locate icon sends the page back to the room of the current place
   if (r.map !== currentMapId) { setPendingFocus(r.marker || null); setPendingHome(!r.marker && !r.place); go(r.map); return true; }
   if ((r.marker || r.place) && osdViewer?.world.getItemCount()) { userMoved = false; markHere(v); focusHere = true; focusStart(false); }   // 同一张图：飞到地标 / 世界地名
   return true;

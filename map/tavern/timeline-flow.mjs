@@ -1,7 +1,7 @@
 // 时间轴回放（Part 5-4）与 W3 关键帧缓存的宿主侧接线（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 export const DEPS = [
-  'mvuBridge', 'scriptBase', 'life', 'post', 'push', 'root', 'sendEvents', 'sendTrips', 'CHM', 'tripsParseModule', 'alive', 'chars', 'floorNow', 'rep', 'roster',
+  'mvuBridge', 'scriptBase', 'life', 'post', 'push', 'root', 'sendEvents', 'sendTrips', 'CHM', 'tripsParseModule', 'alive', 'chars', 'floorNow', 'rep', 'roster', 'uiLang',
 ];
 export function createTimelineFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('timeline-flow: missing dep ' + k);
@@ -56,7 +56,7 @@ export function createTimelineFlow(host) {
     post({ type: 'eden-map:trips', items });
   }
   function tlScrub(f) {
-    f = Math.max(0, Math.min(host.floorNow, Math.round(f)));
+    f = Math.max(0, Math.min(host.floorNow, Math.round(f))); rpFloor = f; paintReplay();
     const st = timelineModule ? timelineModule.liveAtNewest(tlState(f), f, host.floorNow, () => mvuBridge.here()) : tlState(f);   // SW2-04: the newest floor shows the live place
     tlV.textContent = [`聊天第 ${f} 楼`, st?.time, st?.here].filter(Boolean).join(' · ');   // U-FIX-5 R-01 / D1-01：楼号在最前（窄时截掉的是地点，不是楼号），写明是聊天楼层
     if (!st || !host.alive) return;
@@ -64,9 +64,18 @@ export function createTimelineFlow(host) {
     post({ type: 'eden-map:chars', v: 1, floor: f, items: st.chars, replay: true });
     tlTrail(f);   // 拖到哪一楼，就重画到那一楼为止的主角轨迹
   }
+  // HEADER-1: while the replay is on, the host clock and the place pill show one clear 「回放」 state (accent outline, tooltip "showing floor N"), not the live values beside the past ones
+  const RP = { zh: ['回放', f => `显示聊天第 ${f} 楼，不是当下`], en: ['Replay', f => `Showing message #${f}, not the latest`] };
+  const rpEls = () => [root.querySelector('.em-here'), root.querySelector('.em-clock')].filter(Boolean);
+  let rpFloor = -1;
+  function paintReplay() {
+    const on = tlOn, [word, tip] = RP[host.uiLang === 'en' ? 'en' : 'zh']; root.classList.toggle('em-replay', on);
+    for (const el of rpEls()) { if (on) { el.dataset.rp = word; el.title = tip(rpFloor); el.setAttribute('aria-label', word + ' · ' + tip(rpFloor)); } else { delete el.dataset.rp; el.removeAttribute('aria-label'); } }
+  }
+  root.addEventListener('em-replay-repaint', () => { if (tlOn) paintReplay(); });
   function tlEnter() { if (!timelineModule || host.floorNow < 1) return; tlOn = true; tlEl.hidden = false; tlBtn.classList.add('on'); tlR.max = host.floorNow; tlR.value = host.floorNow; tlScrub(host.floorNow); }
   function tlExit() {
-    if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on');
+    if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); paintReplay();
     if (life.dead) return;
     tlTrailAt = -1; sendTrips();   // 轨迹恢复成当下的行程（回放期间临时画过的那条线撤掉）
     push(); if (host.alive) post({ type: 'eden-map:here', value: mvuBridge.here() });   // U-FIX-7：回放推过别的地点；push 只在地点变了才发，这里把当下的地点补发回去（当前位置按钮、高亮跟着回来）

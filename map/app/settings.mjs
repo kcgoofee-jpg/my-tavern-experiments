@@ -1,4 +1,5 @@
 // 设置弹层：分页、SettingsApi.registerSection、搜索、initSettings、关于 / 检查更新、自检。
+import { creditSections } from './credits-extra.mjs';
 import { $, esc } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
@@ -97,6 +98,7 @@ function renderLicense() {
     if (cr?.card?.creator) row(uiTextOr('s.lic_orig', '原作角色卡'), uiTextOr('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator }));
     if (typeof cr?.card?.url === 'string' && /^https:\/\//.test(cr.card.url)) { const r = document.createElement('div'), a = document.createElement('a'); r.className = 'row'; a.href = cr.card.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = uiTextOr('s.lic_post_go', '打开');   // 原作发布帖的链接来自包的 credits.card.url（包数据；引擎里没有卡名）
       r.append(Object.assign(document.createElement('span'), { textContent: uiTextOr('s.lic_post', '原作发布帖') }), a); box.appendChild(r); } }
+  box.append(...creditSections());   // HEADER-1: this map's source line and the related project
   label(uiTextOr('s.lic_disc', '免责声明'));
   const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
   p.textContent = uiTextOr('s.lic_disc_v', '地图为粉丝演绎：地点与形制以原作设定为准，地图仅作补充呈现，不对地图内容的准确性负责。三维模型的贴图与纹理来自 Poly Haven 与 ambientCG（CC0 协议）。');

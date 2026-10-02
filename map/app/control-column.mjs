@@ -1,12 +1,10 @@
-// 控制列：层切换条 / 缩放旁的 #dock、标注开关、「⋯」设置首页的三个动作（上一级 / 当前位置 / 关闭地图）（S5-2 自 shell.mjs 拆出，行为不变）。
+// 控制列：层切换条 / 缩放旁的 #dock、标注开关、「⋯」设置首页的动作（返回上一级 / 看全区 / 标注；HEADER-1：当前位置在缩放组的定位图标，关闭在宿主的 ×）（S5-2 自 shell.mjs 拆出，行为不变）。
 import { mapRegistry, currentMapId } from './state.mjs';
 import { $, iconSvg } from './dom-helpers.mjs';
 import { announce } from './screen-reader-announce.mjs';
-import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { localName, uiText } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
-import { jumpHere } from './locate.mjs';
 import { showSet } from './settings.mjs';
 import { onBuilt } from './settings-pages.mjs';
 import { parentMap } from './nodes-runtime.mjs';
@@ -39,14 +37,11 @@ export function initActs() {
   tb.onclick = e => { e.stopPropagation(); showSet(pop.hidden); };
   onBuilt('home', () => {
     $('#actUp').addEventListener('click', () => showSet(false));
-    $('#actHere').onclick = () => { showSet(false); jumpHere($('#here').value); };
     $('#actAll').onclick = () => { showSet(false); $('#zAll').click(); };
     $('#actLbl').onclick = () => { toggleLabels(); };
-    $('#actClose').onclick = () => { showSet(false); post({ type: 'eden-map:esc' }); };   // 卡内脚本收到 esc 就关面板（旧版卡内脚本也认）
     setActs(); });
 }
 
-export function setActs() { const up = $('#actUp'), cl = $('#actClose'), hg = $('#actHere'), par = currentMapId && parentMap(currentMapId), nar = narrowNow(); if (!up) return;   // 首页还没建（设置没开过）：没有可摆的
+export function setActs() { const up = $('#actUp'), par = currentMapId && parentMap(currentMapId), nar = narrowNow(); if (!up) return;   // 首页还没建（设置没开过）：没有可摆的
   up.hidden = !(nar && par && mapRegistry.maps[par]); if (!up.hidden) { up.dataset.go = par; up.textContent = uiText('act_up', { title: localName(mapRegistry.maps[par], 'title') }); }
-  hg.hidden = !(nar && !$('#hereGo').hidden);
-  cl.hidden = !nar || window.top === window; $('#setPop .acts').hidden = !nar && up.hidden && cl.hidden && hg.hidden; }
+  $('#setPop .acts').hidden = !nar && up.hidden; }

@@ -49,7 +49,6 @@ export function applyI18n() {
   tierLabels();
   paintSegs();
   $('#setBtn').setAttribute('aria-label', uiTextOr('settings_title', '设置'));
-  $('#upBtn').setAttribute('aria-label', uiTextOr('s.up', '上一级')); $('#upBtn').title = uiTextOr('s.up', '上一级');
   window.ViewerDrawer?.text({ expand: uiTextOr('s.expand', '展开'), collapse: uiTextOr('s.collapse', '收起'), region: uiTextOr('s.sheet', '事态、人物与地点') });
   if (window.ViewerDrawer) { ViewerDrawer.label('pl', esc(uiTextOr('s.place', '地点')), {}); $('#cardEmpty').dataset.um = '-'; placeEmpty(typeof plugins.UnmappedPlacePicker !== 'undefined' ? plugins.UnmappedPlacePicker.name : null); }
   stDotLabel(); renderSelfCheck(); renderAbout(); setPage(setPageNow, true);

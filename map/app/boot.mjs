@@ -173,16 +173,12 @@ async function mainInner() {
     onPause: () => { suspendFpsMeter(true); subpageSession?.frame?.contentWindow?.postMessage({ type: 'estate:pause' }, SUB_ORIGIN); },
     onResume: () => { suspendFpsMeter(false); subpageSession?.frame?.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN); },
   } });
-  { let ct = 0; const cb = $('#creditBtn'), cr = $('#credit');
-    const show = on => { cr.hidden = !on; cb.setAttribute('aria-expanded', on); clearTimeout(ct); if (on) ct = setTimeout(() => show(false), 6000); };
-    cb.onclick = e => { e.stopPropagation(); show(cr.hidden); }; cr.onclick = () => show(false); window.__showCredits = show; }
   $('#cardX').onclick = () => closeCard(true);
   const qs = new URLSearchParams(location.search), q = qs.get('map');
   if (qs.get('here')) $('#here').value = qs.get('here');   // 调试：?here=主卧
   if (mapRegistry.maps[q] && mapRegistry.maps[q].status !== 'planned') go(q);
   else if (!startInScene()) go(mapRegistry.start);   // 用户 2026-09-28：总是先开世界图；跳到当前地点只在点「当前位置」时。
   // 唯一例外（任务三）：人**已经**在主场景（三维场景）里时跳过宏观世界层，直接下钻到主场景对应楼层——判定收在 locate.startInScene。
-  $('#hereGo').onclick = () => jumpHere($('#here').value);
   plugins.EventsView.init(); plugins.EventsView.pollFeeds();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）
   post({ type: 'eden-map:ready', proto: PROTO });
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）

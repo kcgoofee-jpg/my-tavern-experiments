@@ -12,7 +12,7 @@ import { stripOoc } from './ooc.mjs';
 import { SELF_WORDS } from './vocab.mjs';
 
 /** 扫描规则的版本：规则改了就加一——存着的文字行带旧版本的指纹，下一轮在窗口里按新规则重放一次（误收的行自愈） */
-export const SCAN_VER = 5;   // 5: self / body words are never items (DRAWER-1); 4: OOC segments are stripped before the scan (D32). A line scanned by an older build is replayed once
+export const SCAN_VER = 6;   // 6: a single character left after the quantifier is an item only behind a counted quantifier (「一把刀」), never behind a bare 「身」 / 「体」 start (HEADER-1); 5: self / body words are never items (DRAWER-1); 4: OOC segments are stripped before the scan (D32). A line scanned by an older build is replayed once
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
 export const MAX_NAME = 20;         // 物品名的长度上限（更长多半是句子而不是名词）
 const NEAR = 24;                    // 已知物品名：动词要出现在它前面这么多字符内才算「这一下拿的是它」
@@ -118,6 +118,8 @@ function tidy(s, min = 2) {
 const bareOk = n => n.length >= 2 && n.length <= 8 && !GENERIC.has(n) && !PRONOUN.test(n);
 const ASPECT_RE = `(?:${ASPECT.join('|')})?`;
 /** 只剩一个量词短语（「一把」「两枚」）：那是量词，后面的东西没抓到——不是物品名 */
+/** a quantifier phrase that carries a number or a demonstrative (「一把」「这枚」), as against a bare quantifier character */
+const COUNTED = /^[一二三四五六七八九十两几数半整满这那此]/;
 const QUANT_ONLY = new RegExp(`^${QUANT_RE}$`);
 /** 英文名词收尾清理：切在标点与常见介词 / 连词处，再去掉开头的限定词 */
 const tidyEn = s => String(s ?? '').split(/[.,;:!?\n]|\b(?:and|then|from|into|off|with|for|to)\b/i)[0].trim().replace(/\s+/g, ' ').replace(DET_LEAD, '').slice(0, 40);
@@ -209,8 +211,8 @@ export function scan(s, o = {}) {
   const hits = [];   // [{ at, verb, name, … }]：带位置以便按出现顺序排； quoted = true 的名字原样收（不做断句清理）
   const each = (re, f) => { re.lastIndex = 0; for (let m; (m = re.exec(text));) f(m); };
   for (const re of C.quoted) each(re, m => { if (!INTO.has(m[1])) hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }); });
-  each(C.bare, m => { if (!/^\s*的/.test(m[3]) && !INTO.has(m[1])) hits.push({ at: m.index, verb: m[1], name: m[3], quant: !!m[2] }); });   // 「带走的动静」：动词在修饰后面的名词，不是拿到了它
-  each(C.bareStrict, m => { if (m[2]) hits.push({ at: m.index, verb: m[1], name: m[3], quant: true }); });   // 严格类：必须带量词
+  each(C.bare, m => { if (!/^\s*的/.test(m[3]) && !INTO.has(m[1])) hits.push({ at: m.index, verb: m[1], name: m[3], quant: !!m[2], qn: m[2] }); });   // 「带走的动静」：动词在修饰后面的名词，不是拿到了它
+  each(C.bareStrict, m => { if (m[2]) hits.push({ at: m.index, verb: m[1], name: m[3], quant: true, qn: m[2] }); });   // 严格类：必须带量词
   each(C.ba, m => hits.push({ at: m.index, verb: m[2], name: m[1] }));
   each(C.en, m => hits.push({ at: m.index, verb: m[1], name: m[2], en: true }));
   for (const re of C.enQuoted) each(re, m => hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }));   // 英文严格类：必须是引号名
@@ -229,6 +231,7 @@ export function scan(s, o = {}) {
     if (out.length >= limit) break;
     const name = h.en ? tidyEn(h.name) : h.quoted || h.known ? clip(h.name, MAX_NAME) : tidy(h.name, h.quant ? 1 : 2);
     if (!isItemName(name) || C.not(name) || seen.has(name) || QUANT_ONLY.test(name)) continue;
+    if (h.quant && !h.quoted && !h.known && !h.en && [...name].length === 1 && !COUNTED.test(h.qn || '')) continue;   // 「身体」「身子」: 「身」 read as a quantifier leaves one character
     if (!h.quoted && !h.known && !h.en && !h.quant && !bareOk(name)) continue;
     if (!h.quoted && !h.known && !h.en && PLACE_END.test(name) && name.length <= 3) continue;   // 「嘴里」「手中」：去处   // 无引号 / 无量词 / 不在已知表：只在名字够具体时才收
     if (!h.known && blocked(text, h.at, h.verb, sp)) continue;                    // 否定 / 疑问 / 对话 / 意图（已知名路径在上面查过）

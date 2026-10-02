@@ -12,7 +12,7 @@ const grp = (pg, key, zh, sub, zhSub, id = '') => `<button type="button" data-pa
 /** 行表：[{ page, rows: [{ k: 行键, o: 顺序, h: 标记 }] }]。顺序数与 registerSection 的 order 同一把尺。 */
 export const TABLE = [
   { page: 'home', rows: [
-    { k: 'acts', o: 0, h: `<div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actHere" hidden data-i18n="here_go">当前位置</button><button type="button" class="btn" id="actAll" data-i18n="zoom_all">看全区</button><button type="button" class="btn" id="actLbl" data-i18n="labels_tog">显示标注</button><button type="button" class="btn" id="actClose" hidden data-i18n="act_close">关闭地图</button></div>` },
+    { k: 'acts', o: 0, h: `<div class="acts" hidden><button type="button" class="btn" id="actUp" hidden></button><button type="button" class="btn" id="actAll" data-i18n="zoom_all">看全区</button><button type="button" class="btn" id="actLbl" data-i18n="labels_tog">显示标注</button></div>` },
     { k: 'search', o: 10, h: `<input type="search" id="setQ" data-i18n-ph="s.search" placeholder="搜索设置" autocomplete="off"><div id="setHits"></div>` },
     { k: 'common', o: 20, h: `<h3 class="scom" data-i18n="s.common">常用</h3>`
       + seg('themeSeg', 'theme_title', '界面主题', b('th', 'auto', 'theme_auto', '自动') + b('th', 'light', 'theme_light', '浅色') + b('th', 'dark', 'theme_dark', '深色')).replace('class="hrow"', 'class="hrow scomrow"')

@@ -21,7 +21,7 @@ test('the zoom stack has no visible text: every button holds an svg and carries 
 
 test('the 3D level strip draws the floor code only; the full name is aria-label and title', () => {
   const src = R('../map/app/estate-shell.mjs');
-  const fn = src.slice(src.indexOf('export function stripFloors'), src.indexOf('export function stripAction'));
+  const fn = src.slice(src.indexOf('export function stripFloors'), src.indexOf('export function onKey'));
   assert.ok(!/createElement\('small'\)/.test(fn), 'no subtitle element in the strip');
   assert.match(fn, /setAttribute\('aria-label'/); assert.match(fn, /b\.title = f\.label/);
   assert.match(src, /btn\.innerHTML = iconSvg\('cube'\)/, 'the phone view button is an icon, the view name is in aria-label');

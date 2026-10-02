@@ -108,5 +108,13 @@ test('top bar: no decorative red dot; the status mark is hidden when loaded, a s
   assert.match(h, /\.em-dot\[data-st="loading"\][^}]*animation: em-spin/);
   assert.match(h, /\.em-dot\[data-st="fail"\][^}]*var\(--em-alert\)/);
   assert.match(h, /dot\.dataset\.st === 'fail'\) root\.querySelector\('\.em-line'\)\?\.click\(\)/);
+  assert.match(h, /viewerStuck\(\) \? 'fail'/, 'HEADER-1: the viewer\'s stuck load shows on the host dot');
   assert.match(h, /prefers-reduced-motion: reduce\) \{ #\$\{ID\} \.em-bar \.em-dot\[data-st="loading"\]/);
+});
+
+test('HEADER-1: 「身体」 / 「身子」 are not items (the 「身」 start is read as a quantifier and leaves one character); a counted quantifier still keeps a one-character item', () => {
+  for (const t of ['抚摸着她的身体。', '挺起身子，抱住她。', '她拿起身子', '他抓起身体']) assert.deepEqual(P.names(t), [], t);
+  assert.deepEqual(P.names('他拿起一把刀。'), ['刀']);
+  assert.deepEqual(P.names('拿起一身华服。'), ['华服']);
+  assert.ok(P.SCAN_VER >= 6);
 });

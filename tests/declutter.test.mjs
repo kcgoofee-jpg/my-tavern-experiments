@@ -12,7 +12,7 @@ test('the n-th label that finds room is L1 up to cap1, L2 up to cap1 + cap2, the
   assert.deepEqual([1, 6, 7, 21, 22, 40].map(n => tierOf(n, c)), ['l1', 'l1', 'l2', 'l2', null, null]);
   const d = labelCaps(false); assert.deepEqual([1, 12, 13, 42, 43].map(n => tierOf(n, d)), ['l1', 'l1', 'l2', 'l2', null]);
 });
-test('declutter(): the player marker is never hidden, the level strip / foot / header are obstacles, the pass reports its duration', () => {
+test('declutter(): the player marker is never hidden, the header and the zoom column are obstacles, the pass reports its duration', () => {
   const s = readFileSync(new URL('../map/app/sharpness-tiers.mjs', import.meta.url), 'utf8');
-  assert.match(s, /rank\(e\) === 0\) e\.classList\.remove\('lhide'\)/); assert.match(s, /'#foot', '#hereGo', 'header'/); assert.match(s, /declutterMs = performance\.now\(\) - t0/); assert.match(s, /tierOf\(\+\+placed, caps\)/);
+  assert.match(s, /rank\(e\) === 0\) e\.classList\.remove\('lhide'\)/); assert.match(s, /\['header'\]/); assert.match(s, /declutterMs = performance\.now\(\) - t0/); assert.match(s, /tierOf\(\+\+placed, caps\)/);
 });

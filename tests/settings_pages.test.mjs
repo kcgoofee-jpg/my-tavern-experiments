@@ -8,7 +8,7 @@ globalThis.window = {};   // settings-pages.mjs reads text through the I18N serv
 const { TABLE } = await import('../map/app/settings-pages.mjs');
 const rd = f => fs.readFileSync(fileURLToPath(new URL('../' + f, import.meta.url)), 'utf8');
 const WHERE = {
-  home: ['setQ', 'setHits', 'actUp', 'actHere', 'actClose', 'themeSeg', 'langSeg', 'tiers', 'tierWhy', 'handSeg'],
+  home: ['setQ', 'setHits', 'actUp', 'themeSeg', 'langSeg', 'tiers', 'tierWhy', 'handSeg'],
   map: ['rmSeg', 'optNoFx', 'optFog', 'fogRow', 'fogReset', 'optMinimap', 'cvdSeg', 'q3Seg', 'optAuto3d'],
   people: ['optCharStats', 'optCharMore', 'chSrc'], data: ['storBox'], update: ['aboutBox', 'branchBox', 'lineRow', 'linePick', 'lineNow'], license: ['licBox'],
   adv: ['packBox', 'optEdit', 'optPackRemote', 'optKeys', 'kbdBtn', 'kbdHelp', 'optTick', 'hintAgain', 'build', 'optFps'],

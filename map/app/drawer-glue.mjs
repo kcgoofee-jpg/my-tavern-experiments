@@ -61,9 +61,9 @@ function legendEl() { const box = document.createElement('div'); box.className =
 export function placeEmpty(um) {
   const e = $('#cardEmpty'); if (!e || e.dataset.um === (um || '') || (document.body.classList.contains('shell3d') && e.dataset.um === '3d')) return;   // a 3D building fills this pane itself (estate-shell.mjs) e.dataset.um = um || '';
   if (!um) { e.textContent = ''; e.textContent = uiTextOr('s.place_empty', '点地图上的地点，这里显示它的介绍'); return; }
-  let s = e.querySelector('span.umq'), b = e.querySelector('button');
-  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.onclick = () => plugins.UnmappedPlacePicker.open(); e.append(s, ' ', b); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
-  s.textContent = uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + uiTextOr('um.empty_sub', '放一次，这个聊天之后都会记住。'); b.textContent = uiTextOr('um.empty_btn', '放到地图上');   // 节点复用：焦点不丢
+  let s = e.querySelector('span.umq');   // HEADER-1: the name only; the one entry is the place pill in the header
+  if (!s) { e.textContent = ''; s = document.createElement('span'); s.className = 'umq'; e.append(s); announce(uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um })); }
+  s.textContent = uiTextOr('um.empty', '当前地点「{n}」还不在地图上。', { n: um }) + uiTextOr('um.empty_where', '点上方的地点标签，把它放到地图上；放一次，这个聊天之后都会记住。');
 }
 
 export function cardSheet(open) {

@@ -114,18 +114,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   postState();
 }
 // 随地图变的工具栏文字（叠加层、另一版底图的开关名）
-/**
- * 署名（ⓘ）：这张图没有署名词条时把按钮与文字框一起收起来——原来按钮恒显示，点开是个空框，
- * 在世界图（奥伦帝国那类没有 credit 的层）上表现就是「点了没反应」的假死（任务三）。
- * fix3：只用展开的文字框，不再叠一个原生 title 提示。地图切换与主场景打开都走这里。
- */
-export function applyCredit(m) {
-  const credit = localName(m, 'credit');
-  $('#credit').textContent = credit; $('#credit').removeAttribute('title'); window.__showCredits?.(false);
-  $('#creditBtn').hidden = !credit; if (!credit) $('#credit').hidden = true;
-}
 export function mapChrome(m) {
-  applyCredit(m);
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = LocalStore.get('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? localName(m.overlay, 'label') || uiText('overlay') : uiText('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = localName(m.alt, 'label') || uiText('alt_base');

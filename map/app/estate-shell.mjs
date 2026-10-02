@@ -1,4 +1,4 @@
-// 3D as a view mode of the current place (docs/ui-refactor.md 3.8, S7-3): the viewer's half of the one shell. While a 3D page is open the viewer keeps its header, level strip, toolbar,
+// 3D as a view mode of the current place (docs/ui-refactor.md 3.8, S7-3): the viewer's half of the one shell. While a 3D page is open the viewer keeps its header, floor strip, toolbar,
 // drawer and cards (U-25, U-26); the page draws only the scene, its in-canvas labels and the presence chips. This module
 //   * draws the view segment (外观 / 内透 / 剖切) in the header, one menu button at <= 640 px, and the building's floors in the level strip, and says so to the page (estate:view, estate:floor);
 //   * routes the toolbar (zoom, reset, labels), keys 1 / 2 / 3 and Esc to the page;
@@ -29,8 +29,6 @@ body.shell3d #v3seg{display:inline-flex;gap:var(--sp-1);padding:var(--sp-1);bord
 #v3seg button:focus-visible,#v3menu button:focus-visible{box-shadow:var(--focus-ring)}
 body.shell3d #dock{display:flex}
 body.shell3d #evbar:not([hidden]){display:flex!important}
-body.shell3d #zHome{display:none}
-#layers button[data-act]{color:var(--accent)}
 #layers button[data-floor]{min-width:0;padding-inline:var(--sp-5)}
 .v3rooms details{border-top:1px solid var(--line)}.v3rooms summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--ink-2)}
 .v3rooms .v3room{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-s);cursor:pointer;font-size:var(--fs-control)}
@@ -48,7 +46,7 @@ function build() {
   const btn = document.createElement('button'); btn.type = 'button'; btn.id = 'v3btn'; btn.className = 'btn ic g1'; btn.setAttribute('aria-haspopup', 'menu'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-controls', 'v3menu');
   const menu = document.createElement('div'); menu.id = 'v3menu'; menu.className = 'g2'; menu.setAttribute('role', 'menu'); menu.hidden = true;
   for (const [id] of MODES) for (const box of [seg, menu]) { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', box === seg ? 'radio' : 'menuitemradio'); b.dataset.v = id; box.append(b); }
-  $('header').insertBefore(seg, $('#hereGo')); $('#dock').insertBefore(btn, $('#thumbBtn').nextSibling); $('#stage').append(menu);
+  $('header').insertBefore(seg, $('#stDot')); $('#dock').insertBefore(btn, $('#thumbBtn').nextSibling); $('#stage').append(menu);
   seg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
   menu.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setView(b.dataset.v); menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); btn.focus(); } });
   btn.addEventListener('click', e => { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); if (!menu.hidden) menu.querySelector('[aria-checked=true]')?.focus(); });
@@ -107,12 +105,6 @@ export function stripFloors(nav) {
   nav.replaceChildren(...S.floors.map(f => { const b = document.createElement('button'); b.type = 'button'; b.dataset.floor = f.id; const on = S.mode === 'sect' && S.floor === f.id; b.className = on ? 'on' : ''; if (on) b.setAttribute('aria-current', 'true');
     b.append(f.id); if (f.label && f.label !== f.id) { b.title = f.label; b.setAttribute('aria-label', `${f.id} ${f.label}`); } return b; }).reverse());   // UI-3D-1: the strip shows the code only; the full name is the tooltip and the accessible name
   return true;
-}
-/** in 2D, when the current place has a 3D page: the same primary action 「3D 查看」 in the level strip (U-31) */
-export function stripAction(nav, r) {
-  nav.querySelector('[data-act]')?.remove();
-  const m = r?.map && isScene(r.map) && r.map !== currentMapId && mapRegistry?.maps[r.map]?.status !== 'planned' ? r.map : null; if (!m || S.on) return;
-  const b = document.createElement('button'); b.type = 'button'; b.dataset.go = m; b.dataset.focus = r.std || r.room || ''; b.dataset.act = '3d'; b.textContent = T('v3.enter', '3D 查看'); nav.hidden = false; nav.append(b);
 }
 export function onKey(k) { if (!S.on) return false; const m = { 1: 'ext', 2: 'xray', 3: 'sect' }[k]; if (!m) return false; setView(m); return true; }
 

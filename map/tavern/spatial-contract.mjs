@@ -23,12 +23,14 @@ const byNear = (a, b) => (a.d - b.d) || (a.name < b.name ? -1 : a.name > b.name 
 const norm360 = a => { a = ((a % 360) + 360) % 360; return Number.isFinite(a) ? a : 0; };
 
 // 注册表 → 节点树上的当前地点引擎（app/place-resolver.mjs，与查看器同一套）：同一份注册表只建一次
-const engines = new WeakMap();
+const engines = new WeakMap(), NOPLAN = {};
 const mapsOf = reg => reg?.maps || reg || {};
-function engineOf(reg) {
+function engineOf(reg, plan = null) {
   if (!reg || typeof reg !== 'object') return null;
-  if (!engines.has(reg)) { let e = null; try { e = makeHere({ maps: reg.maps ? reg : { maps: reg } }); } catch (err) { e = null; } engines.set(reg, e); }
-  return engines.get(reg);
+  let by = engines.get(reg); if (!by) engines.set(reg, by = new WeakMap());
+  const key = plan && typeof plan === 'object' ? plan : NOPLAN;   // the pack's layered room plan joins the vocabulary when the caller has it (the place pill, HEADER-1)
+  if (!by.has(key)) { let e = null; try { e = makeHere({ maps: reg.maps ? reg : { maps: reg }, ...(key === NOPLAN ? {} : { plan: key }) }); } catch (err) { e = null; } by.set(key, e); }
+  return by.get(key);
 }
 /** 地图的层名（注册表给的层名；没有就回落地图 id）——「L」与出口目标都用它 */
 const levelOf = (reg, mapId) => engineOf(reg)?.level(mapId) || mapsOf(reg)[mapId]?.layer?.name || mapId || '';
@@ -43,11 +45,12 @@ export function locate(reg, here) {
   return { level: r.level, mapId: r.map, markerId: r.marker || null, name: cname(nm), room: r.room || null };
 }
 
-/** 地点栏的写法（U-FIX-5 H2-01）：落在某栋楼里的房间 → 「楼 · 房间」（变量里只写了房间也带上上级）；不是房间 / 认不出 → null（调用方照原文） */
-export function chainOf(reg, here) {
-  const v = String(here || '').trim(), e = v ? engineOf(reg) : null, r = e?.here(v);
+/** 地点栏的写法（U-FIX-5 H2-01；plan = 包的分层房间表，HEADER-1：「地下二层 惩罚室」这类「层名 + 房间」写法落到房间）：落在某栋楼里的房间 → 「楼 · 房间」（变量里只写了房间也带上上级）；不是房间 / 认不出 → null（调用方照原文） */
+export function chainOf(reg, here, plan = null) {
+  const v = String(here || '').trim(), e = v ? engineOf(reg, plan) : null, r = e?.here(v);
   if (!r?.room || !r.node) return null;
-  const owner = cname(e.tree.get(r.node)?.name || ''), room = cname(String(r.room).split(/\s*[·・‧•]\s*/).filter(Boolean).pop() || '');
+  // the room is the standard name the resolver found (「<floor word> <room>」 reads as the room); an unplaced written form falls back to its last part
+  const nd = e.tree.get(r.node), owner = cname((nd?.type === 'room' ? e.tree.get(e.tree.parent(r.node)) : nd)?.name || ''), room = cname(r.std || String(r.room).split(/\s*[·・‧•]\s*/).filter(Boolean).pop() || '');
   return !owner || !room ? null : owner === room ? owner : `${owner} · ${room}`;
 }
 

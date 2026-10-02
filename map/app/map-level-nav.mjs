@@ -15,6 +15,7 @@ import { placeLayers } from './drawer-glue.mjs';
 import { toggleLabels } from './control-column.mjs';
 import { plugins } from './plugins.mjs';
 import { anchorIn, crumbs, parentMap, strip } from './nodes-runtime.mjs';
+import { close as closeCrumbMenu, isOpen as crumbMenuOpen, paintSwitcher, refreshMenu } from './crumb-menu.mjs';
 import * as EstateShell from './estate-shell.mjs';   // S7-3: while a 3D page is open the strip shows the building's floors
 // v0.9.6 手机层切换器：收起时点当前层 = 展开；展开后点任一层 = 切过去并收起；点别处收起
 $('#layers').addEventListener('click', e => { if (!narrowNow()) return; const nav = $('#layers'), b = e.target.closest('button');
@@ -32,32 +33,15 @@ export function renderNav() {
   const zone = k => anchorIn(k) ? ` data-focus="${esc(anchorIn(k))}"` : '';   // 返回一张三维页时，落到我在它里面所挂的区域上（S2-B）
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = localName(mapRegistry.maps[k], 'title');
     return i < chain.length - 1 ? `<a data-go="${k}"${zone(chain[i + 1])} role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
-  const g = layerIds(m), nav = $('#layers'), floors = EstateShell.stripFloors(nav);   // floors = the 3D shell drew the strip
-  if (!floors) { nav.hidden = !g.length; if (!g.length) nav.replaceChildren(); }   // U-FIX-5 W-01: a map without levels (the world) keeps no buttons of the previous map (the 3D action may still add itself)
+  const nav = $('#layers'), floors = EstateShell.stripFloors(nav);   // floors = the 3D shell drew the floor strip; in 2D the levels live in the breadcrumb menu (HEADER-1, D36)
+  if (!floors) { nav.hidden = true; nav.replaceChildren(); }   // a 2D map keeps no floating level strip (and a map without levels keeps no buttons of the previous one)
   nav.title = uiTextOr('layers.keys', 'PageUp / PageDown 或 [ ] 切换上下层');
-  if (g.length && !floors) nav.innerHTML = g.map(k => { const L = mapRegistry.maps[k], planned = L.status === 'planned';
-    return `<button type="button" data-go="${k}" class="${k === currentMapId ? 'on' : ''}" ${k === currentMapId ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(uiTextOr('layers.planned', '制作中'))}"` : ''}>${esc(localName(L.layer))}<i class="hd" title="${esc(uiTextOr('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? uiTextOr('layers.planned', '制作中') : localName(L.layer, 'alt'))}</small></button>`; }).join('');
   nav.classList.add('compact');
-  // 上一级（桌面顶栏 ‹）与「⋯」首页的切层快捷（手机、三维页）
-  const pid = parentMap(currentMapId), par = pid && mapRegistry.maps[pid]; $('#upBtn').hidden = !par; if (par) { $('#upBtn').dataset.go = pid; if (anchorIn(currentMapId)) $('#upBtn').dataset.focus = anchorIn(currentMapId); else delete $('#upBtn').dataset.focus; $('#upBtn').title = uiTextOr('act_up', `返回${localName(par, 'title')}`, { title: localName(par, 'title') }); }
-  $('#setPop .qlayers').innerHTML = g.length ? g.map(k => { const L = mapRegistry.maps[k], pl = L.status === 'planned';
-    return `<button type="button" class="btn${k === currentMapId ? ' on' : ''}" data-go="${k}" ${k === currentMapId ? 'aria-current="page"' : ''} ${pl ? 'disabled' : ''}>${esc(localName(L.layer))}</button>`; }).join('') : '';
-  updateLayerBadges(); placeLayers();
+  paintSwitcher(); placeLayers();
   if (!narrowNow()) requestAnimationFrame(layoutHeader);   // 面包屑变长（切到更深的图）后重新量工具栏放不放得下（E5 r3 设计 D8 / 无障碍 F-14）
 }
-export function updateLayerBadges() {
-  const m = currentMapId && mapRegistry.maps[currentMapId], g = layerIds(m), r = hereRes($('#here').value); EstateShell.stripAction($('#layers'), r); if (!g.length || EstateShell.active()) return;   // the 3D shell's floor buttons carry no badges
-  let others = 0; const hk = r && r.level <= 4 && g.includes(r.map) ? r.map : null;
-  document.querySelectorAll('#layers button[data-go]:not([data-act])').forEach(b => {
-    const k = b.dataset.go, n = plugins.EventsView.countOn?.(k) || 0;
-    b.classList.toggle('here', k === hk && !n);   // 一个按钮只挂一种红色标记：有事态数就只显示数字，当前地点写进 aria / title（v0.9.2）
-    b.querySelector('.evn').textContent = n ? (n > 9 ? '9+' : n) : '';
-    b.querySelector('.evn').title = n ? uiTextOr('layers.events', `${n} 起未解除的事态`, { n }) : '';
-    if (k !== currentMapId && n) others++;
-    b.setAttribute('aria-label', [b.firstChild?.textContent || '', k === hk ? uiTextOr('layers.here', '当前地点在这一层') : '', n ? uiTextOr('layers.events', `${n} 起未解除的事态`, { n }) : ''].filter(Boolean).join('，'));
-  });
-  $('#layers').classList.toggle('evs', others > 0);
-}
+/** the events or the place changed: the breadcrumb menu (when open) recounts its badges and here-mark */
+export function updateLayerBadges() { refreshMenu(); }
 // 键盘切层：PageUp / [ 往上，PageDown / ] 往下（跳过制作中的层）
 export function stepLayer(d) {
   if (EstateShell.active()) { EstateShell.stepFloor(d); return; }   // in 3D PageUp / PageDown step the building's floors
@@ -67,6 +51,7 @@ export function stepLayer(d) {
 }
 // Esc 只作用于最上面一层（§10.6）：对话框 > 设置 > 图层菜单 > 展开的层列表 > 抽屉降一档 > 地点卡；都没有时交给酒馆（关面板）。嵌入时不冒泡给酒馆
 function escTop() {
+  if (crumbMenuOpen()) { closeCrumbMenu(true); return true; }
   if (!$('#setPop').hidden) { showSet(false); ($(narrowNow() ? '#thumbBtn' : '#setBtn'))?.focus(); return true; }
   if (!$('#card').hidden) { closeCard(true); return true; }   // S7-2 (docs/ui-refactor.md 6): card -> popover -> drawer (half -> peek)
   if (!$('#layPop').hidden) { showLay(false); $('#layBtn').focus(); return true; }
@@ -109,6 +94,6 @@ let kbdGo = false;
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && !a.disabled) { e.preventDefault(); setPendingFocus(a.dataset.focus || null); kbdGo = e.detail === 0 && a.dataset.go !== currentMapId; go(a.dataset.go); } });
 export function focusAfterGo() {
   if (!kbdGo) return; kbdGo = false;
-  const el = !$('#card').hidden ? $('#cardTitle') : $('#layers:not([hidden]) button[aria-current]') || $('#crumbs b');
+  const el = !$('#card').hidden ? $('#cardTitle') : $('#layers:not([hidden]) button[aria-current]') || $('#crumbs .cur') || $('#crumbs b');
   if (el) { if (el.tagName === 'B') el.tabIndex = -1; el.focus({ preventScroll: true }); }
 }

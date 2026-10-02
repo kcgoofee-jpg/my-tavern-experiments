@@ -7,7 +7,7 @@ import { announce } from './screen-reader-announce.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { LANG, localName, postState } from './i18n.mjs';
 import { getText, textCache } from './topbar.mjs';
-import { applyCredit, go } from './map-switch.mjs';
+import { go } from './map-switch.mjs';
 import { focusAfterGo, onEsc, renderNav, stepLayer } from './map-level-nav.mjs';
 import { untrackAll } from './markers.mjs';
 import { estPlan, hereRes } from './locate.mjs';
@@ -132,13 +132,11 @@ export async function openEstate(id, m, hadPrev) {
     EstateShell.attach(send3d); if (subpageSession.readyMsg) EstateShell.ready(subpageSession.readyMsg);
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
-    applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
     estateLook(); estateInset(); estateRoom(); estateFocusPending(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
   if (estParked?.id !== id) { stopTileTo3d(false); await release3dAsync(); if (currentMapId !== id) return; }
-  applyCredit(m);   // 署名（ⓘ）：没有署名词条时收起来，不留空框（任务三）
   const ld = $('#loading'), ti = localName(m, 'title'); ld.classList.remove('done', 'thumb'); ld.classList.remove('over'); estateActs('');   // v0.9.6：三维页加载时用整屏加载页，不再露出上一张图 + 一个「加载中」小条
   if (m.cover) { ld.style.setProperty('--loading-cover', `url(${matchMedia('(max-width: 600px)').matches ? m.cover.src_800 || m.cover.src : m.cover.src})`); ld.classList.add('cover'); }
   else { ld.classList.remove('cover'); ld.style.removeProperty('--loading-cover'); }
