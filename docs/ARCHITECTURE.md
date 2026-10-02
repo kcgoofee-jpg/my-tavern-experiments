@@ -95,7 +95,6 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `kind-palette.mjs` | The generated colours of room kinds a 3D manifest does not declare (K-R131): eight colour-vision-safe colours picked by a stable hash of the kind id. Pure. |
 | `label-tiers.mjs` | Map label tiers (S7-2, `docs/ui-refactor.md` 2.6): `labelCaps(narrow)` and `tierOf(n, caps)`: the n-th placed label is L1 up to 12 (6 on phones), L2 up to 30 (15), then hidden. |
 | `layer-defaults.mjs` | The kernel's own layers as declarations (K-R79): slot, kind, order, menu row and drawing block of the 17 viewport layers in one frozen list; `kernelDecl(id)`. Pure. |
-| `parked.mjs` | Parked features (INV-2): the five feature ids that are off by default and hidden from Settings and the layer menu until `edenMapOn:<id>` holds an explicit `'1'` (`parkedOn`). Nothing is deleted. |
 | `layer-geometry.mjs` | Declared layers, pure geometry and style (K-R80): the route paths of the `line` block (compared with a frozen copy of the old loop), converters from the view data to features, the resolved style of a feature, legend swatches, flow tables, the first-visibility rule. Pure. |
 | `layer-registry.mjs` | LayerRegistry core: the 10 viewport slots, layer registration and ordering, visibility, filter chains, `patch` / `applicable` (K-R79, K-R82), `describe()` summary. |
 | `layer-spec.mjs` | Declared layers (K-R79, K-R81, K-R82): source parsing, feature and layer normalisation, merge of a pack's `layers` rows with the kernel list, the `applies` evaluator, the `validate2` spec of the block. Pure. |
@@ -120,6 +119,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `pack-v2-view.mjs` | Opening a schema-2 pack in the viewer (K-R96): implicit schematic views and the projection to the viewer registry (maps, markers, virtual point files). Pure. |
 | `pack-v2.mjs` | Schema-2 packs: validation with per-item healing, trust and limits, block resolution, defaults. |
 | `pack.mjs` | Pack interface: manifest validation and resolution, pack id, storage prefix and chat-variable key derivation, registry rebasing. |
+| `parked.mjs` | Parked features (INV-2): the five feature ids that are off by default and hidden from Settings and the layer menu until `edenMapOn:<id>` holds an explicit `'1'` (`parkedOn`). Nothing is deleted. |
 | `people.mjs` | The people page's sections from the pack's entity groups (S4-4): `groupList`, `groupLabel` (dictionary / pack string `ch.g_<id>`, else the group's own label), `paneModel`; pure. |
 | `period-pick.mjs` | Which period base a map shows (K-R39, I-24): the current band's variant, else the nearest registered band by band order. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |

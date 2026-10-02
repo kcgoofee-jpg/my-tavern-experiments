@@ -76,7 +76,6 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `kind-palette.mjs` | 3D 清单没有声明的房间类别所用的生成颜色（K-R131）：八个对色觉友好的颜色，按类别 id 的稳定哈希挑选。纯函数。 |
 | `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
-| `parked.mjs` | 暂停的功能（INV-2）：默认关、并从设置与图层菜单里藏起来的五个功能 id；只有 `edenMapOn:<id>` 明确存了 `'1'` 才打开（`parkedOn`）。不删任何东西。 |
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |
@@ -101,6 +100,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-v2-view.mjs` | 在查看器里打开 schema-2 包（K-R96）：隐式示意图视图，以及到查看器注册表（地图、标记、虚拟点位文件）的投影。纯函数。 |
 | `pack-v2.mjs` | schema 2 的包：逐项自愈的校验、信任与上限、块解析、默认值。 |
 | `pack.mjs` | 设定包接口：清单校验与解析、包 id、存储前缀与聊天变量键的推导、注册表改基址。 |
+| `parked.mjs` | 暂停的功能（INV-2）：默认关、并从设置与图层菜单里藏起来的五个功能 id；只有 `edenMapOn:<id>` 明确存了 `'1'` 才打开（`parkedOn`）。不删任何东西。 |
 | `people.mjs` | 人物页按包的实体组分节（S4-4）：`groupList`、`groupLabel`（词典 / 包文案 `ch.g_<id>`，否则用组自己的标签）、`paneModel`；纯函数。 |
 | `period-pick.mjs` | 地图显示哪个时段的底图（K-R39，I-24）：当前时段的变体，没有就取时段顺序上最近的已登记时段。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |

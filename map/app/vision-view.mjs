@@ -95,6 +95,7 @@ function frame(ts) {
 function start() { if (raf || !cx) return; t0 = 0; raf = requestAnimationFrame(frame); }
 function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; if (cx) cx.clearRect(0, 0, W, H); }
 
+const showCv = v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); };
 let done = false;
 export function registerVisionLayer() {
   if (done) return registry.has('vision'); done = true;
@@ -105,11 +106,11 @@ export function registerVisionLayer() {
       cv = document.createElement('canvas'); cv.className = 'vscv'; cv.setAttribute('aria-hidden', 'true');
       Object.assign(cv.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none' });
       host.appendChild(cv); cx = cv.getContext('2d'); mounted = true; xyCache.clear(); size();
-      if (registry.isVisible('vision')) start(); else cv.style.display = 'none';   // INV-2: off by default, nothing runs until ticked
+      showCv(registry.isVisible('vision'));   // INV-2: off by default, nothing runs until ticked
       return true;
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
-    setVisible: v => { saveVisible('vision', v); if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
+    setVisible: v => { saveVisible('vision', v); showCv(v); },
   }));
   busOn({ key: 'vision.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'vision.hostMsg', type: 'message', fn: e => {

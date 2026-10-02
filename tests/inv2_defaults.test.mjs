@@ -22,7 +22,7 @@ test('layers: traffic, vision, nav-ops and local-props start hidden; a stored 1 
     assert.match(s, /layerStore\(\)(\.\w+|\[ID\]) === '1'/, f);
     assert.doesNotMatch(s, /initialVisible: true/, f);
   }
-  assert.match(rd('map/app/traffic-view.mjs'), /isVisible\('traffic'\)/); assert.match(rd('map/app/vision-view.mjs'), /isVisible\('vision'\)\) start\(\)/);   // a hidden layer does not run on mount
+  assert.match(rd('map/app/traffic-view.mjs'), /isVisible\('traffic'\)/); assert.match(rd('map/app/vision-view.mjs'), /showCv\(registry\.isVisible\('vision'\)\)/);   // a hidden layer does not run on mount
   assert.match(rd('map/app/traffic-view.mjs'), /saveVisible\('traffic'/); assert.match(rd('map/app/vision-view.mjs'), /saveVisible\('vision'/);
 });
 test('parked features: registered prefix key, absent unless an explicit stored 1', () => {
