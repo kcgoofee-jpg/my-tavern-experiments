@@ -78,6 +78,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - ~~**ARCH-1**~~ ✅ 2026-10-02 head #284 (RESULT ARCH-1)
   - ~~**INV-1** feature inventory `docs/feature-inventory.md`, 78 rows~~ ✅ 2026-10-02 head #285 → user: **all as recommended** (2026-10-02)
   - [x] ~~**FIX-R2** U-FIX-8 (SW2-02…07) + FIX-B6 (advisor provider defaults, Anthropic browser header, request-shape probe)~~ ✅ 2026-10-02 FIX-R2
+  - ~~**OOC-1** the map understands OOC (D32): 4 templates + 「提醒 AI」 button on the AI link page (fills, never sends), OOC lines are not action, player correction `（OOC 地图：现在在 X）` / `（OOC 地图：Y 在 X）`~~ ✅ 2026-10-02 (RESULT OOC-1). The player-guide section listing the templates is part of PUB REL-DOCS.
   - [ ] **CHAT-ISO** same card, several chats: A/B isolation probe, 「重置本聊天地图数据」 button, orphan cleanup after a chat is deleted (local storage, room gallery / scrapbook images, per-chat custom worldbook), worldbook JIT state carried into the next chat (I-33, I-34)
   - [ ] **INV-2** apply the inventory's 建议 column: 11 rows default off, 6 parked (off and hidden from settings), nothing deleted
   - ~~**DIGEST-1** zh digest of the ~10 most important default-decided items (D28)~~ ✅ 2026-10-02 `docs/decision-digest.md` (12 items, 20 ids; the other 77 kept unless the user says otherwise) → user fills 保留 / 改 · RESULT DIGEST-1

@@ -15,6 +15,7 @@ import * as MDm from './interaction-modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
 import { pickPlace } from '../core/scene-header.mjs';
+import { activePlace } from '../core/ooc.mjs';
 import { getProfile, setProfile } from './pack-profile.mjs';
 import { profileFromV1 } from '../core/profile.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
@@ -163,6 +164,24 @@ export class MVUBridge {
   // ---------------- 当前地点（四级兜底） ----------------
   /** MVU 映射 → 正文标签对账（交互方式 d）→ 表格数据库插件 → 社区预设状态栏（Part 7）。ctx 可覆盖 floorNow / lastRaw（缺省用构造参数）。 */
   here(ctx = {}) {
+    const o = this.#oocHere(ctx.floorNow ?? this.o.floorNow?.() ?? -1);
+    if (o) { this.hereFromDb = false; this.hereSrc = 'ooc'; this.hereWhy = ''; return o; }
+    return this.#here0(ctx);
+  }
+  /** D32: the player's own correction ("OOC map: now at X", written in a chat floor) holds until a later floor brings a new place signal. ctx for the check: the variable's place on each floor,
+   *  and the floors whose text shows a move (setOoc computes them from the window the host just read). Nothing is stored: the host sets it from the chat each round. */
+  setOoc(c, msgs = [], chat = '') {
+    if (!c) { this.ooc = null; return; }
+    const moves = new Set(), spec = getProfile().header;
+    for (const m of msgs) { if (m.floor <= c.floor) continue; let mv = false; try { mv = !!(MDm && MDm.parseHereTag(m.raw)) || !!(spec && pickPlace({ mvu: '', raw: m.raw, spec, path: this.varMap.location, resolves: this.o.resolves }).source === 'header'); } catch (e) { mv = false; } if (mv) moves.add(m.floor); }
+    this.ooc = { c, moves, chat: chat || this.chatId() };
+  }
+  #oocHere(floorNow) {
+    const o = this.ooc; if (!o || o.chat !== this.chatId()) return '';
+    const placeAt = f => { try { const v = this.mvuGet(this.perFloorStat(f), this.varMap.location); return typeof v === 'string' ? v : null; } catch (e) { return null; } };
+    return activePlace(o.c, { placeAt, moveAt: f => o.moves.has(f) }, { floorNow }) || '';
+  }
+  #here0(ctx = {}) {
     this.#ensure();
     const floorNow = ctx.floorNow ?? this.o.floorNow?.() ?? -1;
     const raw = ctx.lastRaw !== undefined ? ctx.lastRaw : this.o.lastRaw?.() ?? null;

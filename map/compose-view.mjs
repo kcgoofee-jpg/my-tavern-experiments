@@ -8,6 +8,7 @@ import { LANG } from './app/i18n.mjs';
 import { SettingsApi } from './app/settings.mjs';
 import { plugins, register } from './app/plugins.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { render as renderOoc } from './ooc-view.mjs';   // D32: the "nudge the AI" list shares this compose path
 const ComposeView = (() => {
   let CM = null, open = false;
   const mod = () => CM ? Promise.resolve(CM) : import(new URL('tavern/compose-templates.mjs', document.baseURI).href).then(m => (CM = m)).catch(() => null);
@@ -34,7 +35,7 @@ const ComposeView = (() => {
   document.addEventListener('click', onClick);
   // 卡内脚本回话：填进去了没有
   addEventListener('message', e => { if (e.data?.type !== 'eden-map:compose-done' || !window.__isFromHost?.(e)) return;   // 只认宿主（arch-v2：以前任何窗口都能弹这条提示）
-    if (typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.toast([e.data.ok ? uiTextOr('cmp.done', '已填入聊天输入框（未发送）') : uiTextOr('cmp.fail', '没找到酒馆输入框')]); });
+    if (typeof plugins.CustomNamesView !== 'undefined') plugins.CustomNamesView.toast([e.data.ok ? (e.data.ooc ? uiTextOr('ooc.done', '已填入输入框，未发送') : uiTextOr('cmp.done', '已填入聊天输入框（未发送）')) : uiTextOr('cmp.fail', '没找到酒馆输入框')]); });
   // ---------- 设置：填入聊天的模板 ----------
   async function renderUI() {
     const pop = document.getElementById('setPop'); if (!pop || !embedded()) return;
@@ -87,7 +88,7 @@ const ComposeView = (() => {
   #cmpBox .cmp-pv small{display:block;color:var(--muted)}#cmpBox .cmp-pv b{font-weight:600;margin-right:var(--sp-4);color:var(--ink-2)}#cmpBox .cmp-pv q{quotes:'「' '」'}`;
   const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
   mod(); document.addEventListener('DOMContentLoaded', () => renderUI());
-  return { attach, renderUI };
+  return { attach, renderUI: async () => { await renderUI(); renderOoc(); } };   // a language switch re-renders both boxes
 })();
 register('ComposeView', ComposeView);
 export { ComposeView };

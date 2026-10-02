@@ -4,7 +4,8 @@ import { ContextPipeline } from './context.mjs';
 import { resolveTags } from './sanitize.mjs';
 import { MVUBridge } from './mvu-bridge.mjs';
 import { getProfile } from './pack-profile.mjs';
-import { cdnFetch } from './host-tavernhelper.mjs';
+import { cdnFetch, thFn } from './host-tavernhelper.mjs';
+import { latest as oocLatest } from '../core/ooc.mjs';
 import { createGalleryFlow } from './gallery-flow.mjs';
 import { applyView, paint as paintView } from './clock-view.mjs';
 export const DEPS = [
@@ -49,6 +50,13 @@ export function createCharsFlow(host) {
     if (rp) return cdnFetch(host.BASE + rb + rp).then(r => r.ok ? r.json() : null).then(j => { if (mvuBridge.setFallbackMembers(j?.members || [])) { recomputeSoon(); sendChars(); } }); }).catch(e => console.warn('[map] chars-flow: fallback members fetch failed', e));
   // K-R106: the pack's media source (a card-script picture table + chat tags): read at run time, recomputed each round, nothing stored; it asks again whenever the characters are sent
   const gallery = createGalleryFlow({ get alive() { return host.alive; }, get floorNow() { return host.floorNow; }, get frame() { return host.frame; }, life, lsGet: (...a) => host.lsGet(...a), mvuBridge, post });
+  // D32: the player's OOC map corrections live in user floors (the assistant window never sees them): read each round, handed to the bridge (place) and the round (persons); nothing stored
+  const ooc = { chars: [], sig: '' };
+  function oocRead(msgs, floorNow) {
+    let list = []; try { const f = floorNow >= 0 ? thFn('getChatMessages') : null; if (f) list = f(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'user' }) || []; } catch (e) { list = []; }
+    const cs = contextPipeline.readOoc(list), { place, chars } = oocLatest(cs);
+    mvuBridge.setOoc(place, msgs); ooc.chars = chars; ooc.sig = cs.length ? JSON.stringify(cs) : '';
+  }
   // 桥接口的宿主侧薄别名：原有调用点（chatId / userName / mvuStat / getHere / readVars）不用逐个改
   const chatId = () => mvuBridge.chatId(), cardKey = () => mvuBridge.cardKey(), userName = s => mvuBridge.userName(s);
   const mvuStat = () => mvuBridge.mvuStat(), getHere = () => mvuBridge.here(), readVars = () => mvuBridge.readVars();
@@ -97,7 +105,7 @@ export function createCharsFlow(host) {
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表 + 主角声望的表对象在这里（发地图用）；
   // 阶段先后序与原作立绘表在桥里（每聊天读一次卡文本，mvuBridge.stageOrder / mvuBridge.portraits）
   return {
-    mvuBridge, gallery, placeText, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
+    mvuBridge, ooc, oocRead, gallery, placeText, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
     readVars, refreshVarMap, get routineModule() { return routineModule; }, get rtSched() { return rtSched; }, sendChars, sendRoutine, sendTrips,
     get sentClock() { return sentClock; }, set sentClock(v) { sentClock = v; }, get sentOutfit() { return sentOutfit; }, set sentOutfit(v) { sentOutfit = v; }, resetLayerSent() { sentLayer = null; },
     setVarUser, get tripsParseModule() { return tripsParseModule; }, userName,

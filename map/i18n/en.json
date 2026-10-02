@@ -877,5 +877,18 @@
   "v3.access": "Access",
   "v3.by_schedule": "Position taken from the schedule",
   "v3.kind": "Kind",
-  "v3.none": "Nobody here for now"
+  "v3.none": "Nobody here for now",
+  "ooc.title": "Nudge the AI",
+  "ooc.hint": "Pick one to put an OOC line into the chat input (never sent), so the model writes it in a format the map can read.",
+  "ooc.tip": "Fill the chat input, not sent",
+  "ooc.done": "Filled into the input, not sent",
+  "ooc.fix": "The map got it wrong? Write (OOC map: now at X) or (OOC map: Y at X) in your message to correct it.",
+  "ooc.tpl.place.label": "Update the current place",
+  "ooc.tpl.place": "(OOC: at the end of your reply, state the current place in a hidden tag: <span style=\"display:none\">⌖地点 层·地点</span>)",
+  "ooc.tpl.chars.label": "Place each present character",
+  "ooc.tpl.chars": "(OOC: at the end of your reply, give each present character's location: <span style=\"display:none\">⌖人物 名字 @ 层·地点</span>)",
+  "ooc.tpl.event.label": "Summarise this beat",
+  "ooc.tpl.event": "(OOC: at the end of your reply, summarise this beat in one tag: <span style=\"display:none\">⌖类别｜地点｜等级｜一句话｜发布方</span>)",
+  "ooc.tpl.items.label": "Confirm picked-up items",
+  "ooc.tpl.items": "(OOC: if anyone picks something up this turn, state who took which item.)"
 }

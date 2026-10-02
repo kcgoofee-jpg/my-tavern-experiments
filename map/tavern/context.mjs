@@ -8,6 +8,7 @@ import { parseText } from './msgtext.mjs';
 import { lostTags } from './tabledb-bridge.mjs';
 import { sanitize } from './sanitize.mjs';
 import * as mvuReaders from './mvu-readers.mjs';
+import { stripOoc, floorCorrections } from '../core/ooc.mjs';
 
 /** 楼层原文指纹（FNV-1a，36 进制）：标签记录 / 楼层指纹用它识别「这一楼原文变了」 */
 export const hashText = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
@@ -94,6 +95,7 @@ export class ContextPipeline {
     if (Array.isArray(list) && lastId >= 0) out = list.map(m => {
       let msg = String(m.message || ''); const c0 = m.extra?._acu_original_content;
       if (typeof c0 === 'string' && c0.includes('⌖')) msg += lostTags(c0, msg);
+      if (m.is_user) msg = stripOoc(msg);   // a player floor: OOC lines are never an action, an event, a person or a place (D32)
       const c = this.msgCache.get(m.message_id);
       if (c && c.msg === msg && c.tags === tagKey) return c.m;
       const raw = (tagKey ? sanitize(msg, this.stripTags) : msg).replace(EJS, '');   // 原文里可能还留着 EJS 模板源码，里面的示例标签不算事件
@@ -105,13 +107,21 @@ export class ContextPipeline {
     return out;
   }
 
+  /** D32: the player's explicit corrections written in user floors (OOC map lines), newest window only: [{ floor, kind, place, name? }].
+   *  list = user floors as the host gives them (message_id / message / is_user); pure, nothing stored: a swipe, an edit or a delete shows up on the next call. */
+  readOoc(list) {
+    const out = [];
+    for (const m of Array.isArray(list) ? list : []) { const t = String(m?.message || ''); if (m?.message_id != null && /OOC/i.test(t)) out.push(...floorCorrections(m.message_id, t)); }
+    return out;
+  }
+
   /** 一轮重算的纯计算部分。d = { floorNow, msgs, stSig, dbSig, varSig, custVer, customChat, chatId, seen, wbState,
    *      hasReg, hasCHM, hasMV, hasTRm, hasHereMod, hereNow, collect（events.mjs collect）, charsDeps? }
    *  charsDeps = { mvuChars（CHM.mvuChars 的结果）, known, dbCharacters, collectChars, rosters, reputation, presentKey }。
    *  轮次签名没变 → { changed:false }；变了 → { events, chars, roster, rep, fresh }（fresh = 未读的活跃事件数）。 */
   round(d) {
     const { floorNow, msgs, stSig, dbSig, varSig, custVer, customChat, chatId, seen, wbState, hasReg, hasCHM, hasMV, hasTRm, hasHereMod, hereNow, collect } = d;
-    const sig = [floorNow, msgs.map(m => m.floor + ':' + m.h).join(), stSig, dbSig, varSig, custVer, customChat, chatId, seen, wbState, hasReg, hasCHM, hasMV, hasTRm, hasHereMod, hereNow].join('|');
+    const sig = [floorNow, msgs.map(m => m.floor + ':' + m.h).join(), stSig, dbSig, varSig, custVer, customChat, chatId, seen, wbState, hasReg, hasCHM, hasMV, hasTRm, hasHereMod, hereNow, ...(d.oocSig ? [d.oocSig] : [])].join('|');
     if (sig === this.roundSig) return { changed: false, sig };
     this.roundSig = sig; this.lastMsgs = msgs;
     const events = collect(msgs, floorNow);
@@ -124,6 +134,10 @@ export class ContextPipeline {
       let presentFloor = Infinity;
       if (presentKey) { presentFloor = -1; for (const m of msgs) if (m.raw && m.raw.includes(presentKey)) presentFloor = m.floor; if (presentFloor < 0) presentFloor = msgs.length ? msgs[0].floor - 1 : floorNow; }
       out.chars = collectChars(msgs, floorNow, mc, known, presentFloor);
+      if (d.oocChars?.length) {   // D32: a player correction puts the person there from its floor, unless a later tag for that person already says otherwise
+        for (const c of d.oocChars) { const i = out.chars.findIndex(x => x.name === c.name), cur = out.chars[i]; if (cur && cur.src === 'tag' && cur.floor > c.floor) continue; const e = { name: c.name, place: c.place, floor: c.floor, src: 'tag', ooc: true }; if (i >= 0) out.chars[i] = e; else out.chars.push(e); }
+        out.chars.sort((a, b) => b.floor - a.floor || a.name.localeCompare(b.name));
+      }
       out.roster = rosters; out.rep = reputation;
     }
     return out;
@@ -198,7 +212,7 @@ export class ContextPipeline {
       const floor = Number(m?.floor);
       if (!Number.isFinite(floor) || floor < 0 || typeof m?.text !== 'string') { skipped.push(`messages[${i}] skipped`); return; }
       const raw = typeof m.raw === 'string' && m.raw ? m.raw : m.text;
-      list.push({ message_id: Math.floor(floor), message: raw, extra: typeof m.original === 'string' ? { _acu_original_content: m.original } : undefined });
+      list.push({ message_id: Math.floor(floor), message: raw, is_user: m.role === 'user', extra: typeof m.original === 'string' ? { _acu_original_content: m.original } : undefined });
     });
     const msgs = pipeline.readMsgs(list, list.length ? list[list.length - 1].message_id : -1);
     if (snap.state?.tag && typeof snap.state.tag === 'object' && !Array.isArray(snap.state.tag)) pipeline.tag = { floor: -1, log: [], seen: {}, ...snap.state.tag };

@@ -34,7 +34,7 @@ export const SCHEMA = {
   'eden-map:custom-reset': [VIEWER_TO_HOST, { key: 'string' }],
   'eden-map:custom-sync': [VIEWER_TO_HOST, { on: 'boolean?' }],
   'eden-map:varmap-set': [VIEWER_TO_HOST, { user: 'object?' }],
-  'eden-map:compose': [VIEWER_TO_HOST, { text: 'string' }],
+  'eden-map:compose': [VIEWER_TO_HOST, { text: 'string', ooc: 'boolean?' }],
   'eden-map:action': [VIEWER_TO_HOST, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/place-action-injection.mjs）
   'eden-map:loot': [VIEWER_TO_HOST, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
   'eden-map:stealth': [VIEWER_TO_HOST, { dc: 'number', from: 'string?', to: 'string?', seen: 'boolean?', hits: 'array?', worst: 'object?' }],   // Part 5-2：这次移动穿过了谁的视野（dc = 最难的一下；worst = {id,name,dc,dist,at} W2 补发，检定失败环用）
@@ -82,7 +82,7 @@ export const SCHEMA = {
   'eden-map:unmapped-pick': [HOST_TO_VIEWER, {}],
   'eden-map:sleep': [HOST_TO_VIEWER, {}],
   'eden-map:wake': [HOST_TO_VIEWER, {}],
-  'eden-map:compose-done': [HOST_TO_VIEWER, { ok: 'boolean?' }],
+  'eden-map:compose-done': [HOST_TO_VIEWER, { ok: 'boolean?', ooc: 'boolean?' }],
   'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', inject: 'object?', wb: 'object?', last: 'object?', result: 'object?', health: 'object?', healthSum: 'object?', providers: 'array?' }],   // S7-1: health only while watched; healthSum = { n, m }; providers = the AI advisor's endpoint presets (id, base, model); the key is never in this payload
   'eden-map:open': [HOST_TO_VIEWER, { map: 'string' }],   // 本机扩展入口（docs/content-compat.md），仓库内无发送方
   'eden-map:fly': [HOST_TO_VIEWER, {}],                     // 同上

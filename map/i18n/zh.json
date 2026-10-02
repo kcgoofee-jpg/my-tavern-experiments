@@ -877,5 +877,18 @@
   "v3.access": "出入",
   "v3.by_schedule": "位置按日程推算",
   "v3.kind": "类别",
-  "v3.none": "这里暂时没有人"
+  "v3.none": "这里暂时没有人",
+  "ooc.title": "提醒 AI",
+  "ooc.hint": "点一条，把一句 OOC 提示填进酒馆输入框（不会发送），让模型按地图读得懂的格式写出来。",
+  "ooc.tip": "填进输入框，不发送",
+  "ooc.done": "已填入输入框，未发送",
+  "ooc.fix": "地图认错了？在消息里写（OOC 地图：现在在 某处）或（OOC 地图：某人 在 某处）即可纠正。",
+  "ooc.tpl.place.label": "更新当前地点",
+  "ooc.tpl.place": "（OOC：请在回复末尾用隐藏标签写出当前所在地点：<span style=\"display:none\">⌖地点 层·地点</span>）",
+  "ooc.tpl.chars.label": "标出在场人物位置",
+  "ooc.tpl.chars": "（OOC：请在回复末尾为每位在场角色写出所在位置：<span style=\"display:none\">⌖人物 名字 @ 层·地点</span>）",
+  "ooc.tpl.event.label": "概括本段事件",
+  "ooc.tpl.event": "（OOC：请在回复末尾用一条标签概括本段事件：<span style=\"display:none\">⌖类别｜地点｜等级｜一句话｜发布方</span>）",
+  "ooc.tpl.items.label": "确认拾取的物品",
+  "ooc.tpl.items": "（OOC：本轮若有人拿到了物品，请在正文里明确写出谁拿起了什么，物品名写具体。）"
 }

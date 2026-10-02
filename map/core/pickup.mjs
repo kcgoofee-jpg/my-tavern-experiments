@@ -8,6 +8,8 @@
 //   ③ 纯核心：不碰 DOM / 宿主全局 / 存储 / 网络，数据进、事实出；node 单测 tests/auto_stash.test.mjs。
 // 本模块不写任何东西——落盘一律由宿主经 ledger / varssync 的结算闸门做（时序纪律见 tavern/settlement-guard.mjs）。
 
+import { stripOoc } from './ooc.mjs';
+
 /** 扫描规则的版本：规则改了就加一——存着的文字行带旧版本的指纹，下一轮在窗口里按新规则重放一次（误收的行自愈） */
 export const SCAN_VER = 3;
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
@@ -121,7 +123,7 @@ const NEG = ['没有', '没能', '无法', '不能', '没', '未', '不', '别']
 const NEG_EXCEPT = ['不由得', '不由', '不禁', '不得不', '不一会', '不久', '不料', '不觉', '不住'];
 const INTENT = ['想', '要', '打算', '准备', '试图', '企图', '希望', '如果', '要是', '假如', '若'];
 const NEG_EN = /(?:^|\s)(?:not|never)(?:\s|$)|n['’]t\b|\bno longer\b/i;
-const INTENT_EN = /\b(?:want to|wants to|try to|tries to|if|would|will)\b/i;
+const INTENT_EN = /\b(?:want to|wants to|try to|tries to|wish(?:es|ed)?|hope[sd]?|if|would|will)\b/i;
 const POTENTIAL = '看听想做找买办猜闻感觉等赶追吃用见';
 const TERMS = '。！？；…!?;\n';
 const isTerm = (t, i) => TERMS.includes(t[i]) || (t[i] === '.' && (i + 1 >= t.length || /\s/.test(t[i + 1])));
@@ -193,7 +195,7 @@ export function compile(vocab) {
  * authority 恒为 verified：这是地图侧的客观物理判定，不是自称（权威阶梯见 core/ledger.mjs）。
  */
 export function scan(s, o = {}) {
-  const text = String(s ?? '');
+  const text = stripOoc(s);   // OOC lines are the player talking to the model, never an action (D32)
   if (!text) return [];
   const C = compile(o.vocab), sp = spans(text);
   const known = o.known instanceof Set ? o.known : new Set(Array.isArray(o.known) ? o.known : []);

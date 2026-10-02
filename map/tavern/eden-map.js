@@ -268,7 +268,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (e.data?.type === 'eden-map:custom-sync') api.setWorldbookSync(!!e.data.on);
     if (e.data?.type === 'eden-map:splash') showSplash();   // 设置「重新显示开场自检」
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
-    if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text);   // v0.9.6 地图 → 聊天：只填不发
+    if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text, e.data.ooc);   // v0.9.6 地图 → 聊天：只填不发
     if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/place-action-injection.mjs）
     if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
     if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
@@ -305,10 +305,10 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   const leakSweep = id => { try { return LKF ? LKF.sweep(id) : 0; } catch (e) { return 0; } };
 
   let composeTemplatesModule = null;
-  async function composeIn(text) {
+  async function composeIn(text, ooc) {
     try { composeTemplatesModule ??= await import(scriptBase + 'tavern/compose-templates.mjs'); } catch (e) { return; }
     const how = composeTemplatesModule.insert(window.parent, text, typeof triggerSlash === 'function' ? triggerSlash : null);
-    post({ type: 'eden-map:compose-done', ok: !!how, how }); HA.facts.inject = { ...HA.facts.inject, lastOk: !!how, floor: floorNow };   // health: the host input was (not) found
+    post({ type: 'eden-map:compose-done', ok: !!how, how, ooc: !!ooc }); HA.facts.inject = { ...HA.facts.inject, lastOk: !!how, floor: floorNow };   // health: the host input was (not) found
   }
   // ---------------- Part 6-2 后台静默推演 ----------------
   // 面板关着时，隔一阵把新楼层以只读方式扫一遍（补齐事态 / 人物 / 行程的缓存），玩家再开地图就是热的。
@@ -470,7 +470,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   function readMsgs() {
     let list = null;
     try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
-    return contextPipeline.readMsgs(list, floorNow);
+    const out = contextPipeline.readMsgs(list, floorNow); CF.oocRead(out, floorNow); return out;   // D32: the player's OOC map corrections (user floors) are read with the window
   }
   function recompute(lite = false) {
     if (!EVM || life.dead) return;
@@ -480,7 +480,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) { /* unparsable value: keep the default */ }
     // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
     const r = contextPipeline.round({ floorNow, msgs, stSig, dbSig: mvuBridge.dbSig(), varSig: mvuBridge.varSig, custVer, customChat: RS.customChat, chatId: chatId(), seen, wbState: RS.wbState,
-      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.mvuReaders, hasTRm: !!CF.tripsParseModule, hasHereMod: !!HA.transitMod, hereNow, collect: EVM.collect,
+      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.mvuReaders, hasTRm: !!CF.tripsParseModule, hasHereMod: !!HA.transitMod, hereNow, collect: EVM.collect, oocChars: CF.ooc.chars, oocSig: CF.ooc.sig,
       charsDeps: CHM ? {
         mvuChars: CHM.mvuChars(st, hereNow, mvuBridge.varMap.present),
         known: mvuBridge.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）

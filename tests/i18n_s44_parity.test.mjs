@@ -65,7 +65,7 @@ for (const lang of ['zh', 'en']) {
 }
 
 test('the T6 polish: no Chinese left in English values (except the literal markers the user types or sees and the bilingual report header), the tightened values are shorter and keep their placeholders, the fixes hold', () => {
-  const en = J('map/i18n/en.json'), zh = J('map/i18n/zh.json'), KEEP = new Set(['here_ph', 'th.wbxtal', 'app.report', '_092', '_093', '_095', '_E7', '_E5', '_uiv2', 's.src_vars']);
+  const en = J('map/i18n/en.json'), zh = J('map/i18n/zh.json'), KEEP = new Set(['here_ph', 'th.wbxtal', 'app.report', 'ooc.tpl.place', 'ooc.tpl.chars', 'ooc.tpl.event', '_092', '_093', '_095', '_E7', '_E5', '_uiv2', 's.src_vars']);
   const cjk = Object.entries(en).filter(([k, v]) => typeof v === 'string' && /[一-鿿]/.test(v) && !KEEP.has(k)).map(([k]) => k);
   assert.deepEqual(cjk, []);
   for (const k of Object.keys(T6)) {

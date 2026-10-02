@@ -1732,3 +1732,15 @@ blocker: none
 open: SW2-06 and SW2-02 / 05 re-check in TT on the next sweep
 cleanup: done
 === END ===
+
+=== RESULT OOC-1 ===
+status: DONE
+items: 1 templates (4, zh + en, pack-overridable through strings) ✓ | 2 「提醒 AI」 button (AI link page, fills via the compose path, never sends, toast 「已填入输入框，未发送」) ✓ | 3 OOC is not action (stripOoc in readMsgs for user floors and in pickup.scan; desire / wish forms pinned) ✓ | 4 player correction (place via MVUBridge.here, person via round) ✓ | 5 tests ✓ | 6 D32 plan rows (en + zh) ✓
+commits: see git log for branch ooc-1 (one commit: feat(ooc): templates, nudge button, OOC exclusion, player corrections (D32))
+pushed: yes (head # in the chat report)
+tests: node 1500 (was 1491; +9 in tests/ooc_d32.test.mjs, 1 skipped as before) | smoke PASS | arch PASS | probes: p6_action=PASS ooc_d32=PASS (new, tools/browser/ooc_d32.mjs)
+deviations: the button sits on the AI link page (settings overflow, next to the compose templates) rather than the top bar; a person correction holds until a later ⌖人物 tag for that person (it also beats an MVU / same-place position), while a place correction ends on a later MVU place change or a later place tag / header; SCAN_VER not bumped (the OOC and wish rules only remove false hits that were never stored)
+blocker: none
+open: none
+cleanup: done
+=== END ===
