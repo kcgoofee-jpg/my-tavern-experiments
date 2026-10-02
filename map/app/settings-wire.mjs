@@ -60,7 +60,7 @@ onBuilt('update', () => { $('#linePick').onclick = () => { showSet(false); post(
 onBuilt('adv', () => {
   sw('#optEdit', 'edenMapEdit', false, v => setEdit(v)); sw('#optPackRemote', 'edenMapPackRemote', false, () => reproject(true));   // S9b：编辑模式与「加载包里用链接给出的图片」（K-R100 / K-R101，默认关）
   sw('#optKeys', 'edenMapKeys', false); sw('#optTick', 'edenMapTick', true);   // Part 6-2 后台静默推演（宿主每 15 s 判一次，跑不跑由 background-scan-scheduler.mjs 的 plan 决定）
-  sw('#optFps', 'edenMapFps', false, v => { setFpsMeter(v); estateLook(); });
+  sw('#optFps', 'edenMapDebugFps', false, v => { setFpsMeter(v); estateLook(); });
   $('#kbdBtn').onclick = () => kbdHelp($('#kbdHelp').hidden);
   $('#hintAgain').onclick = () => { try { LocalStore.remove('edenMapHint'); LocalStore.remove('edenMapHintN'); } catch (e) {} showSet(false); firstRunHint(); };
   const hd = $('#hereDev'), h = $('#here');   // 开发者：单独打开时的「当前地点」输入（和顶栏那个是同一个值）

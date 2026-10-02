@@ -92,7 +92,7 @@ try {
     rep.check('唤醒：不出加载页，第一帧 < 100 ms', wk.cur === 'eden_estate' && !wk.ld && wk.vis !== 'hidden' && rf && !rf.paused && rf.resumeMs >= 0 && rf.resumeMs < 100, JSON.stringify({ wk, rf }));
     // FPS 只留一份（U，2026-09-28）：开着庄园三维子页时，外层顶栏那个绿色读数该让位给子页自己画的那份
     const fpsDup = await V.evaluate(async () => {
-      window.LocalStore.set('edenMapFps', '1');
+      window.LocalStore.set('edenMapDebugFps', '1');
       const [{ setFpsMeter }, { estateLook }] = await Promise.all([import('./app/fps.mjs'), import('./app/subpage3d-host.mjs')]);
       setFpsMeter(true); estateLook();
       await new Promise((r) => setTimeout(r, 300));

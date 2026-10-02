@@ -13,7 +13,7 @@ export const KEYS = {
   edenMapTheme: { owner: 'viewer', def: 'auto' }, edenMapGlassClock: { owner: 'app/theme.mjs', def: '0' }, edenMapLang: { owner: 'viewer', def: 'zh' }, edenMapHand: { owner: 'viewer', def: 'auto' },
   edenMapTierV2: { owner: 'viewer' }, 'edenMapAlt:': { owner: 'viewer', prefix: true }, edenMapBarriers: { owner: 'viewer' }, edenMapRoutes: { owner: 'viewer' },
   edenMapKeys: { owner: 'viewer', def: '0' } /* 单字母快捷键 + 事态操作字母角标，默认关（用户 2026-09-28 反馈） */, edenMapRM: { owner: 'viewer', def: 'auto' }, edenMap3dQ: { owner: 'viewer', def: 'auto' }, edenMap3dAuto: { owner: 'viewer', def: '0' },
-  edenMapFps: { owner: 'viewer', def: '0' }, edenMapNoFx: { owner: 'viewer' }, edenMapCharStats: { owner: 'viewer' }, edenMapCharMore: { owner: 'viewer' },
+  edenMapDebugFps: { owner: 'viewer', def: '0' } /* U-FIX-5 S-05: was edenMapFps; a stale '1' from older builds no longer turns the debug HUD on */, edenMapNoFx: { owner: 'viewer' }, edenMapCharStats: { owner: 'viewer' }, edenMapCharMore: { owner: 'viewer' },
   edenMapAutoCheck: { owner: 'viewer' }, edenMapAutoUpdate: { owner: 'viewer', def: '0' }, edenMapLockTag: { owner: 'viewer' }, edenMapRailW: { owner: 'viewer' }, edenMapHint: { owner: 'viewer' }, edenMapHintN: { owner: 'viewer' }, edenMapFog: { owner: 'app/fog.mjs', def: '1' },
   edenMapMinimap: { owner: 'viewer', def: '0' },   // U14（2026-09-28）：左下角小地图，默认关，设置「显示」可开
   edenMapCvd: { owner: 'app/color-vision-mode.mjs', def: '0' },   // 色觉模式：0 关 / rg 红绿 / by 蓝黄（E7）

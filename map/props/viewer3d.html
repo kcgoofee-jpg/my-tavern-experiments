@@ -114,7 +114,7 @@ const PID = window.__packId || 'eden';   // 宿主查看器注入（app/subpage3
 const NKEY = k => nsKey(k, PID);
 const LSg = k => { try { return localStorage.getItem(NKEY(k)); } catch (e) { return null; } };
 // 调试：显示帧率——本页多数时候是 blob: 载入的子 iframe，跟宿主不同源，读不到宿主 localStorage；开关靠宿主 estate:fps 消息（同源直开时 LSg 兜底）
-let FPS_ON = Q.has('fps') || LSg('edenMapFps') === '1';
+let FPS_ON = Q.has('fps') || LSg('edenMapDebugFps') === '1';
 const C = UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'cut', label: '剖切' }], view: 'ext', onView: m => setMode(m), sub: document.getElementById('cut'),
   tabs: [{ id: 'parts', btnClass: 'partsTab', panel: document.getElementById('list') }, { id: 'flows', btnClass: 'flowsTab', panel: document.getElementById('flows') }, { id: 'info', btnClass: 'infoTab', panel: document.getElementById('info') }],
   controls: [{ id: 'zin', icon: 'in', onClick: () => dolly(1 / 1.4) }, { id: 'zout', icon: 'out', onClick: () => dolly(1.4) }, { id: 'zreset', icon: 'reset', onClick: () => { select(null); camTouched = false; frameStart(); } },

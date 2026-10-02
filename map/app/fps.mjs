@@ -48,6 +48,6 @@ document.addEventListener('visibilitychange', () => {
 
 export function initFpsMeter() {
   let on = false;
-  try { on = window.LocalStore?.get('edenMapFps') === '1'; } catch (e) {}
+  try { on = window.LocalStore?.get('edenMapDebugFps') === '1'; } catch (e) {}
   setFpsMeter(on);
 }

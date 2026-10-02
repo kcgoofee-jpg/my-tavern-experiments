@@ -67,6 +67,8 @@ export function showCard(el, name, src, extra, sub, cover, compose = !!el) {
   if (typeof plugins.EstateShell !== 'undefined') plugins.EstateShell.decorate?.(el, name);   // S7-3: a building with a 3D page: its rooms by floor
   if (typeof plugins.WorldbookPeekView !== 'undefined') plugins.WorldbookPeekView.decorate(el, name);   // W8 世界书档案胶囊：附加书里这个地点的条目摘要（只读）
   if (typeof plugins.ComposeView !== 'undefined') plugins.ComposeView.attach(compose ? { go: el?.dataset?.name || name, ask: el?.dataset?.name || name } : null);   // v0.9.6 地图 → 聊天：地点卡；事件 / 人物卡由 events.js / chars.js 另挂
+  for (let n = c.parentElement; n && n !== document.body; n = n.parentElement) if (n.scrollTop) n.scrollTop = 0;   // U-FIX-5 E5-03：新卡从顶上开始（抽屉正文不带着上一张卡的滚动位置）
+  c.scrollTop = 0;
   declutter();
 }
 // user = 用户主动关闭（× / Esc）：焦点回到打开卡片的元素

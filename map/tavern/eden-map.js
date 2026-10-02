@@ -241,7 +241,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
       if (e.data.theme) hostTheme(e.data.theme);
       if (e.data.hand && e.data.hand !== handPref) { handPref = e.data.hand; applyHand(true); }
       mapTitle = e.data.title || ''; showTitle(); }
-    if (e.data?.type === 'eden-map:esc') close();   // 地图里没有可关的卡片 / 列表时，Esc 关闭面板
+    if (e.data?.type === 'eden-map:esc') { if (e.data.from === 'key' && !TL.tlEl.hidden) TL.tlExit(); else close(); }   // 地图里没有可关的卡片 / 列表时 Esc 先关回放条（宿主自己的一层，X-01），再关面板；× 按钮直接关
     if (e.data?.type === 'eden-map:line-pick') showPicker(); if (e.data?.type === 'eden-map:tiles-failed') { const k = nextRoute({ lines: LINES, current: line, swappable, lastAt: tileSwitchAt }); post({ type: 'eden-map:tiles-route', switched: !!k, line: k || undefined }); if (k) { tileSwitchAt = Date.now(); setTimeout(() => chooseLine(k, true), 400); } }   // N13：瓦片全挂 → 自动换到另一条线路一次（之后再失败才由查看器提示）
     if (e.data?.type === 'eden-map:storage-info' || e.data?.type === 'eden-map:storage-clean') {   // 设置「数据与映射」：存储占用、数据来源；清理 = 只留最近 5 个聊天的地图数据
       (async () => { let cleaned = null; const st = store();
@@ -422,7 +422,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     { const h = getHere(); if (h !== here) unm = null; here = h; }   // 地点变了：等地图重新判断是否上图
     // 一个地点胶囊：MVU 里写了多处（「A / B」）只显示第一处，全文在 title；右侧省略
     const full = userName(here), parts = full.split(/\s*[\/／|｜]\s*/).filter(Boolean);
-    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], uiLang === 'en') || chainText(parts[0]); hereEl.append(a); }
+    hereEl.innerHTML = ''; if (parts[0]) { const a = pdoc.createElement('span'); a.className = 'em-nm'; a.textContent = unm ? U('unm') + userName(unm) : HA.transitMod?.transitLabel?.(parts[0], uiLang === 'en') || CF.placeText(parts[0]) || chainText(parts[0]); hereEl.append(a); }
     hereEl.classList.toggle('em-unsure', mvuBridge.snapState !== 'ok' && mvuBridge.snapState !== 'none' && !!parts[0]);   // 未确认：显示上一份快照，灰掉 + 提示（不显示空白、不猜）
     hereEl.classList.toggle('em-unm', !!unm && !!parts[0]); if (unm && parts[0]) { hereEl.setAttribute('role', 'button'); hereEl.tabIndex = 0; } else { hereEl.removeAttribute('role'); hereEl.removeAttribute('tabindex'); }   // 途中（v0.9.5）：「A → B（途中）」
     if (parts.length > 1) { const b = pdoc.createElement('span'); b.className = 'em-more'; b.textContent = ` +${parts.length - 1}`; hereEl.append(b); } hereEl.title = full ? U('here') + full : '';

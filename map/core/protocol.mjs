@@ -15,7 +15,7 @@ export const SCHEMA = {
   'eden-map:progress': [VIEWER_TO_HOST, { pct: 'number' }],
   'eden-map:loaded': [VIEWER_TO_HOST, {}],
   'eden-map:state': [VIEWER_TO_HOST, { map: 'string?', title: 'string?', lang: 'string?', theme: 'string?', hand: 'string?' }],
-  'eden-map:esc': [VIEWER_TO_HOST, {}],
+  'eden-map:esc': [VIEWER_TO_HOST, { from: 'string?' }],   // from = 'key'：Esc 逐层关到底（宿主先关回放条）；没有 = × 按钮（直接关面板）
   'eden-map:build': [VIEWER_TO_HOST, {}],
   'eden-map:line-pick': [VIEWER_TO_HOST, {}],
   'eden-map:tiles-failed': [VIEWER_TO_HOST, {}],

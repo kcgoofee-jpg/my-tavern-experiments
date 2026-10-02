@@ -63,7 +63,7 @@
   #grade { position: fixed; inset: 0; pointer-events: none; display: none; mix-blend-mode: soft-light; background: linear-gradient(180deg, rgba(255,214,150,.20), rgba(255,190,120,.10) 55%, rgba(40,70,70,.10)); }
   body:not(.embed) #vignette, body:not(.embed).grade #grade { display: block; }
   html.noblur *, html.noblur *::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-  #stats { position: absolute; right: 56px; bottom: var(--sp-6); font: var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--glass-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-s); white-space: pre; display: none; }
+  #stats { position: absolute; left: var(--sp-6); bottom: var(--sp-6); max-width: calc(100% - 2 * var(--sp-6)); overflow: hidden; font: var(--fs-micro)/1.4 var(--font-mono); color: var(--muted); background: var(--glass-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-s); white-space: pre; display: none; }
   #stats.on { display: block; }
   #app canvas.pick { cursor: pointer; }
   /* the room card (standalone page only: inside the viewer the card is the viewer's) and the one small hover label */

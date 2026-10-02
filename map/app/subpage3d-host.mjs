@@ -185,7 +185,7 @@ function onEstateReady(d = {}) {
 // 离开主场景：返回 iframe，由调用方在新底图画出来后淡出移除
 export function leaveEstate() {
   document.body.classList.remove('estate'); document.documentElement.classList.remove('view3d'); visibilityGuard.set('covered', false); estateActs('');
-  try { setFpsMeter(window.LocalStore?.get('edenMapFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
+  try { setFpsMeter(window.LocalStore?.get('edenMapDebugFps') === '1'); } catch (e) {}   // 三维子页关掉了，外层顶栏那份 FPS 读数回来（配 estateLook 的 setFpsMeter(false)）
   if (!subpageSession) return null;
   stopTileTo3d(false); EstateShell.detach();
   const f = subpageSession.frame, ready = subpageSession.ready; subpageSession = null; live3d = 0;
@@ -205,7 +205,7 @@ export function estateLook() {
   w.postMessage({ type: 'estate:theme', theme: document.documentElement.classList.contains('light') ? 'light' : 'dark' }, SUB_ORIGIN);
   w.postMessage({ type: 'estate:quality', q: q3Pref() }, SUB_ORIGIN);   // 改画质不用重载
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：主场景 / 三维页换配色，不重载
-  let fps = false; try { fps = window.LocalStore?.get('edenMapFps') === '1'; } catch (e) {}
+  let fps = false; try { fps = window.LocalStore?.get('edenMapDebugFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
   { const ls = k => { try { return window.LocalStore?.get(k) === '1'; } catch (e) { return false; } }; w.postMessage({ type: 'estate:camera', autoRotate: ls('edenMap3dAutoRotate'), wheelZoom: ls('edenMap3dWheelZoom'), rm: !!window.__reducedMotion }, SUB_ORIGIN); }   // I-06: camera settings and reduced motion, no reload
   setFpsMeter(false);
