@@ -11,6 +11,11 @@
     /usr/bin/python3 tools/oblique_gridcheck.py day <中层昼图.png> --upper <上层昼图.png> [--max-ratio .6] [--band .62]
     中层取画面下方 (1 − band) 一段（35° 斜视里是近处街面峡谷），上层取不透明像素（岛面），比中位亮度。
     顺带报画面下三成里的品红 / 青色像素数（昼图里霓虹仍要可辨）。
+
+第 5 条·下层无天光（暗检图）：
+    /usr/bin/python3 tools/oblique_gridcheck.py dark <暗检图.png> [--max .01]
+    暗检图 = blender/low_oblique.py --dark 1 出的 512 px 图：所有灯与自发光关掉、世界归零，只留白班那束 7 号井光柱。
+    报平均亮度、最亮 0.1 % 像素与超过 --max 的像素占比；平均亮度 < --max 才算过（夜里没有一层自然光漏进来）。
 """
 import json, os, sys
 import numpy as np
@@ -115,6 +120,25 @@ def day(png, upper, max_ratio=.6, band=.62, report=''):
     return R
 
 
+def dark(png, max_mean=.01, report=''):
+    """§0.8 第 5 条（下层无天光）：关掉所有灯与自发光后重渲的暗检图，除白班 7 号井光柱外应全黑。"""
+    im, lum = load(png)
+    solid = im[..., 3] > .5
+    v = lum[solid] if solid.any() else lum.ravel()
+    n = max(1, int(v.size * .001))
+    hi = float(np.partition(v.ravel(), -n)[-n])
+    ys, xs = np.nonzero(lum == lum.max())
+    over = v > max_mean
+    R = dict(png=os.path.basename(png), size=[lum.shape[1], lum.shape[0]], mean_lum=round(float(v.mean()), 5),
+             max_lum=round(float(v.max()), 4), p999_lum=round(hi, 4), over_max_px=int(over.sum()),
+             over_max_pct=round(100.0 * over.sum() / max(1, v.size), 4),
+             brightest_xy=[int(xs[0]), int(ys[0])] if len(xs) else None, max_mean=max_mean,
+             passed=bool(float(v.mean()) < max_mean))
+    if report: json.dump(R, open(report, 'w'), ensure_ascii=False, indent=1)
+    print(json.dumps(R, ensure_ascii=False, indent=1))
+    return R
+
+
 if __name__ == '__main__':
     a = sys.argv[1:]
     if not a: sys.exit(__doc__)
@@ -126,4 +150,5 @@ if __name__ == '__main__':
              open_lum=num('--open-lum', .02), cover=num('--cover', .9),
              foot=tuple(float(x) for x in fp.split(',')) if fp else None, report=kw.get('--report', ''))
     elif mode == 'day': day(png, kw['--upper'], num('--max-ratio', .6), num('--band', .62), kw.get('--report', ''))
+    elif mode == 'dark': dark(png, num('--max', .01), kw.get('--report', ''))
     else: sys.exit(__doc__)

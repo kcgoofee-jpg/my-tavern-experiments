@@ -767,6 +767,11 @@ if LM_HEADS: tc.box_mesh('landmark_heads', [(x, y, s, s, z, z + .003) for x, y, 
 tick('landmarks')
 
 # ---------------- 环境：几乎没有天光（中层底面反射下来的一点暗橙）；--day：浊一点的暖灰天 + 斜射日光（头顶是中层结构，不给正午蓝天）----------------
+if os.environ.get('TC_OBLIQUE'):                             # 斜视主地图（D41 批 3）：low_oblique.py 接管班次光照、共用相机、画框与成图
+    import low_oblique
+    low_oblique.main(layer, city)
+    sys.exit(0)
+
 if DAY:
     tc.day_reset()                                             # 夜景灯光全拆（含 7 号井的竖井冷光）、发光面改暗色漆面
     # 2026-09-29：对齐中层白天版的提亮（中层 sun 3.2→4.2 / 天光 .35→1.0 / +.5 档曝光，已自评 7.5/10）。
