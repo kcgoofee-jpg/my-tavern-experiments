@@ -396,7 +396,27 @@ They import core state from `app/*` and reach each other only through `app/plugi
 
 ## 4. Data flow host → viewer
 
-One direction, end to end (brief §2.3):
+Data crosses the host boundary in one direction (brief §2.3), but inside the host the entry is a hub, not a line.
+
+**As the code runs today** (D16): `tavern/eden-map.js` and its `createX(host)` flow modules are the hub. The entry builds the
+MVUBridge and ContextPipeline (via `chars-flow`), calls the ledger (via `stash-flow`) and the protocol, and the flow
+modules reach each other through the one `host` deps bag; nothing hands data along a chain.
+
+```
+Mvu / SillyTavern globals
+        ▲  (only tavern/mvu-bridge.mjs touches them)
+        │
+    MVUBridge ◄────────┐                    ┌──► ledger (core/ledger.mjs) + varsync (tavern/settlement-guard.mjs)
+                       │                    │
+ContextPipeline ◄──► host entry  tavern/eden-map.js ──► protocol SCHEMA (core/protocol.mjs) ──► postMessage
+(tavern/context.mjs)   the hub: schedules, calls, wires │                                        │
+                       │                    │          ▼                                        ▼
+                       └─ createX(host) flow modules   viewer intents ◄─ viewer modules (app/*) ► LayerRegistry slots
+                          (stash, chars, llm, timeline, modes, root-store, host-api, host-checks;
+                           one `host` deps bag, built once in the entry)
+```
+
+**Target** — the linear chain the hub is meant to converge on (each stage a pure step feeding the next):
 
 ```
 Mvu / SillyTavern globals

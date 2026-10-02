@@ -374,7 +374,25 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ## 4. 宿主 → 查看器的数据流
 
-从头到尾单向（铁律 §2.3）：
+数据穿过宿主边界是单向的（铁律 §2.3），但在宿主内部，入口是一个中枢，不是一条直线。
+
+**代码今天的实际样子**（D16）：`tavern/eden-map.js` 与它的 `createX(host)` flow 模块是中枢。入口建好 MVUBridge 和 ContextPipeline（经 `chars-flow`），经 `stash-flow` 调用账本，并调用协议；各 flow 模块通过同一个 `host` 依赖袋互相够得着，没有哪一环把数据顺着链条往下递。
+
+```
+Mvu / SillyTavern globals
+        ▲  (only tavern/mvu-bridge.mjs touches them)
+        │
+    MVUBridge ◄────────┐                    ┌──► ledger (core/ledger.mjs) + varsync (tavern/settlement-guard.mjs)
+                       │                    │
+ContextPipeline ◄──► host entry  tavern/eden-map.js ──► protocol SCHEMA (core/protocol.mjs) ──► postMessage
+(tavern/context.mjs)   the hub: schedules, calls, wires │                                        │
+                       │                    │          ▼                                        ▼
+                       └─ createX(host) flow modules   viewer intents ◄─ viewer modules (app/*) ► LayerRegistry slots
+                          (stash, chars, llm, timeline, modes, root-store, host-api, host-checks;
+                           one `host` deps bag, built once in the entry)
+```
+
+**目标**——中枢要收敛成的线性链路（每一段是纯函数式的一步，喂给下一段）：
 
 ```
 Mvu / SillyTavern globals
