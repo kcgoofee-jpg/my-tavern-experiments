@@ -33,7 +33,7 @@ export function renderNav() {
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = localName(mapRegistry.maps[k], 'title');
     return i < chain.length - 1 ? `<a data-go="${k}"${zone(chain[i + 1])} role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
   const g = layerIds(m), nav = $('#layers'), floors = EstateShell.stripFloors(nav);   // floors = the 3D shell drew the strip
-  if (!floors) nav.hidden = !g.length;
+  if (!floors) { nav.hidden = !g.length; if (!g.length) nav.replaceChildren(); }   // U-FIX-5 W-01: a map without levels (the world) keeps no buttons of the previous map (the 3D action may still add itself)
   nav.title = uiTextOr('layers.keys', 'PageUp / PageDown 或 [ ] 切换上下层');
   if (g.length && !floors) nav.innerHTML = g.map(k => { const L = mapRegistry.maps[k], planned = L.status === 'planned';
     return `<button type="button" data-go="${k}" class="${k === currentMapId ? 'on' : ''}" ${k === currentMapId ? 'aria-current="page"' : ''} ${planned ? `disabled title="${esc(uiTextOr('layers.planned', '制作中'))}"` : ''}>${esc(localName(L.layer))}<i class="hd" title="${esc(uiTextOr('layers.here', '当前地点在这一层'))}"></i><em class="evn"></em><small>${esc(planned ? uiTextOr('layers.planned', '制作中') : localName(L.layer, 'alt'))}</small></button>`; }).join('');
@@ -75,7 +75,7 @@ function escTop() {
   const up = EstateShell.active() && parentMap(currentMapId); if (up) { go(up); return true; }   // S7-3: in a 3D building Esc steps back up to the 2D map
   return false;
 }
-export function onEsc() { if (noticeLayer?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc' }); }   // P0 阻断卡开着：Esc 不关任何东西
+export function onEsc() { if (noticeLayer?.blocking) return; if (!escTop()) post({ type: 'eden-map:esc', from: 'key' }); }   // P0 阻断卡开着：Esc 不关任何东西；from = key：宿主还有自己的一层（回放条）要先关（U-FIX-5 X-01）
 const keysOn = () => { try { return LocalStore.get('edenMapKeys') !== '0'; } catch (e) { return true; } };
 document.addEventListener('keydown', e => {
   if (typeof plugins.CustomNamesView !== 'undefined' && plugins.CustomNamesView.dlgKey(e)) return;   // 「自定义」对话框开着：按键归它（Esc 逐页返回 / 关闭）

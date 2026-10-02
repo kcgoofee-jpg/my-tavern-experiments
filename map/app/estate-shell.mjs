@@ -102,7 +102,7 @@ export function stepFloor(d) { const i = S.floors.findIndex(f => f.id === S.floo
 const strip = () => renderNav();
 /** the level strip shows the building's floors while the 3D view is open (map-level-nav.mjs renderNav asks first); true = drawn here */
 export function stripFloors(nav) {
-  if (!S.on || !S.floors.length) return false;
+  if (!S.on || !S.floors.length || !isScene(currentMapId)) return false;   // U-FIX-5 W-01: leaving the building, the 2D map's strip is drawn before the shell detaches
   nav.hidden = false;
   nav.replaceChildren(...S.floors.map(f => { const b = document.createElement('button'); b.type = 'button'; b.dataset.floor = f.id; const on = S.mode === 'sect' && S.floor === f.id; b.className = on ? 'on' : ''; if (on) b.setAttribute('aria-current', 'true');
     b.append(f.id); if (f.label && f.label !== f.id) { const s = document.createElement('small'); s.textContent = f.label; b.append(s); b.title = f.label; } return b; }).reverse());

@@ -777,7 +777,7 @@ function focusView(it) {
   sph.setFromVector3(camera.position.clone().sub(controls.target));
   const [pw, ph] = projExtent(it.w, it.dd, 3, sph.theta, sph.phi);
   const pad = it.kind === 'room' ? 1.4 : 1.25;
-  flyTo({ target: new THREE.Vector3(it.cx, it.y, it.cz), zoom: fitZoom(pw * pad + 8, ph * pad + 8), theta: null, phi: null });
+  flyTo({ target: new THREE.Vector3(it.cx, it.y, it.cz), zoom: Math.min(fitZoom(pw * pad + 8, ph * pad + 8), it.kind === 'room' && isFloor(mode) ? viewFor(mode).zoom * 2 : Infinity), theta: null, phi: null });   // U-FIX-5 E1-01: a room keeps its floor around it (at most 2x the floor's framing)
 }
 function focusItem(it) {
   if (it.kind === 'room' && mode !== it.floor) setMode(it.floor);

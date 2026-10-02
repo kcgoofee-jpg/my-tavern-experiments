@@ -69,7 +69,7 @@ export function separateTags(tags) {
   const rs = tags.filter((t) => t.el.style.display !== 'none').map((t) => ({ t, r: t.span.getBoundingClientRect() })).filter((x) => x.r.height > 0).sort((a, b) => a.r.top - b.r.top);
   let bottom = -1e9;
   for (const x of rs) {
-    const shift = Math.max(0, bottom + 2 - x.r.top);
+    const shift = Math.max(0, bottom + 8 - x.r.top);   // U-FIX-5 E2-01: an 8 px gap, so F3 / F2 / F1 read as separate tags, not one stack
     x.t.span.style.setProperty('--dy', shift + 'px'); x.t.span.style.setProperty('--dx', Math.max(0, 4 - x.r.left) + 'px');   // a tag whose anchor sits near the left edge (phones) slides back into view
     x.t.el.classList.toggle('occl', x.r.bottom + shift > innerHeight - 4);
     if (!x.t.el.classList.contains('occl')) bottom = x.r.bottom + shift;

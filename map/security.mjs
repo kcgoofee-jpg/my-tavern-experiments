@@ -50,8 +50,9 @@ const SecurityView = (() => {
   registry.register(declared('security', { initialVisible: isOn(),
     setVisible: v => set(v) }));
   function afterOpen() { const lab = document.getElementById('tgSec'); if (lab) lab.hidden = !(typeof mapRegistry !== 'undefined' && mapRegistry.maps[currentMapId]?.kind === 'points' && data?.items?.some(i => i.map === currentMapId)); load().then(() => { if (lab) lab.hidden = !data?.items?.some(i => i.map === currentMapId); render(); }); }
+  // U-FIX-5 U-02: the badge sits below-left of the pin; the people ring of the player's place is on the right
   const css = `
-  .mk .secb{position:absolute;left:50%;top:100%;transform:translate(-50%,2px);padding:0 5px;border-radius:var(--r-pill,999px);background:var(--map-label-bg,rgba(8,10,14,.8));border:1px solid rgba(140,230,255,.75);color:rgba(170,235,255,.95);font:600 var(--fs-micro,11px)/15px var(--font-ui,sans-serif);white-space:nowrap;pointer-events:none;letter-spacing:.08em}
+  .mk .secb{position:absolute;right:calc(50% + 4px);top:100%;transform:translateY(2px);padding:0 5px;border-radius:var(--r-pill,999px);background:var(--map-label-bg,rgba(8,10,14,.8));border:1px solid rgba(140,230,255,.75);color:rgba(170,235,255,.95);font:600 var(--fs-micro,11px)/15px var(--font-ui,sans-serif);white-space:nowrap;pointer-events:none;letter-spacing:.08em}
   #card .secbox{margin-top:var(--sp-5);padding-top:var(--sp-4);border-top:1px solid var(--line)}
   #card .secbox>b{font-size:var(--fs-small);color:var(--ink-2)}
   #card .secbox dl.fields{margin-top:var(--sp-3)}

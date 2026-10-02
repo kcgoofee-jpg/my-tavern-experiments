@@ -212,8 +212,17 @@ let declT = 0;
 // E5（R14 / L2）：事态点也参加避让。事态图标是可点的，永远保留并当作障碍：压在图标上的普通地标名隐藏（当前地点、首府除外）；
 // 世界图国名（.realm）排在首府之后保留，「中小国」小字最后；事态的文字标签和已保留的标签重叠时收起，只留图标
 export let declutterMs = 0;   // the duration of the last pass (read through the debug surface)
+// U-FIX-5 U-01 / L-01: a name whose pin is on the map but whose label runs past the map's left / right edge (or under the side rail) slides back inside; the pin stays
+function clampLabels() {
+  const osd = $('#osd')?.getBoundingClientRect(); if (!osd?.width) return;
+  const S = window.ViewerDrawer, dr = S?.el && !S.el.hidden ? S.el.getBoundingClientRect() : null;
+  const right = dr?.width && dr.left > osd.left + osd.width / 2 && dr.left < osd.right ? dr.left : osd.right, L = osd.left + 6, R = right - 6;
+  const labs = [...document.querySelectorAll('.mk .lab')]; labs.forEach(l => l.style.removeProperty('--ldx'));
+  const rs = labs.map(l => [l, l.getBoundingClientRect(), l.closest('.mk')?.querySelector('.pin')?.getBoundingClientRect()]);
+  for (const [l, r, p] of rs) { if (!r.width || !p?.width || p.right < osd.left || p.left > right) continue; const dx = r.left < L ? L - r.left : r.right > R ? R - r.right : 0; if (dx) l.style.setProperty('--ldx', Math.round(dx) + 'px'); }
+}
 export function declutter() { clearTimeout(declT); declT = setTimeout(() => {
-  const t0 = performance.now();
+  const t0 = performance.now(); clampLabels();
   const mks = [...document.querySelectorAll('.mk')], evs = [...document.querySelectorAll('.ev, .chm')], words = [...document.querySelectorAll('.realm, .minor')];
   if (!mks.length && !evs.length) return;
   const rank = e => e.classList.contains('here') || e.classList.contains('active') ? 0 : e.classList.contains('capital') || e.classList.contains('op') ? 1 : e.dataset.focus ? 2 : e.dataset.link ? 3 : 4;

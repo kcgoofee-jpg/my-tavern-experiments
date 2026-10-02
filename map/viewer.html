@@ -272,7 +272,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .vpslot { position: absolute; inset: 0; pointer-events: none; isolation: isolate; }
   .vpslot :is([data-hit], .hit) { pointer-events: auto; }
   /* ---------- 浮动控制列 C（§2.3 / §10.1）：手机 = 拇指侧 ⋯ + − ⌂，跟着抽屉高度上移；桌面 = 右下（右栏左侧）层切换 + − ⌂ 🏷 ---------- */
-  #dock { position: absolute; z-index: var(--zu-dock); right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--tl-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none;
+  #dock { position: absolute; z-index: var(--zu-dock); right: calc(var(--rail-w-now, 0px) + var(--sp-5)); bottom: calc(var(--sheet-h, 0px) + var(--tl-h, 0px) + var(--sp-5)); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); pointer-events: none; max-height: calc(100% - var(--sheet-h, 0px) - var(--tl-h, 0px) - 2 * var(--sp-5));   /* U-FIX-5 N-01: the column never runs under the header; the strip scrolls */
     transition: bottom var(--dur-2) var(--ease-out), right var(--dur-2) var(--ease-out); }
   #dock > * { pointer-events: auto; }
   #dock[hidden], body.estate #dock { display: none; }
@@ -290,7 +290,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
 
   /* ---------- 层切换器（纵向分段）：一个 Panel 容器；选中 = 弱底 + 左 3 px 强调线 + 强调色字 + aria-current ---------- */
   #layers { position: relative; z-index: var(--zu-layers);
-    display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); border-radius: var(--r-glass); }
+    display: flex; flex-direction: column; gap: var(--sp-1); padding: var(--sp-2); border-radius: var(--r-glass); flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
   #layers[hidden] { display: none; }
   #layers button { position: relative; min-width: 96px; min-height: 36px; box-sizing: border-box; white-space: nowrap; text-align: left; padding: var(--sp-3) var(--sp-5) var(--sp-3) 10px;
     border: 0; border-radius: var(--r-m); background: transparent; color: var(--ink); font: 500 var(--fs-control)/1.3 var(--font-ui); cursor: pointer;
@@ -385,7 +385,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .lg dd { margin: 0 0 var(--sp-3); font-size: var(--fs-small); color: var(--muted); }
   /* 纵深 U16 / U17：标签与图钉包在 .mki 里，视差位移（--px/--py）与漂浮只动这一层（.mk 的 transform 是 OSD 定位用的） */
   .mk .mki { display: flex; flex-direction: column; align-items: center; transform: translate(var(--px, 0px), var(--py, 0px)); }
-  .mk .lab { opacity: var(--lab, 1); }
+  .mk .lab { opacity: var(--lab, 1); translate: var(--ldx, 0px) 0; }   /* --ldx: declutter slides a name back inside the map edge (U-FIX-5 U-01) */
   .mk:hover, .mk:focus-visible { z-index: var(--zv-markers-hover); }
   .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
   /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */
