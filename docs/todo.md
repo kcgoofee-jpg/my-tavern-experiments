@@ -4,7 +4,7 @@
 - 阶段：v11「先发伊甸」（计划 §18）——ARCH-1 完成（空 catch 棘轮、文档关口降为警告、中文为正本）。
 - 最近 head：#283 起（以 `map/data/head.json` 为准）；U-FIX-1…7 已修，sweep-2 无 P0。
 - 在跑：渲染战役 R（仅 Mac、低强度）；INV-1 功能清单并行进行。
-- 等你：DIGEST-1 出来后逐条保留 / 改；v0.9.8 前你自己抽查一遍（R1）。
+- 等你：在 `docs/decision-digest.md` 里给 12 条默认决定逐条填保留 / 改；v0.9.8 前你自己抽查一遍（R1）。
 - 下一步（v12）：v0.9.8 是自用里程碑——FIX-R2（U-FIX-8 + FIX-B6）、CHAT-ISO（同卡多聊天）、INV-2、DIGEST-1 → 抽查 → 打标签；公开发布准备另起一段。
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
@@ -80,7 +80,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **FIX-R2** U-FIX-8 (SW2-02…07) + FIX-B6 (advisor provider defaults, Anthropic browser header, request-shape probe)
   - [ ] **CHAT-ISO** same card, several chats: A/B isolation probe, 「重置本聊天地图数据」 button, orphan cleanup after a chat is deleted (local storage, room gallery / scrapbook images, per-chat custom worldbook), worldbook JIT state carried into the next chat (I-33, I-34)
   - [ ] **INV-2** apply the inventory's 建议 column: 11 rows default off, 6 parked (off and hidden from settings), nothing deleted
-  - [ ] **DIGEST-1** zh digest of the ~10 most important default-decided items (D28)
+  - ~~**DIGEST-1** zh digest of the ~10 most important default-decided items (D28)~~ ✅ 2026-10-02 `docs/decision-digest.md` (12 items, 20 ids; the other 77 kept unless the user says otherwise) → user fills 保留 / 改 · RESULT DIGEST-1
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
 - [ ] **PUB** public-release prep (parked until the user decides to share; D15, D21–D27, D29): S10a renames + migration, DIST-1 npm + npmmirror line + stable channel, SLIM-1 history rewrite after DIST-1 and before going public (user 2026-10-02), BUNDLE-1, SEC-1, REL-DOCS
 - [ ] **Stage D** Real tavern test ②: Eden card + one other card · later · prompt none · RESULT (your reply)
@@ -302,6 +302,7 @@ Only work that is not already a render-campaign item.
 - [x] **Q-26** D15: publish the npm package (`tiancheng-map-assets`, contents and size listed in the DIST-1 prompt) so the npmmirror line can serve mainland China? Outward-facing; needs the user's yes. → **Yes 2026-10-02** (contents and size still shown before the publish).
 - [x] **Q-27** D20: code line first until v0.9.8, render line at low intensity (one batch at a time, never blocking code-line tests on the Mac)? Recommended: yes. → **Yes 2026-10-02**.
 - [x] **Q-28** Architecture brainstorm B1–B19 (review session, checked on head #278; proposals, not decisions). → **Decided 2026-10-02: all as recommended** (D22–D29, plan §18). P0 before v0.9.8: B1 stable channel for players (preview opt-in) · B3 Chinese player guide · B5 advisor key in localStorage + live-loaded code (notice by the key field, 2FA for pushers, stable channel) · B8 root LICENSE (code vs Eden content) · B10 external-contract renames (repo name / CDN path, `EdenMap`, `edenMap*` keys, `eden_map` and its Chinese sub-keys) as S10a before the release, split S10b stays parked · B11 zh digest of ~10 default-decided review-sheet items · B17 real-host release gate (Stage B checklist + TT sweep incl. a no-proxy run). P1: B2 release bundling · B4 public feedback channel · B6 advisor provider defaults and the Anthropic browser header · B7 security pass on pack / chat text reaching markup · B9 18+ distribution notice (no moderation) · B12 readable status (≤5-line zh status, README status, log per stage) · B13 freeze new K-R numbers + one-page kernel summary · B14 brief §1: state facts from origin/preview. P2: B15 daily digest · B16 plain-Chinese how-it-works · B18 compatibility matrix · B19 update-check traffic via the D15 line.
+- **Standing rule D28 (2026-10-02):** every new default decision (a review-sheet row decided by default, an autopilot choice in a design, a divergence accepted without the user) is added as one line to a single list, `docs/decision-digest.md` §「新的默认决定」 (one line each: id, what was chosen, the alternative, cost to change), and that list is walked through with the user at the end of each stage; nothing is decided by default without landing there.
 
 ## 4. Done (evidence)
 
