@@ -3,7 +3,7 @@
 //   const C = UI3D.create({ title, views: [{ id, label }], view, onView(id), sub: el, controls: [{ id, label, html, title, onClick, pressed }], tabs: [{ id, label, short, panel }], text, onEsc, embed });
 //   C.setView(id) · C.showSub(on) · C.sheet（UISheet）· C.insets() → { bottom, right }（抽屉 / 右栏占的像素，模型取景时让开）· C.onInsets(fn)
 //   C.dragged()：模型被拖动 / 旋转超过 300 ms 时调；设置「高级 · 三维抽屉自动收起」开了（默认关，§10.5）才收起抽屉
-// 布局：顶上一条（独立打开时带标题）= 视图分段（外观 / 内透 / 剖切），剖切时下面一条二级条（楼层按钮或高度滑条）；
+// 布局：顶上一条（独立打开时带标题）= 视图分段（主场景 外观 / 楼层；地标查看器 外观 / 内透 / 剖切），分段下面的二级条随视图走（楼层按钮或剖切高度滑条）；
 // 右下控制列 标注 + − 复位（导览等），图标都来自 ui/icons.js（docs/design/ui-v2/icons.md）；底部唯一抽屉（桌面右栏），默认收起、首次打开也不展开（U12）。
 (function () {
   if (window.UI3D) return;

@@ -61,7 +61,7 @@ export function createPresence({ THREE, CSS2DObject, scene, roomOf, visibleOn, t
     }
     refresh(); aria(); wake(); return true;
   }
-  /** chips are shown on the floor that is cut open (section) and on the floors of the x-ray view, never in the exterior view */
+  /** chips are shown on the floor that is cut open (the floors view), never in the exterior view */
   function refresh() { for (const r of rooms.values()) r.o.visible = visibleOn(r.floor); }
   const names = () => new Set(list.map((p) => p.name));
   return { set, refresh, routineChip, group, names, count: () => list.length, chips: () => group.children.length, closeMore, get list() { return list; } };

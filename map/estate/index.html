@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>3D</title>
 <!--
-  三维室内查看器（three.js 0.160）：整岛 / 场地外观（烘焙光照 glb）+ 分层房间（外观 / 内透 / 剖切）。
+  三维室内查看器（three.js 0.160）：整岛 / 场地外观（烘焙光照 glb）+ 分层房间（外观 / 楼层，D38：x 光视图已删）。
   入口：map/estate/index.html；脚本：main.js；模型、房间表、室外热点、房间叫法：由清单（?manifest 或 window.__sceneManifest，缺省同目录 model/manifest.json）给出；
   建筑名、楼层名与房间类别的颜色 / 名字也在清单里（docs/kernel-schema.md K-R104、K-R131、K-R132）。
 
   ── 嵌入协议（查看器 map/viewer.html 用 fetch + <base href> + blob iframe 加载本页；直接 iframe src 也可以）──
   壳模式（S7-3）：查看器注入 window.__shell = 'host'：本页只画画布、画布里的标注与人物头像；视图分段、楼层条、缩放、房间卡、抽屉都是查看器的。
   独立打开（没有查看器）：自带视图分段、楼层条、控制列、房间卡与抽屉。
-  URL 参数：?embed=1 背景透明（blob / srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|xray|<楼层 id>；?stats=1 显示帧率 / draw call
+  URL 参数：?embed=1 背景透明（blob / srcdoc 载入时自动视为嵌入）；?lang=en；?theme=light|dark；?floor=ext|<楼层 id>；?stats=1 显示帧率 / draw call
   ?tier=low|std 固定模型档（省略则自动：手机 / 省流 / 内存 ≤ 4 GB / 地图「省流」档 → low）
   父 → 本页（window.postMessage；登记在 core/protocol.mjs）：
     { type: 'estate:room',  name, card? }  按房间名 / 别名 / 区域名切到所在楼层（或外观）、高亮并拉近；card = { name, floor, poly } 时取同层同名、多边形最近的那一间
     { type: 'estate:select', node }        （壳模式）选中并拉近这个节点的房间
-    { type: 'estate:floor', floor }        'ext' | 'xray' | 楼层 id（也接受 '外观' / '内透' / '1F' / 'B1F' 这类写法）
-    { type: 'estate:view',  mode }         'ext' | 'xray' | 'sect'：视图（sect = 最近一次的楼层剖切）
+    { type: 'estate:floor', floor }        'ext' | 楼层 id（也接受 '外观' / '1F' / 'B1F' 这类写法）
+    { type: 'estate:view',  mode }         'ext' | 'sect'：视图（sect = 最近一次的楼层）
     { type: 'estate:cam',   op }           'in' | 'out' | 'reset'：工具栏的缩放与复位；{ type: 'estate:labels', on } 标注开关
     { type: 'estate:people', items }       { name, room（节点 id）, floor, color, avatar?, dim? }：聊天里位置落在这座楼里的人（头像）；按日程站位的人另走 estate:routine
     { type: 'estate:inset', left } · estate:lang · estate:theme · estate:camera · estate:quality · estate:fps · estate:children · estate:media · estate:stash · estate:taken · estate:routine · estate:pause / resume / dispose

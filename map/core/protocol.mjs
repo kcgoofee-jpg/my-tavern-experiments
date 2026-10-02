@@ -124,7 +124,8 @@ export const SCHEMA = {
   'estate:progress': [SUBPAGE_TO_VIEWER, { loaded: 'number', total: 'number?', what: 'string?' }],   // fix3：三维模型下载字节进度（total 0 = 不知道总大小）
   'estate:key': [SUBPAGE_TO_VIEWER, { key: 'string' }],
   'estate:select': ['both', { name: 'string?', node: 'string?', floor: 'string?', room: 'object?', zone: 'object?' }],   // up (S7-3): the user picked a room { name, floor, kind, area, note } with its node, an outdoor zone or a vehicle { title, sub, rows, acts } (the viewer opens the shared place card); down: select and fly to the room of node `node`
-  'estate:view': ['both', { mode: 'string' }],                  // S7-3: the view mode 'ext' | 'xray' | 'sect' (down: the viewer's segment / keys 1 2 3; up: the page changed it itself)
+  'estate:view': ['both', { mode: 'string' }],                  // S7-3 / D38: the view mode 'ext' | 'sect' (down: the viewer's segment / keys 1 2; up: the page changed it itself)
+  'estate:period': [VIEWER_TO_SUBPAGE, { tod: 'string?' }],     // U-FIX-4 / ESTATE-MODES-1: the clock popover's period (dawn / day / dusk / night; '' = follow the chat time) — the 3D pages grade themselves with the same period the 2D map shows
   'estate:cam': [VIEWER_TO_SUBPAGE, { op: 'string' }],          // S7-3: the toolbar's 'in' | 'out' | 'reset'
   'estate:labels': [VIEWER_TO_SUBPAGE, { on: 'boolean' }],      // S7-3: the toolbar's label switch
   'estate:people': [VIEWER_TO_SUBPAGE, { items: 'array' }],     // S7-3 U-27 / U-28: the people the chat places in rooms of this building [{ name, room (node id), floor, color, avatar?, dim? }]; sent only when the list changes

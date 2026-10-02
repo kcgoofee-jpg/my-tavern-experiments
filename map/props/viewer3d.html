@@ -93,7 +93,7 @@ import { Estate3D } from '../core/scene3d-manifest.mjs';   // Estate3D Manifest 
 import { nsKey } from '../core/pack.mjs';   // 通用化 v1：本机键按包换前缀（edenMapLang / 画质 / 提示卡……），与查看器同一规则
 import { createRenderGate, wireVisibility } from '../core/render-gate.mjs';   // Part 7-4：页面隐藏时渲染循环整个停掉
 // Part 3：共享三维运行时（上下文 / 剔除 / LOD / 实例化 / 贴图预算）——全仓只有 render-context.mjs 里 new WebGLRenderer
-import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'engine3d/render-context.mjs'; import { fitNearFar, applyNearFar, depthLabel, sphereOfBox } from 'engine3d/depth-fit.mjs';   // N12：near / far 贴合场景 + 深度位数读数
+import { createRenderer as createGpu, governor as createGovernor, pickDpr } from 'engine3d/render-context.mjs'; import { fitNearFar, applyNearFar, depthLabel, sphereOfBox } from 'engine3d/depth-fit.mjs'; import { createBackdrop } from 'engine3d/backdrop.mjs';   // N12：near / far 贴合场景 + 深度位数读数；ESTATE-MODES-1 A5b / A5c：分时段天空 + 云海 + 时段调色（与主场景页共用）
 import { prepare as prepareCulling } from 'engine3d/culling.mjs';
 import { createLodController } from 'engine3d/lod-controller.mjs';
 import { batch as batchInstances, writeMatrices } from 'engine3d/instancing.mjs';
@@ -171,7 +171,7 @@ function applyLang() {
   $('#c').setAttribute('aria-label', t('canvas')); chromeLang();
   if (MAN) { document.title = cleanTitle(L(MAN.title)); $('#credit').textContent = L(MAN.credit); buildList(); if (sel) showCard(sel); }
 }
-function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); if (renderer) { scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#101418'); dirty = true; } }
+function setTheme(th) { document.documentElement.classList.toggle('light', th === 'light'); applyPeriod(); }   // 主题换云色：重画天空 + 重套时段调色（A5c；背景由 backdrop 接管，不再是单一底色）
 document.documentElement.classList.toggle('light', (Q.get('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'light');
 
 // ---------------- 性能档位 ----------------
@@ -235,8 +235,9 @@ const bdMat = new THREE.MeshBasicMaterial({ transparent: true, depthTest: false,
 const bdMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bdMat);
 bdMesh.frustumCulled = false; bdMesh.visible = false; bdScene.add(bdMesh);
 renderer.autoClear = false;   // 每帧自己清一次：先画背景板，再画场景
-let bdFade = 0;   // > 0 = 正在淡出（背景板还没交棒给三维场景）
+let bdFade = 0, meshes = {};   // bdFade > 0 = 正在淡出（背景板还没交棒给三维场景）；meshes = 部件网格（载入时填），声明提前：setTheme → applyPeriod 一开始就要读它
 const scene = new THREE.Scene();
+const backdrop = createBackdrop({ THREE, scene }); let v3dTod = ''; const applyPeriod = () => { backdrop.apply({ meshes: Object.values(meshes), tod: v3dTod, light: document.documentElement.classList.contains('light') }); dirty = true; };   // 时段观感（A5b / A5c，U-FIX-4）：宿主 estate:period 推来时钟胶囊的时段；'' = 正午
 setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const controls = new OrbitControls(camera, canvas);
@@ -354,13 +355,13 @@ const U = {
   uR0: { value: 14 }, uR1: { value: 26 }, uGround: { value: new THREE.Color('#8b8f86') },   // v0.9.6：地面只留建筑周围一圈，往外淡出
 };
 function patch(mat, role) {
-  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 }, uSite: { value: role === 'site' ? 1 : 0 } };
+  mat.userData.u = { uGain: { value: 1 }, uHi: { value: 0 }, uRoleX: { value: role === 'walls' ? 1 : 0 }, uFade: { value: 1 }, uSite: { value: role === 'site' ? 1 : 0 }, uTint: { value: new THREE.Color(1, 1, 1) } };
   mat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U, mat.userData.u);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
     sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
-varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime, uSite, uR0, uR1; uniform vec3 uCenter, uCamDir, uCap, uGround;
+varying vec3 vWP; uniform float uGain, uHi, uRoleX, uFade, uXray, uXMin, uCapOn, uTime, uSite, uR0, uR1; uniform vec3 uCenter, uCamDir, uCap, uGround, uTint;
 float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
   float m[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.); return (m[i] + 0.5) / 16.0; }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
@@ -369,7 +370,7 @@ float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
     float l = dot(diffuseColor.rgb, vec3(.3, .59, .11)); diffuseColor.rgb = mix(uGround * (0.85 + 0.3 * l), diffuseColor.rgb, 0.18); }   // 中性色、低噪声
   if (uXray > 0.5 && uRoleX > 0.5) { float d = dot(vWP - uCenter, uCamDir); a *= mix(1.0, uXMin, smoothstep(-1.5, 1.0, d)); }
   if (a < 0.999 && a <= bayer4(gl_FragCoord.xy)) discard;
-  diffuseColor.rgb *= uGain;
+  diffuseColor.rgb *= uGain * uTint;
   if (uHi > 0.0) { float p = 0.55 + 0.45 * sin(uTime * 4.0); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.35 + vec3(0.30, 0.22, 0.05), uHi * p); }
   if (uCapOn > 0.5 && !gl_FrontFacing) diffuseColor.rgb = uCap; }`);
   };
@@ -377,7 +378,7 @@ float bayer4(vec2 p) { ivec2 q = ivec2(mod(p, 4.0)); int i = q.x + q.y * 4;
 }
 
 // ---------------- 载入 ----------------
-let MAN = null, root = null, meshes = {}, HS = [], sel = null, mode = 'ext';
+let MAN = null, root = null, HS = [], sel = null, mode = 'ext';
 let selPulseQ = -1;   // 高亮脉冲的量化节拍（见 frame()）：选中热点时不再每帧强制重渲
 const box = new THREE.Box3(), v3 = new THREE.Vector3();
 const stats = { glb: '', tier: TIER, dpr: renderer.getPixelRatio(), t0: performance.now(), tManifest: 0, tGlb: 0, tFirst: 0, bytes: 0, tris: 0, draws: 0, gpuMB: 0 };
@@ -483,7 +484,7 @@ function roleOf(name) {
   return name.startsWith('props_') ? 'props' : 'other';
 }
 function setup(sc, opt = {}) {
-  root = sc; scene.add(root); root.updateMatrixWorld(true);
+  root = sc; scene.add(root); root.updateMatrixWorld(true); backdrop.fit(root);
   root.traverse(o => {
     if (!o.isMesh) return;
     const role = roleOf(o.name), map = o.material.map || null;
@@ -528,8 +529,7 @@ function setup(sc, opt = {}) {
   computeStart();   // 「复位视野」的机位永远对应当前这一档的取景框（LOD 换档后仍然对）
   if (opt.reframe !== false) frameStart();   // LOD 换档时沿用当前视角，不把镜头拽回去
   SITE.setFromObject(root); SCENE_SPH = sphereOfBox(SITE); SITE.expandByScalar(-2);
-  const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }
-  controls.update(); setMode(mode);
+  const s = MAN.section; if (s) { const r = $('#cutH'); r.min = s.min; r.max = s.max; r.value = s.default; showCut(); }  controls.update(); setMode(mode);   // setMode 收尾套时段调色（A5b）
   setupInstancing(); setupCulling();   // Part 3 §4：静态件合批 + 显式打开视锥体裁剪并重算包围体
 }
 // ---- 实例化：同几何 + 同材质的静态件合成一个 InstancedMesh（一次 draw call）----
@@ -775,7 +775,7 @@ function setMode(m) {
   renderer.clippingPlanes = m === 'cut' ? [cutPlane] : [];
   U.uCapOn.value = m === 'cut' ? 1 : 0;
   if (m === 'cut') setCut(cutY());
-  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel });
+  dirty = true; post({ type: 'v3d:state', mode, hotspot: sel }); applyPeriod();   // 时段调色跟着视图走（材质建好才有 uTint，A5b）
 }
 // (a) 屋顶自动掀开：外观模式下相机拉近到建筑里 / 附近时屋顶上移淡出；内透 / 剖切直接藏掉
 let roofK = 0;
@@ -867,7 +867,7 @@ addEventListener('message', e => {
   if (e.source !== parent) return;   // 只认嵌入它的查看器（A-6）
   const d = e.data || {};
   if (d.type === 'estate:lang') { LANG = d.lang === 'en' ? 'en' : 'zh'; applyLang(); }
-  if (d.type === 'estate:theme') setTheme(d.theme);
+  if (d.type === 'estate:theme') setTheme(d.theme); if (d.type === 'estate:period' && typeof d.tod === 'string') { v3dTod = d.tod; applyPeriod(); }   // U-FIX-4 / A5b：时钟胶囊的时段
   if (d.type === 'estate:quality' && typeof d.q === 'string' && renderer) {   // 设置「三维画质」即时生效（毛玻璃 + 像素比）
     document.documentElement.classList.toggle('noblur', TIER === 'low' || d.q === '1');
     gpu?.setDpr(pickDprFor(d.q)); renderer.setSize(innerWidth, innerHeight); stats.dpr = renderer.getPixelRatio(); gov.reset(); dirty = true; }

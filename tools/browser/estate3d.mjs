@@ -1,13 +1,15 @@
-// 庄园网页三维（map/estate/，estate2 整岛 + 分层房间）：外观 / 内透 / 剖切 F1 / B1 截图（桌面 + 375），加载时间、档位、draw call，
-// 卡设定房间飞行（estate:room + card）、区域热点、标注开关；衣帽间不再挂通用图集按钮（渲染图走 closet/ 三维入口）。
-// 用法：node tools/browser/estate3d.mjs <输出目录> [--drafts docs/drafts]（--drafts 时把 8 张图另存为 estate3d_<视图>_<desktop|375>.png）
+// 庄园网页三维（map/estate/，estate2 整岛 + 分层房间）：外观 / 楼层 F1 / B1 截图（桌面 + 375），加载时间、档位、draw call，
+// 时段观感（昼 / 昏 / 夜外观截图 + 夜里地面比白天暗，ESTATE-MODES-1），卡设定房间飞行（estate:room + card）、区域热点、标注开关；
+// 衣帽间不再挂通用图集按钮（渲染图走 closet/ 三维入口）。
+// 用法：node tools/browser/estate3d.mjs <输出目录> [--drafts docs/drafts]（--drafts 时把截图另存为 estate3d_<视图>_<desktop|375>.png）
 import * as B from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 const OUT = process.argv[2]; if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/estate3d.mjs <输出目录> [--drafts dir]'); process.exit(2); }
 const di = process.argv.indexOf('--drafts'), DRAFTS = di > 0 ? path.resolve(process.argv[di + 1]) : null;
 const srv = await B.ensureServer(); const rep = B.reporter(OUT);
-const VIEWS = [['exterior', 'ext'], ['xray', 'xray'], ['section_F1', 'F1'], ['section_B1', 'B1']];
+const VIEWS = [['exterior', 'ext'], ['floors_F1', 'F1'], ['floors_B1', 'B1']];
+const save = async (P, name, tag) => { await B.shot(P.page, OUT, `${name}_${tag}`); if (DRAFTS) { fs.mkdirSync(DRAFTS, { recursive: true }); await P.page.screenshot({ path: path.join(DRAFTS, `estate3d_${name}_${tag}.png`) }); } };
 try {
   for (const [preset, tag] of [['desktop', 'desktop'], ['iphone', '375']]) {
     const P = await B.newPage(preset);
@@ -20,10 +22,42 @@ try {
       await f.evaluate(m => window.__estate.setMode(m), m);
       if (m !== 'ext') await f.waitForFunction(() => window.__estate.houseState() !== 1, null, { timeout: 30000 }).catch(() => {});
       await B.wait(1400);
-      await B.shot(P.page, OUT, `${name}_${tag}`);
-      if (DRAFTS) { fs.mkdirSync(DRAFTS, { recursive: true }); await P.page.screenshot({ path: path.join(DRAFTS, `estate3d_${name}_${tag}.png`) }); }
+      await save(P, name, tag);
+    }
+    // 时段观感（ESTATE-MODES-1）：昼 / 昏 / 夜外观截图（桌面 + 375）；先回外观视图，否则截的是上一轮楼层视图
+    await f.evaluate(() => window.__estate.setMode('ext'));
+    await B.wait(1200);
+    for (const [nm, min] of [['day', 750], ['dusk', 1095], ['night', 30]]) {
+      await f.evaluate((m) => window.__estate.dayNight.setClock({ min: m }), min);
+      await B.wait(2600);   // 1.6 s 淡入 + 一帧稳定
+      await save(P, `ext_${nm}`, tag);
     }
     if (tag === 'desktop') {
+      // 夜里地面 / 天空比白天暗（夜调色 + 烘焙日光抹平，A4）；黄昏居中
+      // 亮度从 WebGL 缓冲直接读：preserveDrawingBuffer 关着，drawImage(canvas) 拿到的是空图，所以同一个任务里先画一帧再 readPixels
+      const lum = () => f.evaluate(() => { const { renderer, scene, camera } = window.__estate; renderer.render(scene, camera);
+        const gl = renderer.getContext(), W = gl.drawingBufferWidth, H = gl.drawingBufferHeight;
+        const crop = (a, b, e, d) => { const x0 = Math.round(W * a), y0 = Math.round(H * (1 - d)), w = Math.max(1, Math.round(W * (e - a))), h = Math.max(1, Math.round(H * (d - b)));
+          const px = new Uint8Array(w * h * 4); gl.readPixels(x0, y0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          let s = 0, n = 0; for (let i = 0; i < px.length; i += 4) if (px[i + 3] > 8) { s += .2126 * px[i] + .7152 * px[i + 1] + .0722 * px[i + 2]; n++; } return Math.round(s / Math.max(1, n)); };
+        return { ground: crop(.3, .78, .7, .95), sky: crop(.05, .02, .35, .16) }; });
+      const L = {};
+      for (const [nm, min] of [['day', 750], ['dusk', 1095], ['night', 30]]) {
+        await f.evaluate((m) => window.__estate.dayNight.setClock({ min: m }), min);
+        await B.wait(2600);
+        L[nm] = await lum();
+      }
+      rep.metric('period_lum', L);
+      rep.check('夜档外观：地面与天空都比白天暗（夜调色 + 烘焙日光抹平）', L.night.ground < L.day.ground * 0.75 && L.night.sky < L.day.sky * 0.75, JSON.stringify(L));
+      rep.check('黄昏外观：比白天暗、比夜里亮', L.dusk.ground < L.day.ground && L.dusk.ground > L.night.ground, JSON.stringify(L));
+      // 夜里的窗：清单点名的窗 / 玻璃材质才亮（A4 / D38）。当前烘焙模型没有可分离的窗材质（site.glb 只有 m_house_shell 整张图集），
+      // 引擎这一半已就位，等渲染线重出一版带窗材质的模型 → 见 tools/browser/known-failures.json 与 docs/todo.md
+      const nl = await f.evaluate(() => window.__estate.nightLook());
+      rep.metric('night_look', nl);
+      rep.check('夜档外观：夜里点亮的窗材质 > 0（清单 x-night-glow / 材质名认窗）', nl.glowOn > 0 && nl.uGlow > 0.5 && nl.uNight > 0.9, JSON.stringify(nl));
+      // x 光模式已移除（D38）：状态与 DOM 里都没有 xray
+      const xr = await f.evaluate(() => ({ dom: document.body.innerHTML.includes('xray'), state: typeof window.__estate.mode() === 'string' && window.__estate.mode() !== 'ext' && window.__estate.mode() !== 'sect' }));
+      rep.check('x 光模式已移除（DOM 与状态无 xray）', !xr.dom && !xr.state, JSON.stringify(xr));
       // 查看器「自定义 → 在地图上看」：卡设定房间带 floor + poly
       await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '正式母畜个人寝室', card: { name: '正式母畜个人寝室', floor: 'F3', poly: [[3.8, 3], [7.4, 3], [7.4, 8], [3.8, 8]] } }, '*'));
       await B.wait(1200);
@@ -31,7 +65,7 @@ try {
       rep.check('卡设定房间飞行（F3 个人寝室，按多边形取那一间）', pr.mode === 4 && pr.pin?.id === 'F3-91', JSON.stringify(pr));
       await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '无菌处置室', card: { name: '无菌处置室', floor: 'B2' } }, '*')); await B.wait(1200);
       const pm = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned(), med: !!window.__estate.scene.getObjectByName('f_B2_med') }));
-      rep.check('B2 医疗中心（无菌处置室 → B2 剖切，医疗设备块已载入）', pm.mode === 0 && pm.pin?.name === '无菌处置室' && pm.med, JSON.stringify(pm));
+      rep.check('B2 医疗中心（无菌处置室 → B2 楼层视图，医疗设备块已载入，E-14）', pm.mode === 0 && pm.pin?.name === '无菌处置室' && pm.med, JSON.stringify(pm));
       await f.evaluate(() => window.postMessage({ type: 'estate:room', name: '玫瑰园' }, '*')); await B.wait(1000);
       const pz = await f.evaluate(() => ({ mode: window.__estate.mode(), pin: window.__estate.pinned() }));
       rep.check('室外区域热点（玫瑰园 → 外观并高亮）', pz.mode === 'ext' && pz.pin?.name === '玫瑰园', JSON.stringify(pz));

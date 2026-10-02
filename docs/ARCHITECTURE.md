@@ -358,11 +358,13 @@ fake THREE.
 
 | Module | Role |
 |---|---|
+| `backdrop.mjs` | Per-period sky gradient as the scene background plus the cloud-sea plane under a floating island; the palette is anchored on the day / night keyframes and also applies the period grade for the landmark viewer. |
 | `culling.mjs` | Frustum culling and bounding volumes for static matrices and instanced meshes. |
 | `daynight.mjs` | Dynamic day / night: world clock to four-period lighting, fog and emissive parameters with smoothing. |
 | `depth-fit.mjs` | Depth-buffer fitting: near / far from the scene bounding sphere and camera distance (recomputed every frame), plus depth / stencil bit read-out for the debug overlay. |
 | `instancing.mjs` | GPU instancing of static meshes with an instance-to-mesh index map. |
 | `lod-controller.mjs` | Dynamic LOD controller applying `core/lod.mjs` decisions to a three scene. |
+| `night-look.mjs` | Night look for baked exteriors: a material patch that mixes each baked surface toward its own average colour so the baked sun shadows and lit faces read as flat moonlight, with a back-face colour for cut walls. |
 | `particles.mjs` | `fx` slot particle renderer (weather, aurora): one draw call per effect, descriptors registered by the caller. |
 | `relief.mjs` | 2.5D relief material (normal, parallax, roughness) lit by the day / night state. |
 | `render-context.mjs` | Shared 3D render-context factory: pixel ratio caps, context loss and restore, real dispose. |

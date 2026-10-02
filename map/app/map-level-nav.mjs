@@ -84,7 +84,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'l' && !estate) toggleLabels();
   else if (k === 'm') { SettingsApi.open('data'); setTimeout(() => { const v = $('#vmBox'); if (v) { v.open = true; v.querySelector('summary')?.focus(); v.scrollIntoView({ block: 'start' }); } }, 30); }
   else if (k === ',') SettingsApi.open('home');   // S7-2: settings
-  else if ((k === '1' || k === '2' || k === '3') && estate && EstateShell.onKey(k)) { /* S7-3: 3D view modes 1 exterior, 2 x-ray, 3 section (the last floor) */ }
+  else if ((k === '1' || k === '2') && estate && EstateShell.onKey(k)) { /* S7-3 / D38: 3D view modes 1 exterior, 2 floors */ }
   else if (k === '/') { SettingsApi.open('home'); setTimeout(focusSearch, 30); }
   else if (k === '?') { SettingsApi.open('adv'); kbdHelp(true); }
   else return;

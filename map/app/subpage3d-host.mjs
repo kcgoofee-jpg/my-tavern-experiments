@@ -132,7 +132,7 @@ export async function openEstate(id, m, hadPrev) {
     EstateShell.attach(send3d); if (subpageSession.readyMsg) EstateShell.ready(subpageSession.readyMsg);
     $('#loading').classList.add('done'); estateActs('');
     f.contentWindow?.postMessage({ type: 'estate:resume' }, SUB_ORIGIN);
-    estateLook(); estateInset(); estateRoom(); estateFocusPending(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
+    estateLook(); estateInset(); estateRoom(); estateFocusPending(); estatePeriod(); focusAfterGo(); postState(); post({ type: 'eden-map:loaded' });
     return;
   }
   // Part 3 §3：发新租约前把上一份彻底摘掉（挂起的、淡出中的都算），保证任何时刻只有一个活着的三维上下文
@@ -175,7 +175,7 @@ function onEstateReady(d = {}) {
   if (weak3d && weak3d !== f) { try { weak3d.remove(); } catch (e) {} weak3d = null; }   // 上一份租约在这里收尾
   stopTileTo3d(true);   // 三维页已经接管画面：不再上传底图快照
   f.classList.add('on'); estateActs(''); loadingProgress().done(); $('#loading').classList.add('done'); focusAfterGo();
-  estateLook(); estateInset(); estateRoom(); estateFocusPending(); estateStash(); estateNpcs();
+  estateLook(); estateInset(); estateRoom(); estateFocusPending(); estateStash(); estateNpcs(); estatePeriod();
   post({ type: 'eden-map:loaded' });
   // 主场景淡入完成后再关掉瓦片地图（释放解码内存）
   setTimeout(() => { if (subpageSession?.frame === f && mapRegistry.maps[currentMapId]?.kind === 'estate') { osdViewer.close(); untrackAll(); osdViewer.clearOverlays(); } }, 240);
@@ -226,6 +226,13 @@ export function estateNpcs() {
   const d = window.WanderApi?.describe?.() || {};
   w.postMessage({ type: 'estate:routine', schedule: window.WanderApi?.scheduleOf?.() || null, clock: d.clock || null }, SUB_ORIGIN);
 }
+// U-FIX-4 / ESTATE-MODES-1：时钟胶囊选的时段（与二维地图同一口径 CustomNamesView.todNow）下发给三维页；
+// '' = 没选 / 时段色调关着 → 三维页跟聊天时刻走（世界时钟）。
+export function estatePeriod() {
+  const w = subpageSession?.frame?.contentWindow; if (!w) return;
+  let tod = ''; try { tod = plugins.CustomNamesView?.todNow?.() || ''; } catch (e) { tod = ''; }   // 宿主全局拿不到就当没选时段：三维页跟聊天时刻走
+  w.postMessage({ type: 'estate:period', tod }, SUB_ORIGIN);
+}
 // S2-B：三维页里区域下的子地图 { 区域 id: [{ node, title }] }；从子地图返回（面包屑 / 上一级带 data-focus）时把落点区域聚焦
 const estateZones = id => Object.fromEntries(Object.entries(zoneChildren(id)).map(([z, ks]) => [z, ks.map(k => ({ node: k, title: localName(mapRegistry.maps[k], 'title') }))]));
 function estateFocusPending() { const f = pendingFocus; if (f) { setPendingFocus(null); estFocus = f; estateFocus(f); } }   // 返回时的落点区域记进 estFocus：之后的当前地点刷新（estateRoom）不再把它盖掉，地点真的变了才清
@@ -273,6 +280,7 @@ busOn({ key: 'estate.lootMsg', type: 'message', fn: e => {
   const t = e.data?.type;
   if (t === 'eden-map:stash' || t === 'eden-map:inv') setTimeout(estateStash, 0);
   if (t === 'eden-map:routine' || t === 'eden-map:clock') setTimeout(estateNpcs, 0);   // 日程 / 时刻变了：三维里的人重新站位
+  if (t === 'eden-map:clock') setTimeout(estatePeriod, 0);   // 时段变了（含时钟胶囊选的档）：三维页的昼夜跟着换（U-FIX-4）
 } });
 addEventListener('resize', () => estateInset());
 // ---------------- 通用三维查看器（props/viewer3d.html，maps.json 里带 viewer3d 的 kind=estate 地图） ----------------

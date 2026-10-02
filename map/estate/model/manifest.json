@@ -1,5 +1,5 @@
 {
- "_说明": "庄园网页三维的模型清单（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验；main.js 只经它拿地址）。glb 分部件：site = 整岛外观（blender/estate2/export_web.py 烘焙，std / low 两档）；house = 主楼室内体量（blender/estate2/house_web.py），进内透 / 剖切时才加载。glb 与 data 的路径都相对本清单所在目录（model/）解析。坐标 = glTF（Y 上）：layout (x, y, z) → (x, z, −y)。f1_z = 主楼 F1 地坪的世界标高（米，layout z）。floors 与 ../data/eden_estate_rooms.json 的楼层对拍（tests/estate3d_manifest.test.mjs）。budget = main.js 档位常数的登记处（各向异性过滤上限、低档内存阈值）。license = 署名与贴图来源（assets/CREDITS.md、maps.json 的 credit）。v = 模型版本（页面按它缓存 glb，重出模型时改）。",
+ "_说明": "庄园网页三维的模型清单（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验；main.js 只经它拿地址）。glb 分部件：site = 整岛外观（blender/estate2/export_web.py 烘焙，std / low 两档）；house = 主楼室内体量（blender/estate2/house_web.py），进楼层视图时才加载。夜里自己发光的材质按材质名认（win / window / glass / glaz），也可以用 x-night-glow 点名（包数据，引擎里不写卡词）；当前外壳是一整张烘焙图集，没有可分离的窗材质，等台账 glb:estate:night-glow 重出。glb 与 data 的路径都相对本清单所在目录（model/）解析。坐标 = glTF（Y 上）：layout (x, y, z) → (x, z, −y)。f1_z = 主楼 F1 地坪的世界标高（米，layout z）。floors 与 ../data/eden_estate_rooms.json 的楼层对拍（tests/estate3d_manifest.test.mjs）。budget = main.js 档位常数的登记处（各向异性过滤上限、低档内存阈值）。license = 署名与贴图来源（assets/CREDITS.md、maps.json 的 credit）。v = 模型版本（页面按它缓存 glb，重出模型时改）。",
  "id": "eden-estate",
  "schema": 1,
  "glb": {

@@ -66,14 +66,17 @@ try {
       await ef.evaluate(() => { window.__estate.view(-0.25, 1.33); }); await B.wait(1200);
       const low = await ef.evaluate(() => ({ occl: [...document.querySelectorAll('.lbl.occl')].filter(e => getComputedStyle(e).display === 'none').length, ms: window.__estate.occl?.ms, rounds: window.__estate.occl?.rounds }));
       rep.check(`${w}: an occluded label has display: none (exterior from a low camera: labels behind the house), none are hidden from above, a round costs <= 2 ms`, top.occl === 0 && low.occl > 0 && low.ms <= 2, JSON.stringify({ top, low }));
-      // x-ray view: the floor tags do not overlap each other (N10 4); room labels of stacked floors may share a screen area in x-ray
-      await ef.evaluate(() => window.__estate.setMode('xray')); await B.wait(3500);
-      const xr = await ef.evaluate(() => { const rs = [...document.querySelectorAll('.lbl.floor')].filter(e => e.style.display !== 'none' && getComputedStyle(e).display !== 'none' && e.firstChild?.getBoundingClientRect().height).map(e => ({ t: e.textContent, r: e.firstChild.getBoundingClientRect() })); let n = 0; const bad = [];
-        for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) { const a = rs[i].r, b = rs[j].r; if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { n++; bad.push(rs[i].t + '|' + rs[j].t); } } return { labels: rs.length, overlaps: n, bad: bad.slice(0, 4) }; });
-      rep.check(`${w}: in the x-ray view the floor tags do not overlap each other (N10 4)`, xr.overlaps === 0 && xr.labels >= 2, JSON.stringify(xr));
-      const clip = await ef.evaluate(() => [...document.querySelectorAll('.lbl.floor')].filter(e => getComputedStyle(e).display !== 'none' && !e.classList.contains('occl') && e.firstChild.getBoundingClientRect().height).map(e => e.firstChild.getBoundingClientRect()).filter(r => r.left < 0 || r.right > innerWidth).length);
-      rep.check(`${w}: in the x-ray view no floor tag is clipped by the screen edge`, clip === 0, String(clip));
-      await B.shot(P.page, OUT, `${w}-xray`);
+      // 楼层视图（D38：x 光已移除）：视图分段恰好「外观 / 楼层」两个按钮，键 2 → 楼层、键 1 → 外观
+      await ef.evaluate(() => window.__estate.setMode('ext')); await B.wait(600);
+      const seg = await vf.evaluate(() => [...document.querySelectorAll('#v3seg button')].map(b => `${b.dataset.v}:${b.textContent}`));
+      rep.check(`${w}: the view segment has exactly 外观 / 楼层 (x-ray removed, D38)`, seg.length === 2 && seg[0] === 'ext:外观' && seg[1] === 'sect:楼层', JSON.stringify(seg));
+      await P.page.keyboard.press('2'); await B.wait(1200);
+      const k2 = await ef.evaluate(() => ({ mode: window.__estate.mode() }));
+      await P.page.keyboard.press('1'); await B.wait(1200);
+      const k1 = await ef.evaluate(() => ({ mode: window.__estate.mode() }));
+      rep.check(`${w}: key 2 → the floors view (the last floor cut open), key 1 → the exterior (keys 1 / 2, D38)`, Number.isInteger(k2.mode) && k1.mode === 'ext', JSON.stringify({ k1, k2 }));
+      const xr = await ef.evaluate(() => document.body.innerHTML.includes('xray'));
+      rep.check(`${w}: no xray in the page DOM or view state (D38)`, !xr, String(xr));
       // idle: no animation frame for 2 s
       await vf.evaluate(() => ViewerDebug.closeCard?.()); await P.page.mouse.move(2, 2);
       await ef.evaluate(() => { window.__raf = 0; const o = window.requestAnimationFrame; window.requestAnimationFrame = f => { window.__raf++; return o.call(window, f); }; });

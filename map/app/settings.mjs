@@ -161,7 +161,7 @@ export function initSettings() {
 export function kbdHelp(on) {
   const b = $('#kbdHelp'); b.hidden = !on; $('#kbdBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); if (!on) return;
   const K = [['Esc', uiTextOr('k.esc', '关闭最上面一层 / 抽屉降一档')], ['[ ]  PgUp PgDn', uiTextOr('k.layer', '切换上下层')], ['L', uiTextOr('k.l', '标注开关')], ['+ −', uiTextOr('k.zoom', '缩放')], ['0', uiTextOr('k.home', '复位视野')],
-    ['/', uiTextOr('k.search', '设置搜索')], ['M', uiTextOr('k.m', '变量映射')], ['?', uiTextOr('k.help', '快捷键表')], [',', uiTextOr('k.comma', '设置')], ['1 2 3', uiTextOr('k.modes', '三维视图：外观 / 内透 / 剖切')]];
+    ['/', uiTextOr('k.search', '设置搜索')], ['M', uiTextOr('k.m', '变量映射')], ['?', uiTextOr('k.help', '快捷键表')], [',', uiTextOr('k.comma', '设置')], ['1 2', uiTextOr('k.modes', '三维视图：外观 / 楼层')]];
   b.innerHTML = `<dl>${K.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
 }
 export let showSet = () => {}, showLay = () => {};

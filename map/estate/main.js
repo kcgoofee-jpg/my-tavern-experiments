@@ -1,6 +1,6 @@
-// 三维室内查看器：模型加载、外观 / 内透 / 剖切、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
+// 三维室内查看器：模型加载、外观 / 楼层（剖切）、楼层条、房间与室外热点、房间卡、缩放交互、嵌入协议（说明见 index.html 顶部注释）
 // 模型：加载由清单驱动（Estate3D Manifest 标准契约，map/core/scene3d-manifest.mjs 校验 / 解析，代码里不写死资源路径；嵌入时宿主给清单地址）。
-//   site 部件（整岛 / 场地外观，烘焙光照）+ house 部件（室内体量，进内透 / 剖切时才加载）。
+//   site 部件（整岛 / 场地外观，烘焙光照）+ house 部件（室内体量，进楼层视图时才加载）。
 // 数据（都来自清单）：房间表 data.rooms（精确多边形，房间以 node 对到包的节点）、室外热点 data.zones、房间叫法 / 子区域 / 载具 data.extras；
 //   建筑名与楼层名（building、floors）、房间类别的颜色与名字（room_kinds）也在清单里，页面只留中性兜底。
 import * as THREE from 'three';
@@ -23,7 +23,9 @@ import { createCycle as createDayNight, apply as applyDayNight, applyGrade } fro
 import { registerFX } from '../three/particles.mjs';                                                          // Part 9-2：fx 槽位粒子（雨雪 / 以太极光）
 import { splitWalls } from './terrain.js';   // 地面陡面的石砌材质
 import { createPresence } from './presence.js';   // S7-3：人物头像（聊天里落在房间里的人 + 日程里的人）
-import { createLabelGuard, separateTags } from './labels.js';   // S7-3：被楼体挡住的标注隐掉；X 光视图的楼层签不重叠
+import { createLabelGuard } from './labels.js';   // S7-3：被楼体挡住的标注隐掉
+import { createBackdrop, PERIOD_MIN } from '../three/backdrop.mjs';   // ESTATE-MODES-1 7c：分时段天空渐变 + 云海（与地标查看器共用）；PERIOD_MIN = 时钟胶囊的时段 → 关键帧时刻
+import { flatColorOf, patchSurface, patchBackFace, applyNightFlat, applyGlow, isGlowMaterial } from '../three/night-look.mjs';   // A4：夜里把烘焙的日光对比抹平；D38：夜里亮的是窗
 import { LayerRegistry } from '../core/layer-registry.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
 
 const T0 = performance.now();
@@ -42,14 +44,14 @@ document.body.classList.toggle('embed', EMBED); document.body.classList.toggle('
 document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light');
 const $ = (s) => document.querySelector(s);
 const app = $('#app');
-// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 内透 / 剖切，剖切楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）----------------
+// ---------------- UI v2 外壳（ui/chrome3d.js，spec §4）：视图分段 外观 / 楼层，楼层是二级条；控制列 标注 + − ⟲；抽屉 房间 · 关于（默认收起）----------------
 document.getElementById('zoom')?.remove();
 const aboutEl = document.createElement('div'); aboutEl.id = 'about';
 const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; if (!SHELL) roomEl.append(document.getElementById('card')); { const e = document.createElement('p'); e.id = 'cardEmpty'; roomEl.append(e); }
 /** 壳模式的外壳替身：没有任何 DOM；查看器经 estate:inset 告诉本页它的右栏 / 抽屉盖住了多少 */
 const shellChrome = () => { const ins = { right: 0, bottom: 0 }, subs = new Set(), no = () => {}; return { root: document.body, insets: () => ({ ...ins }), onInsets: (f) => subs.add(f), setInsets: (m) => { Object.assign(ins, m); subs.forEach((f) => f()); },
   sheet: { tab: '', open: false, state: 'peek', mode: 'sheet', setTab: no, set: no, label: no, down: () => false }, setView: no, setViews: no, showSub: no, setText: no, setTitle: no, setAuto: no, dragStart: no, dragEnd: no }; };
-const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'xray', label: '内透' }, { id: 'sect', label: '剖切' }], view: 'ext', sub: document.getElementById('floors'),
+const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'sect', label: '楼层' }], view: 'ext', sub: document.getElementById('floors'),
   onView: (v) => setMode(v === 'sect' ? (isFloor(mode) ? mode : lastFloor) : v, { fly: true, user: true }),
   controls: [{ id: 'lblBtn', icon: 'labels', pressed: true }, { id: 'zin', icon: 'in' }, { id: 'zout', icon: 'out' }, { id: 'zreset', icon: 'reset' }],
   tabs: [{ id: 'room', btnClass: 'roomTab', panel: roomEl }, { id: 'about', btnClass: 'aboutTab', panel: aboutEl }],
@@ -96,7 +98,7 @@ const [CARD, ZDATA, EXTRAS] = await Promise.all([getJSON(M3D.data.rooms, { floor
 const F1Y = MAN.f1_z ?? 30;                                  // F1 地坪的世界标高（layout z）
 const FLOORS = (CARD.floors || []).map((f) => ({ ...f, y: F1Y + f.z }));   // bottom to top
 const FI = Object.fromEntries(FLOORS.map((f, i) => [f.id, i]));
-const GROUND = Math.max(0, FLOORS.findIndex((f) => f.z >= 0));   // 第一层地上楼的下标：内透视图显示它和它以上
+const GROUND = Math.max(0, FLOORS.findIndex((f) => f.z >= 0));   // 第一层地上楼的下标
 lastFloor = GROUND;
 const CUT = 1.5;                                             // 剖切高度（楼面以上）
 const V = (x, y, z) => new THREE.Vector3(x, z, -y);          // layout (x 东, y 北, z 上) → three
@@ -146,12 +148,11 @@ const polyBox = (rooms) => {   // 房间多边形的外包（layout 米）；没
   return { x0: Math.min(...ps.map((p) => p[0])), x1: Math.max(...ps.map((p) => p[0])), y0: Math.min(...ps.map((p) => p[1])), y1: Math.max(...ps.map((p) => p[1])) };
 };
 const HOUSE_BOX = polyBox(CARD.rooms || []);
-const HC = V((HOUSE_BOX.x0 + HOUSE_BOX.x1) / 2, (HOUSE_BOX.y0 + HOUSE_BOX.y1) / 2, 0);
 
 /* ---------------- UI 文案 ---------------- */
 const TXT = {
-  zh: { ext: '外观', xray: '内透', sect: '剖切', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', schedule: '按日程', more: '还有 {n} 人', person: '{name}，{room}', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', xray: 'X-ray', sect: 'Section', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', schedule: 'By schedule', more: '{n} more', person: '{name}, {room}', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', sect: '楼层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', schedule: '按日程', more: '还有 {n} 人', person: '{name}，{room}', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
+  en: { ext: 'Exterior', sect: 'Floors', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', schedule: 'By schedule', more: '{n} more', person: '{name}, {room}', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const FL = () => Estate3D.floorList(MAN, LANG);   // K-R132: id + label (the id when the manifest gives none)
@@ -159,39 +160,11 @@ const floorLabel = (i) => FL()[i]?.label || FLOORS[i].id;
 const floorName = (i) => (floorLabel(i) === FLOORS[i].id ? FLOORS[i].id : `${FLOORS[i].id} · ${floorLabel(i)}`);
 const BLD = () => Estate3D.building(MAN, LANG);
 
-/* ---------------- 背景：渐变天空 + 云海（上层封面同一套暖白云、淡蓝天；深色主题压暗） ---------------- */
-const SKY = { dark: ['#27324a', '#6d6f7c', '#b9a78f'], light: ['#8fb6d8', '#d9e3ea', '#f4ead6'] };
-let skyTex = null, cloudMat = null;
-function paintSky() {
-  const [top, mid, hor] = SKY[THEME === 'light' ? 'light' : 'dark'];
-  const c = skyTex ? skyTex.image : document.createElement('canvas'); c.width = 4; c.height = 256;
-  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, top); gr.addColorStop(0.55, mid); gr.addColorStop(1, hor);
-  g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
-  if (!skyTex) { skyTex = new THREE.CanvasTexture(c); skyTex.colorSpace = THREE.SRGBColorSpace; } else skyTex.needsUpdate = true;
-  scene.background = skyTex;
-  if (cloudMat) { const L = THEME === 'light'; cloudMat.uniforms.cHi.value.set(L ? '#fdfbf6' : '#cfc8bd'); cloudMat.uniforms.cLo.value.set(L ? '#d3dbe4' : '#7a7d8a'); cloudMat.uniforms.cFar.value.set(hor); }
-  wake();
-}
-let SPH = null;   // 整岛包围球（near / far 取景用，addBackdrop 里量一次）
-function addBackdrop(root) {
-  const bb = new THREE.Box3().setFromObject(root); SPH = sphereOfBox(bb);
-  cloudMat = new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false,
-    uniforms: { cHi: { value: new THREE.Color() }, cLo: { value: new THREE.Color() }, cFar: { value: new THREE.Color() }, R: { value: 1900 } },
-    vertexShader: 'varying vec2 vP; void main(){ vec4 w = modelMatrix * vec4(position,1.); vP = w.xz; gl_Position = projectionMatrix * viewMatrix * w; }',
-    fragmentShader: `varying vec2 vP; uniform vec3 cHi, cLo, cFar; uniform float R;
-      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y); }
-      float fbm(vec2 p){ float s = 0., a = .5; for (int k = 0; k < 5; k++) { s += a * n(p); p = p * 2.03 + 17.; a *= .5; } return s; }
-      void main(){ float r = length(vP) / R; float c = fbm(vP / 260.); float d = fbm(vP / 60. + 5.);
-        float v = smoothstep(.30, .85, c * .8 + d * .3);
-        vec3 col = mix(cLo, cHi, v); col = mix(col, cFar, smoothstep(.35, 1., r) * .8);
-        gl_FragColor = vec4(col, (1. - smoothstep(.7, 1., r)) * (.55 + .45 * v)); }`,
-  });
-  const sea = new THREE.Mesh(new THREE.CircleGeometry(1900, 64).rotateX(-Math.PI / 2), cloudMat);
-  sea.position.y = bb.min.y + (bb.max.y - bb.min.y) * 0.18; sea.renderOrder = -1; sea.name = 'cloud_sea'; scene.add(sea); SITE_EXTRA.push(sea);
-  paintSky();
-}
+/* ---------------- 背景：分时段的天空渐变 + 云海（map/three/backdrop.mjs，配色锚在昼夜关键帧的雾色上） ---------------- */
+let SPH = null;   // 整岛包围球（near / far 取景用）
+const backdrop = createBackdrop({ THREE, scene });
+let lastEnvPhase = 'noon';   // 最近一次画背景用的时段（主题切换时重画同一时段）
+const paintBackdrop = () => backdrop.paint({ phase: lastEnvPhase, light: THEME === 'light' });
 
 /* ---------------- 加载：整岛外观 glb ---------------- */
 const loadEl = $('#loading');
@@ -226,6 +199,7 @@ const GROUNDS = [], SITE_EXTRA = [];
 const shellClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 siteG.traverse((o) => {
   if (!o.isMesh) return;
+  const srcMat = o.material.name || '';   // glTF 材质名：夜里哪些面自己发光靠它认（窗 / 玻璃，包数据可点名）
   const map = o.material.map || null;
   if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = Math.min(LOW ? ANISO_LOW : ANISO, renderer.capabilities.getMaxAnisotropy()); map.minFilter = THREE.LinearMipmapLinearFilter; map.generateMipmaps = true; map.needsUpdate = true; }
   if (map && /^(ground|rock|site_[cew])/.test(o.name)) GROUNDS.push(o);
@@ -238,21 +212,32 @@ siteG.traverse((o) => {
     for (let i = 0; i < n; i++) if (c.getX(i) + c.getY(i) + c.getZ(i) < 0.03) { c.setXYZ(i, 0.36, 0.345, 0.33); k++; }
     if (k) { c.needsUpdate = true; STAT.blackFix = (STAT.blackFix || 0) + k; }
   }   // 顶点色烘焙逐点平均了阴影面，整体偏暗：提一点与贴图烘焙对齐
-  if (shell) darkBack(o.material, [0.55, 0.52, 0.47]);   // 剖切面：浅灰截面（原先近黑，F2 剖切时翼楼成了黑块）
-  MESH[o.name] = o; STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+  MESH[o.name] = o; o.userData.srcMat = srcMat; STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
 });
 GROUNDS.forEach((o) => splitWalls(o, { THREE, renderer, scene, STAT, SITE_EXTRA }));
 scene.add(siteG);
-addBackdrop(siteG);
+{ const bb = new THREE.Box3().setFromObject(siteG); SPH = sphereOfBox(bb); }   // near / far 取景量一次
+backdrop.fit(siteG); paintBackdrop();
 const HOUSE_SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
 const SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
 
 /* ---------------- Part 9-1 / 9-2：昼夜调色与 fx 槽位粒子 ---------------- */
 // 外观这批是烘焙光照的 MeshBasic（不吃灯），昼夜只能靠调色：把每件材质的基准色记下来，按环境参数改 tint。
 // 室内体量是真灯（Lambert），走 applyDayNight 的太阳 / 半球光那一支。
-const GRADE_TARGETS = [];
+// 夜里再向每块烘焙面自己的平均色提（night-look.mjs）：烘焙的日光长影子和受光面对比抹平，只剩月光 / 环境光（A4）。
+// 夜里亮的是窗：清单 x-night-glow 点的材质（没点就按材质名认窗 / 玻璃）加一层暖光，按世界坐标分格——每层亮度不同、约两成窗暗着。
+const GRADE_TARGETS = [], NIGHT_TARGETS = [], GLOW_TARGETS = [], GLOW_NAMES = [], CUT_TARGETS = [];
+const GLOW_LIST = MAN['x-night-glow'];   // 清单可点名夜里发光的材质（包数据；引擎里不写卡词）
 for (const o of [...SITE_MESHES, ...HOUSE_SHELL, ...SITE_EXTRA]) {
-  const m = o?.material; if (m?.color?.setRGB) GRADE_TARGETS.push({ material: m, base: [m.color.r, m.color.g, m.color.b] });
+  const m = o?.material; if (!m?.color?.setRGB || m.isShaderMaterial) continue;
+  GRADE_TARGETS.push({ material: m, base: [m.color.r, m.color.g, m.color.b] });
+  const shell = o.name.startsWith('house_shell');
+  const glow = isGlowMaterial(o.userData.srcMat, GLOW_LIST);
+  if (glow) GLOW_NAMES.push(o.userData.srcMat);
+  const u = patchSurface(THREE, m, { flat: flatColorOf(THREE, o), back: shell ? [0.55, 0.52, 0.47] : null, glow });   // 截面色：浅灰（原先近黑，F2 剖切时翼楼成了黑块）；只在真的剖开时涂（applyMode 开 uCut）
+  NIGHT_TARGETS.push({ u });
+  if (shell) CUT_TARGETS.push(u);
+  if (glow) GLOW_TARGETS.push({ u });
 }
 // 粒子按 LayerRegistry 契约注册在 fx 槽位（第 9 槽）；绘制仍用本页的渲染器 / 场景。
 const FX_REG = new LayerRegistry();
@@ -281,13 +266,9 @@ function attachAurora() {
   m.position.set(0, h * .34, -(camera.near + 5));   // 紧贴近平面（加法混合、不写深度，原先 600 m 处；near 贴合场景后 600 m 在近平面之内会被裁掉）
   m.scale.set(w * 1.3 / 1100, h * .62 / 360, 1);
 }
-// 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面
-function darkBack(mat, rgb) {
-  mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', `#include <dithering_fragment>\nif (!gl_FrontFacing) gl_FragColor.rgb = vec3(${rgb.map((v) => v.toFixed(3)).join(',')});`); };
-  mat.customProgramCacheKey = () => 'darkBack' + rgb.join(',');
-}
+// 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面（补丁在 night-look.mjs）
 
-/* ---------------- 室内体量 glb（进内透 / 剖切时才加载） ---------------- */
+/* ---------------- 室内体量 glb（进楼层视图时才加载） ---------------- */
 const houseClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 const houseFloors = FLOORS.map(() => []);   // 每层 [struct, furn]
 let houseState = 0;   // 0 未加载 / 1 加载中 / 2 好了 / -1 失败
@@ -296,11 +277,13 @@ function loadHouse() {
   const file = (LOW && M3D.parts.house.low) || M3D.parts.house.std; STAT.house = file.split('/').pop();
   loadGlb(file).then((g) => {
     const root = g.scene; root.position.y = F1Y;
+    for (const s of g.scenes || []) if (s !== root) for (const c of [...s.children]) root.add(c);   // E-14：f_B2_med（B2 医疗块）在第二个 scene 里，一并挂进默认场景
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, clippingPlanes: [houseClip] });
-    darkBack(mat, [0.2, 0.18, 0.16]);
+    patchBackFace(THREE, mat, [0.2, 0.18, 0.16]);
     root.traverse((o) => {
       if (!o.isMesh) return; o.material.dispose(); o.material = mat;
-      const m = o.name.match(/^f_(B[12]|F[123])_/); if (m) houseFloors[FI[m[1]]].push(o);
+      const m = o.name.match(/^f_(B[12]|F[123])_/) || String(o.parent?.name || '').match(/^f_(B[12]|F[123])_/);   // 网格名不带楼层前缀时看它的节点（f_B2_med 里的 b2_cleanroom_panel）
+      if (m) houseFloors[FI[m[1]]].push(o);
       STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
     });
     scene.add(root); houseState = 2; TB.house = performance.now() - t0; applyMode(); wake();
@@ -386,10 +369,10 @@ const PROP_PLACES = ITEMS.map((it) => ({
 const propMat = new THREE.MeshBasicMaterial({ color: '#e6c36a', transparent: true, opacity: 0.9, depthWrite: false });
 const haloMat = new THREE.MeshBasicMaterial({ color: '#f6dfa6', transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
 let stashRaw = null, propTaken = new Set(), props = [];
-/** 这一层 / 这个模式下该不该亮：剖切看本层，内透看楼上，外观只亮室外的（与 itemVisible 同一条口径） */
+/** 这一层 / 这个模式下该不该亮：楼层视图看本层，外观只亮室外的（与 itemVisible 同一条口径） */
 function propVisible(p) {
   const fi = p.floor != null ? FI[p.floor] : null;
-  return isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= GROUND : fi == null;
+  return isFloor(mode) ? fi === mode : fi == null;
 }
 function clearProps() {
   for (const g of props) { propG.remove(g); g.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -444,7 +427,7 @@ function showPropTip(p, x, y) {
 // 时刻由「页面开着多久」推出来（不读系统时间、不问模型、不等宿主推 MVU 变动），换地方走一段过去，减少动态效果一步到位。
 const PRES = createPresence({ THREE, CSS2DObject, scene, tx, wake, aria, onPerson: (name, dim) => post({ type: 'estate:person', name, dim }),
   roomOf: (node) => { const it = ROOM_BY_NODE.get(node); return it && { cx: it.cx, cz: it.cz, y: it.y, floor: it.d.floor, name: it.d.name }; },
-  visibleOn: (floorId) => { const fi = FI[floorId]; return fi != null && (isFloor(mode) ? fi === mode : mode === 'xray' && fi >= GROUND); } });
+  visibleOn: (floorId) => { const fi = FI[floorId]; return fi != null && mode === fi; } });
 /** estate:people：聊天里位置落在这座楼里的人（查看器按和二维人物页同一条结果算好；只在列表变了才发）。日程里的同名者让位。 */
 function setPeople(items) {
   const list = items.filter((p) => p && typeof p.name === 'string' && typeof p.room === 'string').slice(0, 30).map((p) => ({ name: p.name, room: p.room, floor: p.floor, color: p.color, avatar: p.avatar }));
@@ -460,13 +443,17 @@ let LOCATED = new Set();   // 聊天里位置落在这座楼的人（estate:peop
 /** 日程里的人的头像（presence.js：同一套按钮头像，虚线淡色 = 按日程站位） */
 const npcChip = (name) => { const e = PRES.routineChip(name); npcG.add(e.g); return e; };
 /** 一次时钟 tick：到了下一轮就按日程表重派站位 */
+/** 时钟胶囊选的时段（U-FIX-4，宿主经 estate:period 推来；'' = 跟聊天时刻走）：三维与二维地图看同一档（PERIOD_MIN 与地标查看器共用一份） */
+let periodOv = '';
+const effClock = () => (periodOv ? { min: PERIOD_MIN[periodOv] } : npcClock);
+function setPeriod(tod) { periodOv = PERIOD_MIN[tod] != null ? tod : ''; dayNight.setClock(effClock()); wake(); }
 function npcTick() {
   if (!npcSched) return;
   if (!npcT0) npcT0 = performance.now();
   const r = tickClock(npcBase, { now: performance.now(), t0: npcT0 });
   if (r.rounds === npcRounds) return;
   npcRounds = r.rounds; npcClock = r.clock;
-  dayNight.setClock(r.clock);   // Part 9-1：同一条确定性时钟也驱动昼夜（查看器经 estate:routine 推来起点时钟）
+  dayNight.setClock(effClock());   // Part 9-1：确定性时钟驱动昼夜；时钟胶囊选了时段（U-FIX-4）就用那一档
   npcRetarget();
 }
 /** 日程表 → 站位：认不出落点的人（地点不在本页的房间 / 区域表里）不动，第一次出现直接落位 */
@@ -481,7 +468,7 @@ function npcRetarget() {
   }
   if (started || npcWalker.moving()) wake();
 }
-/** 渲染循环里的一步：插值落位 + 跟着当前楼层显隐（剖切看本层、内透看楼上、外观看室外） */
+/** 渲染循环里的一步：插值落位 + 跟着当前楼层显隐（楼层视图看本层、外观看室外） */
 function npcStep(now) {
   if (!npcs.size) return;
   npcWalker.step(now);
@@ -489,7 +476,7 @@ function npcStep(now) {
     const p = npcWalker.at(name, now); if (!p || p.length < 3) continue;
     e.g.position.set(p[0], p[1], p[2]);
     const fi = e.floor != null ? FI[e.floor] : null;
-    e.g.visible = isFloor(mode) ? fi === mode : mode === 'xray' ? fi != null && fi >= GROUND : fi == null;
+    e.g.visible = isFloor(mode) ? fi === mode : fi == null;
   }
   if (npcWalker.moving()) wake();
 }
@@ -510,17 +497,15 @@ const nameOf = (it) => {
   const nm = d.name + (d.no ? ` ${d.no}` : '');
   return LANG === 'en' && enName(d) ? enName(d) : nm;
 };
-const floorTags = FLOORS.map((f, i) => { const o = mkLabel(scene, HOUSE_BOX.x0 - 4, f.y + 1, -HOUSE_BOX.y0, 'floor'); o.center.set(1, 0.5); return o; });
 function relabel() {
   for (const it of ITEMS) { it.label.element.firstChild.textContent = nameOf(it); it.lw = 0; }
-  floorTags.forEach((o, i) => { o.element.firstChild.textContent = floorName(i); });
 }
 
 /* ---------------- 楼层条 ---------------- */
 const floorsEl = $('#floors'); const BTN = {};
 function buildNav() {
   floorsEl.innerHTML = ''; for (const k of Object.keys(BTN)) delete BTN[k];
-  C3.setViews([{ id: 'ext', label: tx('ext') }, { id: 'xray', label: tx('xray') }, { id: 'sect', label: tx('sect') }]);
+  C3.setViews([{ id: 'ext', label: tx('ext') }, { id: 'sect', label: tx('sect') }]);
   for (let i = 0; i < FLOORS.length && !SHELL; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = floorLabel(i);
     b.onclick = () => setMode(i, { fly: true, user: true }); floorsEl.appendChild(b); BTN[i] = b; }
   const zh = LANG === 'zh';
@@ -537,7 +522,7 @@ function buildNav() {
 function syncNav() { for (const [k, b] of Object.entries(BTN)) { const on = String(mode) === k; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   C3.setView(isFloor(mode) ? 'sect' : mode); C3.showSub(isFloor(mode)); if (isFloor(mode)) lastFloor = mode; }
 
-/* ---------------- 模式：ext 外观 / xray 内透 / 0..4 剖切（B2…F3） ---------------- */
+/* ---------------- 模式：ext 外观 / 0..4 楼层视图（B2…F3） ---------------- */
 let mode = 'ext';
 const isFloor = (m) => typeof m === 'number';
 const SITE_BOX = new THREE.Box3().setFromObject(siteG), SITE_C = SITE_BOX.getCenter(new THREE.Vector3()), SITE_S = SITE_BOX.getSize(new THREE.Vector3());
@@ -548,8 +533,6 @@ function viewFor(m) {
     const [w, h] = projExtent(sz[0], sz[1], sz[2], th, ph);
     return { target: e?.target ? V(...e.target) : SITE_C.clone(), zoom: P_ ? fitZoom(w * 0.62, 1) : fitZoom(w * 0.9, h * 0.95), theta: th, phi: ph };
   }
-  const W = HOUSE_BOX.x1 - HOUSE_BOX.x0, D = HOUSE_BOX.y1 - HOUSE_BOX.y0;
-  if (m === 'xray') { const th = AZ, ph = 1.0; const [w, h] = projExtent(W, D, 32, th, ph); return { target: new THREE.Vector3(HC.x, F1Y + 7, HC.z), zoom: P_ ? fitZoom(w * 0.8, 1) : fitZoom(w * 1.08, h * 1.12), theta: th, phi: ph }; }
   const y = FLOORS[m].y, under = FLOORS[m].z < 0;   // 地下层：只取这一层的外包（加 8 m 边），地上层：整幢楼的外包（加 4 m 边）
   const fb = under ? polyBox((CARD.rooms || []).filter((r) => r.floor === FLOORS[m].id)) : HOUSE_BOX, c = V((fb.x0 + fb.x1) / 2, (fb.y0 + fb.y1) / 2, 0);
   const w0 = fb.x1 - fb.x0 + (under ? 8 : 4), d0 = fb.y1 - fb.y0 + (under ? 8 : 4), cx = c.x, cz = c.z;
@@ -561,23 +544,16 @@ function applyMode() {
   const under = fl && FLOORS[m].z < 0;
   for (const s of SITE_MESHES) s.visible = !under;
   for (const s of SITE_EXTRA) if (s.name === 'ground_walls') s.visible = !under;
-  // 主楼外壳：外观原样；内透半透明；剖切切在楼面以上 1.5 m（地下层不显示）
-  for (const s of HOUSE_SHELL) {
-    s.visible = !under;
-    const mt = s.material, xr = m === 'xray';
-    if (mt.transparent !== xr) { mt.transparent = xr; mt.needsUpdate = true; }
-    mt.opacity = xr ? 0.16 : 1; mt.depthWrite = !xr;
-  }
+  for (const s of HOUSE_SHELL) s.visible = !under;   // 主楼外壳：外观原样；楼层视图切在楼面以上 1.5 m（地下层不显示）
   shellClip.constant = fl && !under ? FLOORS[m].y + CUT : 1e5;
   houseClip.constant = fl ? FLOORS[m].y + CUT : 1e5;
+  for (const u of CUT_TARGETS) u.uCut.value = fl && !under ? 1 : 0;   // 墙真的被剖开时才涂截面色：外观视图里背面就是正常烘焙面
   PRES.refresh();
-  roomG.forEach((g, i) => { g.visible = fl ? i === m : m === 'xray' && i >= GROUND; });
-  plates.forEach((ps, i) => ps.forEach((p) => { p.visible = fl ? i === m : m === 'xray'; }));
-  for (const mt of Object.values(plateMats)) mt.opacity = m === 'xray' ? 0.35 : 0.55;
-  houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl ? i === m : m === 'xray' && i >= GROUND; }));
+  roomG.forEach((g, i) => { g.visible = fl && i === m; });
+  plates.forEach((ps, i) => ps.forEach((p) => { p.visible = fl && i === m; }));
+  houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl && i === m; }));
   zoneG.visible = m === 'ext'; carG.visible = m === 'ext';
-  for (const g of props) g.visible = propVisible(g.userData.prop);   // 藏物跟着模式走（剖切看本层、内透看楼上、外观只亮室外）
-  floorTags.forEach((o, i) => { o.visible = m === 'xray' && i >= GROUND; });
+  for (const g of props) g.visible = propVisible(g.userData.prop);   // 藏物跟着模式走（楼层视图看本层、外观只亮室外）
   wake();
 }
 /** 画布是一张有名字的图：<建筑>，<楼层 / 视图>，<n> 人（U-25：iframe 不进 Tab 序，键盘走查看器） */
@@ -598,12 +574,11 @@ function setMode(m, o = {}) {
 const modeKey = (m) => (isFloor(m) ? FLOORS[m].id : m);
 function itemVisible(it) {
   if (it.kind === 'area' || it.kind === 'car') return mode === 'ext';
-  return mode === it.floor || (mode === 'xray' && it.floor >= GROUND);
+  return mode === it.floor;
 }
 function parseFloor(f) {
   if (f == null) return null; const s = String(f).trim().toLowerCase();
   if (['ext', 'exterior', '外观', 'out'].includes(s)) return 'ext';
-  if (['all', '全部', 'cutaway', 'xray', 'x-ray', '内透'].includes(s)) return 'xray';
   let k = s.match(/^b\s*([12])\s*f?$|^([12])\s*b$|^-\s*([12])$|^地下\s*([一二12])/);
   if (k) { const n = k[1] || k[2] || k[3] || ({ 一: '1', 二: '2' }[k[4]] || k[4]); return FI['B' + n]; }
   k = s.match(/^f\s*([123])$|^([123])\s*f$|^([123])$|^([一二三])层$/);
@@ -620,8 +595,6 @@ function updateLabelSet() {
 }
 const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => { const b = polyBox((CARD.rooms || []).filter((r) => r.floor === f.id)); return { y: f.y, z: f.z, box: { x0: b.x0, x1: b.x1, z0: -b.y1, z1: -b.y0 } }; }), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
   labels: () => labelSet.map((it) => ({ el: it.label.element, anchor: it.label, hot: it === pinned || it === hover })) });   // 一条射线对几个包围盒：不碰模型网格
-const FTAGS = floorTags.map((o) => ({ el: o.element, span: o.element.firstChild }));
-const tagPass = () => { if (mode === 'xray') separateTags(FTAGS); };
 const _v = new THREE.Vector3();
 const topBarEl = C3.root.querySelector?.('.c3-top');
 function cullLabels() {
@@ -634,8 +607,7 @@ function cullLabels() {
     let ok = true;
     if (!hot) {
       if (it.kind === 'room') {
-        if (mode === 'xray') ok = false;                                   // 内透：只在悬停 / 钉住时显示
-        else if (it.rank === 3) ok = false;
+        if (it.rank === 3) ok = false;
         else if (it.rank === 2 && mpp > 0.09) ok = false;
         else if (it.d.name === '个人寝室' && mpp > 0.06) ok = false;
       } else if (it.kind === 'area') {
@@ -986,9 +958,9 @@ function setLowRes(on) {
 }
 
 /* ---------------- 键盘 / 消息 ---------------- */
-const SEQ = [...FLOORS.map((f, i) => i), 'xray', 'ext'];
+const SEQ = [...FLOORS.map((f, i) => i), 'ext'];
 window.addEventListener('keydown', (e) => {
-  if (SHELL && !e.isComposing) { if (e.key === 'Escape') { post({ type: 'estate:esc' }); return; } if (['1', '2', '3'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) { post({ type: 'estate:key', key: e.key }); return; } }   // the viewer owns Esc and the view keys
+  if (SHELL && !e.isComposing) { if (e.key === 'Escape') { post({ type: 'estate:esc' }); return; } if (['1', '2'].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) { post({ type: 'estate:key', key: e.key }); return; } }   // the viewer owns Esc and the view keys
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (['+', '=', '-', '_', '0'].includes(e.key)) { e.preventDefault(); if (e.key === '0') resetView(); else zoomBtn(e.key === '+' || e.key === '=' ? 1.6 : 1 / 1.6); return; }
   if ((e.key === 'l' || e.key === 'L') && !e.target.closest?.('input,textarea')) { setLabels(!labelsOn); return; }
@@ -1016,7 +988,8 @@ window.addEventListener('message', (e) => {
   if (d.type === 'estate:room') focusRoomMsg(d.name, d.card);
   else if (d.type === 'estate:children' && d.zones && typeof d.zones === 'object') { CHILDREN = d.zones; cardFor = null; tipFor = null; if (pinned) showCard(pinned); }
   else if (d.type === 'estate:floor') { const m = parseFloor(d.floor); if (m != null) setMode(m, { fly: true, quiet: true }); }
-  else if (d.type === 'estate:view' && ['ext', 'xray', 'sect'].includes(d.mode)) setMode(d.mode === 'sect' ? (isFloor(mode) ? mode : lastFloor) : d.mode, { fly: true, quiet: true });   // S7-3: the viewer's segment / keys 1 2 3
+  else if (d.type === 'estate:view' && ['ext', 'sect'].includes(d.mode)) setMode(d.mode === 'sect' ? (isFloor(mode) ? mode : lastFloor) : d.mode, { fly: true, quiet: true });   // S7-3: the viewer's segment / keys 1 2 (D38: exterior + floors, x-ray removed)
+  else if (d.type === 'estate:period' && typeof d.tod === 'string') setPeriod(d.tod);   // U-FIX-4：时钟胶囊选的时段（'' = 跟聊天时刻）
   else if (d.type === 'estate:cam') { if (d.op === 'in') zoomBtn(1.6); else if (d.op === 'out') zoomBtn(1 / 1.6); else if (d.op === 'reset') resetView(); }   // the viewer's toolbar
   else if (d.type === 'estate:labels' && typeof d.on === 'boolean') setLabels(d.on);
   else if (d.type === 'estate:select') { const it = typeof d.node === 'string' ? ITEMS.find((x) => x.kind === 'room' && x.d.node === d.node) : null; if (it) { focusItem(it); postSelect(it); } else if (pinned) unpin(true); }   // a room from the viewer's list (by node id), or the viewer closed its card
@@ -1030,7 +1003,7 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:quality' && typeof d.q === 'string') {   // 设置「三维画质」即时生效
     DPR = Math.min(window.devicePixelRatio || 1, d.q === '1' ? 1 : COARSE ? 2 : (window.devicePixelRatio || 2)); document.documentElement.classList.toggle('noblur', d.q === '1');
     renderer.setPixelRatio(lowRes ? Math.max(1, DPR * 0.75) : DPR); renderer.setSize(innerWidth, innerHeight); wake(); }
-  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light'); paintSky(); }
+  else if (d.type === 'estate:theme' && (d.theme === 'light' || d.theme === 'dark')) { THEME = d.theme; document.documentElement.dataset.theme = THEME; document.documentElement.classList.toggle('light', THEME === 'light'); paintBackdrop(); }
   else if (d.type === 'estate:cvd' && typeof d.mode === 'string') { document.documentElement.dataset.cvd = d.mode; document.documentElement.classList.toggle('cvd', d.mode !== '0'); }   // 色觉模式（E7）：本页当前没有按类别上色的材质，只留 CSS 钩子给以后加
   else if (d.type === 'estate:fps' && typeof d.on === 'boolean') { STATS = d.on; statsEl.classList.toggle('on', d.on); if (!d.on) statsEl.textContent = ''; frames = 0; fpsT = performance.now(); wake(); }
   else if (d.type === 'estate:chat' && typeof d.id === 'string') setGalleryChatId(d.id);   // 房间图集「仅本聊天」作用域
@@ -1079,6 +1052,9 @@ function loop(now) {
     dayNightPhase = env9.phase;
     applyDayNight({ THREE, env: env9, targets: { sun: sunL, hemi: hemiL } });   // 室内真灯
     applyGrade({ env: env9, materials: GRADE_TARGETS });                        // 室外烘焙调色
+    applyNightFlat({ env: env9, targets: NIGHT_TARGETS });                      // 夜里把烘焙的日光对比抹平（A4）
+    applyGlow({ env: env9, targets: GLOW_TARGETS });                              // 夜里的窗光（清单点名的窗 / 玻璃材质）
+    lastEnvPhase = env9.phase; paintBackdrop();                                 // 分时段天空 + 云海（ESTATE-MODES-1 7c）
     fx3d?.setFXType(env9.night ? 'aurora' : 'none', env9.night ? .45 : 0);      // 夜里高空以太流光
     attachAurora();                                                            // 极光天幕：挂到相机上，绕岛怎么转都在
     needs = true;
@@ -1092,7 +1068,7 @@ function loop(now) {
     if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸：只在这一帧本来就要画时跟着变（core/stash3d.mjs 的 propGlow）
     adapt(now, moving); fitDepth();
     renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
-    labelR.render(scene, camera); cullLabels(); tagPass();
+    labelR.render(scene, camera); cullLabels();
     if (cardFor && !cardAt) placeCard();
     frames++; window.__estate && (window.__estate.renders = (window.__estate.renders || 0) + 1);   // read by tools/browser/raf_pause.mjs (a still camera renders nothing)
     if (first) { first = false; onFirstFrame(); }
@@ -1125,7 +1101,7 @@ function onFirstFrame() {
   window.__estate.firstFrameMs = performance.now() - T0;
   post({ type: 'estate:ready', floors: FL(), rooms: (CARD.rooms || []).map((r) => ({ name: r.name, node: r.node, floor: r.floor, kind: r.kind, area: r.area })), building: BLD(), kinds: [...new Set((CARD.rooms || []).map((r) => r.kind))].map(KIND) });
   if (mode === 'ext' && !EMBED && !REDUCED && !tween) { const v = viewFor('ext'); v.ease = 'out'; flyTo(v, 2000); }
-  // 空闲时预取室内体量（低档不预取，等进内透 / 剖切再取）
+  // 空闲时预取室内体量（低档不预取，等进楼层视图再取）
   if (!LOW) (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => loadHouse(), { timeout: 4000 });
 }
 
@@ -1152,7 +1128,8 @@ window.__estate = {
     at: (name, now) => npcWalker.at(name, now == null ? performance.now() : now),
     floor: name => npcs.get(name)?.floor ?? null,
     describe: () => ({ ...npcWalker.describe(), clock: npcClock, rounds: npcRounds, scheduled: !!npcSched }) },
-  dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }) },   // Part 9-1（探针 / 浏览器测试用）
+  dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }), period: () => periodOv, setPeriod },   // Part 9-1（探针 / 浏览器测试用）
+  nightLook: () => ({ glow: [...new Set(GLOW_NAMES)], glowOn: GLOW_TARGETS.length, uGlow: GLOW_TARGETS[0]?.u.uGlow.value ?? 0, uNight: NIGHT_TARGETS[0]?.u.uNight.value ?? 0, flat: NIGHT_TARGETS.filter(t => t.u.uFlatOn.value).length, phase: lastEnvPhase }),   // D38 探针：夜里该亮的窗亮了没有
   fx: { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
     layers: () => FX_REG.describe(), mounted: () => !!fx3d?.object?.parent },                                                        // Part 9-2
   people: { set: setPeople, list: () => PRES.list, chips: () => [...document.querySelectorAll('.pc')].map((b) => b.dataset.name || b.textContent), count: () => PRES.count(), located: () => [...LOCATED] },   // S7-3（探针用）

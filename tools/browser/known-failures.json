@@ -1,1 +1,3 @@
-[]
+[
+ { "probe": "estate3d", "check": "夜档外观：夜里点亮的窗材质 > 0", "since": "2026-10-02", "owner_step": "ESTATE-MODES-1 → 渲染线重出外观模型（带窗 / 玻璃材质）", "reason": "site.glb 的外壳是一整张烘焙图集（m_house_shell）+ 顶点色细部（m_house_shell_vc），没有可分离的窗材质；引擎侧 x-night-glow 已就位（map/three/night-look.mjs），等模型重出后自动转绿" }
+]

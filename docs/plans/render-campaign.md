@@ -7,7 +7,7 @@ Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 55 | 0 | 0 | 0 | 27 | 0 | 82 |
-| hero | 22 | 0 | 0 | 8 | 4 | 0 | 34 |
+| hero | 22 | 0 | 1 | 8 | 4 | 0 | 35 |
 
 Below-gate (user spot-check): none
 
@@ -136,4 +136,5 @@ Below-gate (user spot-check): none
 | 32 | `var:world:borders` | variant | blocked | render |  |  | World map borders at full resolution, thin lines (D41 B7) |
 | 33 | `var:world:night` | variant | blocked | render |  |  | World map night variant with city lights (D41 B7) |
 | 34 | `estate:cutaway` | estate | blocked | final |  |  | Estate floors view: real interior materials, AO bake, practical lamps (D41 B5) |
+| 35 | `glb:estate:night-glow` | estate | open | final |  |  | Estate exterior glb: a separable window / glass material for the night glow (D38) |
 

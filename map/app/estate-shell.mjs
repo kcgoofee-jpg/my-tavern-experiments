@@ -1,7 +1,7 @@
 // 3D as a view mode of the current place (docs/ui-refactor.md 3.8, S7-3): the viewer's half of the one shell. While a 3D page is open the viewer keeps its header, floor strip, toolbar,
 // drawer and cards (U-25, U-26); the page draws only the scene, its in-canvas labels and the presence chips. This module
-//   * draws the view segment (外观 / 内透 / 剖切) in the header, one menu button at <= 640 px, and the building's floors in the level strip, and says so to the page (estate:view, estate:floor);
-//   * routes the toolbar (zoom, reset, labels), keys 1 / 2 / 3 and Esc to the page;
+//   * draws the view segment (外观 / 楼层, D38) in the header, one menu button at <= 640 px, and the building's floors in the level strip, and says so to the page (estate:view, estate:floor);
+//   * routes the toolbar (zoom, reset, labels), keys 1 / 2 and Esc to the page;
 //   * opens the shared place / person card for what the page reports (estate:select, estate:person) and lists the building's rooms in the drawer's place tab;
 //   * sends the people the chat places in the building (estate:people, from core/estate-people.mjs) when the list changes.
 // The card sections are built in estate-cards.mjs. Nothing here writes host state; the viewer only sends intents up (eden-map:* stays in the other modules).
@@ -19,7 +19,7 @@ import { aboutSection, roomCard, roomList, treeRooms, zoneCard } from './estate-
 const S = { on: false, ready: false, floors: [], rooms: [], building: { title: '', subtitle: '', summary: '' }, kinds: [], mode: 'ext', floor: null, labels: true, sent: null, insets: '' };
 let send = () => {}, ui = null;
 const T = (k, zh) => uiTextOr(k, zh);
-const MODES = [['ext', 'v3.ext', '外观'], ['xray', 'v3.xray', '内透'], ['sect', 'v3.section', '剖切']];
+const MODES = [['ext', 'v3.ext', '外观'], ['sect', 'v3.section', '楼层']];   // D38: two buttons, the x-ray view is gone
 const CSS = `
 #v3seg,#v3btn,#v3menu{display:none}
 body.shell3d #v3seg{display:inline-flex;gap:var(--sp-1);padding:var(--sp-1);border-radius:var(--r-m)}
@@ -106,7 +106,7 @@ export function stripFloors(nav) {
     b.append(f.id); if (f.label && f.label !== f.id) { b.title = f.label; b.setAttribute('aria-label', `${f.id} ${f.label}`); } return b; }).reverse());   // UI-3D-1: the strip shows the code only; the full name is the tooltip and the accessible name
   return true;
 }
-export function onKey(k) { if (!S.on) return false; const m = { 1: 'ext', 2: 'xray', 3: 'sect' }[k]; if (!m) return false; setView(m); return true; }
+export function onKey(k) { if (!S.on) return false; const m = { 1: 'ext', 2: 'sect' }[k]; if (!m) return false; setView(m); return true; }   // I-30 closed with D38: key 3 is gone
 
 // ---- from the page ----
 export function fromPage(d) {

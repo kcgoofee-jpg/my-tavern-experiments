@@ -2502,6 +2502,27 @@
     "setting": "docs/eden-estate.md (floor / wall / ceiling and lighting per room)"
    },
    "notes": "Batch 6 (~4 Mac-h). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Interior materials per room from docs/eden-estate.md, ambient occlusion baked (2K per floor atlas), the lamps the doc lists (chandeliers, sconces, desk lamps) as emissive fixtures that light the night look; no colour plates (D35). Does not touch the paused Eden r6 exterior refinement. Coordinate with ESTATE-MODES-1 (window glow material names). Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "glb:estate:night-glow",
+   "lane": "hero",
+   "type": "estate",
+   "title": "Estate exterior glb: a separable window / glass material for the night glow (D38)",
+   "targets": [
+    "eden_estate:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 0,
+    "spp": 0
+   },
+   "hints": {
+    "script": "blender/estate2/export_web.py",
+    "viewer": "map/estate/main.js",
+    "manifest": "map/estate/model/manifest.json (x-night-glow)"
+   },
+   "notes": "No render: stage final = evaluate (glb re-export only, same convention as estate:opt). The estate shell is one baked atlas today (m_house_shell) plus vertex-coloured details, so the web viewer has no material it can light at night; give the glazing its own material (e.g. m_win_glass) and list it in map/estate/model/manifest.json as x-night-glow. Keep the atlas budget and the low variant in step and bump manifest v. Engine side is ready (map/three/night-look.mjs: warm emissive on the named materials, hashed per floor so about a fifth of the windows stay dark); the estate3d probe check for lit window materials stays a known failure until this lands. Only what the model has as a fixture glows, no lamps outside. Self-check: the night exterior screenshot must show scattered lit windows, not one glowing plate (D35)."
   }
  ]
 }

@@ -482,7 +482,8 @@ class RealItemList(unittest.TestCase):
                                   'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world',
                                   'obl:tc_upper:day', 'obl:tc_upper:dawn', 'obl:tc_upper:dusk', 'obl:tc_upper:night',
                                   'obl:tc_upper_eden:day', 'obl:tc_upper_eden:dawn', 'obl:tc_upper_eden:dusk', 'obl:tc_upper_eden:night',
-                                  'base:world_cities', 'var:world:borders', 'var:world:night', 'estate:cutaway'])
+                                  'base:world_cities', 'var:world:borders', 'var:world:night', 'estate:cutaway',
+                                  'glb:estate:night-glow'])
 
     def test_dependencies_and_specs(self):
         by = {i['id']: i for i in self.items}
@@ -514,6 +515,16 @@ class RealItemList(unittest.TestCase):
             self.assertTrue(by[k]['notes'].startswith('RETIRED (D41'), k)
         self.assertNotIn('RETIRED', by['var:tc_low:night']['notes'])
         self.assertEqual(by['out:tc_mid:night']['spec'], {'res': 4000, 'spp': 64})
+
+    def test_d38_estate_night_glow(self):
+        """D38 (ESTATE-MODES-1): the exterior needs a separable window material before the web view can light the windows.
+        A glb re-export only, same no-render convention as estate:opt; the engine hook is the manifest key x-night-glow."""
+        by = {i['id']: i for i in self.items}
+        g = by['glb:estate:night-glow']
+        self.assertEqual((g['lane'], g['type'], g['spec']), ('hero', 'estate', {'res': 0, 'spp': 0}), 'a glb re-export, not a picture render')
+        self.assertEqual(g['hints']['manifest'], 'map/estate/model/manifest.json (x-night-glow)')
+        self.assertIn('No render', g['notes'])
+        self.assertNotIn('estate:cutaway', g['depends'], 'the interior cutaway does not gate the exterior shell')
 
     def test_item_shape_and_ascii(self):
         for i in self.items:

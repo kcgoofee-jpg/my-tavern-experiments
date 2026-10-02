@@ -1,9 +1,9 @@
 # Todo — the single tracker
 
 状态 2026-10-02（每步结束重写，≤ 5 行）：
-- 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42）；SETTING-1 完成（D41）；WB-1 完成：附加世界书联动规范重写、全部条目默认启用（D43）。
+- 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42，X-RAY / A4 / A5 已完成）；SETTING-1 完成（D41）；WB-1 完成：附加世界书联动规范重写、全部条目默认启用（D43）。
 - 最近 head：以 `map/data/head.json` 为准。
-- 在跑：FOG-1 / LOOK-1 / ESTATE-MODES-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视。
+- 在跑：FOG-1 / LOOK-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视；外观模型重出（夜里的窗光）等台账。
 - 等你：`docs/decision-digest.md` 逐条填保留 / 改；v0.9.8 前抽查一遍（R1）。
 - 下一步：OBLIQUE-CODE（斜视投影与俯视开关）→ 渲染批 1 上层斜视 → REL-0.9.8。
 
@@ -96,6 +96,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **PLACE-1b** place UI: 地点 tab shows the current place record + parent chain + nearby, no credits / empty floors; archive card with sync state; one editor on place / room / zone / building / person cards; room-card local inputs removed; duplicate 3D label fix (spec: `docs/place-record.md` appendix B) · after PLACE-1a
   - ~~**WB-2** worldbook layout (position / depth / order / constant vs keyword vs the prompt cache): readme entries, readable versions, JIT diagnosis (item 0); real prompt order captured, layout decided and shipped — rules at depth 0 user, all 129 keyword entries at depth 1 in order bands 910 / 930 / 950 / 1000, custom book places at depth 1 (1200+); cache measured (without proxy learning the old layout 0 % hit vs 27 % new, = no add-on; with the user's CCST both 93 %); docs/worldbook-layout.md (D45)~~ ✅ 2026-10-02 (RESULT WB-2; tag rate on gg not run, see the doc's §6)
   - ~~**WB-1** worldbook add-on after SETTING-1: tag rates measured (6.4 % of floors carry any tag, 0 near-misses), rules v4 at depth 2 (762 chars), 「地图人物位置」 merged, three tier lore entries, parser tolerance, every entry enabled after sync, JIT-off restore (D43)~~ ✅ 2026-10-02 (RESULT WB-1)
+  - ~~**ESTATE-MODES-1** 3D estate exterior by day, dusk and night (D38): x-ray view gone (segment 外观 / 楼层, keys 1 / 2, 剖切 renamed 「楼层」), exterior follows the map's period (clock popover, whole-period switch under reduced motion), night face flattens the baked golden-hour sun (A4) and window materials named by `x-night-glow` glow warm per floor (A5: `viewer3d` reuses the period grade, sky gradient + cloud sea under the island), `house.glb` loads every scene (E-14)~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1; the lit-windows look waits on the ledger item `glb:estate:night-glow` — no separable window material in the current baked model)
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
 - [ ] **EFFECT** effect-first audit (coordinator, 2026-10-02; user: all as recommended; D38–D42). One line per audit item with its owner step; render items live in the ledger (`docs/plans/render-campaign.md`), batches 1–9 in `docs/tiancheng-maps.md` §0.9.
   - ~~**SETTING-1** setting rewrite for effect: per-tier light, oblique 2.5D main view with one orthographic camera, scale and outskirts, camera files, appendix OBLIQUE-CODE, render plan in the ledger (D41)~~ ✅ 2026-10-02 (RESULT SETTING-1)
@@ -107,15 +108,15 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **A1** Eden inset pops to daylight at night · code FOG-1 (skip off-day) · renders `obl:tc_upper_eden:*` (batch 1)
   - [ ] **A2** fog of war default off, light desaturation instead of a black veil · LOOK-1
   - [ ] **A3** tier-switch cloud sweep through white at night · FOG-1
-  - [ ] **A4** estate exterior keeps golden-hour sun shadows at night · ESTATE-MODES-1
-  - [ ] **A5** landmark viewers without day / night; 3D has no backdrop · ESTATE-MODES-1
+  - ~~**A4** estate exterior keeps golden-hour sun shadows at night~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1: night face flattens the baked daylight; window glow waits for `glb:estate:night-glow`)
+  - ~~**A5** landmark viewers without day / night; 3D has no backdrop~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1: viewer3d reuses the period grade; both 3D pages get sky + cloud sea)
   - [ ] **A6** default base images disagree on the period · FOG-1
   - [ ] **A7** maps without period images stay in daylight (colour grade) · FOG-1
   - [ ] **A8** Eden ward ring removed, one 「安保」 chip · LOOK-1
   - [ ] **A9** per-tier UI skins removed · LOOK-1
   - [ ] **A10** transit lines thin and glowing (lite) · LOOK-1; snapping lines to the rendered rails · **TRANSIT-LOOK** (later data step)
   - [ ] **A11** one marker per spot (2D), no overlapping labels (3D) · LOOK-1
-  - [ ] **X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38) · ESTATE-MODES-1
+  - ~~**X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38)~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1; the lit-windows look itself is the open half: `glb:estate:night-glow`)
   - [ ] **B3** landmark model budgets 4–8 MB, 1–2K textures, meshopt + KTX2, phone tier ≤ 2 MB · renders `glb:budget:*` (batch 7)
   - [ ] **B4** landmark night bakes · renders `bake:night:*` (batch 8)
   - [ ] **B5** estate cutaway materials + AO + practical lamps · renders `estate:cutaway` (batch 6; window glow material names from ESTATE-MODES-1)
@@ -210,7 +211,7 @@ Only work that is not already a render-campaign item.
 - [ ] **E-10** (S9b, open point from S8-3) Placing a local glb prop inside a 3D page (the S8-3 local prop pack) is not part of S9b's edit mode: edit mode works on flat views (`tiles`, `image`) and pictures. Source: S8-3 note (the S8-3 spec asks for this follow-up line; destination **S9b follow-up (S9b-2)**, edit mode, which did not list it); `EdenMap.addProp` / `placeProp` already store a glb and place it as a `cube` icon on flat maps (K-R88); recommendation: a later step adds "place here" for local props to the 3D pages' own room UI, reading the same `spatialProps` store and the same placements key.
 - [x] ~~**E-11** (S9b) `map/ui/gallery.js` (the old repository-gallery lightbox, `tools/browser/gallery.mjs`, a warm-up list entry) is no longer reached by any page now that `room_galleries.json` is gone; remove it with its probe in the next tidy batch (a pack picture viewer could reuse it). Source: RESULT S9b.~~ ✅ 2026-10-01 TIDY-1
 - [x] **E-12**~~(S9b) On a phone the edit bar floats over the lower drawer (it is tall at 375 px); move it into the topbar overflow when the drawer is open. Source: probe `pack_editor` screenshot `edit_phone`.~~ ✅ 2026-10-02 9a15b2ee
-- [ ] **E-14** `map/estate/model/house.glb` (E-13b rebuild) has two scenes: the B2 medical block node `f_B2_med` is in the second scene, the loader reads the default one, so the B2 medical equipment (sterile room, etc.) is not loaded; `tools/browser/estate3d.mjs` is red on it (screenshot `~/eden-map-review/probe-fix/estate3d-b2-med-missing.png`). Fix: rebuild with `f_B2_med` in the default scene (`blender/estate2/house_web.py` merge step), then `estate3d` goes green. Source: RESULT PROBE-FIX.
+- [x] ~~**E-14** `map/estate/model/house.glb` (E-13b rebuild) has two scenes: the B2 medical block node `f_B2_med` is in the second scene, the loader reads the default one, so the B2 medical equipment (sterile room, etc.) is not loaded; `tools/browser/estate3d.mjs` is red on it (screenshot `~/eden-map-review/probe-fix/estate3d-b2-med-missing.png`).~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1: the loader now adds every scene's nodes to the default one, no re-render; `estate3d` green)
 - [x] ~~**E-13** (N12 audit) Estate builder: coplanar dedupe & 3D flicker elimination.~~ ✅ 2026-10-02 E-13b (builder-side dedupe, house.glb pairs 19 481 [-62.9%], fights 4 808 [-56.1%], size 588 KB [cap 719 KB]; all horizontal structural slab/wall fights eliminated; item E6 6-view visual sweep 100% pixel-identical in ~/eden-map-review/tt/e13b/)
   - **E-13b residual (2026-10-02):** house.glb near-coplanar pairs dropped from 52 470 to 19 481 (-62.9%), flicker candidates (same direction, different vertex colour, spacing >= 0.5 mm: `fights`) dropped from 10 941 to 4 808 (-56.1%). File size dropped from 718 876 bytes to 588 130 bytes (-18.2%, budget cap 718 930 bytes). All floor slab bottoms/tops touching ceilings/ground, interior room-to-room slab side faces, and duplicate floor pads removed at the generator level (`blender/estate2/house_web.py`, `medical_b2.py`, `medical_web.py`); stacked mats elevated to Tier 1 ($z+0.035..0.040$) and Tier 2 ($z+0.075..0.080$). Residual 4 808 fights belong to detailed furniture hardware/consoles and are cleanly separated by 24-bit depth buffer + per-frame near/far fitting (N12). Baseline updated in `tools/coplanar_baseline.json`. Item E6 sweep (`tools/browser/e13b_sweep.mjs` on WebKit) verifies all 6 modes (B2, B1, F1, F2, F3, exterior) are 100% pixel-identical with 0 differing pixels after 5s still camera. Screenshots saved to `~/eden-map-review/tt/e13b/`.
 
