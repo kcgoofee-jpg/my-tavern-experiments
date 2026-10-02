@@ -89,7 +89,7 @@ test('generic names carry secondary keys (the building, any); specific names do 
   assert.equal(P.records(PACK).find(r => r.id === 'room_b2_06').name, '储藏室');
   assert.equal(store.strategy.keys_secondary.logic, 'and_any'); assert.ok(store.strategy.keys_secondary.keys.includes('伊甸庄园'));
   assert.equal(spec.strategy.keys_secondary, undefined);
-  for (const e of SHIP.entries.filter(x => x.id.startsWith('map.room.'))) { assert.equal(e.strategy.type, 'selective'); assert.ok(e.strategy.keys.length > 0); assert.equal(e.position.type, 'before_character_definition'); assert.equal(e.position.depth, 4); assert.equal(e.enabled, true); }
+  for (const e of SHIP.entries.filter(x => x.id.startsWith('map.room.'))) { assert.equal(e.strategy.type, 'selective'); assert.ok(e.strategy.keys.length > 0); assert.equal(e.position.type, 'at_depth'); assert.equal(e.position.depth, 1); assert.equal(e.position.role, 'system'); assert.equal(e.enabled, true); }   // WB-2 (D45): depth 1, order band 1000+
 });
 
 test('the constant entries and the older place entries read exactly as at head #301 (the injected text did not change)', () => {

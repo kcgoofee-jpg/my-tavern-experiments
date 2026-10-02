@@ -35,7 +35,8 @@ export function bookEntries(c, o = {}) {
   for (const k of Object.keys(c?.items || {})) {
     if (!keyed(c, k)) continue;
     const r = recordOf(c, k, o.pack), e = c.items[k], keys = [...new Set([k, r.name, r.baseName, ...(e.别名 || [])].filter(x => x && [...x].length >= 1))];
-    out.push({ name: `${NAME[L]}-${r.name}`, enabled: on, strategy: { type: 'selective', keys }, position: { type: 'after_character_definition', order: 904 + i++ },
+    // WB-2 layout (docs/worldbook-layout.md): keyword entries sit at depth 1, system role, order band 1200+ — a changed trigger set only touches the end of the request
+    out.push({ name: `${NAME[L]}-${r.name}`, enabled: on, strategy: { type: 'selective', keys }, position: { type: 'at_depth', role: 'system', depth: 1, order: 1200 + i++ },
       content: entryText(r, { lang: o.lang, lead: LEAD[L] }), recursion: rec, extra: { eden_place: k } });
   }
   return out;

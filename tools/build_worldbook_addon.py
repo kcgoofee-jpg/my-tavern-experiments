@@ -10,15 +10,15 @@
   - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/place-resolver.mjs 的当前地点解析同一份词表）
 条目：
   0 说明（WB-2；始终关着，不发给模型，地图写书时重写它的正文：版本、写入时间、条数）
-  1 地图联动规范 v4（WB-1，D43；常驻，聊天深度 2 的 system 消息）：每种标签一块（地点 / 人物 / 事件 / 事实 / 改名与用途；物品写在正文里），各一个填好的示范
+  1 地图联动规范 v4（WB-1，D43；常驻，WB-2 起在聊天末尾：at_depth 深度 0 的 user 消息，order 900 排在卡的深度 0 规则之后，docs/worldbook-layout.md）：每种标签一块（地点 / 人物 / 事件 / 事实 / 改名与用途；物品写在正文里），各一个填好的示范
   2 地图事件类型 v2（常驻，角色定义之后）：9 大类 66 种 + 稀有度
   3 地图当前地点 v3（常驻，角色定义之后）：地图认得的地点叫法（房间 / 区域 / 地标），只是词表
   （v4 起「地图人物位置」并入规范：别名表把 map.character-location 指到 map.link-rules，旧书里那一条按重复条目合并）
-  5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件；v0.9.5 起不常驻，聊天里出现该层层名 / 地标名时触发）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
+  5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件；WB-2 起不常驻 + at_depth 深度 1，聊天里出现该层层名 / 地标名时触发）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
     （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
-  8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、各层的光与视野、日程、安保与权限、其他机构）
-  9 地点-*（v0.9.6，关键词触发）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
-  10 地点-<房间名>（PLACE-1a，D44，关键词触发）：每个有说明 / 出入的房间一条，正文 = map/core/place-record.mjs 的 entryText（经 tools/place_records.mjs 取出，
+  8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发，at_depth 深度 1，order 930+）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、各层的光与视野、日程、安保与权限、其他机构）
+  9 地点-*（v0.9.6，关键词触发，at_depth 深度 1，order 950+）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
+  10 地点-<房间名>（PLACE-1a，D44，关键词触发，at_depth 深度 1，order 970+）：每个有说明 / 出入的房间一条，正文 = map/core/place-record.mjs 的 entryText（经 tools/place_records.mjs 取出，
      与查看器的记录卡同一个函数）；通用名（走廊、设备间、储藏室、客房等）加次要关键词（所在建筑的名字，任一）；只有名字的房间不生成。
      发布物另带 index：{ 记录 id: [条目 id] }（房间 → 房间条目，已有「地点-*」的地点 → 它的条目，地标 → 所在层的方位条目），宿主按 id 查档案。
 我们的规则只提到我们自己的东西（⌖ 标签、地图.*），不引用卡里的字段名或原文。
@@ -118,11 +118,11 @@ def build(version):
     for name, sub, mid in layers:
         # v0.9.5（通读 R5）：不再常驻，按层触发——聊天里出现这一层的层名或它的地标名 / 别名时才发（EJS 仍只展开当前地点那一处）
         kw = [w for w in dict.fromkeys([name, f'天城{name}', sub, *[x for v in reg[mid].get('markers', {}).values() for x in [v['name'], *v.get('alias', [])]]]) if w and len([*w]) >= 2]
-        lore.append((f'地图方位·{name}', ejs_layer(reg, mid), 910 + len(lore), {'constant': False, 'key': kw}))
+        lore.append((f'地图方位·{name}', ejs_layer(reg, mid), ORD_LORE + len(lore), {'constant': False, 'key': kw, **KW}))
 
 
     common = city_facts(json.load(open(os.path.join(ROOT, 'map/data/maps.json'), encoding='utf-8')).get('unplaced', {}).get('items', []))
-    # 规范放在聊天记录里离末尾两层的位置（at_depth，深度 2，system）：模型写回复时最近读到它；类型表与叫法词表是查阅用的，留在角色定义之后
+    # WB-2（D45）版面：规范 at_depth 深度 0（user，紧跟卡的回复末尾规则）；类型表与叫法词表是静态的，留在角色定义之后（缓存前缀里）；关键词条目全在深度 1（见 KW）
     places = addon_places()
     return [README] + [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + places + room_entries(reg, places, lore), n
 
@@ -130,13 +130,19 @@ def build(version):
 # WB-1（D43）规范里的示范：都在包的示范表里（overlay llm["x-tag-examples"] 或解析器内置的示范），照抄不上图；tests/wb1_rules.test.mjs 核对每条的写法能被解析
 RULE_EX = {'place': '⌖地点 天城·中层·辉光大教堂', 'char': '⌖人物 绫濑遥 @ 伊甸庄园·东侧长廊', 'fact': '⌖事实 会客厅：暗门通主人专用通道',
            'rename': '⌖改名 书房 → 星图室', 'use': '⌖用途 书房：整理旧地图'}
-RULES_AT = {'position': 4, 'depth': 2, 'role': 0}
+# WB-2（D45，docs/worldbook-layout.md）：规范在聊天末尾（at_depth 深度 0，user 角色，order 900 排在卡的深度 0 规则 order 200 之后）——
+# 模型把地图标签和卡的回复末尾规则读成同一块格式要求；深度 0 的 user 消息每轮都在末尾，改位置不动缓存前缀
+RULES_AT = {'position': 4, 'depth': 0, 'role': 1}
 # WB-2: the readme entry. Always disabled (never injected), first in the book; the map script rewrites its text on every write (version, time, counts: tavern/worldbook-readme.mjs).
 README = ('说明 · 伊甸地图附加条目', '（这一条的内容由地图脚本在写入这本书时生成：版本、写入时间、条数，以及要不要删旧书。它始终关着，不会发给模型。）', 1,
           {'constant': False, 'disable': True, 'key': [], 'position': 0, 'depth': 4})
 
 
-KW = {'constant': False, 'position': 0, 'depth': 4}   # 关键词触发，照卡里设定条目的写法（角色定义之前、深度 4）
+# WB-2（D45）：关键词条目一律 at_depth 深度 1、system 角色、order 910 起（不和卡的 100-500 交错）——
+# 触发集合变了只动请求末尾（缓存前缀不动）；放角色定义前后会挪动被缓存的前缀（docs/worldbook-layout.md §5）
+KW = {'constant': False, 'position': 4, 'depth': 1, 'role': 0}
+# WB-2（D45）关键词条目的 order 段：910 方位 / 930 常识 / 950 地点（42 条）/ 1000 房间（卡的条目在 100-500，永不交错；段间留空，插新族不重排旧条目）
+ORD_LORE, ORD_FACTS, ORD_PLACES, ORD_ROOMS = 910, 930, 950, 1000
 
 
 def city_facts(unplaced):
@@ -180,18 +186,18 @@ def city_facts(unplaced):
          '门禁由植入的识别芯片控制：主人全域；女仆长除上锁的书房外全域；正式成员进自己的寝室、三楼与一楼公共区，地下一层按当日任务；新进成员只进新进寝区、三楼浴室与一楼大厅；地下二层只限主人与女仆长。女仆长寝室有一扇直通主卧的专用门；会客厅有暗门接主人专用通道。'),
     ] + ([('天城常识-其他机构', [u['name'] for u in unplaced],
          f'{names}：没有固定的层与位置，写到时只写机构名，不要自行定位。')] if unplaced else [])
-    return [kw_entry(c, c, body, keys, 420 + i) for i, (c, keys, body) in enumerate(rows)]
+    return [kw_entry(c, c, body, keys, ORD_FACTS + i) for i, (c, keys, body) in enumerate(rows)]
 
 
 def kw_entry(name, tag, body, keys, order):
-    """一条关键词触发条目（角色定义之前、深度 4）：正文用 <tag> 包住。常识、地点（以后的房间条目，PLACE-1a）都走这里"""
+    """一条关键词触发条目（WB-2 版面：at_depth 深度 1、system 角色，见 KW）：正文用 <tag> 包住。常识、地点、房间条目都走这里"""
     return (name, f'<{tag}>\n{body}\n</{tag}>', order, {**KW, 'key': list(keys)})
 
 
 def addon_places():
     """地图另行描述的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
     ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
-    return [kw_entry(f'地点-{p["name"]}', f'地点·{p["name"]}', p['text'], [w for w in p['alias'] if len([*w]) >= 2], 440 + i) for i, p in enumerate(ap)]
+    return [kw_entry(f'地点-{p["name"]}', f'地点·{p["name"]}', p['text'], [w for w in p['alias'] if len([*w]) >= 2], ORD_PLACES + i) for i, p in enumerate(ap)]
 
 
 # PLACE-1a（D44）：房间条目。记录与正文来自 map/core/place-record.mjs（node tools/place_records.mjs），这里只定关键词、次要关键词与编号。
@@ -229,7 +235,7 @@ def room_entries(reg, places, lore):
         parts = [w for w in re.split(r'\s*/\s*', r['name']) if len([*w]) >= 3 and w != r['name']]
         keys = list(dict.fromkeys([*r['keys'], *parts]))
         sec = [k for k in r['parentKeys'] if len([*k]) >= 2] if any(r['name'].endswith(g) for g in GENERIC) or r['name'] in d['shared'] else []
-        out.append((name, r['text'], 500 + len(out), {**KW, 'key': keys, **({'keysecondary': sec} if sec else {})}))
+        out.append((name, r['text'], ORD_ROOMS + len(out), {**KW, 'key': keys, **({'keysecondary': sec} if sec else {})}))
     return out
 
 

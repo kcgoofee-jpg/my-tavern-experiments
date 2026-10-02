@@ -32,12 +32,12 @@ test('builder output equals the committed ship', { timeout: 120000 }, () => {
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
-test('every entry is enabled (the readme excepted); keyword entries stay keyword-triggered; three constants, the rules at depth 2', () => {
+test('every entry is enabled (the readme excepted); keyword entries stay keyword-triggered; three constants, the rules at depth 0 (user)', () => {
   assert.ok(SHIP.entries.every(e => e.enabled === true || e.id === 'map.readme'));
   const con = SHIP.entries.filter(e => e.strategy.type === 'constant').map(e => e.id);
   assert.deepEqual(con, ['map.link-rules', 'map.event-types', 'map.current-location']);
   assert.ok(SHIP.entries.filter(e => !con.includes(e.id) && e.id !== 'map.readme').every(e => e.strategy.type === 'selective' && e.strategy.keys.length > 0));
-  assert.deepEqual(RULES.position, { type: 'at_depth', role: 'system', depth: 2, order: 900 });
+  assert.deepEqual(RULES.position, { type: 'at_depth', role: 'user', depth: 0, order: 900 });   // WB-2 (D45): next to the card's depth-0 rules
   assert.ok(!SHIP.entries.some(e => e.id === 'map.character-location'), 'merged into the rules');
   assert.equal(SHIP.aliases.ids['map.character-location'], 'map.link-rules');
   for (const id of ['tiancheng.lore.tier-upper', 'tiancheng.lore.tier-mid', 'tiancheng.lore.tier-lower']) assert.ok(SHIP.entries.some(e => e.id === id), id);

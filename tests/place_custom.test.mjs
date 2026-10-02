@@ -107,7 +107,7 @@ test('the chat\'s custom book: a constant index of names (at most 220 characters
   const places = es.slice(1); assert.equal(places.length, 2);
   const a = places.find(e => e.extra.eden_place === ID), r = P.placeRecord(PACK, ID, c);
   assert.equal(a.content, P.entryText(r, { lead: '本聊天里以此为准。' }), 'the body is the same generator as the add-on\'s');
-  assert.ok(a.strategy.keys.includes(ID) && a.strategy.keys.includes('审问室') && a.strategy.keys.includes('惩罚室')); assert.equal(a.position.type, 'after_character_definition'); assert.ok(a.position.order > 903);
+  assert.ok(a.strategy.keys.includes(ID) && a.strategy.keys.includes('审问室') && a.strategy.keys.includes('惩罚室')); assert.equal(a.position.type, 'at_depth'); assert.equal(a.position.depth, 1); assert.equal(a.position.role, 'system'); assert.ok(a.position.order >= 1200);   // WB-2 (D45): keyword entries at depth 1, band 1200+
   const b = places.find(e => e.extra.eden_place === '地下酒窖'); assert.match(b.content, /用途：存放旧酒/); assert.ok(b.strategy.keys.includes('酒窖入口'));
   const many = {}; for (let i = 0; i < 30; i++) many['地点' + i] = { 类: 'room', 名: '新名字' + i };
   assert.ok([...CB.indexText(V.normCustom({ items: many })).replace(/\s+$/, '')].length <= 220);

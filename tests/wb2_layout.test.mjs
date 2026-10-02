@@ -112,7 +112,28 @@ test('the chat\'s custom book: a disabled readme first', () => {
   const es = CB.bookEntries(c, { on: true, entryName: 'X', readme: rd });
   assert.equal(es[0].name, rd.name); assert.equal(es[0].enabled, false); assert.deepEqual(es[0].strategy.keys, []);
   assert.match(rd.name, /^说明 · 本聊天的自定义地点书 · head #303$/); assert.match(rd.content, /不发给模型，不占 token/); assert.match(rd.content, /最近一次写入/);
-  assert.equal(es[1].name, 'X'); assert.equal(es[1].position.type, 'after_character_definition');
-  assert.equal(es[2].position.type, 'after_character_definition');
+  assert.equal(es[1].name, 'X'); assert.equal(es[1].position.type, 'after_character_definition'); assert.equal(es[1].position.order, 903);
+  assert.equal(es[2].position.type, 'at_depth'); assert.equal(es[2].position.depth, 1); assert.equal(es[2].position.role, 'system'); assert.equal(es[2].position.order, 1200);   // WB-2 (D45): keyword entries at depth 1
   assert.equal(CB.bookEntries(c, { on: true, entryName: 'X' }).length, es.length - 1);   // without a readme nothing changes
+});
+
+test('the shipped layout (D45): rules depth 0 user order 900, constants after the character, every keyword entry at depth 1 in the 910+ bands', () => {
+  const rules = by('map.link-rules');
+  assert.deepEqual(rules.position, { type: 'at_depth', role: 'user', depth: 0, order: 900 });
+  for (const id of ['map.event-types', 'map.current-location']) { const e = by(id); assert.equal(e.position.type, 'after_character_definition'); assert.ok(e.position.order >= 901 && e.position.order <= 909, id); }
+  const kw = SHIP.entries.filter(e => e.id !== R.README_ID && e.strategy.type === 'selective');
+  assert.ok(kw.length > 100);
+  for (const e of kw) {   // no keyword entry before the character definition, none in the card's 100-500 band
+    assert.equal(e.position.type, 'at_depth', e.id);
+    assert.equal(e.position.depth, 1, e.id);
+    assert.equal(e.position.role, 'system', e.id);
+    assert.ok(e.position.order >= 910, e.id);
+  }
+  const band = (pre, lo, hi) => { const es = kw.filter(e => e.id.startsWith(pre)); assert.ok(es.length > 0, pre); for (const e of es) assert.ok(e.position.order >= lo && e.position.order <= hi, `${e.id}: ${e.position.order}`); return es.length; };
+  band('map.bearing.', 910, 929);
+  band('tiancheng.lore.', 930, 949);
+  band('estate.lore.', 930, 949);
+  band('map.place.', 950, 999);
+  band('map.room.', 1000, 1099);
+  const orders = kw.map(e => e.position.order); assert.equal(new Set(orders).size, orders.length, 'no duplicate order');   // a stable sort order
 });

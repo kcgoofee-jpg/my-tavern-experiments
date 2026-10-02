@@ -2,7 +2,7 @@
  "schema": 1,
  "book": "伊甸地图·世界书附加条目",
  "version": "0.9.8-dev",
- "ver": "0.9.8+91ac0ba2",
+ "ver": "0.9.8+ee5bad0f",
  "built": "2026-10-02",
  "category": {
   "map.readme": "readme",
@@ -669,8 +669,8 @@
    },
    "position": {
     "type": "at_depth",
-    "role": "system",
-    "depth": 2,
+    "role": "user",
+    "depth": 0,
     "order": 900
    },
    "probability": 100,
@@ -775,9 +775,9 @@
     ]
    },
    "position": {
-    "type": "after_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
+    "depth": 1,
     "order": 910
    },
    "probability": 100,
@@ -875,9 +875,9 @@
     ]
    },
    "position": {
-    "type": "after_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
+    "depth": 1,
     "order": 911
    },
    "probability": 100,
@@ -945,9 +945,9 @@
     ]
    },
    "position": {
-    "type": "after_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
+    "depth": 1,
     "order": 912
    },
    "probability": 100,
@@ -973,10 +973,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 420
+    "depth": 1,
+    "order": 930
    },
    "probability": 100,
    "recursion": {
@@ -1004,10 +1004,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 421
+    "depth": 1,
+    "order": 931
    },
    "probability": 100,
    "recursion": {
@@ -1030,10 +1030,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 422
+    "depth": 1,
+    "order": 932
    },
    "probability": 100,
    "recursion": {
@@ -1058,10 +1058,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 423
+    "depth": 1,
+    "order": 933
    },
    "probability": 100,
    "recursion": {
@@ -1085,10 +1085,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 424
+    "depth": 1,
+    "order": 934
    },
    "probability": 100,
    "recursion": {
@@ -1114,10 +1114,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 425
+    "depth": 1,
+    "order": 935
    },
    "probability": 100,
    "recursion": {
@@ -1142,10 +1142,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 426
+    "depth": 1,
+    "order": 936
    },
    "probability": 100,
    "recursion": {
@@ -1170,10 +1170,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 427
+    "depth": 1,
+    "order": 937
    },
    "probability": 100,
    "recursion": {
@@ -1198,10 +1198,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 428
+    "depth": 1,
+    "order": 938
    },
    "probability": 100,
    "recursion": {
@@ -1226,10 +1226,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 429
+    "depth": 1,
+    "order": 939
    },
    "probability": 100,
    "recursion": {
@@ -1255,10 +1255,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 430
+    "depth": 1,
+    "order": 940
    },
    "probability": 100,
    "recursion": {
@@ -1284,10 +1284,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 431
+    "depth": 1,
+    "order": 941
    },
    "probability": 100,
    "recursion": {
@@ -1309,10 +1309,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 440
+    "depth": 1,
+    "order": 950
    },
    "probability": 100,
    "recursion": {
@@ -1335,10 +1335,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 441
+    "depth": 1,
+    "order": 951
    },
    "probability": 100,
    "recursion": {
@@ -1362,10 +1362,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 442
+    "depth": 1,
+    "order": 952
    },
    "probability": 100,
    "recursion": {
@@ -1387,10 +1387,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 443
+    "depth": 1,
+    "order": 953
    },
    "probability": 100,
    "recursion": {
@@ -1411,10 +1411,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 444
+    "depth": 1,
+    "order": 954
    },
    "probability": 100,
    "recursion": {
@@ -1435,10 +1435,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 445
+    "depth": 1,
+    "order": 955
    },
    "probability": 100,
    "recursion": {
@@ -1460,10 +1460,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 446
+    "depth": 1,
+    "order": 956
    },
    "probability": 100,
    "recursion": {
@@ -1487,10 +1487,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 447
+    "depth": 1,
+    "order": 957
    },
    "probability": 100,
    "recursion": {
@@ -1526,10 +1526,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 448
+    "depth": 1,
+    "order": 958
    },
    "probability": 100,
    "recursion": {
@@ -1550,10 +1550,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 449
+    "depth": 1,
+    "order": 959
    },
    "probability": 100,
    "recursion": {
@@ -1573,10 +1573,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 450
+    "depth": 1,
+    "order": 960
    },
    "probability": 100,
    "recursion": {
@@ -1596,10 +1596,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 451
+    "depth": 1,
+    "order": 961
    },
    "probability": 100,
    "recursion": {
@@ -1621,10 +1621,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 452
+    "depth": 1,
+    "order": 962
    },
    "probability": 100,
    "recursion": {
@@ -1645,10 +1645,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 453
+    "depth": 1,
+    "order": 963
    },
    "probability": 100,
    "recursion": {
@@ -1669,10 +1669,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 454
+    "depth": 1,
+    "order": 964
    },
    "probability": 100,
    "recursion": {
@@ -1693,10 +1693,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 455
+    "depth": 1,
+    "order": 965
    },
    "probability": 100,
    "recursion": {
@@ -1718,10 +1718,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 456
+    "depth": 1,
+    "order": 966
    },
    "probability": 100,
    "recursion": {
@@ -1743,10 +1743,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 457
+    "depth": 1,
+    "order": 967
    },
    "probability": 100,
    "recursion": {
@@ -1769,10 +1769,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 458
+    "depth": 1,
+    "order": 968
    },
    "probability": 100,
    "recursion": {
@@ -1793,10 +1793,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 459
+    "depth": 1,
+    "order": 969
    },
    "probability": 100,
    "recursion": {
@@ -1818,10 +1818,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 460
+    "depth": 1,
+    "order": 970
    },
    "probability": 100,
    "recursion": {
@@ -1843,10 +1843,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 461
+    "depth": 1,
+    "order": 971
    },
    "probability": 100,
    "recursion": {
@@ -1868,10 +1868,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 462
+    "depth": 1,
+    "order": 972
    },
    "probability": 100,
    "recursion": {
@@ -1893,10 +1893,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 463
+    "depth": 1,
+    "order": 973
    },
    "probability": 100,
    "recursion": {
@@ -1918,10 +1918,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 464
+    "depth": 1,
+    "order": 974
    },
    "probability": 100,
    "recursion": {
@@ -1942,10 +1942,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 465
+    "depth": 1,
+    "order": 975
    },
    "probability": 100,
    "recursion": {
@@ -1967,10 +1967,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 466
+    "depth": 1,
+    "order": 976
    },
    "probability": 100,
    "recursion": {
@@ -1990,10 +1990,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 467
+    "depth": 1,
+    "order": 977
    },
    "probability": 100,
    "recursion": {
@@ -2015,10 +2015,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 468
+    "depth": 1,
+    "order": 978
    },
    "probability": 100,
    "recursion": {
@@ -2039,10 +2039,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 469
+    "depth": 1,
+    "order": 979
    },
    "probability": 100,
    "recursion": {
@@ -2063,10 +2063,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 470
+    "depth": 1,
+    "order": 980
    },
    "probability": 100,
    "recursion": {
@@ -2088,10 +2088,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 471
+    "depth": 1,
+    "order": 981
    },
    "probability": 100,
    "recursion": {
@@ -2112,10 +2112,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 472
+    "depth": 1,
+    "order": 982
    },
    "probability": 100,
    "recursion": {
@@ -2136,10 +2136,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 473
+    "depth": 1,
+    "order": 983
    },
    "probability": 100,
    "recursion": {
@@ -2159,10 +2159,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 474
+    "depth": 1,
+    "order": 984
    },
    "probability": 100,
    "recursion": {
@@ -2183,10 +2183,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 475
+    "depth": 1,
+    "order": 985
    },
    "probability": 100,
    "recursion": {
@@ -2207,10 +2207,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 476
+    "depth": 1,
+    "order": 986
    },
    "probability": 100,
    "recursion": {
@@ -2231,10 +2231,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 477
+    "depth": 1,
+    "order": 987
    },
    "probability": 100,
    "recursion": {
@@ -2254,10 +2254,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 478
+    "depth": 1,
+    "order": 988
    },
    "probability": 100,
    "recursion": {
@@ -2279,10 +2279,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 479
+    "depth": 1,
+    "order": 989
    },
    "probability": 100,
    "recursion": {
@@ -2303,10 +2303,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 480
+    "depth": 1,
+    "order": 990
    },
    "probability": 100,
    "recursion": {
@@ -2327,10 +2327,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 481
+    "depth": 1,
+    "order": 991
    },
    "probability": 100,
    "recursion": {
@@ -2350,10 +2350,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 500
+    "depth": 1,
+    "order": 1000
    },
    "probability": 100,
    "recursion": {
@@ -2374,10 +2374,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 501
+    "depth": 1,
+    "order": 1001
    },
    "probability": 100,
    "recursion": {
@@ -2397,10 +2397,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 502
+    "depth": 1,
+    "order": 1002
    },
    "probability": 100,
    "recursion": {
@@ -2420,10 +2420,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 503
+    "depth": 1,
+    "order": 1003
    },
    "probability": 100,
    "recursion": {
@@ -2443,10 +2443,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 504
+    "depth": 1,
+    "order": 1004
    },
    "probability": 100,
    "recursion": {
@@ -2477,10 +2477,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 505
+    "depth": 1,
+    "order": 1005
    },
    "probability": 100,
    "recursion": {
@@ -2500,10 +2500,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 506
+    "depth": 1,
+    "order": 1006
    },
    "probability": 100,
    "recursion": {
@@ -2533,10 +2533,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 507
+    "depth": 1,
+    "order": 1007
    },
    "probability": 100,
    "recursion": {
@@ -2566,10 +2566,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 508
+    "depth": 1,
+    "order": 1008
    },
    "probability": 100,
    "recursion": {
@@ -2599,10 +2599,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 509
+    "depth": 1,
+    "order": 1009
    },
    "probability": 100,
    "recursion": {
@@ -2622,10 +2622,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 510
+    "depth": 1,
+    "order": 1010
    },
    "probability": 100,
    "recursion": {
@@ -2645,10 +2645,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 511
+    "depth": 1,
+    "order": 1011
    },
    "probability": 100,
    "recursion": {
@@ -2668,10 +2668,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 512
+    "depth": 1,
+    "order": 1012
    },
    "probability": 100,
    "recursion": {
@@ -2693,10 +2693,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 513
+    "depth": 1,
+    "order": 1013
    },
    "probability": 100,
    "recursion": {
@@ -2719,10 +2719,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 514
+    "depth": 1,
+    "order": 1014
    },
    "probability": 100,
    "recursion": {
@@ -2742,10 +2742,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 515
+    "depth": 1,
+    "order": 1015
    },
    "probability": 100,
    "recursion": {
@@ -2765,10 +2765,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 516
+    "depth": 1,
+    "order": 1016
    },
    "probability": 100,
    "recursion": {
@@ -2788,10 +2788,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 517
+    "depth": 1,
+    "order": 1017
    },
    "probability": 100,
    "recursion": {
@@ -2815,10 +2815,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 518
+    "depth": 1,
+    "order": 1018
    },
    "probability": 100,
    "recursion": {
@@ -2841,10 +2841,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 519
+    "depth": 1,
+    "order": 1019
    },
    "probability": 100,
    "recursion": {
@@ -2866,10 +2866,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 520
+    "depth": 1,
+    "order": 1020
    },
    "probability": 100,
    "recursion": {
@@ -2899,10 +2899,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 521
+    "depth": 1,
+    "order": 1021
    },
    "probability": 100,
    "recursion": {
@@ -2924,10 +2924,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 522
+    "depth": 1,
+    "order": 1022
    },
    "probability": 100,
    "recursion": {
@@ -2948,10 +2948,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 523
+    "depth": 1,
+    "order": 1023
    },
    "probability": 100,
    "recursion": {
@@ -2981,10 +2981,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 524
+    "depth": 1,
+    "order": 1024
    },
    "probability": 100,
    "recursion": {
@@ -3014,10 +3014,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 525
+    "depth": 1,
+    "order": 1025
    },
    "probability": 100,
    "recursion": {
@@ -3037,10 +3037,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 526
+    "depth": 1,
+    "order": 1026
    },
    "probability": 100,
    "recursion": {
@@ -3062,10 +3062,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 527
+    "depth": 1,
+    "order": 1027
    },
    "probability": 100,
    "recursion": {
@@ -3087,10 +3087,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 528
+    "depth": 1,
+    "order": 1028
    },
    "probability": 100,
    "recursion": {
@@ -3110,10 +3110,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 529
+    "depth": 1,
+    "order": 1029
    },
    "probability": 100,
    "recursion": {
@@ -3134,10 +3134,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 530
+    "depth": 1,
+    "order": 1030
    },
    "probability": 100,
    "recursion": {
@@ -3167,10 +3167,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 531
+    "depth": 1,
+    "order": 1031
    },
    "probability": 100,
    "recursion": {
@@ -3200,10 +3200,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 532
+    "depth": 1,
+    "order": 1032
    },
    "probability": 100,
    "recursion": {
@@ -3223,10 +3223,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 533
+    "depth": 1,
+    "order": 1033
    },
    "probability": 100,
    "recursion": {
@@ -3246,10 +3246,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 534
+    "depth": 1,
+    "order": 1034
    },
    "probability": 100,
    "recursion": {
@@ -3277,10 +3277,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 535
+    "depth": 1,
+    "order": 1035
    },
    "probability": 100,
    "recursion": {
@@ -3304,10 +3304,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 536
+    "depth": 1,
+    "order": 1036
    },
    "probability": 100,
    "recursion": {
@@ -3327,10 +3327,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 537
+    "depth": 1,
+    "order": 1037
    },
    "probability": 100,
    "recursion": {
@@ -3361,10 +3361,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 538
+    "depth": 1,
+    "order": 1038
    },
    "probability": 100,
    "recursion": {
@@ -3395,10 +3395,10 @@
     }
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 539
+    "depth": 1,
+    "order": 1039
    },
    "probability": 100,
    "recursion": {
@@ -3419,10 +3419,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 540
+    "depth": 1,
+    "order": 1040
    },
    "probability": 100,
    "recursion": {
@@ -3442,10 +3442,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 541
+    "depth": 1,
+    "order": 1041
    },
    "probability": 100,
    "recursion": {
@@ -3465,10 +3465,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 542
+    "depth": 1,
+    "order": 1042
    },
    "probability": 100,
    "recursion": {
@@ -3488,10 +3488,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 543
+    "depth": 1,
+    "order": 1043
    },
    "probability": 100,
    "recursion": {
@@ -3511,10 +3511,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 544
+    "depth": 1,
+    "order": 1044
    },
    "probability": 100,
    "recursion": {
@@ -3536,10 +3536,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 545
+    "depth": 1,
+    "order": 1045
    },
    "probability": 100,
    "recursion": {
@@ -3559,10 +3559,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 546
+    "depth": 1,
+    "order": 1046
    },
    "probability": 100,
    "recursion": {
@@ -3582,10 +3582,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 547
+    "depth": 1,
+    "order": 1047
    },
    "probability": 100,
    "recursion": {
@@ -3608,10 +3608,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 548
+    "depth": 1,
+    "order": 1048
    },
    "probability": 100,
    "recursion": {
@@ -3632,10 +3632,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 549
+    "depth": 1,
+    "order": 1049
    },
    "probability": 100,
    "recursion": {
@@ -3661,10 +3661,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 550
+    "depth": 1,
+    "order": 1050
    },
    "probability": 100,
    "recursion": {
@@ -3687,10 +3687,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 551
+    "depth": 1,
+    "order": 1051
    },
    "probability": 100,
    "recursion": {
@@ -3710,10 +3710,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 552
+    "depth": 1,
+    "order": 1052
    },
    "probability": 100,
    "recursion": {
@@ -3733,10 +3733,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 553
+    "depth": 1,
+    "order": 1053
    },
    "probability": 100,
    "recursion": {
@@ -3757,10 +3757,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 554
+    "depth": 1,
+    "order": 1054
    },
    "probability": 100,
    "recursion": {
@@ -3780,10 +3780,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 555
+    "depth": 1,
+    "order": 1055
    },
    "probability": 100,
    "recursion": {
@@ -3803,10 +3803,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 556
+    "depth": 1,
+    "order": 1056
    },
    "probability": 100,
    "recursion": {
@@ -3826,10 +3826,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 557
+    "depth": 1,
+    "order": 1057
    },
    "probability": 100,
    "recursion": {
@@ -3849,10 +3849,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 558
+    "depth": 1,
+    "order": 1058
    },
    "probability": 100,
    "recursion": {
@@ -3872,10 +3872,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 559
+    "depth": 1,
+    "order": 1059
    },
    "probability": 100,
    "recursion": {
@@ -3895,10 +3895,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 560
+    "depth": 1,
+    "order": 1060
    },
    "probability": 100,
    "recursion": {
@@ -3918,10 +3918,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 561
+    "depth": 1,
+    "order": 1061
    },
    "probability": 100,
    "recursion": {
@@ -3941,10 +3941,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 562
+    "depth": 1,
+    "order": 1062
    },
    "probability": 100,
    "recursion": {
@@ -3964,10 +3964,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 563
+    "depth": 1,
+    "order": 1063
    },
    "probability": 100,
    "recursion": {
@@ -3987,10 +3987,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 564
+    "depth": 1,
+    "order": 1064
    },
    "probability": 100,
    "recursion": {
@@ -4010,10 +4010,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 565
+    "depth": 1,
+    "order": 1065
    },
    "probability": 100,
    "recursion": {
@@ -4033,10 +4033,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 566
+    "depth": 1,
+    "order": 1066
    },
    "probability": 100,
    "recursion": {
@@ -4056,10 +4056,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 567
+    "depth": 1,
+    "order": 1067
    },
    "probability": 100,
    "recursion": {
@@ -4079,10 +4079,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 568
+    "depth": 1,
+    "order": 1068
    },
    "probability": 100,
    "recursion": {
@@ -4102,10 +4102,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 569
+    "depth": 1,
+    "order": 1069
    },
    "probability": 100,
    "recursion": {
@@ -4125,10 +4125,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 570
+    "depth": 1,
+    "order": 1070
    },
    "probability": 100,
    "recursion": {
@@ -4148,10 +4148,10 @@
     ]
    },
    "position": {
-    "type": "before_character_definition",
+    "type": "at_depth",
     "role": "system",
-    "depth": 4,
-    "order": 571
+    "depth": 1,
+    "order": 1071
    },
    "probability": 100,
    "recursion": {
