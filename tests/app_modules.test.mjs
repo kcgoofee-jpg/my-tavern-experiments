@@ -46,7 +46,7 @@ test('viewer.html 只剩标记与首帧前置；核心模块都 modulepreload；
   const v = rd('viewer.html');
   const inline = [...v.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   assert.ok(inline.every(s => s.length < 3000), `内联脚本应只是前置小段，最长 ${Math.max(...inline.map(s => s.length))} 字符`);
-  const core = readdirSync(new URL('../map/app/', import.meta.url)).filter(f => /\.mjs$/.test(f) && !['card-links.mjs', 'clouds.mjs', 'fog.mjs', 'data-mapping-settings.mjs', 'scale-handoff.mjs', 'feature-card.mjs', 'ai-cards.mjs', 'ai-nav-form.mjs'].includes(f));
+  const core = readdirSync(new URL('../map/app/', import.meta.url)).filter(f => /\.mjs$/.test(f) && !['card-links.mjs', 'clouds.mjs', 'fog.mjs', 'data-mapping-settings.mjs', 'scale-handoff.mjs', 'feature-card.mjs', 'ai-cards.mjs', 'ai-nav-form.mjs', 'profile-live.mjs'].includes(f));
   for (const f of core) assert.match(v, new RegExp(`<link rel="modulepreload" href="app/${f.replace('.', '\\.')}">`), f);
   for (const f of ['events-view', 'characters-view', 'custom-names-view', 'trips-view', 'unmapped-place-picker', 'security']) assert.match(v, new RegExp(`<script type="module" src="${f}\\.mjs"></script>`), f);
   assert.doesNotMatch(v, /<script defer src="(events|chars|custom|trips|unmapped|varmap|compose|security)\.js"/);

@@ -126,6 +126,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `pickup.mjs` | Objective pickup probe (K-R77): a written physical acquisition action becomes a single ledger fact; normal and strict verb classes, forms that never count, the pack vocabulary (`scan(text, { vocab })`). |
 | `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
+| `profiles.mjs` | Settings profiles (PROFILE-1, D34), pure: which keys are preferences, the built-in recommended and lean profiles, snapshot / plan / import validation. |
 | `project.mjs` | Oblique projection (JS twin of `blender/project.py`, golden-file parity): world point to frame coordinates, label rule, anchors. |
 | `prop-pack.mjs` | The local prop pack's rules (K-R88): `sniff` (glb / png / webp / svg from the bytes), `checkProp` (size and svg refusals), `propId`, `normPlacement`. Pure. |
 | `protocol.mjs` | Message protocol: `SCHEMA` of every host / viewer / sub-page message, envelope, `check` / `accept`, `createBus`. |
@@ -216,6 +217,9 @@ mutable state is written only by its declaring module through `set*()`.
 | `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
+| `profile-live.mjs` | Makes an applied profile take effect without a reload: one effect per preference key, host prefs, then refreshes the open settings page. |
+| `profile-section.mjs` | The settings-profile section at the top of Settings home: current name, modified marker, picker, save / rename / delete / restore / export / import. |
+| `profiles.mjs` | Profile actions over an injected store (apply, save as, rename, delete, export, import); no DOM. |
 | `prop-store.mjs` | The local prop store (K-R88): IndexedDB database `spatialProps` (store `props`) next to the room gallery's `edenRoomGallery`; add (sniff, check, quota), remove, list, object URLs. Nothing leaves the device. |
 | `protocol-stamp.mjs` | Protocol version stamp and message exit: `PROTO`, `post`, `protocol`, the sub-page origin `SUB_ORIGIN`. |
 | `quests-view.mjs` | Viewer rendering of dynamic clue nodes as breathing circles. |

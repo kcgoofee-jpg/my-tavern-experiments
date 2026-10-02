@@ -92,6 +92,8 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **S12** (parked by D14 until after v0.9.8) Translate code comments to English (optional) · later · prompt S12 · RESULT S12 (pending)
 - [ ] **S13** (parked by D14 until after v0.9.8) Wrap-up: finalise ARCHITECTURE, CHANGELOG, todo, handoff, memory · later · prompt S13 · RESULT S13 (pending)
 - ~~**H1** repo front door: README (en + zh) and its gate, ROADMAP archived, main synced, leftover I-/E- items scheduled (plan §15–§16, new step B0), probe baseline `tools/browser/known-failures.json`, two brief rules~~ ✅ 2026-10-01 (shas in RESULT H1) · prompt H1 · RESULT H1
+- ~~**PROFILE-1** settings profiles: save all preferences as a named scheme, built-in 推荐 / 精简, export / import (D34)~~ ✅ 2026-10-02
+- [ ] **PROFILE-2** (follow-up, not started) bind a profile to a card / pack so opening that card applies it; per-card binding was out of scope of PROFILE-1 · later
 - [~] **R** Render campaign (separate line, Eden pack content only) · running · prompts R0-A, R0-B done · ledger and status: `docs/plans/render-campaign.md` (the ledger is the truth; no per-item copy here) · RESULT R0-A, R0-B
 
 ## 1. Infrastructure

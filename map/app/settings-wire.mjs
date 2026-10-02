@@ -18,7 +18,7 @@ const get = k => { try { return LocalStore.get(k); } catch (e) { return null; } 
 export const rmPref = () => get('edenMapRM') || 'auto';
 export const q3Pref = () => get('edenMap3dQ') || 'auto';
 const rmNow = () => rmPref() === 'on' || (rmPref() === 'auto' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__reducedMotion = rmNow(); estateLook(); }
+export function applyRM() { document.documentElement.classList.toggle('rm', rmPref() === 'on'); window.__reducedMotion = rmNow(); estateLook(); }
 // 开关：存 '1' / '0'；控件的初值读存储（没存过用 def）
 const sw = (id, key, def, fn) => { const c = $(id); if (!c) return; const v = get(key); c.checked = v !== null ? v === '1' : def;
   c.onchange = () => { put(key, c.checked ? '1' : '0'); fn?.(c.checked); }; };

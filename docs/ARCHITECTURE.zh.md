@@ -107,6 +107,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pickup.mjs` | 客观拾取探测（K-R77）：正文里写明的物理获取动作变成一条单项账目事实；普通与严格两类动词、永不算的句式、包的词表（`scan(text, { vocab })`）。 |
 | `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
+| `profiles.mjs` | 设置方案（PROFILE-1，D34），纯函数：哪些键是偏好、内置「推荐」「精简」方案、快照 / 差异计划 / 导入校验。 |
 | `project.mjs` | 斜视投影（`blender/project.py` 的 JS 孪生，对拍 golden 文件）：世界点到画幅坐标、标签规则、锚点。 |
 | `prop-pack.mjs` | 本机道具包的规则（K-R88）：`sniff`（按字节认 glb / png / webp / svg）、`checkProp`（大小与 svg 拒绝项）、`propId`、`normPlacement`。纯函数。 |
 | `protocol.mjs` | 消息协议：所有宿主 / 查看器 / 子页消息的 `SCHEMA`、信封、`check` / `accept`、`createBus`。 |
@@ -196,6 +197,9 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关、导出为包（K-R98、K-R99、K-R103）。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
+| `profile-live.mjs` | 方案应用后不重载即生效：每个偏好键一个效果、宿主偏好、再刷新打开着的设置页。 |
+| `profile-section.mjs` | 设置首页顶部的方案栏：当前方案名、「已修改」标记、选择、保存 / 重命名 / 删除 / 恢复推荐 / 导出 / 导入。 |
+| `profiles.mjs` | 方案的动作（应用、另存为、重命名、删除、导出、导入），存储由调用方注入，无 DOM。 |
 | `prop-store.mjs` | 本机道具仓库（K-R88）：IndexedDB 库 `spatialProps`（store `props`），与房间图集的 `edenRoomGallery` 并列；添加（识别、检查、配额）、移除、列出、对象 URL。文件不离开设备。 |
 | `protocol-stamp.mjs` | 协议版本戳与消息出口：`PROTO`、`post`、`protocol`、子页 origin `SUB_ORIGIN`。 |
 | `quests-view.mjs` | 动态线索节点在查看器里的渲染：会呼吸的圈。 |

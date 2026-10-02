@@ -1788,5 +1788,14 @@ tests: node 1518/1519 (0 fail, 1 skipped as before) | smoke PASS | arch PASS | p
 deviations: `tools/gen_eden_s43_data.mjs --write` was NOT run: it already drifts from the committed overlay and manifest (it would drop the layers block and the card url), so the `ui.legend` array was removed from the overlay by hand and the generator was changed to match. Tests removed: `s43_parity` "legend: the overlay ui.legend carries the old LEGEND entries" (replaced by a test that the first pack declares no legend, no opt-in and no `lg.*` words); `i18n_s44_parity` now lists the 14 `lg.*` keys as removed. Tests added: drawer_tabs opt-in, s43_parity layer menu description. Net count up.
 blocker: none
 open: none
+=== RESULT PROFILE-1 ===
+status: DONE
+items: 1 classify KEYS (pref true/false on all 98 entries, test fails on a missing decision) ✓ | 2 profiles (edenMapProfiles; built-in 推荐 + 精简; save / select / rename / delete / restore recommended) ✓ | 3 apply without reload (live effects, host prefs, page refresh) ✓ | 4 export / import .json ✓ | 5 UI section at top of Settings home with 已修改 marker, zh + en ✓ | 6 D34 in both plan editions ✓
+commits: see git log of the push (one commit: feat(settings): profiles)
+pushed: yes (head number in the chat report)
+tests: node 1530/1532 (2 skipped as before; 9 new in tests/profiles.test.mjs; 4 existing key-shape assertions updated for the new field) | smoke PASS | arch PASS (empty_catch unchanged) | probes: profile1=PASS (1440 and 375 px)
+deviations: weather, quests and wander layer visibility was session-only, so a profile could not carry it; they now remember the user's choice in edenMapLayers (defaults unchanged). Excluded as not-a-preference with reason: edenMapNav / NavCfg / NavConsent (secrets and consent), edenMapPackRemote and edenMapEdit (network consent / working mode), edenMapEvOff and edenMapChGroups (in-memory filter state), edenMapCompose / ActionTpl / SanitizeTags (user-written text), edenMapFabPos / RailW (device layout).
+blocker: none
+open: per-card profile binding (PROFILE-2 in todo); 精简 keys: edenMapLayers (weather, quests, wander, traffic, vision off), edenMapRM=on, edenMapNoFx=1, edenMapPortraits=0, edenMap3dQ=1, edenMapTierV2=save, edenMap3dAutoRotate=0, edenMapGlassClock=0, edenMapTick=0, edenMapGallery=0
 cleanup: done
 === END ===

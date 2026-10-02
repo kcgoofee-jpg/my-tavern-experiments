@@ -14,6 +14,7 @@ import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { getJSON } from './json-cache.mjs';
+import { layerStore, saveVisible } from './declared-layers.mjs';
 import { packData } from './current-pack.mjs';
 import { createWalker, tickClock, DEFAULT_DUR_MS, DEFAULT_ROUND_MS } from '../core/walk.mjs';
 import { normSchedule, placesAt } from '../core/routine.mjs';
@@ -135,7 +136,7 @@ export function registerWanderLayer() {
   if (done) return registry.has('wander'); done = true;
   css();
   registry.register(declared('wander', {
-    initialVisible: true,
+    initialVisible: layerStore().wander !== '0',   // PROFILE-1: remembered like the other stored layers
     mount: () => {
       on = true;
       if (!t0) t0 = performance.now();
@@ -147,7 +148,7 @@ export function registerWanderLayer() {
       return true;
     },
     unmount: () => { on = false; stop(); try { obs?.disconnect(); } catch (e) {} obs = null; last.clear(); walker.clear(); },
-    setVisible: v => { on = !!v && !lean() && !rmq()?.matches; if (on && !t0) t0 = performance.now(); if (!on) stop(); if (on) tick(); },
+    setVisible: v => { saveVisible('wander', v); on = !!v && !lean() && !rmq()?.matches; if (on && !t0) t0 = performance.now(); if (!on) stop(); if (on) tick(); },
   }));
   // S7-2: the pause (docs/ui-refactor.md 4): hidden document, closed / docked panel, or a 3D view over the map -> no timer, no frame; back -> the timer and a tick
   visibilityGuard.subscribe(paused => { if (paused) stop(); else if (obs && on && !timer) { timer = setInterval(tick, Math.min(15000, DEFAULT_ROUND_MS)); tick(); } });

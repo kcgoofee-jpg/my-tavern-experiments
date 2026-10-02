@@ -26,7 +26,7 @@ test('profile carries the raw declaration; the wire messages and the switch are 
   assert.deepEqual(profileOf({ entities: { gallery: GAL } }).gallery, GAL); assert.equal(profileOf({}).gallery, null);
   assert.ok(SCHEMA['eden-map:media'] && SCHEMA['eden-map:media-ask']);
   assert.equal(check({ type: 'eden-map:media', on: true, scenes: [] }).ok, true); assert.equal(check({ type: 'eden-map:media' }).ok, false); assert.equal(check({ type: 'eden-map:media-ask' }).ok, true);
-  assert.deepEqual(KEYS.edenMapGallery, { owner: 'map/gallery-view.mjs', def: '1' });
+  assert.deepEqual(KEYS.edenMapGallery, { pref: true, owner: 'map/gallery-view.mjs', def: '1' });
 });
 
 const writes = []; const store = new Map();

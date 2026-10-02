@@ -9,6 +9,7 @@ import { weatherOf, weatherFromStory } from '../core/weather.mjs';
 import { canvasLayer, drawParticles } from './block-canvas.mjs';
 import { busOn } from './bus.mjs';
 import { lean } from './sharpness-tiers.mjs';
+import { layerStore, saveVisible } from './declared-layers.mjs';
 
 let id = 'clear', night = false, seed = 1;
 
@@ -29,7 +30,7 @@ let done = false;
 /** 登记 fx 槽位图层（boot 调一次；槽位容器没就绪时安静返回 false，open 后会重试） */
 export function registerWeatherLayer() {
   if (done) return registry.has('weather'); done = true;
-  registry.register(declared('weather', { initialVisible: true, mount: () => layer.mount(), unmount: () => layer.unmount(), setVisible: v => layer.setVisible(v) }));
+  registry.register(declared('weather', { initialVisible: layerStore().weather !== '0', mount: () => layer.mount(), unmount: () => layer.unmount(), setVisible: v => { saveVisible('weather', v); layer.setVisible(v); } }));
   // 宿主消息：事态 → 天气、时钟 → 夜（只认宿主，与 app/host-messages.mjs 同一道闸）
   busOn({ key: 'weather.hostMsg', type: 'message', fn: e => {
     if (!window.__isFromHost?.(e)) return;

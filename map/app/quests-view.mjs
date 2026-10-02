@@ -9,6 +9,7 @@ import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { aspect, currentMapId, currentMapData, worldData, mapRegistry, osdViewer } from './state.mjs';
 import { plugins } from './plugins.mjs';
+import { layerStore, saveVisible } from './declared-layers.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false;
 let list = [], day = 0, lastCalc = 0;
@@ -71,7 +72,7 @@ let done = false;
 export function registerQuestLayer() {
   if (done) return registry.has('quests'); done = true;
   registry.register(declared('quests', {
-    initialVisible: true,
+    initialVisible: layerStore().quests !== '0',   // PROFILE-1: the choice is remembered (edenMapLayers) so a settings profile can carry it
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas'); cv.className = 'qscv'; cv.setAttribute('aria-hidden', 'true');
@@ -80,7 +81,7 @@ export function registerQuestLayer() {
       return true;
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
-    setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
+    setVisible: v => { saveVisible('quests', v); if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
   }));
   busOn({ key: 'quests.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'quests.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') setQuestDay(questDay(e.data)); } });

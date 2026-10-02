@@ -32,7 +32,7 @@ test('neither 3D page writes edenMap3dAutoRotate any more (the old setAutoRotate
   for (const f of ['map/estate/main.js', 'map/props/viewer3d.html']) { const s = rd(f); assert.doesNotMatch(s, /setItem\([^)]*3dAutoRotate/, f); assert.doesNotMatch(s, /function setAutoRotate/, f); assert.match(s, /rotateOn\(/, f); assert.match(s, /wheelAction\(/, f); }
 });
 test('the new storage key is registered (default on since D33, owner the camera module) and the settings rows exist', () => {
-  assert.deepEqual(KEYS.edenMap3dWheelZoom, { owner: 'ui/camera-controls.js', def: '1' });
+  assert.deepEqual(KEYS.edenMap3dWheelZoom, { pref: true, owner: 'ui/camera-controls.js', def: '1' });
   assert.match(rd('map/app/settings-pages.mjs'), /opt3dWheel/); assert.match(rd('map/app/settings-wire.mjs'), /edenMap3dWheelZoom/);
 });
 test('protocol: eden-map:visible, estate:dispose / estate:disposed and estate:camera (wheelZoom, rm) are registered with typed fields', () => {
