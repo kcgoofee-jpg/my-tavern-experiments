@@ -142,13 +142,13 @@ try {
       legend: !!document.querySelector('.lgtab') && !document.querySelector('.lgtab').hidden,   // U18：图例页
     }));
     rep.metric('depth_desktop', dsk);
-    rep.check('U16/U17 上层读到纵深（--lab 写入、远岛收起、漂浮开）', dsk.lab >= 9 && dsk.far >= 1 && dsk.flt >= 9, JSON.stringify(dsk));
+    rep.check('U17 上层读到纵深（--lab 写入、远岛收起）；U16 标记不再漂浮（K-R133：纵深只改标签透明度 / 雾，不动位置）', dsk.lab >= 9 && dsk.far >= 1 && dsk.flt === 0, JSON.stringify(dsk));
     rep.check('U18 伊甸的抽屉没有「图例」页（D35 / LEGEND-1：图例由包自己选用，见 legend1.mjs）', !dsk.legend, String(dsk.legend));
     rep.check('U-18「看全区」在桌面列里（主页钮改为「定位到我」，看全区补上复位）', dsk.dz !== 'none', dsk.dz);
     // 视差：拖动后标记与底图位移不同（换成「有偏移量」的代理断言：--px/--py 被写上且非 0）
     await p.evaluate(() => { ViewerDebug.osdViewer.viewport.panBy(new OpenSeadragon.Point(.12, .09)); }); await B.wait(700);
     const par = await p.evaluate(() => [...document.querySelectorAll('.mk')].filter(e => (e.style.getPropertyValue('--px') || '0px') !== '0px').length);
-    rep.check('U16 拖动后标记有视差位移（--px/--py）', par >= 1, String(par));
+    rep.check('U16 拖动后标记没有视差位移（K-R133：上层标记不再漂移，位置由 tier_pins.mjs 把关）', par === 0, String(par));
     await B.goMap(p, 'tc_mid'); await B.wait(1100);
     const mid = await p.evaluate(() => ({ legend: !!document.querySelector('.lgtab') && !document.querySelector('.lgtab').hidden, flt: document.querySelectorAll('.mk.flt').length }));
     rep.check('U18 没有纵深数据的层不出现「图例」页', !mid.legend && mid.flt === 0, JSON.stringify(mid));
