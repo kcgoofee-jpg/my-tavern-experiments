@@ -6,7 +6,7 @@ const OUT = process.argv[2] || '/tmp/autoupd097';
 B.quietWait(); const srv = await B.ensureServer(); const rep = B.reporter(OUT);
 const q = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); return e ? { text: e.innerText, role: e.getAttribute('role') } : null; }, sel);
 
-async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: 'S1-9909-R-0001' }, channel = 'follow', ls = null, delay = 300 } = {}) {
+async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: 'S1-9909-R-0001', notes: ['人物栏同名合并更稳。', '新增「安保」开关。'] }, channel = 'follow', ls = null, delay = 300 } = {}) {
   const P = await B.newPage('desktop', { tier: 'save' }), hits = { api: 0, build: 0 };
   await P.ctx.addInitScript(([ch, d]) => { if (window.top === window) { window.__edenMapScript = { channel: ch, ref: 'cloud/test' }; window.__autoCheckDelay = d; } }, [channel, delay]);
   await P.ctx.route('https://data.jsdelivr.com/**', r => { hits.api++; r.fulfill({ contentType: 'application/json', body: JSON.stringify({ versions: [{ version: 'map-v0.9.5' }, { version: latest }] }) }); });
@@ -20,8 +20,10 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
   await p.waitForSelector('#eden-map-root .em-upd', { timeout: 15000 }).catch(() => {});
   const t = await q(p, '#eden-map-root .em-upd');
   rep.check('new_prompt', !!t && /地图有新版 v9\.9\.9/.test(t.text) && /刷新/.test(t.text) && /稍后/.test(t.text) && /此版本不再提示/.test(t.text), JSON.stringify(t));
-  const href = await p.evaluate(() => document.querySelector('#eden-map-root .em-upd a')?.href);
-  rep.check('notes_link', /blob\/map-v9\.9\.9\/CHANGELOG\.md$/.test(href || ''), href);
+  // COPY-1：正文 = build.json 的 notes（用户能感知的变化）+ 怎么更新；构建编码与提交号不上屏，CHANGELOG 链接只留在强制更新那一版
+  rep.check('notes_lines', !!t && /人物栏同名合并更稳/.test(t.text) && /新增「安保」开关/.test(t.text) && /刷新酒馆页面就会用上/.test(t.text), JSON.stringify(t));
+  rep.check('no_build_code', !!t && !/S1-\d/.test(t.text) && !/分支最新构建/.test(t.text), JSON.stringify(t));
+  rep.check('no_notes_link', !(await p.evaluate(() => !!document.querySelector('#eden-map-root .em-upd a'))), 'COPY-1：普通更新提示里没有链接');
   rep.check('one_fetch', hits.api === 1, JSON.stringify(hits));
   await B.shot(p, OUT, 'upd_prompt');
   await p.click('#eden-map-root .em-upd .em-skip');
@@ -105,7 +107,7 @@ for (const [build, want] of [[81, true], [80, false]]) {
   const H = await openHost(P, { here: '天城·中层·辉光大教堂', chat: 'fol' + want }); await H.open();
   if (want) await P.page.waitForSelector('#eden-map-root .em-follow', { timeout: 15000 }).catch(() => {}); else await B.wait(8000);
   const t = await q(P.page, '#eden-map-root .em-follow');
-  rep.check(`follow_${want ? 'newer' : 'same'}`, want ? !!t && /有更新，刷新载入/.test(t.text) && /#81/.test(t.text) : !t, JSON.stringify(t));
+  rep.check(`follow_${want ? 'newer' : 'same'}`, want ? !!t && /有更新，刷新载入/.test(t.text) && /刷新酒馆页面就会用上/.test(t.text) && !/#\d+/.test(t.text) && !/b{10}/.test(t.text) : !t, JSON.stringify(t));
   if (want) await B.shot(P.page, OUT, 'follow_notice');
   // 「检查更新」同一条链：回 update-result { follow, build, source }
   const r = await P.page.evaluate(() => new Promise(res => { const f = document.querySelector('#eden-map-root iframe'); const on = e => { if (e.data?.type === 'eden-map:update-result') { removeEventListener('message', on); res(e.data); } };
