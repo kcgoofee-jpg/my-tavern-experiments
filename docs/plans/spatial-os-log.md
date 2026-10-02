@@ -1659,3 +1659,28 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT U-FIX-R1 ===
+status: DONE
+items: U-FIX-1 ✓ · U-FIX-2 ✓ · U-FIX-3 ✓ · U-FIX-4 ✓ (decision: clock-chip popover 跟随聊天时间 / dawn / day / dusk / night, view-only, session only) · U-FIX-5 ✓ (19 P2) · tests + smoke + probes ✓ · push ✓ · sweep-2 ✓ (round 2: U-FIX-6 ✓, U-FIX-7 ✓, SW2-01 ✓, SW2-08 ✓; P2 batch U-FIX-8 filed)
+commits: b8fc754b fix(wb-peek): place-card archive never shows script/template bodies (U-FIX-1)
+commits: ac07b483 fix(pickup): key sentence reaches Items, passive/attributive false positives gone (U-FIX-2)
+commits: a83fba69 fix(security): the 安保 block stays on the card that owns it (U-FIX-3)
+commits: 3e550e95 feat(clock): the clock chip opens a period popover (U-FIX-4)
+commits: e4f02a70 docs(arch): module map rows for core/wb-peek.mjs and tavern/clock-view.mjs
+commits: 22f7cef8 fix(ui): labels, clipping and framing from TT sweep-1 (U-FIX-5 layout)
+commits: af8bf55b fix(text): neutral wording and readable places from TT sweep-1 (U-FIX-5 wording)
+commits: abdd7721 fix(ui): debug HUD off, Esc and card scroll from TT sweep-1 (U-FIX-5 behaviour)
+commits: 1caf0133 docs(todo): strike U-FIX-1..U-FIX-5 with shas; record the clock-chip period decision
+commits: c409b59a fix(stash): a store carried into a shorter chat re-anchors (U-FIX-6)
+commits: b9a47d69 fix(replay): leaving the replay bar re-sends the current place (U-FIX-7)
+commits: ec3ad597 fix(wb-peek): the entry name sits on its own line above the summary
+commits: 1809c044 fix(pickup): 塞进 / 放进 name a destination, not the item (U-FIX-2 follow-up)
+commits: this commit (todo U-FIX-6/7/8, log)
+pushed: yes (head #278 and #280 during the run; the last push number is in the chat report)
+tests: node 1468 pass + 2 skipped / 1470 (was 1452 + 1 / 1453 at start; +17 new) | smoke PASS | arch PASS | probes: ufix_r1=PASS (15/15, new) s7_hit=PASS replay_i17=PASS estate3d=PASS mvu093=PASS a11y_tree=PASS layers_ext=PASS drawer_stash=PASS (one timing flake, then 2× PASS) ui092=PASS custom095=PASS
+deviations: (1) TT sweep-2 ran with background tools only: the MVU location seed could not be pasted (curly quotes, clipboard locked, a Dock layer blocked full-screen clicks), the clock popover (aria-haspopup) is refused in the background, so H3 / non-night periods / route plan were covered by the browser probe only. (2) Kept on purpose: the worldbook name in the sync hint and the {{eden_*}} macro names (real names the user finds or types); the 结算 line on mid-tier cards is the tier's econ fact. (3) Operator incident: a second Enter after slash autocomplete started one real generation on the user's own chat; stopped at once and the empty message deleted with /del 1 (user said not to worry); the map-tt-sweep skill now warns about it.
+blocker: none
+open: U-FIX-8 (six P2 from sweep-2); re-check SW2-08 and H3 in TT by hand or with full-screen control
+cleanup: done (test branch deleted, 手机 tset restored from backup, window size, layers and edit mode restored, preview servers stopped by the probes)
+=== END ===
