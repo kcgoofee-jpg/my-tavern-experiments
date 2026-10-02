@@ -680,3 +680,7 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-02,tc_upper_obl,draft,2000,64,2.5,0,darwin,ok,0,0
 2026-10-02,tc_upper_obl,draft,2000,64,2.2,0,darwin,ok,0,0
 2026-10-02,tc_upper_obl,draft,2000,64,2.5,0,darwin,ok,0,0
+2026-10-02,tc_upper_obl,final,7952,128,8.6,0,darwin,ok,0,0
+2026-10-02,tc_upper_obl,final,7952,128,8.3,0,darwin,ok,0,0
+2026-10-02,tc_upper_obl,final,7952,128,9.2,0,darwin,ok,0,0
+2026-10-02,tc_upper_obl,final,7952,128,14.2,0,darwin,ok,0,0

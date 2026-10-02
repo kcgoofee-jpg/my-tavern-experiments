@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T11:44:59Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T14:07:39Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
 | standard | 55 | 0 | 0 | 0 | 27 | 0 | 82 |
-| hero | 22 | 0 | 1 | 0 | 11 | 0 | 34 |
+| hero | 22 | 0 | 0 | 8 | 4 | 0 | 34 |
 
 Below-gate (user spot-check): none
 
@@ -124,14 +124,14 @@ Below-gate (user spot-check): none
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
 | 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
 | 22 | `base:world` | basemap | done | - |  |  | Final-spec audit / re-render of base map world |
-| 23 | `obl:tc_upper:day` | basemap | open | render |  |  | Upper oblique base, day: islands only with alpha (D41) |
-| 24 | `obl:tc_upper:dawn` | variant | blocked | render |  |  | Upper oblique, dawn period: islands only with alpha (D41) |
-| 25 | `obl:tc_upper:dusk` | variant | blocked | render |  |  | Upper oblique, dusk period: islands only with alpha (D41) |
-| 26 | `obl:tc_upper:night` | variant | blocked | render |  |  | Upper oblique, night period: islands only with alpha (D41) |
-| 27 | `obl:tc_upper_eden:day` | variant | blocked | render |  |  | Eden oblique hi-res inset, day period (D41 B6) |
-| 28 | `obl:tc_upper_eden:dawn` | variant | blocked | render |  |  | Eden oblique hi-res inset, dawn period (D41 B6) |
-| 29 | `obl:tc_upper_eden:dusk` | variant | blocked | render |  |  | Eden oblique hi-res inset, dusk period (D41 B6) |
-| 30 | `obl:tc_upper_eden:night` | variant | blocked | render |  |  | Eden oblique hi-res inset, night period (D41 B6) |
+| 23 | `obl:tc_upper:day` | basemap | waiting | ship |  | waiting-on-freeze | Upper oblique base, day: islands only with alpha (D41) |
+| 24 | `obl:tc_upper:dawn` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, dawn period: islands only with alpha (D41) |
+| 25 | `obl:tc_upper:dusk` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, dusk period: islands only with alpha (D41) |
+| 26 | `obl:tc_upper:night` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, night period: islands only with alpha (D41) |
+| 27 | `obl:tc_upper_eden:day` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, day period (D41 B6) |
+| 28 | `obl:tc_upper_eden:dawn` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, dawn period (D41 B6) |
+| 29 | `obl:tc_upper_eden:dusk` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, dusk period (D41 B6) |
+| 30 | `obl:tc_upper_eden:night` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, night period (D41 B6) |
 | 31 | `base:world_cities` | basemap | blocked | audit |  |  | World map day re-render with city patches (D41 B7) |
 | 32 | `var:world:borders` | variant | blocked | render |  |  | World map borders at full resolution, thin lines (D41 B7) |
 | 33 | `var:world:night` | variant | blocked | render |  |  | World map night variant with city lights (D41 B7) |

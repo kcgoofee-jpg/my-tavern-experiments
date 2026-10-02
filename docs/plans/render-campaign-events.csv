@@ -573,3 +573,36 @@ ts,id,stage,event,agent,gate,note
 2026-10-02T10:38:44Z,obl:tc_upper:day,audit,claim,render-b1,,
 2026-10-02T11:44:54Z,obl:tc_upper:day,audit,done,render-b1,,"orthographic branch (blender/project.py, oblique.ortho_camera), blender/upper_oblique.py, grey + colour drafts 2000/16 and 64 spp previews x4 periods; frame 7952x4970 hash 21bc15c11d63dc56; finals handed off (docs/render-runbook.md)"
 2026-10-02T11:44:59Z,obl:tc_upper:day,render,release,render-b1,,
+2026-10-02T12:22:21Z,obl:tc_upper:day,render,wait,glm-b1rest,,"RENDER-B1-REST: finals + insets from worktree eden-render/render-b1-rest, scene script unchanged since d97bd365"
+2026-10-02T12:22:25Z,obl:tc_upper:dawn,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:30Z,obl:tc_upper:dusk,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:33Z,obl:tc_upper:night,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:36Z,obl:tc_upper_eden:day,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:41Z,obl:tc_upper_eden:dawn,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:44Z,obl:tc_upper_eden:dusk,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:22:48Z,obl:tc_upper_eden:night,render,wait,glm-b1rest,,RENDER-B1-REST batched claim
+2026-10-02T12:49:32Z,obl:tc_upper:day,render,done,glm-b1rest,,"final 7952x4970 128spp + eden inset, hash 21bc15c11d63dc56, sun SW 225; 5154e5a5"
+2026-10-02T12:49:39Z,obl:tc_upper:day,tiles,done,glm-b1rest,,"tc_upper_obl_day 226 tiles + tc_upper_eden_obl_day 86 tiles, alpha kept; 5154e5a5"
+2026-10-02T12:49:45Z,obl:tc_upper:day,verify,done,glm-b1rest,,"self-check: hash matches locked preview; clip off source 0.369% < 0.5%; alignment median 5.2px at 7952px = locked preview 0.7px at 2000px scaled, alpha-edge islands isle6/isle30/isle4 as in runbook; no user review per s0.8"
+2026-10-02T12:49:53Z,obl:tc_upper_eden:day,render,done,glm-b1rest,,eden inset 4078x3380 0.22m/px 128spp rendered with main (one queue job); hash 1cee926e8832e94c
+2026-10-02T12:50:00Z,obl:tc_upper_eden:day,tiles,done,glm-b1rest,,tc_upper_eden_obl_day 86 tiles; 5154e5a5
+2026-10-02T12:50:05Z,obl:tc_upper_eden:day,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE (maps.json views)
+2026-10-02T12:50:09Z,obl:tc_upper:day,ship,wait,glm-b1rest,,ship waits for OBLIQUE-CODE (maps.json views)
+2026-10-02T13:16:07Z,obl:tc_upper:dawn,render,done,glm-b1rest,,"final 128spp hash 21bc15c11d63dc56; clip off source 0.591% all on gilded cloud tops (s0.4 dawn), islands 0%; 447d9f5b"
+2026-10-02T13:16:11Z,obl:tc_upper:dawn,tiles,done,glm-b1rest,,tc_upper_obl_dawn 226 tiles; 447d9f5b
+2026-10-02T13:16:16Z,obl:tc_upper:dawn,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T13:16:20Z,obl:tc_upper_eden:dawn,render,done,glm-b1rest,,eden inset 128spp hash 1cee926e8832e94c; warm windows visible
+2026-10-02T13:16:24Z,obl:tc_upper_eden:dawn,tiles,done,glm-b1rest,,tc_upper_eden_obl_dawn 86 tiles; 447d9f5b
+2026-10-02T13:16:29Z,obl:tc_upper_eden:dawn,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T13:35:22Z,obl:tc_upper:dusk,render,done,glm-b1rest,,"final 128spp hash 21bc15c11d63dc56; clip off source 0.733% all on low-sun cloud tops, islands 0%; d8e2cc40"
+2026-10-02T13:35:30Z,obl:tc_upper:dusk,tiles,done,glm-b1rest,,tc_upper_obl_dusk 226 tiles; d8e2cc40
+2026-10-02T13:35:38Z,obl:tc_upper:dusk,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T13:35:45Z,obl:tc_upper_eden:dusk,render,done,glm-b1rest,,eden inset 128spp hash 1cee926e8832e94c; warm windows lit
+2026-10-02T13:35:51Z,obl:tc_upper_eden:dusk,tiles,done,glm-b1rest,,tc_upper_eden_obl_dusk 86 tiles; d8e2cc40
+2026-10-02T13:36:00Z,obl:tc_upper_eden:dusk,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T14:06:59Z,obl:tc_upper:night,render,done,glm-b1rest,,"final 128spp hash 21bc15c11d63dc56; 880 lights, clip off source 0.015%, sourceless 0 at preview-equivalent pad 32px, residual 125px moon glints; 2c6bdbe3"
+2026-10-02T14:07:04Z,obl:tc_upper:night,tiles,done,glm-b1rest,,tc_upper_obl_night 226 tiles; 2c6bdbe3
+2026-10-02T14:07:09Z,obl:tc_upper:night,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T14:07:15Z,obl:tc_upper_eden:night,render,done,glm-b1rest,,"eden inset 128spp hash 1cee926e8832e94c; warm windows + cyan beacons + cone cores, no ward edge"
+2026-10-02T14:07:29Z,obl:tc_upper_eden:night,tiles,done,glm-b1rest,,tc_upper_eden_obl_night 86 tiles; 2c6bdbe3
+2026-10-02T14:07:39Z,obl:tc_upper_eden:night,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
