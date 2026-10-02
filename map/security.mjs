@@ -37,7 +37,9 @@ const SecurityView = (() => {
   }
   /** 地点卡：开着时加「安保」一栏 */
   function decorate(el, name) {
-    const c = document.getElementById('card'); if (!c || c.hidden || !isOn()) return;
+    const c = document.getElementById('card'); if (!c) return;
+    c.querySelectorAll('.secbox').forEach(n => n.remove());   // U-FIX-3：这一栏在 .extra 外面，换卡不会被冲掉——先清上一张卡的
+    if (c.hidden || !isOn()) return;
     const f = factsFor(el?.dataset?.name || name); if (!f) return;
     const box = document.createElement('div'); box.className = 'secbox';
     box.innerHTML = `<b>${esc(uiTextOr('sec.title', '安保'))}</b><dl class="fields">${f.map(x => `<dt>${esc(kindName(x.kind))}</dt><dd>${esc(en() ? x.text_en || x.text : x.text)}${x.src ? `<small>${esc(x.src)}</small>` : ''}</dd>`).join('')}</dl>`;
