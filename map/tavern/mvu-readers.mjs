@@ -8,6 +8,8 @@ import { bandOf } from '../core/periods.mjs';
 import { slotDef, SLOTS, portraitOk as avatarOk } from '../core/profile.mjs';
 import { fieldValue } from '../core/pack-v2-rows.mjs';
 import * as VOC from '../core/vocab.mjs';
+import * as CR from '../core/custom-record.mjs';
+import * as CB from '../core/custom-book.mjs';
 
 // ---------------- 通用 ----------------
 /** MVU 旧格式的值可能是 [值, 说明]；新格式直接是值 */
@@ -109,27 +111,32 @@ export function normCustom(raw) {
   if (!raw || typeof raw !== 'object') return out;
   if (raw.同步手动 === true) { out.同步手动 = true; out.同步世界书 = raw.同步世界书 === true; }
   if (Array.isArray(raw.忽略)) { const ig = [...new Set(raw.忽略.map(clean).filter(a => a && [...a].length <= MAX_NAME))].slice(-MAX_IGNORE); if (ig.length) out.忽略 = ig; }
-  for (const [k0, it] of Object.entries(raw.items || {})) {
-    const k = clean(k0); if (!k || !it || typeof it !== 'object') continue;
-    const e = { 类: KINDS.includes(it.类) ? it.类 : 'landmark' };
-    const n = clean(it.名), u = String(it.用途 ?? '').trim();
-    if (n && n !== k) e.名 = [...n].slice(0, MAX_NAME).join('');
-    if (u) e.用途 = [...u].slice(0, MAX_NOTE).join('');
-    const al = Array.isArray(it.别名) ? [...new Set(it.别名.map(clean).filter(a => a && a !== k && a !== e.名))] : [];
-    if (al.length) e.别名 = al;
-    if (it.源 === '标签' || it.源 === '手动') e.源 = it.源;
-    if (e.名 || e.用途 || e.别名) out.items[k] = e;
-  }
+  for (const [k0, it] of Object.entries(raw.items || {})) { const k = clean(k0), e = k && normItem(k, it); if (e) out.items[k] = e; }
+  const un = CR.normUndo(raw.撤销, normItem); if (un.length) out.撤销 = un;   // PLACE-1a: the last 20 previous states (editor undo)
   return out;
+}
+/** One item healed (null = nothing worth keeping). PLACE-1a fields (说明 / 事实 / 基于 / 楼) come from core/custom-record.mjs. */
+function normItem(k, it) {
+  if (!it || typeof it !== 'object') return null;
+  const e = { 类: KINDS.includes(it.类) ? it.类 : 'landmark' };
+  const n = clean(it.名), u = String(it.用途 ?? '').trim();
+  if (n && n !== k) e.名 = [...n].slice(0, MAX_NAME).join('');
+  if (u) e.用途 = [...u].slice(0, MAX_NOTE).join('');
+  const al = Array.isArray(it.别名) ? [...new Set(it.别名.map(clean).filter(a => a && a !== k && a !== e.名))] : [];
+  if (al.length) e.别名 = al;
+  if (it.源 === '标签' || it.源 === '手动') e.源 = it.源;
+  CR.normItemExtra(e, it);
+  return e.名 || e.用途 || e.别名 || e.说明 || e.事实 ? e : null;
 }
 /** 设置 / 修改一项（返回新对象；无效返回 null）。patch = { name?, note?, kind?, alias?, unalias?, ignore? }；name / note 传 '' = 清掉该项
  *  v0.9.6：alias = 给标准名 key 加一个叫法（进 别名，不改显示名；「未上图」指派用）；unalias = 去掉一个叫法；
- *  ignore: true / false = 把 key 这个名字记进 / 移出「忽略」（不动 items） */
+ *  ignore: true / false = 把 key 这个名字记进 / 移出「忽略」（不动 items）
+ *  PLACE-1a: desc / facts / aliases / base / floor / undo（见 core/custom-record.mjs applyPatch） */
 export function setCustom(c, key, patch = {}) {
   key = clean(key); if (!key || [...key].length > MAX_NAME) return null;
   const n = normCustom(c);
   if ('ignore' in patch) { const ig = (n.忽略 || []).filter(a => a !== key); if (patch.ignore) ig.push(key); n.忽略 = ig; return normCustom(n); }
-  const cur = { ...(n.items[key] || { 类: 'landmark' }) };
+  const prev = n.items[key] || null, cur = { ...(prev || { 类: 'landmark' }) };
   if ('alias' in patch) { const a = clean(patch.alias); if (!a || a === key || [...a].length > MAX_NAME) return null;
     for (const [k, e] of Object.entries(n.items)) if (k !== key && e.别名?.includes(a)) e.别名 = e.别名.filter(x => x !== a);   // 一个叫法只指向一处
     if (cur.名 !== a) cur.别名 = [...new Set([...(cur.别名 || []), a])].slice(-10);
@@ -141,8 +148,12 @@ export function setCustom(c, key, patch = {}) {
     if (cur.名 && v && v !== key && cur.名 !== v) cur.别名 = [...new Set([...(cur.别名 || []), cur.名])].slice(-10);   // 改名：旧显示名留作旧叫法，之前楼层里的叫法仍认得
     if (v && v !== key) cur.名 = v; else delete cur.名; }
   if ('note' in patch) { const v = String(patch.note ?? '').trim(); if ([...v].length > MAX_NOTE) return null; if (v) cur.用途 = v; else delete cur.用途; }
+  if (!CR.applyPatch(cur, patch, key)) return null;   // PLACE-1a: desc / facts / aliases / base / floor
+  if (patch.undo) n.撤销 = CR.pushUndo(n.撤销, key, prev, patch.floor);   // the editor asks for an undo step before the change
   n.items[key] = cur; return normCustom(n);
 }
+/** Undo the last editor change (of `key` when given); null = nothing to undo. */
+export const undoCustom = (c, key) => CR.undoLast(normCustom(c), key, normCustom);
 export function removeCustom(c, key) { const n = normCustom(c); key = clean(key); if (!(key in n.items)) return null; delete n.items[key]; return n; }
 /** 显示名（没有自定义就是标准名） */
 export const displayName = (c, key) => c?.items?.[key]?.名 || key;
@@ -174,6 +185,9 @@ export function wbContent(c) {
   const rows = Object.entries(c?.items || {}).map(([k, e]) => `- ${k}${e.名 ? `：玩家称为「${e.名}」` : ''}${e.用途 ? `；用途：${e.用途}` : ''}`);
   return rows.length ? `<地图自定义>\n以下地点 / 人物有玩家起的名字或用途，正文里可以用这些叫法：\n${rows.join('\n')}\n</地图自定义>` : '';
 }
+/** PLACE-1a: the chat's custom book = one constant index (names only) + one keyword entry per place that has a description, use or facts (core/custom-book.mjs). */
+export const wbEntries = (c, o = {}) => CB.bookEntries(normCustom(c), { ...o, entryName: WB_ENTRY });
+export const wbHasContent = c => CB.hasContent(normCustom(c));
 /** 0.9.3 → 0.9.5 迁移：旧数据总是写着 同步世界书 false。这一本聊天世界书已经建过（只有打开过同步才会建）→ 说明是自己关掉的，记成 同步手动 保持关 */
 export function syncMigrate(raw, wbExists) {
   if (!raw || typeof raw !== 'object' || raw.同步手动 || raw.同步世界书 !== false || !wbExists) return raw;
@@ -216,7 +230,8 @@ export function applyTags(c, msgs, after, kindOf = () => 'landmark') {
     for (const t of parseCustomTags(text)) {
       if (t.op === 'fact') continue;   // W7 事实：不落 custom items，wb_crystallize 从消息窗口重放收集
       const key = findKey(cur, t.key) || t.key, kind = cur.items[key]?.类 || kindOf(key);
-      const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind, source: 'tag' } : { note: t.value, kind, source: 'tag' });
+      const was = cur.items[key]; if (was?.源 === '手动' && was.楼 > floor) continue;   // PLACE-1a: a manual edit saved at a later floor wins over an older tag
+      const nx = setCustom(cur, key, t.op === 'name' ? { name: t.value, kind, source: 'tag', floor } : { note: t.value, kind, source: 'tag', floor });
       if (nx) { cur = nx; applied.push({ ...t, key, floor }); }
     }
   }

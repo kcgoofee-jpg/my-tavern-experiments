@@ -89,7 +89,7 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
   assert.match(E, /^import \{ cdnFetch, thFn, packNs, createPrefs \} from '\.\/host-tavernhelper\.mjs';$/m);   // S5-1：fnOk / hostFn / createWbAuto / fnGuard 随各自的代码搬进了 flow 模块，入口只留自己还用的
   for (const s of ['const cdnFetch =', 'const thFn =', 'const fnOk =', 'const hostFn =', 'const PREF_KEYS', 'const LINES =', 'async function wbAutoRun', 'let dead']) assert.ok(!E.includes(s), s);
   assert.ok(!/\bcreateWorldbook\b/.test(rd('map/tavern/host-tavernhelper.mjs')), '工厂名不能遮住酒馆助手的全局 createWorldbook');
-  assert.match(rd('map/tavern/root-store.mjs'), /await createWorldbook\(WBN, \[entry\]\)/);   // 自定义世界书仍调酒馆助手的全局函数（S5-1：随 syncWb 搬进了 root-store.mjs）
+  assert.match(rd('map/tavern/root-store.mjs'), /await createWorldbook\(WBN, entries\)/);   // 自定义世界书仍调酒馆助手的全局函数（S5-1：随 syncWb 搬进了 root-store.mjs）
   assert.match(E, /listen\(tavern_events\.CHAT_CHANGED, \(\) => \{ clearTimeout\(wbChatT\); wbChatT = setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)/);
   assert.match(E, /setTimeout\(\(\) => \{ if \(!life\.dead\) afterGen\(\(\) => wbAuto\(\)\.catch/);
 });
@@ -107,7 +107,7 @@ const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'chars-flow': ['createCharsFlow', 'mvuBridge ooc oocRead gallery placeText cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed facts inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
-  'root-store': ['createRootStore', 'storageBudget budgetSweep orphanSweep resetChat custom customChanged customChat customTags evHide kindOf loadCustom onHide reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
+  'root-store': ['createRootStore', 'storageBudget budgetSweep orphanSweep resetChat custom customChanged customChat customTags evHide kindOf loadCustom onHide placeEdit placeUndo reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
   'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
   'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume injectPreview MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
 };

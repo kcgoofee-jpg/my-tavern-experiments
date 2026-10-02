@@ -36,6 +36,8 @@
         "cite": { "type": "string", "minLength": 1, "description": "Free-text source note (entry title, line)." },
         "sub": { "type": "string", "description": "Short subtitle." },
         "desc": { "type": "string", "description": "Longer description for the place card." },
+        "facts": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1 }, "description": "Facts about the place, one sentence each (K-R134). Plain text; the record card lists them." },
+        "access": { "type": "string", "description": "Who may enter, one line (K-R134). Plain text." },
         "i18n": { "type": "object", "propertyNames": { "$ref": "#/$defs/lang" },
           "additionalProperties": { "type": "object", "additionalProperties": false, "properties": { "name": { "type": "string", "minLength": 1 }, "sub": { "type": "string" }, "desc": { "type": "string" } } },
           "description": "Translated display text per language." },

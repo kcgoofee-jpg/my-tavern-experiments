@@ -261,7 +261,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (e.data?.type === 'eden-map:switch-branch' && typeof e.data.branch === 'string') switchBranch(e.data.branch);   // 设置「更新与版本」→ 版本分支切换（main / preview）
     // v0.9.3 自定义（地图设置里的「自定义」一栏）：地图只发请求，数据由这里写进聊天变量后再推回去
     if (e.data?.type === 'eden-map:custom-set') api.setCustom(e.data.key, e.data.patch || {});
-    if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key);
+    if (e.data?.type === 'eden-map:custom-reset') api.removeCustom(e.data.key); else if (e.data?.type === 'eden-map:place-edit') RS.placeEdit(e.data.id, e.data.patch); else if (e.data?.type === 'eden-map:place-undo') RS.placeUndo(e.data.id);   // PLACE-1a: the record editor
     if (e.data?.type === 'eden-map:route-plan') RF.onPlan(e.data);   // K-R111: the user's route plan (re-checked, held, echoed)
     if (e.data?.type === 'eden-map:explore' && explorationLedgerModule && RS.custom && !(e.data.chat && e.data.chat !== chatId())) { const r = explorationLedgerModule.visit(explored, e.data.map, e.data.name); if (r.changed) { explored = r.ex; saveRoot(); } }   // 迷雾探索：只在查看器开着迷雾时才发，丢掉换聊天瞬间还带着上一个聊天地点的到访
     if (e.data?.type === 'eden-map:explore-reset' && RS.custom) { explored = {}; saveRoot(); post({ type: 'eden-map:fog', explored }); }

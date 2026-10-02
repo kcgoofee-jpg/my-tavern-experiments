@@ -200,29 +200,30 @@ test('英文编号迁移（2026-09-28）：旧中文编号的书（含用户改�
   const { readFileSync } = await import('node:fs');
   const real = JSON.parse(readFileSync(new URL('../map/data/worldbook_addon.json', import.meta.url), 'utf8'));
   const back = Object.fromEntries(Object.entries(real.aliases.ids).filter(([a]) => /[^\x00-\x7f]/.test(a)).map(([a, b]) => [b, a]));   // 条目名 → 编号（英文编号之间的并入不算旧名）
+  const kept = real.entries.filter(e => back[e.id]);   // PLACE-1a: the room entries are new (no older Chinese number): this migration is about the entries that had one
   // 旧书：同样的条目，但编号是旧的中文编号、旧版本标记
-  const oldShip = { ...real, ver: '0.9.5+old', aliases: { ids: {} }, entries: real.entries.map(e => ({ ...e, id: back[e.id] })) };
+  const oldShip = { ...real, ver: '0.9.5+old', aliases: { ids: {} }, entries: kept.map(e => ({ ...e, id: back[e.id] })) };
   assert.ok(oldShip.entries.every(e => typeof e.id === 'string' && /[^\x00-\x7f]/.test(e.id)));
   const t = fakeTH({ [W.BOOK]: W.merge([], oldShip).map((e, i) => ({ ...e, uid: i + 1 })) }, { global: [W.BOOK] });
   const bk = t.B[W.BOOK], n0 = bk.length;
   const ed = bk.find(e => e.extra.eden_id === '地图当前地点'); ed.content = '用户改过的当前地点';
   const cf = bk.find(e => e.extra.eden_id === '地图联动规范'); cf.content = '用户改过的联动规范';
   // 上游也改了联动规范 → 应当带冲突标记
-  const S = { ...real, entries: real.entries.map(e => (e.id === 'map.link-rules' ? { ...e, content: e.content + '\n（上游新增）' } : e)) };
+  const S = { ...real, entries: kept.map(e => (e.id === 'map.link-rules' ? { ...e, content: e.content + '\n（上游新增）' } : e)) };
   const p = W.plan(t.B[W.BOOK], S);
   assert.deepEqual(p.add, []); assert.deepEqual(p.retire, []); assert.equal(p.alias, n0); assert.equal(p.dup, 0);
   const r = await W.autoRun(t.fn, S, { charKey: 'a', boundChars: ['a'] });
   assert.ok(r.ok && r.wrote);
   const after = t.B[W.BOOK], ids = after.map(e => e.extra.eden_id);
   assert.equal(after.length, n0); assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual([...ids].sort(), real.entries.map(e => e.id).sort());
+  assert.deepEqual([...ids].sort(), kept.map(e => e.id).sort());
   const cur = after.find(e => e.extra.eden_id === 'map.current-location');
   assert.equal(cur.content, '用户改过的当前地点'); assert.equal(cur.uid, ed.uid); assert.equal(cur.name, ed.name);
   const link = after.find(e => e.extra.eden_id === 'map.link-rules');
   assert.equal(link.content, '用户改过的联动规范'); assert.ok(link.extra.eden_conflict); assert.equal(link.uid, cf.uid);
   assert.deepEqual(W.conflicts(after).map(x => x.name), [cf.name]);
   // 条目名（用户 / 模型看得到的）不变
-  for (const e of real.entries) assert.equal(after.find(x => x.extra.eden_id === e.id).name, e.name);
+  for (const e of kept) assert.equal(after.find(x => x.extra.eden_id === e.id).name, e.name);
   // 二次同步：无操作
   const snap = clone(after), w0 = t.writes.length;
   const p2 = W.plan(after, S); assert.equal(p2.changed, false); assert.equal(p2.alias, 0);

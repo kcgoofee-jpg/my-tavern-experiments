@@ -144,12 +144,12 @@ export function createRootStore(host) {
   // 世界书按聊天分开（mvuReaders.wbName(聊天 id)），不然绑定了同一本的聊天会互相注入；关掉同步时把条目停用（不删世界书）
   async function syncWb(on = true) {
     if (!wbOk() || !host.mvuReaders.wbName(customChat)) { wbState = 'noapi'; return false; }   // 世界书名还没配（没取到包清单）：不建
-    const content = host.mvuReaders.wbContent(custom), WBN = host.mvuReaders.wbName(customChat);
+    const mvr = host.mvuReaders, WBN = mvr.wbName(customChat), has = mvr.wbHasContent(custom);
     // 用到才建（v0.9.5）：还没有任何自定义时不建世界书；已经建过的照常写（条目停用）
-    if (!content && !(await wbExists(WBN))) { wbState = on ? 'empty' : ''; sendCustom(); return true; }
-    const entry = { name: host.mvuReaders.WB_ENTRY, enabled: on && !!content, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: content || '（空）',
-      recursion: { prevent_incoming: true, prevent_outgoing: true } };
-    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, [entry]); else await createWorldbook(WBN, [entry]);
+    if (!has && !(await wbExists(WBN))) { wbState = on ? 'empty' : ''; sendCustom(); return true; }
+    // PLACE-1a：一条常驻索引（只有名字对照）+ 每个有说明 / 用途 / 事实的地点一条关键词条目；关掉同步只是全部停用
+    const entries = mvr.wbEntries(custom, { on });
+    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, entries); else await createWorldbook(WBN, entries);
     if (!on) { wbState = ''; sendCustom(); return true; }
     // 绑定：聊天槽空着绑到这个聊天；被别的书占着就退到角色附加世界书 / 全局（N15），别的绑定一律不动
     let bound = false;
@@ -178,10 +178,23 @@ export function createRootStore(host) {
     custom = r.custom; contextPipeline.tag = r.tag;
     if (r.applied.length || r.undone) { toastQ.push(...r.applied.map(host.mvuReaders.tagToast)); customChanged(true); } else saveRoot();
   }
+  /** PLACE-1a: the record editor's save (patch = { name?, use?, desc?, facts?, aliases?, base? }; '' / [] puts the pack's text back) and its undo. Both go through setCustom, so the chat variable, the viewer and the chat's custom book follow. */
+  function placeEdit(id, patch) {
+    const mvr = host.mvuReaders, key = typeof id === 'string' ? id.trim() : '';
+    if (!mvr || !custom || customChat !== chatId() || !key || !patch || typeof patch !== 'object') return false;
+    const p = {}; for (const k of ['name', 'desc', 'facts', 'aliases', 'base']) if (k in patch) p[k] = patch[k];
+    if ('use' in patch) p.note = patch.use;
+    const r = mvr.setCustom(custom, key, { ...p, kind: custom.items[key]?.类 || kindOf(key), source: 'manual', floor: Math.max(0, Math.trunc(+host.floorNow) || 0), undo: true });
+    if (!r) return false; custom = r; customChanged(true); return true;
+  }
+  function placeUndo(id) {
+    const mvr = host.mvuReaders; if (!mvr || !custom || customChat !== chatId()) return false;
+    const r = mvr.undoCustom(custom, typeof id === 'string' && id.trim() ? id.trim() : undefined); if (!r) return false; custom = r; customChanged(true); return true;
+  }
   function flushToasts() { if (!host.alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   return {
     get storageBudget() { return storageBudget; }, budgetSweep, resetChat: () => chatData.reset(), orphanSweep: () => chatData.orphanSweep(), get custom() { return custom; }, set custom(v) { custom = v; }, customChanged, get customChat() { return customChat; },
-    customTags, kindOf, loadCustom, onHide, get evHide() { return evHide; }, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
+    customTags, kindOf, loadCustom, onHide, placeEdit, placeUndo, get evHide() { return evHide; }, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
     get wbState() { return wbState; }, set wbState(v) { wbState = v; },
   };
 }

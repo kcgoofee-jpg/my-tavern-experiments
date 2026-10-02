@@ -2,7 +2,7 @@
  "schema": 1,
  "book": "伊甸地图·世界书附加条目",
  "version": "0.9.7-dev",
- "ver": "0.9.7+98435f09",
+ "ver": "0.9.7+e3ce0083",
  "category": {
   "map.link-rules": "rules",
   "map.event-types": "events",
@@ -63,7 +63,79 @@
   "map.place.victor-estate": "places",
   "map.place.y-estate": "places",
   "map.place.arms-rnd": "places",
-  "map.place.hunting-camp": "places"
+  "map.place.hunting-camp": "places",
+  "map.room.room-b2-00": "places",
+  "map.room.room-b2-01": "places",
+  "map.room.room-b2-03": "places",
+  "map.room.room-b2-04": "places",
+  "map.room.room-b2-05": "places",
+  "map.room.room-b2-06": "places",
+  "map.room.room-b2-09": "places",
+  "map.room.room-b2-10": "places",
+  "map.room.room-b2-11": "places",
+  "map.room.room-b2-13": "places",
+  "map.room.room-b1-17": "places",
+  "map.room.room-b1-18": "places",
+  "map.room.room-b1-19": "places",
+  "map.room.room-b1-20": "places",
+  "map.room.room-b1-21": "places",
+  "map.room.room-b1-23": "places",
+  "map.room.room-f1-30": "places",
+  "map.room.room-f1-33": "places",
+  "map.room.room-f1-34": "places",
+  "map.room.room-f1-35": "places",
+  "map.room.room-f1-38": "places",
+  "map.room.room-f1-39": "places",
+  "map.room.room-f1-40": "places",
+  "map.room.room-f1-41": "places",
+  "map.room.room-f1-42": "places",
+  "map.room.room-f1-43": "places",
+  "map.room.room-f1-44": "places",
+  "map.room.room-f1-45": "places",
+  "map.room.room-f1-46": "places",
+  "map.room.room-f1-47": "places",
+  "map.room.room-f1-48": "places",
+  "map.room.room-f1-49": "places",
+  "map.room.room-f1-50": "places",
+  "map.room.room-f1-51": "places",
+  "map.room.room-f1-52": "places",
+  "map.room.room-f2-57": "places",
+  "map.room.room-f2-58": "places",
+  "map.room.room-f2-59": "places",
+  "map.room.room-f2-60": "places",
+  "map.room.room-f2-63": "places",
+  "map.room.room-f2-65": "places",
+  "map.room.room-f2-67": "places",
+  "map.room.room-f2-68": "places",
+  "map.room.room-f2-70": "places",
+  "map.room.room-f2-74": "places",
+  "map.room.room-f2-75": "places",
+  "map.room.room-f2-76": "places",
+  "map.room.room-f2-77": "places",
+  "map.room.room-f3-80": "places",
+  "map.room.room-f3-94": "places",
+  "map.room.room-f3-95": "places",
+  "map.room.room-f3-96": "places",
+  "map.room.room-f3-97": "places",
+  "map.room.room-f3-99": "places",
+  "map.room.room-f3-102": "places",
+  "map.room.room-f3-106": "places",
+  "map.room.room-f3-107": "places",
+  "map.room.room-f3-108": "places",
+  "map.room.room-f1-109": "places",
+  "map.room.room-f1-110": "places",
+  "map.room.room-f1-111": "places",
+  "map.room.room-f1-112": "places",
+  "map.room.room-f1-113": "places",
+  "map.room.room-f1-114": "places",
+  "map.room.room-f2-115": "places",
+  "map.room.room-f2-116": "places",
+  "map.room.room-f2-117": "places",
+  "map.room.room-f2-118": "places",
+  "map.room.room-b2-119": "places",
+  "map.room.room-b2-120": "places",
+  "map.room.room-b2-121": "places",
+  "map.room.room-b2-122": "places"
  },
  "_credit": "原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地点-*」条目描述地图上的地点设定；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。",
  "aliases": {
@@ -132,6 +204,434 @@
    "地点-猎季营地": "map.place.hunting-camp",
    "map.character-location": "map.link-rules"
   }
+ },
+ "index": {
+  "greystone": [
+   "map.place.greystone"
+  ],
+  "greystone_cottage": [
+   "map.place.greystone-cottage"
+  ],
+  "dairy": [
+   "map.place.dairy"
+  ],
+  "gym_pavilion": [
+   "map.place.gym-pavilion"
+  ],
+  "wardrobe": [
+   "map.place.wardrobe"
+  ],
+  "villas": [
+   "map.place.villas"
+  ],
+  "vehicle_pad": [
+   "map.place.vehicle-pad"
+  ],
+  "b2_medical": [
+   "map.place.b2-medical"
+  ],
+  "estate_grounds": [
+   "map.place.estate-grounds"
+  ],
+  "pm_residence": [
+   "map.place.pm-residence"
+  ],
+  "league_club": [
+   "map.place.league-club"
+  ],
+  "elite_academy": [
+   "map.place.elite-academy"
+  ],
+  "kelly_residence": [
+   "map.place.kelly-residence"
+  ],
+  "tiancheng_univ": [
+   "map.place.tiancheng-univ"
+  ],
+  "knights_camp": [
+   "map.place.knights-camp"
+  ],
+  "radiance_cathedral": [
+   "map.place.radiance-cathedral"
+  ],
+  "site_kavalierki": [
+   "map.place.site-kavalierki"
+  ],
+  "yuanyu_sanctum": [
+   "map.place.yuanyu-sanctum"
+  ],
+  "yuanyu_city": [
+   "map.place.yuanyu-city"
+  ],
+  "site_highland": [
+   "map.place.site-highland"
+  ],
+  "site_fief1": [
+   "map.place.site-fief1"
+  ],
+  "site_fief2": [
+   "map.place.site-fief2"
+  ],
+  "site_fief3": [
+   "map.place.site-fief3"
+  ],
+  "site_fief4": [
+   "map.place.site-fief4"
+  ],
+  "site_fief5": [
+   "map.place.site-fief5"
+  ],
+  "mage_tower": [
+   "map.place.mage-tower"
+  ],
+  "schneider_clinic": [
+   "map.place.schneider-clinic"
+  ],
+  "rebirth_workshop": [
+   "map.place.rebirth-workshop"
+  ],
+  "butler_academy": [
+   "map.place.butler-academy"
+  ],
+  "executive_office": [
+   "map.place.executive-office"
+  ],
+  "admin_council": [
+   "map.place.admin-council"
+  ],
+  "reserve_office": [
+   "map.place.reserve-office"
+  ],
+  "culture_office": [
+   "map.place.culture-office"
+  ],
+  "military_academy": [
+   "map.place.military-academy"
+  ],
+  "storm_hall": [
+   "map.place.storm-hall"
+  ],
+  "lower_bar": [
+   "map.place.lower-bar"
+  ],
+  "slums": [
+   "map.place.slums"
+  ],
+  "prison": [
+   "map.place.prison"
+  ],
+  "victor_estate": [
+   "map.place.victor-estate"
+  ],
+  "y_estate": [
+   "map.place.y-estate"
+  ],
+  "arms_rnd": [
+   "map.place.arms-rnd"
+  ],
+  "hunting_camp": [
+   "map.place.hunting-camp"
+  ],
+  "eden_estate": [
+   "map.bearing.upper"
+  ],
+  "silver_crown": [
+   "map.bearing.upper"
+  ],
+  "climate_tower": [
+   "map.bearing.upper"
+  ],
+  "zaibatsu_estate": [
+   "map.bearing.upper"
+  ],
+  "enforcement_hq": [
+   "map.bearing.mid"
+  ],
+  "iron_cradle": [
+   "map.bearing.mid"
+  ],
+  "barracks_ring": [
+   "map.bearing.mid"
+  ],
+  "starabyss_univ": [
+   "map.bearing.mid"
+  ],
+  "old_apartment": [
+   "map.bearing.mid"
+  ],
+  "council": [
+   "map.bearing.mid"
+  ],
+  "checkpoint_c": [
+   "map.bearing.mid"
+  ],
+  "supreme_court": [
+   "map.bearing.mid"
+  ],
+  "victoria_apartment": [
+   "map.bearing.mid"
+  ],
+  "merc_guild": [
+   "map.bearing.mid"
+  ],
+  "mid_monastery": [
+   "map.bearing.mid"
+  ],
+  "mid_hospital": [
+   "map.bearing.mid"
+  ],
+  "mid_care_home": [
+   "map.bearing.mid"
+  ],
+  "well7": [
+   "map.bearing.lower"
+  ],
+  "blood_mill": [
+   "map.bearing.lower"
+  ],
+  "enforcement_low": [
+   "map.bearing.lower"
+  ],
+  "soup_kitchen": [
+   "map.bearing.lower"
+  ],
+  "outpost": [
+   "map.bearing.lower"
+  ],
+  "amc_facility": [
+   "map.bearing.lower"
+  ],
+  "ruined_churches": [
+   "map.bearing.lower"
+  ],
+  "freight_yard": [
+   "map.bearing.lower"
+  ],
+  "tin_shacks": [
+   "map.bearing.lower"
+  ],
+  "junk_market": [
+   "map.bearing.lower"
+  ],
+  "room_b2_00": [
+   "map.room.room-b2-00"
+  ],
+  "room_b2_01": [
+   "map.room.room-b2-01"
+  ],
+  "room_b2_03": [
+   "map.room.room-b2-03"
+  ],
+  "room_b2_04": [
+   "map.room.room-b2-04"
+  ],
+  "room_b2_05": [
+   "map.room.room-b2-05"
+  ],
+  "room_b2_06": [
+   "map.room.room-b2-06"
+  ],
+  "room_b2_09": [
+   "map.room.room-b2-09"
+  ],
+  "room_b2_10": [
+   "map.room.room-b2-10"
+  ],
+  "room_b2_11": [
+   "map.room.room-b2-11"
+  ],
+  "room_b2_13": [
+   "map.room.room-b2-13"
+  ],
+  "room_b1_17": [
+   "map.room.room-b1-17"
+  ],
+  "room_b1_18": [
+   "map.room.room-b1-18"
+  ],
+  "room_b1_19": [
+   "map.room.room-b1-19"
+  ],
+  "room_b1_20": [
+   "map.room.room-b1-20"
+  ],
+  "room_b1_21": [
+   "map.room.room-b1-21"
+  ],
+  "room_b1_23": [
+   "map.room.room-b1-23"
+  ],
+  "room_f1_30": [
+   "map.room.room-f1-30"
+  ],
+  "room_f1_33": [
+   "map.room.room-f1-33"
+  ],
+  "room_f1_34": [
+   "map.room.room-f1-34"
+  ],
+  "room_f1_35": [
+   "map.room.room-f1-35"
+  ],
+  "room_f1_38": [
+   "map.room.room-f1-38"
+  ],
+  "room_f1_39": [
+   "map.room.room-f1-39"
+  ],
+  "room_f1_40": [
+   "map.room.room-f1-40"
+  ],
+  "room_f1_41": [
+   "map.room.room-f1-41"
+  ],
+  "room_f1_42": [
+   "map.room.room-f1-42"
+  ],
+  "room_f1_43": [
+   "map.room.room-f1-43"
+  ],
+  "room_f1_44": [
+   "map.room.room-f1-44"
+  ],
+  "room_f1_45": [
+   "map.room.room-f1-45"
+  ],
+  "room_f1_46": [
+   "map.room.room-f1-46"
+  ],
+  "room_f1_47": [
+   "map.room.room-f1-47"
+  ],
+  "room_f1_48": [
+   "map.room.room-f1-48"
+  ],
+  "room_f1_49": [
+   "map.room.room-f1-49"
+  ],
+  "room_f1_50": [
+   "map.room.room-f1-50"
+  ],
+  "room_f1_51": [
+   "map.room.room-f1-51"
+  ],
+  "room_f1_52": [
+   "map.room.room-f1-52"
+  ],
+  "room_f2_57": [
+   "map.room.room-f2-57"
+  ],
+  "room_f2_58": [
+   "map.room.room-f2-58"
+  ],
+  "room_f2_59": [
+   "map.room.room-f2-59"
+  ],
+  "room_f2_60": [
+   "map.room.room-f2-60"
+  ],
+  "room_f2_63": [
+   "map.room.room-f2-63"
+  ],
+  "room_f2_65": [
+   "map.room.room-f2-65"
+  ],
+  "room_f2_67": [
+   "map.room.room-f2-67"
+  ],
+  "room_f2_68": [
+   "map.room.room-f2-68"
+  ],
+  "room_f2_70": [
+   "map.room.room-f2-70"
+  ],
+  "room_f2_74": [
+   "map.room.room-f2-74"
+  ],
+  "room_f2_75": [
+   "map.room.room-f2-75"
+  ],
+  "room_f2_76": [
+   "map.room.room-f2-76"
+  ],
+  "room_f2_77": [
+   "map.room.room-f2-77"
+  ],
+  "room_f3_80": [
+   "map.room.room-f3-80"
+  ],
+  "room_f3_94": [
+   "map.room.room-f3-94"
+  ],
+  "room_f3_95": [
+   "map.room.room-f3-95"
+  ],
+  "room_f3_96": [
+   "map.room.room-f3-96"
+  ],
+  "room_f3_97": [
+   "map.room.room-f3-97"
+  ],
+  "room_f3_99": [
+   "map.room.room-f3-99"
+  ],
+  "room_f3_102": [
+   "map.room.room-f3-102"
+  ],
+  "room_f3_106": [
+   "map.room.room-f3-106"
+  ],
+  "room_f3_107": [
+   "map.room.room-f3-107"
+  ],
+  "room_f3_108": [
+   "map.room.room-f3-108"
+  ],
+  "room_f1_109": [
+   "map.room.room-f1-109"
+  ],
+  "room_f1_110": [
+   "map.room.room-f1-110"
+  ],
+  "room_f1_111": [
+   "map.room.room-f1-111"
+  ],
+  "room_f1_112": [
+   "map.room.room-f1-112"
+  ],
+  "room_f1_113": [
+   "map.room.room-f1-113"
+  ],
+  "room_f1_114": [
+   "map.room.room-f1-114"
+  ],
+  "room_f2_115": [
+   "map.room.room-f2-115"
+  ],
+  "room_f2_116": [
+   "map.room.room-f2-116"
+  ],
+  "room_f2_117": [
+   "map.room.room-f2-117"
+  ],
+  "room_f2_118": [
+   "map.room.room-f2-118"
+  ],
+  "room_b2_119": [
+   "map.room.room-b2-119"
+  ],
+  "room_b2_120": [
+   "map.room.room-b2-120"
+  ],
+  "room_b2_121": [
+   "map.room.room-b2-121"
+  ],
+  "room_b2_122": [
+   "map.room.room-b2-122"
+  ],
+  "sub_f2_57w": [
+   "map.place.wardrobe"
+  ]
  },
  "entries": [
   {
@@ -1807,6 +2307,1827 @@
     "role": "system",
     "depth": 4,
     "order": 481
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-00",
+   "name": "地点-仆役核",
+   "enabled": true,
+   "content": "<地点·仆役核>\n仆役核：伊甸庄园 地下二层 / 地下一层 / 一层 / 二层 / 三层。仆役楼梯 + 食梯 + 服务电梯，B2–F3 贯通；B2 楼梯间门禁：仅主人、女仆长芯片。出入：仆从动线。\n</地点·仆役核>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "仆役核"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 500
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-01",
+   "name": "地点-主人通道",
+   "enabled": true,
+   "content": "<地点·主人通道>\n主人通道：伊甸庄园 地下二层 / 地下一层 / 一层 / 二层。主人专用通道：螺旋梯 + 单人电梯，B2–F2；F1 与会客厅暗门相接，F2 开进主卧衣帽间。出入：仅主人。\n</地点·主人通道>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人通道",
+     "主人专用通道"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 501
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-03",
+   "name": "地点-惩罚室",
+   "enabled": true,
+   "content": "<地点·惩罚室>\n惩罚室：伊甸庄园 地下二层。无窗；重型约束立柱、悬吊禁闭笼、束缚惩戒长凳、刑具壁柜。出入：主人 / 女仆长 / 被带去的人。\n</地点·惩罚室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "惩罚室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 502
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-04",
+   "name": "地点-医疗与改造室",
+   "enabled": true,
+   "content": "<地点·医疗与改造室>\n医疗与改造室：伊甸庄园 地下二层。体检、手术、恢复舱：以太生化恢复舱、改造手术台、全身扫描拱门。出入：主人 / 女仆长 / 被带去的人。\n</地点·医疗与改造室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "医疗与改造室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 503
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-05",
+   "name": "地点-档案室",
+   "enabled": true,
+   "content": "<地点·档案室>\n档案室：伊甸庄园 地下二层。协议原件、影像服务器；只有主人和女仆长能进。出入：仅主人 / 女仆长。\n</地点·档案室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "档案室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 504
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-06",
+   "name": "地点-储藏室",
+   "enabled": true,
+   "content": "<地点·储藏室>\n储藏室：伊甸庄园 地下二层。备用设备、季节衣物、紧急医疗急救站（EQ-51）。出入：主人 / 女仆长 / 被带去的人。\n</地点·储藏室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "储藏室",
+     "Storeroom"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 505
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-09",
+   "name": "地点-疏散楼梯",
+   "enabled": true,
+   "content": "<地点·疏散楼梯>\n疏散楼梯：伊甸庄园 地下二层 / 地下一层。第二安全出口：B2–B1，经东侧下沉天井上到室外地坪（建筑必需）。\n</地点·疏散楼梯>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "疏散楼梯"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 506
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-10",
+   "name": "地点-机电设备间",
+   "enabled": true,
+   "content": "<地点·机电设备间>\n机电设备间：伊甸庄园 地下二层 / 地下一层。地下机电与以太结界发生器：共鸣核心、导流柱、监控总台。\n</地点·机电设备间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "机电设备间"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 507
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-11",
+   "name": "地点-仆役前室",
+   "enabled": true,
+   "content": "<地点·仆役前室>\n仆役前室：伊甸庄园 地下二层 / 地下一层 / 二层。出入：仆从动线。\n</地点·仆役前室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "仆役前室"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 508
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-13",
+   "name": "地点-主人通道前室",
+   "enabled": true,
+   "content": "<地点·主人通道前室>\n主人通道前室：伊甸庄园 地下二层 / 一层。B2 受限楼层前室：门禁（主人 / 女仆长芯片）。出入：仅主人 / 女仆长 / 被带去的人。\n</地点·主人通道前室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人通道前室"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 509
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-17",
+   "name": "地点-主调教室",
+   "enabled": true,
+   "content": "<地点·主调教室>\n主调教室：伊甸庄园 地下一层。中央双人调教台、天花悬挂滑轨、木马与训诫椅、器具陈列柜。\n</地点·主调教室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主调教室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 510
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-18",
+   "name": "地点-私人调教室",
+   "enabled": true,
+   "content": "<地点·私人调教室>\n私人调教室：伊甸庄园 地下一层。圣安德鲁十字架、观摩大窗、多功能调教皮榻、寸止控制台与器具密柜。\n</地点·私人调教室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "私人调教室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 511
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-19",
+   "name": "地点-性技巧训练室",
+   "enabled": true,
+   "content": "<地点·性技巧训练室>\n性技巧训练室：伊甸庄园 地下一层。姿态技巧软垫床、平衡把杆与镜面墙、示范台与精油恒温柜。\n</地点·性技巧训练室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "性技巧训练室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 512
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-20",
+   "name": "地点-体能训练室",
+   "enabled": true,
+   "content": "<地点·体能训练室>\n体能训练室：伊甸庄园 地下一层。健身、柔韧训练；加固型格斗区和武器架。出入：住客（按任务开放）。\n</地点·体能训练室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "体能训练室",
+     "健身房",
+     "Gym"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 513
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-21",
+   "name": "地点-恒温酒窖",
+   "enabled": true,
+   "content": "<地点·恒温酒窖>\n恒温酒窖：伊甸庄园 地下一层。藏酒两千余瓶：双面到顶酒架群、品酒长台、恒温恒湿机组。\n</地点·恒温酒窖>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "恒温酒窖",
+     "酒窖",
+     "地窖",
+     "Wine Cellar"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 514
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b1-23",
+   "name": "地点-更衣 / 淋浴",
+   "enabled": true,
+   "content": "<地点·更衣 / 淋浴>\n更衣 / 淋浴：伊甸庄园 地下一层。储物更衣柜、长凳、独立淋浴隔间、洗手盆台。\n</地点·更衣 / 淋浴>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "更衣 / 淋浴"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 515
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-30",
+   "name": "地点-主楼梯（塔楼）",
+   "enabled": true,
+   "content": "<地点·主楼梯（塔楼）>\n主楼梯（塔楼）：伊甸庄园 一层 / 二层 / 三层。石材双跑梯，F1–F3；F3 再上一跑到屋顶眺望亭（屋顶构筑物）。出入：主人 / 访客 / 住客。\n</地点·主楼梯（塔楼）>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主楼梯（塔楼）"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 516
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-33",
+   "name": "地点-门廊（正门）",
+   "enabled": true,
+   "content": "<地点·门廊（正门）>\n门廊（正门）：伊甸庄园 一层。柱廊；车道落客。\n</地点·门廊（正门）>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "门廊（正门）"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 517
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-34",
+   "name": "地点-大厅",
+   "enabled": true,
+   "content": "<地点·大厅>\n大厅：伊甸庄园 一层。正门入口、接待；中央圆形下沉区（晨间报到）；墙面全息屏。出入：全体（新人可进）。\n</地点·大厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "大厅",
+     "门厅",
+     "玄关",
+     "Grand Hall",
+     "Entrance Hall"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 518
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-35",
+   "name": "地点-会客厅",
+   "enabled": true,
+   "content": "<地点·会客厅>\n会客厅：伊甸庄园 一层。壁炉、隔音；北墙暗门通主人专用通道。出入：主人 / 访客。\n</地点·会客厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "会客厅",
+     "客厅",
+     "沙龙",
+     "Drawing Room"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 519
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-38",
+   "name": "地点-衣帽间 / 访客卫生间",
+   "enabled": true,
+   "content": "<地点·衣帽间 / 访客卫生间>\n衣帽间 / 访客卫生间：伊甸庄园 一层。内部房间（无需外窗），机械通风。\n</地点·衣帽间 / 访客卫生间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "衣帽间 / 访客卫生间",
+     "衣帽间",
+     "访客卫生间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 520
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-39",
+   "name": "地点-主廊",
+   "enabled": true,
+   "content": "<地点·主廊>\n主廊：伊甸庄园 一层 / 二层。主人动线：大厅 ↔ 餐厅 ↔ 东西翼。\n</地点·主廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主廊"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 521
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-40",
+   "name": "地点-餐厅",
+   "enabled": true,
+   "content": "<地点·餐厅>\n餐厅：伊甸庄园 一层。胡桃木长桌可坐 20 人；北墙是通高玻璃隔断开向北廊楼（北廊楼北面落地窗采光）。出入：主人。\n</地点·餐厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "餐厅",
+     "饭厅",
+     "Dining Room"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 522
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-41",
+   "name": "地点-独立食物准备间",
+   "enabled": true,
+   "content": "<地点·独立食物准备间>\n独立食物准备间：伊甸庄园 一层。餐厅的独立食物准备间。出入：仆从动线。\n</地点·独立食物准备间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "独立食物准备间",
+     "食物准备间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 523
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-42",
+   "name": "地点-服务过道",
+   "enabled": true,
+   "content": "<地点·服务过道>\n服务过道：伊甸庄园 一层。厨房 ↔ 仆役核 ↔ 备餐间。出入：仆从动线。\n</地点·服务过道>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "服务过道"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 524
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-43",
+   "name": "地点-北过厅",
+   "enabled": true,
+   "content": "<地点·北过厅>\n北过厅：伊甸庄园 一层。通北廊楼、后庭园。\n</地点·北过厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "北过厅"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 525
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-44",
+   "name": "地点-一层公共休息厅",
+   "enabled": true,
+   "content": "<地点·一层公共休息厅>\n一层公共休息厅：伊甸庄园 一层。一层公共区的休息与交谈厅：长沙发、矮桌与落地灯，正式住客白天可在此歇脚；南接主廊，北通北过厅和后庭园。出入：正式住客。\n</地点·一层公共休息厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "一层公共休息厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 526
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-45",
+   "name": "地点-厨房与后勤区",
+   "enabled": true,
+   "content": "<地点·厨房与后勤区>\n厨房与后勤区：伊甸庄园 一层。全自动烹饪；后勤三间在西翼。出入：仆从动线。\n</地点·厨房与后勤区>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "厨房与后勤区",
+     "厨房",
+     "Kitchen"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 527
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-46",
+   "name": "地点-衣物清洗与维护间",
+   "enabled": true,
+   "content": "<地点·衣物清洗与维护间>\n衣物清洗与维护间：伊甸庄园 一层。厨房与后勤区。出入：仆从动线。\n</地点·衣物清洗与维护间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "衣物清洗与维护间",
+     "洗衣房",
+     "Laundry"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 528
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-47",
+   "name": "地点-道具清洗消毒间",
+   "enabled": true,
+   "content": "<地点·道具清洗消毒间>\n道具清洗消毒间：伊甸庄园 一层。厨房与后勤区。出入：仆从动线。\n</地点·道具清洗消毒间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "道具清洗消毒间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 529
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-48",
+   "name": "地点-物资仓库",
+   "enabled": true,
+   "content": "<地点·物资仓库>\n物资仓库：伊甸庄园 一层。厨房与后勤区。出入：仆从动线。\n</地点·物资仓库>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "物资仓库",
+     "仓库"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 530
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-49",
+   "name": "地点-服务走廊",
+   "enabled": true,
+   "content": "<地点·服务走廊>\n服务走廊：伊甸庄园 一层。出入：仆从动线。\n</地点·服务走廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "服务走廊"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 531
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-50",
+   "name": "地点-服务连廊",
+   "enabled": true,
+   "content": "<地点·服务连廊>\n服务连廊：伊甸庄园 一层。只开门进仆役核，不开向主廊：仆从经 西翼服务走廊 → 服务连廊 → 仆役核 → 服务过道 → 备餐间，不走主人动线。出入：仆从动线。\n</地点·服务连廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "服务连廊"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 532
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-51",
+   "name": "地点-北廊楼（通后庭）",
+   "enabled": true,
+   "content": "<地点·北廊楼（通后庭）>\n北廊楼（通后庭）：伊甸庄园 一层。廊厅；通后庭园与半圆回廊。\n</地点·北廊楼（通后庭）>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "北廊楼（通后庭）"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 533
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-52",
+   "name": "地点-东连楼值班室",
+   "enabled": true,
+   "content": "<地点·东连楼值班室>\n东连楼值班室：伊甸庄园 一层。东侧动线的值班与交接处：门禁读卡台、钥匙柜和轮班登记簿；与东翼、东连廊相通。出入：仆从动线。\n</地点·东连楼值班室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东连楼值班室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 534
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-57",
+   "name": "地点-主人主卧",
+   "enabled": true,
+   "content": "<地点·主人主卧>\n主人主卧：伊甸庄园 二层。带衣帽间和独立浴室；床头呼叫面板；东北角是主人专用通道。出入：主人。\n</地点·主人主卧>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人主卧",
+     "主卧",
+     "主卧室",
+     "卧室",
+     "衣帽间",
+     "私人衣帽间",
+     "更衣室",
+     "Master Bedroom",
+     "Dressing Room"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 535
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-58",
+   "name": "地点-主人书房",
+   "enabled": true,
+   "content": "<地点·主人书房>\n主人书房：伊甸庄园 二层。全息终端、监控总览屏、南向落地窗（门廊上方）。出入：主人（上锁）。\n</地点·主人书房>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人书房",
+     "书房",
+     "图书室",
+     "Library",
+     "Study"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 536
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-59",
+   "name": "地点-书房前等候廊",
+   "enabled": true,
+   "content": "<地点·书房前等候廊>\n书房前等候廊：伊甸庄园 二层。卡：门外走廊是等候位；主廊放宽成 5 m 的等候凹廊，顶上 F3 天窗井（R(-2, 8, -11, -9) 上方）采光。\n</地点·书房前等候廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "书房前等候廊"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 537
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-60",
+   "name": "地点-客房",
+   "enabled": true,
+   "content": "<地点·客房>\n客房：伊甸庄园 二层。访客短住。\n</地点·客房>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "客房",
+     "Guest Room"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 538
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-63",
+   "name": "地点-布草 / 服务间",
+   "enabled": true,
+   "content": "<地点·布草 / 服务间>\n布草 / 服务间：伊甸庄园 二层。出入：仆从动线。\n</地点·布草 / 服务间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "布草 / 服务间",
+     "服务间"
+    ],
+    "keys_secondary": {
+     "logic": "and_any",
+     "keys": [
+      "伊甸庄园",
+      "Eden Manor",
+      "伊甸",
+      "庄园",
+      "伊甸家族府邸"
+     ]
+    }
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 539
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-65",
+   "name": "地点-女仆长寝室",
+   "enabled": true,
+   "content": "<地点·女仆长寝室>\n女仆长寝室：伊甸庄园 二层。住处兼管理终端；与主卧隔走廊相对，有专用直通门。出入：女仆长。\n</地点·女仆长寝室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "女仆长寝室",
+     "Head Maid's Room"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 540
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-67",
+   "name": "地点-主人起居厅",
+   "enabled": true,
+   "content": "<地点·主人起居厅>\n主人起居厅：伊甸庄园 二层。主人日常起居与会谈的大厅：壁炉、长沙发与茶几；北墙贴北廊楼，靠 F3 穹顶天窗井与北廊楼屋面高侧窗采光。出入：主人。\n</地点·主人起居厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人起居厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 541
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-68",
+   "name": "地点-主人茶室",
+   "enabled": true,
+   "content": "<地点·主人茶室>\n主人茶室：伊甸庄园 二层。起居厅东侧的小茶室：矮榻、茶具柜和一扇朝东的窗，早晨看云海。出入：主人。\n</地点·主人茶室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "主人茶室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 542
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-70",
+   "name": "地点-西翼管理办公室",
+   "enabled": true,
+   "content": "<地点·西翼管理办公室>\n西翼管理办公室：伊甸庄园 二层。女仆长与管理人员的办公区：排班墙、物资与访客登记终端、文件柜；邻近西翼服务动线。出入：女仆长 / 管理人员。\n</地点·西翼管理办公室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西翼管理办公室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 543
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-74",
+   "name": "地点-东翼休闲厅",
+   "enabled": true,
+   "content": "<地点·东翼休闲厅>\n东翼休闲厅：伊甸庄园 二层。朝南的休闲厅：牌桌、沙发组和小吧台，客居的访客与值勤人员在此消遣；北接东翼走廊。出入：住客 / 访客。\n</地点·东翼休闲厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东翼休闲厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 544
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-75",
+   "name": "地点-东侧长廊",
+   "enabled": true,
+   "content": "<地点·东侧长廊>\n东侧长廊：伊甸庄园 二层。整面落地窗朝东：早上看云海，夜里看中层灯火。\n</地点·东侧长廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东侧长廊",
+     "长廊",
+     "Gallery"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 545
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-76",
+   "name": "地点-东侧观景厅",
+   "enabled": true,
+   "content": "<地点·东侧观景厅>\n东侧观景厅：伊甸庄园 二层。紧邻东侧长廊的观景休息厅：整面落地窗，沙发与矮桌，早上看云海，夜里看中层灯火。出入：住客 / 访客。\n</地点·东侧观景厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东侧观景厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 546
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-77",
+   "name": "地点-二层北廊厅",
+   "enabled": true,
+   "content": "<地点·二层北廊厅>\n二层北廊厅：伊甸庄园 二层。通向北廊楼的二层廊厅：靠墙书架、阅读椅与长桌，北面落地窗采光。出入：住客。\n</地点·二层北廊厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "二层北廊厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 547
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-80",
+   "name": "地点-正式母畜个人寝室",
+   "enabled": true,
+   "content": "<地点·正式母畜个人寝室>\n正式母畜个人寝室：伊甸庄园 三层。正式住客每人一间；门是单向玻璃；南窗。出入：正式住客。\n</地点·正式母畜个人寝室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "正式母畜个人寝室",
+     "个人寝室",
+     "寝室",
+     "宿舍"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 548
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-94",
+   "name": "地点-新进公共寝区",
+   "enabled": true,
+   "content": "<地点·新进公共寝区>\n新进公共寝区：伊甸庄园 三层。4 床；入住第一个月的住处。出入：新人。\n</地点·新进公共寝区>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "新进公共寝区",
+     "新进寝区"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 549
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-95",
+   "name": "地点-三楼公共浴室",
+   "enabled": true,
+   "content": "<地点·三楼公共浴室>\n三楼公共浴室：伊甸庄园 三层。住客共用（顶部天窗）。出入：住客 / 新人。\n</地点·三楼公共浴室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "三楼公共浴室",
+     "三楼浴室",
+     "公共浴室",
+     "浴室",
+     "浴池",
+     "盥洗室",
+     "Bathroom"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 550
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-96",
+   "name": "地点-杂鱼女仆集体间",
+   "enabled": true,
+   "content": "<地点·杂鱼女仆集体间>\n杂鱼女仆集体间：伊甸庄园 三层。大通铺；东窗；北端是公共清洁间。出入：女仆团。\n</地点·杂鱼女仆集体间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "杂鱼女仆集体间",
+     "集体间",
+     "集体宿舍",
+     "女仆宿舍"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 551
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-97",
+   "name": "地点-公共清洁间",
+   "enabled": true,
+   "content": "<地点·公共清洁间>\n公共清洁间：伊甸庄园 三层。集体间尽头。出入：女仆团。\n</地点·公共清洁间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "公共清洁间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 552
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-99",
+   "name": "地点-三楼公共区",
+   "enabled": true,
+   "content": "<地点·三楼公共区>\n三楼公共区：伊甸庄园 三层。三楼住客与新人共用的起居大厅：沙发区、长桌与阅读角；穹顶灯亭天窗采光。出入：住客 / 新人。\n</地点·三楼公共区>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "三楼公共区"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 553
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-102",
+   "name": "地点-仆役前室 / 布草",
+   "enabled": true,
+   "content": "<地点·仆役前室 / 布草>\n仆役前室 / 布草：伊甸庄园 三层。出入：仆从动线。\n</地点·仆役前室 / 布草>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "仆役前室 / 布草",
+     "仆役前室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 554
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-106",
+   "name": "地点-西角亭静读室",
+   "enabled": true,
+   "content": "<地点·西角亭静读室>\n西角亭静读室：伊甸庄园 三层。西角亭顶层的安静读书间：环形书架、阅读灯与窗边软榻，向西望云海。出入：住客。\n</地点·西角亭静读室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西角亭静读室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 555
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-107",
+   "name": "地点-东角亭观星厅",
+   "enabled": true,
+   "content": "<地点·东角亭观星厅>\n东角亭观星厅：伊甸庄园 三层。东角亭顶层的观星厅：圆形座席和一面朝天的玻璃穹顶，夜里看云海上的星。出入：住客。\n</地点·东角亭观星厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东角亭观星厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 556
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f3-108",
+   "name": "地点-东望楼瞭望室",
+   "enabled": true,
+   "content": "<地点·东望楼瞭望室>\n东望楼瞭望室：伊甸庄园 三层。东望楼顶层的小瞭望室：四面窗和一张环窗长凳，可望前庭花园与访客停靠平台。出入：主人 / 管理人员。\n</地点·东望楼瞭望室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东望楼瞭望室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 557
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-109",
+   "name": "地点-西北翼仆役起居厅",
+   "enabled": true,
+   "content": "<地点·西北翼仆役起居厅>\n西北翼仆役起居厅：伊甸庄园 一层。仆从休息、用餐与交接班的大厅：长桌、置物柜和茶水台；连通西翼服务走廊。出入：仆从动线。\n</地点·西北翼仆役起居厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西北翼仆役起居厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 558
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-110",
+   "name": "地点-西角亭阅览厅",
+   "enabled": true,
+   "content": "<地点·西角亭阅览厅>\n西角亭阅览厅：伊甸庄园 一层。西角亭底层的阅览厅：开架书墙、阅览长桌和影像终端，收藏庄园历年账册与资料。出入：住客 / 管理人员。\n</地点·西角亭阅览厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西角亭阅览厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 559
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-111",
+   "name": "地点-东角亭琴房",
+   "enabled": true,
+   "content": "<地点·东角亭琴房>\n东角亭琴房：伊甸庄园 一层。东角亭底层的琴房与小演奏厅：三角钢琴、谱架与折叠座椅，礼仪与才艺练习在此进行。出入：住客。\n</地点·东角亭琴房>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东角亭琴房"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 560
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-112",
+   "name": "地点-东望楼门厅",
+   "enabled": true,
+   "content": "<地点·东望楼门厅>\n东望楼门厅：伊甸庄园 一层。东望楼的底层门厅：登楼的螺旋楼梯、衣帽挂钩和一张小接待桌。出入：住客 / 管理人员。\n</地点·东望楼门厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东望楼门厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 561
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-113",
+   "name": "地点-东翼会客偏厅",
+   "enabled": true,
+   "content": "<地点·东翼会客偏厅>\n东翼会客偏厅：伊甸庄园 一层。主会客厅之外的接待偏厅：访客人数多时在此落座，备有茶点台和暗纹屏风。出入：主人 / 访客。\n</地点·东翼会客偏厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东翼会客偏厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 562
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f1-114",
+   "name": "地点-东北翼花厅",
+   "enabled": true,
+   "content": "<地点·东北翼花厅>\n东北翼花厅：伊甸庄园 一层。朝东的玻璃花厅：盆栽、藤椅和一张早茶长桌，晨光最好。出入：住客 / 访客。\n</地点·东北翼花厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东北翼花厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 563
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-115",
+   "name": "地点-西北翼仆役宿舍",
+   "enabled": true,
+   "content": "<地点·西北翼仆役宿舍>\n西北翼仆役宿舍：伊甸庄园 二层。仆从的住宿区：双层床、个人储物柜和公用洗漱间；与楼下的仆役起居厅同属一翼。出入：仆从动线。\n</地点·西北翼仆役宿舍>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西北翼仆役宿舍"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 564
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-116",
+   "name": "地点-西角亭藏书廊",
+   "enabled": true,
+   "content": "<地点·西角亭藏书廊>\n西角亭藏书廊：伊甸庄园 二层。西角亭二层的环形藏书廊：高书架、移动梯与一排阅读桌。出入：住客 / 管理人员。\n</地点·西角亭藏书廊>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "西角亭藏书廊"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 565
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-117",
+   "name": "地点-东角亭排练厅",
+   "enabled": true,
+   "content": "<地点·东角亭排练厅>\n东角亭排练厅：伊甸庄园 二层。东角亭二层的排练厅：整面镜墙、把杆与地板音响，礼仪和舞蹈练习用。出入：住客。\n</地点·东角亭排练厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东角亭排练厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 566
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-f2-118",
+   "name": "地点-东望楼观景室",
+   "enabled": true,
+   "content": "<地点·东望楼观景室>\n东望楼观景室：伊甸庄园 二层。东望楼二层的小观景室：沿窗矮榻和一张圆桌，与楼上的瞭望室上下相接。出入：住客 / 管理人员。\n</地点·东望楼观景室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "东望楼观景室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 567
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-119",
+   "name": "地点-医疗中心前厅",
+   "enabled": true,
+   "content": "<地点·医疗中心前厅>\n医疗中心前厅：伊甸庄园 地下二层。地下医疗中心（B2）入口：接诊台、转运床停放；南接主廊，东墙气密患者转运门进无菌处置室、另一门进器械洗消间。出入：主人 / 女仆长 / 医护。\n</地点·医疗中心前厅>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "医疗中心前厅"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 568
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-120",
+   "name": "地点-器械洗消间",
+   "enabled": true,
+   "content": "<地点·器械洗消间>\n器械洗消间：伊甸庄园 地下二层。器械清洗、灭菌柜；传递窗通无菌处置室。出入：主人 / 女仆长 / 医护。\n</地点·器械洗消间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "器械洗消间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 569
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-121",
+   "name": "地点-缓冲更衣间",
+   "enabled": true,
+   "content": "<地点·缓冲更衣间>\n缓冲更衣间：伊甸庄园 地下二层。气闸 + 更衣：两道互锁密闭门、风淋、洁净服柜、刷手槽；南门接主人通道前室。出入：主人 / 女仆长 / 医护。\n</地点·缓冲更衣间>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "缓冲更衣间"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 570
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
+  {
+   "id": "map.room.room-b2-122",
+   "name": "地点-无菌处置室",
+   "enabled": true,
+   "content": "<地点·无菌处置室>\n无菌处置室：伊甸庄园 地下二层。急救 / 处置 / 小手术：手术台、无影灯、吊塔监护、呼吸机、除颤、抢救车、医用气体、洁净送风天花。出入：主人 / 女仆长 / 医护。\n</地点·无菌处置室>",
+   "strategy": {
+    "type": "selective",
+    "keys": [
+     "无菌处置室"
+    ]
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 571
    },
    "probability": 100,
    "recursion": {

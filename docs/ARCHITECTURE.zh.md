@@ -61,6 +61,8 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `compat-v1-geo.mjs` | v1 地图注册表 → v2 节点（按声明顺序，另给出其余 compat 文件读取的编号表与词表）。 |
 | `compat-v1-views.mjs` | v1 地图 → v2 视图：世界图 / 点位图各一张 tiles 视图、每个三维地标页一张 model3d 视图、庄园页一张。 |
 | `compat-v1.mjs` | schema 1 → schema 2 的内存转换：已加载的 v1 包（清单与数据文件）变成带内联块的 schema 2 包。纯函数，不取不写任何文件。由下面三个 `compat-v1-*` 文件组成。 |
+| `custom-book.mjs` | 本聊天的自定义世界书：一条名字对照的常驻索引，加每个有文字的地点一条关键词条目（正文来自 `entryText`）。 |
+| `custom-record.mjs` | 玩家在一个地点上的字段（K-R135）：说明、事实、基于指纹、楼层、有界撤销、恢复、键迁移；逐字段盖在记录上。 |
 | `depth.mjs` | 纵深系统数学（`blender/depth.py` 的 JS 孪生，对拍 golden 文件）：由海拔得纵深、通道插值、某海拔之上的云；`describe` 读探索账本。 |
 | `drawer-tabs.mjs` | 抽屉页签规则（K-R72）：内核页签集合、`tabOrder(ui.tabs)`，以及对抽屉类对象的唯一一套显示 / 隐藏 / 回退顺序（纯函数）。 |
 | `entities.mjs` | 实体协议（K-R71、K-R73）：`personOf` / `eventOf` 适配器、`presentAt`、打开视图的层级（`levelMode`）与在场组的分节（`peopleSections`）（纯函数）。 |
@@ -105,6 +107,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `period-pick.mjs` | 地图显示哪个时段的底图（K-R39，I-24）：当前时段的变体，没有就取时段顺序上最近的已登记时段。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测（K-R77）：正文里写明的物理获取动作变成一条单项账目事实；普通与严格两类动词、永不算的句式、包的词表（`scan(text, { vocab })`）。 |
+| `place-record.mjs` | 一个地点一条记录（PLACE-1a，K-R134）：`records`、`placeRecord`、`chainOf`、`nearby`、`entryText`（世界书条目正文的唯一来源）、`floorIndex`（条目开关用的同层房间）。由包的文件现场算出，不存储。 |
 | `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
 | `profiles.mjs` | 设置方案（PROFILE-1，D34），纯函数：哪些键是偏好、内置「推荐」「精简」方案、快照 / 差异计划 / 导入校验。 |

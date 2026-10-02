@@ -33,6 +33,8 @@ export const SCHEMA = {
   'eden-map:unmapped': [VIEWER_TO_HOST, { name: 'string?' }],
   'eden-map:custom-set': [VIEWER_TO_HOST, { key: 'string', patch: 'any' }],
   'eden-map:custom-reset': [VIEWER_TO_HOST, { key: 'string' }],
+  'eden-map:place-edit': [VIEWER_TO_HOST, { id: 'string', patch: 'object' }],   // PLACE-1a: the record editor saved { name?, use?, desc?, facts?, aliases? } for place `id` (an empty string / list restores the pack's text); the host writes it into <chat var>.自定义 and syncs the chat's custom book
+  'eden-map:place-undo': [VIEWER_TO_HOST, { id: 'string?' }],   // PLACE-1a: undo the last editor change (of place `id` when given)
   'eden-map:custom-sync': [VIEWER_TO_HOST, { on: 'boolean?' }],
   'eden-map:varmap-set': [VIEWER_TO_HOST, { user: 'object?' }],
   'eden-map:compose': [VIEWER_TO_HOST, { text: 'string', ooc: 'boolean?' }],
@@ -43,11 +45,11 @@ export const SCHEMA = {
   'eden-map:route-plan': [VIEWER_TO_HOST, { plan: 'object?' }],   // S8-4b K-R111: the user chose (or cleared, null) a route plan; the host re-checks it (checkPlan) and echoes eden-map:route
   'eden-map:explore': [VIEWER_TO_HOST, { map: 'string', name: 'string', chat: 'string?' }],   // 迷雾探索：记一次到访（只在开着时发）
   'eden-map:explore-reset': [VIEWER_TO_HOST, {}],
-  'eden-map:th': [VIEWER_TO_HOST, { op: 'string', prefs: 'object?', ai: 'boolean?', cfg: 'object?', nonce: 'string?' }],   // S7-1: + watch { ai } (the AI link page is open: send the full health) and nav-test { cfg } (the form's values, used once, never stored)
+  'eden-map:th': [VIEWER_TO_HOST, { op: 'string', prefs: 'object?', ai: 'boolean?', cfg: 'object?', nonce: 'string?', id: 'string?', name: 'string?' }],   // S7-1: + watch { ai } (the AI link page is open: send the full health) and nav-test { cfg } (the form's values, used once, never stored)
   //   // 酒馆助手设置（app/tavernhelper-settings.mjs）：state / prefs（含 packLlm：外来包的模型文字开关，K-R103）/ wb-inspect / wb-write / wb-del-legacy / wb-peek（W8 地点卡 → 附加书条目摘要，只读）
   'eden-map:pack-pick': [VIEWER_TO_HOST, { kind: 'string', url: 'string?', text: 'string?', id: 'string?' }],   // S9-2 K-R99：设置「地图包」里为这张卡选的包（kind = automatic | index（id）| url | file（text））；宿主（pack-gate.mjs pick）校验、存下、重启；被拒绝时在 eden-map:th-state 的 result.pack 里回原因
   'eden-map:pack': [HOST_TO_VIEWER, { manifest: 'object', rev: 'number', source: 'string?', trust: 'string?' }],   // S9-3 K-R95：自动包长出了新节点（宿主按聊天里的地点文字生长）；查看器按 rev 递增重投影并原地重画
-  'eden-map:wb-peek': [HOST_TO_VIEWER, { name: 'string', items: 'array?' }],   // W8：附加书条目摘要回执（地图 → 世界书胶囊的结果）
+  'eden-map:wb-peek': [HOST_TO_VIEWER, { name: 'string', items: 'array?', id: 'string?', entries: 'array?', syncAt: 'number?' }],   // W8：附加书条目摘要回执（地图 → 世界书胶囊的结果）；PLACE-1a：+ id（记录 id）、entries [{ book, name, content, ver, state, upstream? }]（附加书条目与本聊天自定义书条目）、syncAt（本机上次自动同步成功的毫秒时刻）
   // 宿主 → 查看器
   'eden-map:here': [HOST_TO_VIEWER, { value: 'any', replay: 'boolean?' }],   // replay = 时间轴回放（Part 5-4）：查看器只画，宿主不再记账
   'eden-map:chat': [HOST_TO_VIEWER, { id: 'any' }],

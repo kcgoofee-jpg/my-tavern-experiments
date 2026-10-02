@@ -5,10 +5,11 @@ import { resolveTags, stripBlocks } from './sanitize.mjs';
 import * as NO from './nav-ops.mjs';
 import { getGeo } from './events-parse.mjs';
 import { routeOp } from '../core/router.mjs';
+import { floorIndex } from '../core/place-record.mjs';
 import { tokens } from './interaction-modes.mjs';
 export const DEPS = [
   'GEN', 'HS', 'facts', 'scriptBase', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'contextPipeline', 'FRm', 'mvuReaders', 'SpatialM', 'uiLang', 'floorNow',
-  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary', 'post', 'alive',
+  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary', 'post', 'alive', 'MAN', 'BASE', 'PACK_ID',
 ];
 export function createLlmFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('llm-flow: missing dep ' + k);
@@ -95,6 +96,18 @@ export function createLlmFlow(host) {
   const jitReset = () => { jitWatermark = null; jitEpoch++; };
   import(scriptBase + 'tavern/worldbook-jit.mjs').then(m => { worldbookJitModule = m; }).catch(e => console.warn('[map] llm-flow: worldbook-jit import failed', e));
   import(scriptBase + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(e => console.warn('[map] llm-flow: worldbook-sync import failed', e));
+  // PLACE-1a: the pack's room table (floors, room names) for the entry switch: in a room, the rooms of its floor are switched on with it. Fetched once; no table = the old active set.
+  let placeIdx = null;
+  async function placeFor() {
+    if (placeIdx !== null) return placeIdx || null;
+    placeIdx = false;
+    try {
+      const man = await host.MAN, rel = man?.data?.rooms; if (!rel || !host.BASE) return null;
+      const r = await cdnFetch(host.BASE + (host.PACK_ID === 'eden' ? '' : 'packs/' + host.PACK_ID + '/') + rel), plan = r.ok ? await r.json() : null;
+      placeIdx = plan ? floorIndex(plan) : false;
+    } catch (e) { console.warn('[eden-map] room table unavailable', e); placeIdx = null; }   // a failed fetch is retried next round
+    return placeIdx || null;
+  }
   async function jitRound() {
     if (jitBusy || !worldbookJitModule || !WBSm || !host.SpatialM || life.dead || lsGet('edenMapWbJit') !== '1') return;
     const getBook = thFn('getWorldbook'), updBook = thFn('updateWorldbookWith');
@@ -108,7 +121,7 @@ export function createLlmFlow(host) {
       const loc = host.SpatialM.locate(host.regNow, host.here);
       if (!loc?.mapId) return;
       const pts = await pointsFor(loc.mapId);
-      const active = host.SpatialM.activationOf(host.regNow, host.here, { [loc.mapId]: pts });
+      const active = host.SpatialM.activationOf(host.regNow, host.here, { [loc.mapId]: pts }, { place: await placeFor() });
       const hash = worldbookJitModule.hashOf(active);
       if (!worldbookJitModule.shouldWrite(jitWatermark, hash)) { host.facts.jit.floor = host.floorNow; return; }
       if (epoch !== jitEpoch) return;

@@ -24,6 +24,8 @@ for (const o of ov.nodes) {
   if (seen.has(o.id)) errs.push(`${id}: overlay lists node ${o.id} twice`); seen.add(o.id);
   if (!have.has(o.id) && (typeof o.name !== 'string' || !o.name)) errs.push(`${id}: new node ${o.id} needs a name`);
   words(o, 'alias'); words(o, 'hints');
+  if (o.facts !== undefined && (!Array.isArray(o.facts) || o.facts.length > 12 || o.facts.some(f => typeof f !== 'string' || !f.trim()))) errs.push(`${id}: node ${o.id}: facts must be a list of at most 12 non-empty strings`);   // K-R134
+  if (o.access !== undefined && typeof o.access !== 'string') errs.push(`${id}: node ${o.id}: access must be a string`);
   if (o.at !== undefined && !(o.at && Number.isFinite(o.at.x) && Number.isFinite(o.at.y))) errs.push(`${id}: node ${o.id}: at needs numeric x and y`);
 }
 const merged = applyOverlay(baseNodes, ov), all = new Set(merged.nodes.map(n => n.id));

@@ -72,7 +72,7 @@ const link = obj({ to: idRef, label: str({ min: 1 }), i18n: i18n(['label']) }, {
 const NODE = obj({
   id: str({ re: ID }), name: label(80), type: str({ re: re('^[a-z][a-z0-9_-]{0,31}$') }), parent: idRef,
   alias: arr(str({ re: NL(60) }), { max: 64 }), hints: arr(str({ re: NL(60) }), { max: 256 }),
-  cite: str({ min: 1 }), sub: str(), desc: str(), at: nodeAt, anchor: str({ re: REGION }), enter: idRef,
+  cite: str({ min: 1 }), sub: str(), desc: str(), facts: arr(str({ min: 1 }), { max: 12 }), access: str(), at: nodeAt, anchor: str({ re: REGION }), enter: idRef,
   i18n: dict(LANG, obj({ name: str({ min: 1 }), sub: str(), desc: str() })),
   view: (v, p, x) => (typeof v === 'string' ? str({ re: ID })(v, p, x) : arr(str({ re: ID }), { min: 1 })(v, p, x)),
   links: arr(link), media: arr(str({ re: ID }), { max: 32 }),   // K-R101: the node's pictures, ids of the media block (unknown ids are dropped by the cross check)

@@ -50,6 +50,16 @@ function normalize(cur, S) {
   }
   return { list: out.map(x => x.c), extras, prim };
 }
+// PLACE-1a: the secondary keys of a room entry (strategy.keys_secondary { logic, keys }) travel with the shipped entry; a changed list counts as an update.
+// Only that list is compared: the primary keys a player edited in the tavern are left alone until the next version rewrites the entry as before.
+const secKeys = x => JSON.stringify([...(x?.strategy?.keys_secondary?.keys || x?.keysecondary || [])]);
+const sameSec = (c, e) => !c?.strategy || !('keys_secondary' in c.strategy) || secKeys(c) === secKeys(e);   // a tavern that stores no such list cannot be compared
+/** State of an installed entry against the shipped one (the record card's sync line): 'synced' | 'edited' (changed in the tavern) | 'pending' (not there, or an older version). */
+export function entryState(c, e) {
+  if (!c || !e) return 'pending';
+  if (edited(c)) return 'edited';
+  return c.extra?.eden_ver === e.extra?.eden_ver && c.content === e.content ? 'synced' : 'pending';
+}
 const conflictOf = (c, e) => edited(c) && hashText(c.content) !== e.extra.eden_hash && c.extra.eden_hash !== e.extra.eden_hash;
 // D43 (WB-1): every entry we ship is enabled after install / sync / update, whatever an older install left. The one exception: while the
 // worldbook JIT is on (o.jit), an entry the JIT itself switched off (extra.eden_jit === 1) stays off; the JIT re-enables it when the place changes.
@@ -70,7 +80,7 @@ export function plan(installed, ship, o = {}) {
     if (c && c.enabled === false && !keepOff(c, o)) out.enable.push(c.name || e.name);
     if (!c) out.add.push(e.name);
     else if (edited(c) && hashText(c.content) !== e.extra.eden_hash) { const k = conflictOf(c, e); (k ? out.conflict : out.keep).push(c.name || e.name); if (k ? c.extra.eden_conflict?.hash !== e.extra.eden_hash : !!c.extra.eden_conflict) flag++; }
-    else if (c.content === e.content && c.name === e.name && !c.extra.eden_retired && !c.extra.eden_conflict && !c.extra.eden_dup && c.extra.eden_hash === e.extra.eden_hash) out.same.push(e.name);   // 只有版本标记不同：写时顺手更新标记
+    else if (c.content === e.content && c.name === e.name && sameSec(c, e) && !c.extra.eden_retired && !c.extra.eden_conflict && !c.extra.eden_dup && c.extra.eden_hash === e.extra.eden_hash) out.same.push(e.name);   // 只有版本标记不同：写时顺手更新标记
     else out.update.push(e.name);
   }
   const ids = new Set(S.entries.map(e => e.extra.eden_id));

@@ -4,6 +4,7 @@
 // 地基 A1（docs/tavernhelper-audit.md §6）：所有外部请求走这一个包装——不带凭据、不带 Referer；与 tavern/tavernhelper-api.mjs cdnFetch 同一规则（tests/cdnfetch.test.mjs 对照、并禁止裸 fetch）
 import { worldbookPrefix } from '../core/pack.mjs';
 import { peekItems } from '../core/wb-peek.mjs';
+import { unwrap } from '../core/place-record.mjs';
 import { healthOf, healthSum } from './feature-health.mjs';
 export const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
 // 窗口函数取法（地基 A3）：全局优先，其次 TavernHelper 命名空间
@@ -137,6 +138,7 @@ export function createWbAuto(deps) {
     if (r.ok && !r.bound) { const w = await wbEnsureBound(W); if (w) { r = { ...r, bound: w }; lsSet('edenMapWbWhere', w); prefSync(); } }
     if (r.boundChar) { const l = [...new Set([...boundChars(), r.boundChar])].slice(-500); gset('eden_wb_chars', l); lsSet('edenMapWbChars', JSON.stringify(l)); }
     let toasted = false;
+    if (r.ok) lsSet('edenMapWbSyncAt', String(Date.now()));   // PLACE-1a: when this device last synced successfully (the record card's sync line)
     if (r.ok && (r.wrote || r.action !== 'sync')) {
       wbLast = { at: Date.now(), ver: r.plan?.to || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, conflict: r.plan?.conflict?.length || 0, auto: true };
       lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync();
@@ -245,16 +247,26 @@ export function createWbAuto(deps) {
     if (op === 'wb-rebind' && ['global', 'char', 'chat'].includes(d.where)) { const W = await wbMod(); const ok = !!W && await W.bind(thFn, W.BOOK, d.where); if (ok) lsSet('edenMapWbWhere', d.where); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? null : 'error' } }); }
     if (op === 'wb-remove') { const W = await wbMod(); const ok = !!W && await W.removeBook(thFn); if (ok) { setTomb(true); wbLast = null; try { (LS || localStorage).removeItem('edenMapWbSync'); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } prefSync(); } return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
     if (op === 'wb-del-legacy' && typeof d.name === 'string') { const W = await wbMod(); const ok = !!W && await W.deleteLegacy(thFn, d.name); return sendTh({ wb: await wbStatus(true), result: { ok, reason: ok ? 'deleted' : 'error' } }); }
-    if (op === 'wb-peek' && typeof d.name === 'string') {   // W8 地点卡「世界书档案」胶囊：附加书里按名字 / 触发词匹配条目，回摘要（只读）
-      const W = await wbMod();
-      const getBook = thFn('getWorldbook');
-      let items = null;
-      if (getBook) {
+    if (op === 'wb-peek' && typeof d.name === 'string') {   // W8 / PLACE-1a 地点卡「世界书档案」：有记录 id → 按发布物 index 取条目（附加书 + 本聊天自定义书），回的正文就是同步出去的那条；没有 id → 名字 / 触发词匹配（只读）
+      const W = await wbMod(), getBook = thFn('getWorldbook'), id = typeof d.id === 'string' ? d.id.slice(0, 80) : '';
+      let items = null; const entries = [];
+      if (getBook && W) {
         try {
-          items = peekItems(await getBook(W.BOOK), d.name, { noTitle: '（无标题）' });   // U-FIX-1：脚本 / 模板条目不外露正文（core/wb-peek.mjs）
+          const book = await getBook(W.BOOK);
+          if (id) {
+            const ship = await wbShip(), S = ship ? W.shipped(ship) : null;
+            for (const eid of Array.isArray(ship?.index?.[id]) ? ship.index[id] : []) {
+              const c = (Array.isArray(book) ? book : []).find(x => x?.extra?.eden_id === eid), e = S?.entries.find(x => x.extra.eden_id === eid), st = W.entryState(c, e);
+              entries.push({ book: W.BOOK, id: eid, name: c?.name || e?.name || '', content: (st === 'pending' ? e?.content : c?.content) ?? '', ver: (st === 'pending' ? e : c)?.extra?.eden_ver || null, state: st,
+                ...(st === 'edited' ? { upstream: c.extra.eden_conflict?.content ?? e?.content ?? '' } : {}) });
+            }
+            const cn = deps.customBookName?.(), cb = cn ? await getBook(cn).catch(() => null) : null;   // this chat's custom book: the player's text for this place
+            for (const c of Array.isArray(cb) ? cb : []) if (c?.extra?.eden_place === id || c?.extra?.eden_place === d.name) entries.push({ book: cn, id: '', name: c.name || '', content: c.content || '', ver: null, state: 'custom' });
+          }
+          items = entries.length ? entries.map(x => ({ name: x.name, summary: unwrap(x.content) })) : peekItems(book, d.name, { noTitle: '（无标题）' });   // U-FIX-1：脚本 / 模板条目不外露正文（core/wb-peek.mjs）
         } catch (e) { items = null; }
       }
-      return post({ type: 'eden-map:wb-peek', name: d.name, items });
+      return post({ type: 'eden-map:wb-peek', name: d.name, ...(id ? { id } : {}), items, entries, syncAt: +lsGet('edenMapWbSyncAt') || undefined });
     }
   }
   return { wbAuto, sendTh, onTh };

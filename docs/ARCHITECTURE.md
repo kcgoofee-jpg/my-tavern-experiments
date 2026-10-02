@@ -80,6 +80,8 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `compat-v1-geo.mjs` | v1 map registry → v2 nodes (declaration order, plus the id map and word tables the other compat files read). |
 | `compat-v1-views.mjs` | v1 maps → v2 views: a tiles view per world / points map, a model3d view per 3D landmark page, one for the estate page. |
 | `compat-v1.mjs` | Schema 1 → schema 2 in memory: a loaded v1 pack (manifest and data files) becomes a schema-2 pack with inline blocks. Pure; nothing is fetched or written. Assembled from the three `compat-v1-*` files. |
+| `custom-book.mjs` | The chat's custom world book: one constant index of name pairs plus one keyword entry per place with text (bodies from `entryText`). |
+| `custom-record.mjs` | The player's fields on one place (K-R135): description, facts, base fingerprints, floor, bounded undo, restore, key migration; laid over a record field by field. |
 | `depth.mjs` | Depth-system math (JS twin of `blender/depth.py`, golden-file parity): depth from altitude, channel interpolation, clouds above an altitude; `describe` reads the exploration ledger. |
 | `drawer-tabs.mjs` | Drawer tab rules (K-R72): the kernel tab set, `tabOrder(ui.tabs)`, and the one show / hide / fallback sequence on a drawer-like object (pure). |
 | `entities.mjs` | Entity protocol (K-R71, K-R73): `personOf` / `eventOf` adapters, `presentAt`, the level of the open view (`levelMode`) and the present group's sections (`peopleSections`) (pure). |
@@ -124,6 +126,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `period-pick.mjs` | Which period base a map shows (K-R39, I-24): the current band's variant, else the nearest registered band by band order. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe (K-R77): a written physical acquisition action becomes a single ledger fact; normal and strict verb classes, forms that never count, the pack vocabulary (`scan(text, { vocab })`). |
+| `place-record.mjs` | One record per place (PLACE-1a, K-R134): `records`, `placeRecord`, `chainOf`, `nearby`, `entryText` (the one source of a world-book entry body), `floorIndex` (floor mates for the entry switch). Computed from the pack's files, never stored. |
 | `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
 | `profiles.mjs` | Settings profiles (PROFILE-1, D34), pure: which keys are preferences, the built-in recommended and lean profiles, snapshot / plan / import validation. |

@@ -244,6 +244,7 @@ trust: shipped | foreign, schema, manifest }`；只有随地图发布的索引�
 | `hints` | 否 | 弱词（K-R16） | 无 |
 | `cite` | 否 | 自由文字的来源备注（K-R11） | 无 |
 | `sub`、`desc` | 否 | 副标题、说明 | 无 |
+| `facts`、`access` | 否 | 事实（最多 12 条、每条一句的字符串列表）与出入（一行），纯文本（K-R134） | 无 |
 | `i18n` | 否 | `{ <语言>: { name, sub, desc } }` | 无 |
 | `at` | 否 | 在最近一个「有坐标系的祖先视图」里、或 `at.view` 指定的视图里的位置 `{x, y, z?, r?, view?}`（K-R31） | 无 |
 | `anchor` | 否 | 那张视图区域表里的区域 id（K-R32） | 节点自己的 id |
@@ -508,6 +509,10 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 **K-R132 —— 建筑的名字。** 3D 清单可带 `building: { title, subtitle?, summary?, i18n?: { <lang>: { title?, subtitle?, summary? } } }`：查看器显示的标题、副标题与一句话简介（外壳的无障碍名字、建筑的卡）。楼层名字是现有 K-R104 `floors[]` 各项上的 `label` 与 `i18n`；`building.floors` 键会被 schema 拒绝（一份列表、一个位置）。没有这个块时，查看器说「Building」、不显示副标题与简介、用楼层 id 当名字。所有文字都是纯文本、用 `textContent` 设置。（地标清单里的 `building: { min, max }` 是它的包围盒，由 `props/viewer3d.html` 读取，不是这个块。）可选的 `view.ext = { target: [x, y, z], size: [w, d, h] }` 以 layout 米给外观视图取景；没有时用模型包围盒。
 
 **K-R133 —— 纵深通道不移动叠加物（TIER-1）。** 视图的纵深数据（`x-depth`、`channels.*`）只能改标签不透明度和雾；画在底图上的叠加物（图钉、标签、轮廓）不相对底图移动。`parallax` 通道只属于屏幕固定的云层。时段色调跟随实际显示的底图：备用底图（`x-alt`）开着且没有时段版本时，照常叠当前时段的色调。
+
+**K-R134 —— 一个地点一条记录。** 任何种类的地点（世界地名、地标、建筑、房间、室外区域）都读成同一种记录，由 `core/place-record.mjs` 现场从包自己的文件算出、从不复制：`id`、`name`、`kind`（`site` / `place` / `building` / `room` / `zone`）、包自己的 `type`、`parent`、`sub`、`desc`、`facts`、`access`、`rows`（包另给的标签 / 值行，例如面积）、`media`、`alias`、`floors`（房间）、`wb`（世界书条目 id，由发布物的 `index` 填）。新增节点字段：`facts`（最多 12 条非空字符串）与 `access`（字符串），都可选、纯文本、经 `textContent` 上页。同一节点的几间房合成一条记录（楼层按平面表顺序；表里的词与同义词成为叫法）；节点自己的 `desc`、`facts`、`access` 优先于房间表。玩家的改动（K-R135）逐字段盖在记录上，包自己的记录从不被改。`entryText(record)` 是世界书条目正文的唯一来源：生成器用它写附加书的房间条目（`tools/place_records.mjs` 把记录交给 `tools/build_worldbook_addon.py`），记录卡显示同一段文字。发布物带 `index { <记录 id>: [条目 id] }`，房间条目可带 `strategy.keys_secondary { logic: "and_any", keys }`（通用名加所在建筑的名字）。有文字的房间才有条目；只有名字的记录没有。
+
+**K-R135 —— 玩家在地点上的字段。** `<聊天变量>.自定义.items[<键>]` 保留原有字段（类、名、用途、别名、源），新增 `说明`（字符串，≤ 400 字）、`事实`（最多 12 条、每条 ≤ 120 字）、`基于`（保存时包原文的指纹 `{ name, desc, facts }`；之后不同就标「包里的原文有更新」）、`楼`（保存时的楼层；同一地点上的剧情标签与手动改动按楼层先后，后来的为准）。键是节点 id；旧键（标准名）仍认，树能给出名字后 `migrateKeys` 一次换成 id。`自定义.撤销` 保留最近 20 次改动的前值。本聊天的自定义书是一条常驻索引（只有名字对照，≤ 220 字）加每个有说明、用途或事实的地点一条关键词条目，正文来自同一个 `entryText`、开头一句说明以本聊天为准；关掉同步只是停用条目。意图：`eden-map:place-edit { id, patch }`、`eden-map:place-undo { id? }`。
 
 ### 4.6 查看器里的 schema-2 包
 

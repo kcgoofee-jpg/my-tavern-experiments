@@ -17,6 +17,9 @@
     （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
   8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、各层的光与视野、日程、安保与权限、其他机构）
   9 地点-*（v0.9.6，关键词触发）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
+  10 地点-<房间名>（PLACE-1a，D44，关键词触发）：每个有说明 / 出入的房间一条，正文 = map/core/place-record.mjs 的 entryText（经 tools/place_records.mjs 取出，
+     与查看器的记录卡同一个函数）；通用名（走廊、设备间、储藏室、客房等）加次要关键词（所在建筑的名字，任一）；只有名字的房间不生成。
+     发布物另带 index：{ 记录 id: [条目 id] }（房间 → 房间条目，已有「地点-*」的地点 → 它的条目，地标 → 所在层的方位条目），宿主按 id 查档案。
 我们的规则只提到我们自己的东西（⌖ 标签、地图.*），不引用卡里的字段名或原文。
 示范标签只用包的示范表里的原文（事件块 examples、overlay llm["x-tag-examples"]；模型照抄时地图不落点）。
 全部条目默认启用（D43）；关键词条目仍是关键词触发。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
@@ -119,7 +122,8 @@ def build(version):
 
     common = city_facts(json.load(open(os.path.join(ROOT, 'map/data/maps.json'), encoding='utf-8')).get('unplaced', {}).get('items', []))
     # 规范放在聊天记录里离末尾两层的位置（at_depth，深度 2，system）：模型写回复时最近读到它；类型表与叫法词表是查阅用的，留在角色定义之后
-    return [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + addon_places(), n
+    places = addon_places()
+    return [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + places + room_entries(reg, places, lore), n
 
 
 # WB-1（D43）规范里的示范：都在包的示范表里（overlay llm["x-tag-examples"] 或解析器内置的示范），照抄不上图；tests/wb1_rules.test.mjs 核对每条的写法能被解析
@@ -184,6 +188,45 @@ def addon_places():
     """地图另行描述的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
     ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
     return [kw_entry(f'地点-{p["name"]}', f'地点·{p["name"]}', p['text'], [w for w in p['alias'] if len([*w]) >= 2], 440 + i) for i, p in enumerate(ap)]
+
+
+# PLACE-1a（D44）：房间条目。记录与正文来自 map/core/place-record.mjs（node tools/place_records.mjs），这里只定关键词、次要关键词与编号。
+GENERIC = ('走廊', '连廊', '设备间', '储藏室', '客房', '前室', '过道', '过厅', '前廊', '后廊', '主廊', '布草间', '服务间')   # 通用名：别的宅子里也常见，加次要关键词（所在建筑的名字）
+ROOM_EID = {}   # 条目名 -> 稳定编号 map.room.<节点 id，下划线换成连字符>（不进别名表；发布编号只许英文点号 / 连字符）
+INDEX = {}      # 记录 id -> [条目 id]（发布物的 index，宿主按 id 查档案）
+
+
+def place_records():
+    r = subprocess.run(['node', os.path.join(ROOT, 'tools', 'place_records.mjs')], capture_output=True, text=True, encoding='utf-8')
+    if r.returncode: sys.exit(f'node tools/place_records.mjs 失败：\n{r.stderr}')
+    return json.loads(r.stdout)
+
+
+def room_entries(reg, places, lore):
+    """每个有说明 / 出入的房间一条关键词条目；名字撞上已有条目的不再建（记录指向已有条目）；索引一并填好。"""
+    INDEX.clear(); ROOM_EID.clear()
+    al = json.load(open(os.path.join(ROOT, 'map/data/worldbook_aliases.json'), encoding='utf-8')).get('ids', {})
+    taken = {p[0] for p in places}
+    ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
+    for p in ap:
+        if al.get(f'地点-{p["name"]}'): INDEX[p['id']] = [al[f'地点-{p["name"]}']]
+    d = place_records(); out = []
+    rid = {r['anchor'] or r['id']: r['id'] for r in d['records']} | {r['id']: r['id'] for r in d['records']}   # 地图标记 id（锚点）-> 记录 id
+    for (name, *_), mid in zip(lore, ('tc_upper', 'tc_mid', 'tc_low')):   # 地标 -> 所在层的方位条目（已有自己条目的地点不覆盖）
+        for k in listed(reg[mid]['markers']):
+            if k in rid: INDEX.setdefault(rid[k], [al[name]])
+    for r in d['records']:
+        if r['kind'] != 'room' or not r['hasText']: continue
+        name = f'地点-{r["name"]}'
+        if name in taken or any(name == o[0] for o in out):
+            if al.get(name): INDEX[r['id']] = [al[name]]
+            continue
+        eid = 'map.room.' + r['id'].replace('_', '-'); ROOM_EID[name] = eid; INDEX[r['id']] = [eid]
+        parts = [w for w in re.split(r'\s*/\s*', r['name']) if len([*w]) >= 3 and w != r['name']]
+        keys = list(dict.fromkeys([*r['keys'], *parts]))
+        sec = [k for k in r['parentKeys'] if len([*k]) >= 2] if any(r['name'].endswith(g) for g in GENERIC) or r['name'] in d['shared'] else []
+        out.append((name, r['text'], 500 + len(out), {**KW, 'key': keys, **({'keysecondary': sec} if sec else {})}))
+    return out
 
 
 def listed(markers):
@@ -307,6 +350,7 @@ SHIP_CATEGORIES = {            # 精确编号 → 类别
 SHIP_CATEGORY_PREFIXES = {     # 编号前缀 → 类别（同一族条目共用一类）
     'map.bearing.': 'places',
     'map.place.': 'places',
+    'map.room.': 'places',
     'tiancheng.lore.': 'lore',
     'estate.lore.': 'lore',
 }
@@ -333,14 +377,14 @@ def to_ship(book, version):
     with open(ap, encoding='utf-8') as f: al = json.load(f)
     ents = []
     for e in book['entries'].values():
-        base = re.sub(r'\s+v\d+$', '', e['comment']); eid = al.get('ids', {}).get(base, base)
+        base = re.sub(r'\s+v\d+$', '', e['comment']); eid = ROOM_EID.get(base) or al.get('ids', {}).get(base, base)
         assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', eid), f'条目「{base}」没有英文编号：在 map/data/worldbook_aliases.json 的 ids 里加「{base}: 英文.点号.编号」'
         ents.append({'id': eid, 'name': e['comment'], 'enabled': not e['disable'], 'content': e['content'],
-                     'strategy': {'type': 'constant' if e['constant'] else 'selective', 'keys': list(e['key'])},
+                     'strategy': {'type': 'constant' if e['constant'] else 'selective', 'keys': list(e['key']), **({'keys_secondary': {'logic': 'and_any', 'keys': list(e['keysecondary'])}} if e['keysecondary'] else {})},
                      'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    return {'schema': SHIP_SCHEMA, 'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'category': ship_categories(ents), '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, 'entries': ents}
+    return {'schema': SHIP_SCHEMA, 'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'category': ship_categories(ents), '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, **({'index': INDEX} if INDEX else {}), 'entries': ents}
 
 
 def tokens(s):
@@ -475,6 +519,8 @@ def main():
         t = tokens(content); tot += t if const else 0; kw += 0 if const or c.startswith('地图方位') else t
         print(f'  {c}：{len(content)} 字符，约 {t} tokens' + ('（EJS 源码，不直接发给模型）' if c.startswith('地图方位') else '' if const else '（关键词触发）'))
     print(f'写入 {out}（{len(items)} 条，{n} 种类型）')
+    rooms = [(c, t) for c, t, *_ in items if c in ROOM_EID]
+    if rooms: print(f'PLACE-1a 房间条目 {len(rooms)} 条，共 {sum(len(t) for _, t in rooms)} 字符；单条平均约 {sum(tokens(t) for _, t in rooms) // len(rooms)} tokens，最多 {max(tokens(t) for _, t in rooms)}；带次要关键词 {sum(1 for c, _, _, *x in items if c in ROOM_EID and x[0].get("keysecondary"))} 条')
     print(f'每轮发给模型：常驻约 {tot} tokens + 方位最多约 {lore_max} tokens（EJS 展开后；没装提示词模板扩展时方位条目会原样发出，自检会提示）；关键词条目合计约 {kw} tokens，只在提到时发')
     if a.check: check(book, a.check)
     if a.ship:

@@ -1868,3 +1868,16 @@ real-model check (sweep-3, TT, profile gg, default preset, add-on synced, JIT of
 open: none
 cleanup: done
 === END ===
+
+=== RESULT PLACE-1a ===
+status: DONE
+items: 1 core/place-record.mjs (records, placeRecord, chainOf, nearby, entryText, floorIndex; plus core/custom-record.mjs, core/custom-book.mjs, tools/place_records.mjs) ✓ | 2 node fields facts / access (schema 2, overlay, export, check_pack / check_overlay, K-R134 + K-R135 in kernel-schema en + zh) ✓ | 3 builder: 72 room entries, secondary keys for 11 generic names, ship index, map.room. category ✓ | 4 sync: keys_secondary, JIT same-floor rooms + building name, edenMapWbSyncAt ✓ | 5 custom: 说明 / 事实 / 基于 / 楼 / 撤销 in normCustom + setCustom (+ undoCustom), key migration as a pure function, custom book = index + one entry per place ✓ | 6 host: wb-peek by id, eden-map:place-edit / place-undo in protocol SCHEMA ✓
+commits: see git log (one commit, "feat(place): PLACE-1a place record, room entries, custom fields")
+pushed: yes (head number in the chat report)
+tests: node 1581/1582 (1 skipped as before; +25 new in tests/place_record.test.mjs, place_custom.test.mjs, place_host.test.mjs) | smoke PASS | arch PASS | probes: none (no UI change)
+numbers: room entries added 72 (5364 characters, 63 tokens average, 99 at most; 11 with secondary keys); add-on 60 -> 132 entries. Constant entries per reply unchanged: 2180 tokens before and after (the three constants and the 42 older place entries are byte-identical to head #301, pinned by sha1 in a test). Typical reply, player in a B2 room: JIT off, 1-3 rooms named 60-190 tokens (a ten-room tour about 630); JIT on, only the 14 B2 room entries (1005 tokens in all) can fire, so 60-190 typical, 1005 at most, and none in the city.
+deviations: (1) entry ids use hyphens (map.room.room-b2-03): the published-id gate (tests/wbsync_auto.test.mjs) allows only [a-z0-9.-]. (2) 73 rooms have text (72 table nodes + the sub-room 衣帽间), 12 nodes are name-only (the design said 71 / 13); the sub-room merges into the existing 地点-衣帽间 entry, so 72 new entries. (3) floors are not nodes: the parent chain ends with a synthetic floor item {id: "<parent>#<floor>", floor}. (4) key migration (standard name -> node id) is a tested pure function (custom-record migrateKeys) but not wired into loadCustom: every reader of the custom data (custom-names-view, picker, extension API, tag replay) still keys by standard name and would break; PLACE-1b rewires them together. (5) the custom book entry bodies use the pack record only when a pack is passed (host has no place pack yet); without it the player's own text goes in. (6) two existing tests were adjusted for the new shapes (wbsync_auto legacy-id migration test uses the entries that had an older number; host_split root-store interface and createWorldbook call).
+blocker: none
+open: none
+cleanup: done
+=== END ===
