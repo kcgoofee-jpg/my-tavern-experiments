@@ -40,7 +40,7 @@ T0 = time.time()
 PERIODS = {
     'day':   dict(el=42.0, sun=(1.0, .95, .88), e=13.0, sky=.13, sky_horizon=(1.15, 1.22, 1.30), sky_zenith=(.45, .62, .92), exp=-.35, emit=.50, lamp=.55, win=.16, ws=1.4),
     'dusk':  dict(el=13.0, sun=(1.0, .55, .30), e=9.0, sky=.07, sky_horizon=(1.50, .78, .44), sky_zenith=(.26, .28, .48), exp=-.35, emit=.70, lamp=.80, win=.30, ws=2.2),
-    'night': dict(el=50.0, sun=(.60, .70, 1.0), e=.05, sky=0.0, exp=0.0, emit=1.0, lamp=1.0, win=.62, ws=2.3),
+    'night': dict(el=50.0, sun=(.60, .70, 1.0), e=.05, sky=0.0, exp=0.0, emit=1.0, lamp=1.0, win=.74, ws=2.5),
 }
 # 立面窗：材质名 → (开灯比例, 强度, 色温 K)。窗是自发光贴图，不摆点光（§0.8 台账备注）。
 WIN_MATS = {

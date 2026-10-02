@@ -606,3 +606,14 @@ ts,id,stage,event,agent,gate,note
 2026-10-02T14:07:15Z,obl:tc_upper_eden:night,render,done,glm-b1rest,,"eden inset 128spp hash 1cee926e8832e94c; warm windows + cyan beacons + cone cores, no ward edge"
 2026-10-02T14:07:29Z,obl:tc_upper_eden:night,tiles,done,glm-b1rest,,tc_upper_eden_obl_night 86 tiles; 2c6bdbe3
 2026-10-02T14:07:39Z,obl:tc_upper_eden:night,register,wait,glm-b1rest,,register / ship wait for OBLIQUE-CODE
+2026-10-02T20:07:54Z,obl:tc_mid:day,audit,done,glm-b2,,"oblique branch added: blender/mid_oblique.py takes over from tiancheng_mid.py under TC_OBLIQUE=1; frame 7920x4950 px at 0.44 m/px, hash 2d98934ef09c7586 (same for all three periods)"
+2026-10-02T20:08:04Z,obl:tc_mid:day,render,done,glm-b2,,"final 7920x4950 128spp 16.1 min; canyon light: sun 42 deg from the SW on the crowns, streets in shade, neon at 45 %; clip off source 0.0 %, clip 0.042 %"
+2026-10-02T20:08:04Z,obl:tc_mid:day,tiles,done,glm-b2,,"map/art/tc_mid_obl_day.dzi 226 tiles, 14 levels, verified"
+2026-10-02T20:08:17Z,obl:tc_mid:day,verify,done,glm-b2,pass,"s0.8 item 4 PASS: street median 0.2426 vs upper day island median 0.4948 = ratio 0.49<=0.6; neon readable in daylight (26674 magenta px, 4809 cyan px); item 7 clip off source 0.0 %; no user review per s0.8"
+2026-10-02T20:08:31Z,obl:tc_mid:day,ship,wait,glm-b2,,register / ship wait for OBLIQUE-CODE (maps.json views)
+2026-10-02T20:08:31Z,obl:tc_mid:dusk,render,done,glm-b2,,"final 7920x4950 128spp 17.6 min; low warm sun 13 deg from the SW, long shadows to the NE, neon at 70 %, windows coming on; clip off source 0.0 %, clip 0.117 %"
+2026-10-02T20:08:32Z,obl:tc_mid:dusk,tiles,done,glm-b2,,"map/art/tc_mid_obl_dusk.dzi 226 tiles, 14 levels, verified"
+2026-10-02T20:08:32Z,obl:tc_mid:dusk,register,wait,glm-b2,,register / ship wait for OBLIQUE-CODE
+2026-10-02T20:09:07Z,obl:tc_mid:night,render,done,glm-b2,,"final 7920x4950 128spp 15.4 min after re-render; whole grid lit, 1197 light objects, facade windows as emissive textures; s0.8 item 3 PASS 32/40 judged 250m cells = 0.80; item 2 sourceless 7 regions / 164 px at pad 16 (0.04 % of bright px); item 7 clip off source 0.005 %"
+2026-10-02T20:09:08Z,obl:tc_mid:night,tiles,done,glm-b2,,"map/art/tc_mid_obl_night.dzi 226 tiles, 14 levels, verified"
+2026-10-02T20:09:08Z,obl:tc_mid:night,register,wait,glm-b2,,register / ship wait for OBLIQUE-CODE
