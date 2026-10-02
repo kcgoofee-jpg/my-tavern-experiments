@@ -94,6 +94,8 @@ manifest.json      only id / schema:2 / title are required; optional lang (zh/en
 | D27 | **Key safety** (B5): one-line notice by the AI advisor key field (stored in this browser; the script can read it); 2FA on every account that pushes or publishes; the stable channel (D22) is the main mitigation. |
 | D28 | **Autopilot decisions surface to the user** (B11): a zh digest of the ~10 default-decided items that matter most (keep / change each); from now on default decisions go into one list reviewed at each stage end. |
 | D29 | **Feedback channel** (B4): GitHub issue form + the first post's thread; the in-map feedback dialog names them. |
+| D30 | **v0.9.8 is the user's own milestone** (2026-10-02): it is not a public release. Items whose reason is "before going public" (S10a, DIST-1, SLIM-1, BUNDLE-1, SEC-1, REL-DOCS) move to a separate public-release prep stage, started only when the user decides to share. D15 and D22–D29 stay valid for that stage. |
+| D31 | **Feature inventory accepted as recommended** (2026-10-02): INV-2 applies the 建议 column of `docs/feature-inventory.md` (11 default off, 6 parked, nothing deleted). |
 
 ---
 
@@ -659,3 +661,14 @@ The user answered the decision sheet "all as recommended" (D15 and D20 confirmed
 | 9 | Release gate: Stage B checklist + TT sweep with no P0 / P1 including a no-proxy run (B17); tag v0.9.8 on the stable channel; first post links the original author's post | D14 | M |
 
 Prompts are dispatched by the coordinator directly to executor sessions (user decision 2026-10-02).
+
+## 19. v12: v0.9.8 for own use; public prep separate (2026-10-02)
+
+| # | Step | Size |
+|---|---|---|
+| 1 | FIX-R2: U-FIX-8 + FIX-B6 | S–M |
+| 2 | CHAT-ISO: same-card multi-chat isolation probe, reset-this-chat button, orphan cleanup, worldbook JIT carry-over, look at the restart leak (I-33, I-34) | M |
+| 3 | INV-2: inventory defaults (D31) | S |
+| 4 | DIGEST-1: autopilot digest (D28) → user keeps / changes | S |
+| 5 | REL-0.9.8: user spot check + TT sweep clean → tag (own use) | S |
+| — | PUB (when the user decides to share): S10a, DIST-1, SLIM-1 (after DIST-1, before going public), BUNDLE-1, SEC-1, REL-DOCS | — |

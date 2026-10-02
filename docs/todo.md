@@ -4,8 +4,8 @@
 - 阶段：v11「先发伊甸」（计划 §18）——ARCH-1 完成（空 catch 棘轮、文档关口降为警告、中文为正本）。
 - 最近 head：#283 起（以 `map/data/head.json` 为准）；U-FIX-1…7 已修，sweep-2 无 P0。
 - 在跑：渲染战役 R（仅 Mac、低强度）；INV-1 功能清单并行进行。
-- 等你：INV-1 清单上标记保留 / 默认关；DIGEST-1 的约 10 条默认决定；真机酒馆测试 R1（v0.9.8 在它之后）。
-- 下一步：INV-1 → INV-2 → DIGEST-1 → FIX-B6、SEC-1 → S10a 改名。
+- 等你：DIGEST-1 出来后逐条保留 / 改；v0.9.8 前你自己抽查一遍（R1）。
+- 下一步（v12）：v0.9.8 是自用里程碑——FIX-R2（U-FIX-8 + FIX-B6）、CHAT-ISO（同卡多聊天）、INV-2、DIGEST-1 → 抽查 → 打标签；公开发布准备另起一段。
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -73,20 +73,18 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [x] ~~**S9b** In-viewer editing + any image as base map (L, 2 prompts) · later · prompt S9b · RESULT S9b~~ ✅ 2026-10-01 (RESULT S9b in the log)
   - [x] ~~**S9b** spec: edit mode and draft, media block, pack and private pictures, any image as a base map, room-gallery migration and maintainer mode removed (E-08), probe `pack_editor` (K-R100–K-R102; Sonnet · High, L; after S8-1) · prompt `docs/zero-config.md` appendix S9b~~ ✅ 2026-10-01 (this step's commits)
 - ~~**Stage C** acceptance: full probe sweep (`docs/plans/stage-c-probes.md`), screenshots at 1440 / 375 px in `~/eden-map-review/stage-c/`, main synced, R1 test kit in `~/eden-map-review/tt/R1/`~~ ✅ 2026-10-02 · prompt C-ACCEPT · RESULT C-ACCEPT (open tails: I-30, I-31, I-32, E-13 builder dedupe)
-- [ ] **v11** order to v0.9.8 (plan §18, D14–D29, 2026-10-02); S10b (split), S11, S12, S13 and stage F parked until after v0.9.8
-  - [ ] **SWEEP-2** TT re-sweep of U-FIX-1…7 on the current head → U-FIX until P0 / P1 = 0
-  - [x] ~~**ARCH-1** D16 rule + empty-catch ratchet + ARCHITECTURE §4; D17 gates to warnings + short RESULT; D18 Chinese canonical; B14 brief §1; B12 short status line~~ ✅ 2026-10-02 `764f9539`
-  - ~~**INV-1** feature inventory with first-open cost (D19, B19): `docs/feature-inventory.md`, 78 rows~~ ✅ 2026-10-02 (sha in its RESULT) → user marks → **INV-2** defaults off
+- [ ] **v12** (plan §19, D30–D31, 2026-10-02): v0.9.8 is the user's own milestone, not a public release; public-release prep is a separate stage started only when the user decides to share. S10b, S11–S13 and stage F stay parked; whether general development resumes after v0.9.8 is the user's call then.
+  - ~~**SWEEP-2** TT re-sweep~~ ✅ 2026-10-02 (RESULT U-FIX-R1; 0 P0, P1 fixed and re-checked)
+  - ~~**ARCH-1**~~ ✅ 2026-10-02 head #284 (RESULT ARCH-1)
+  - ~~**INV-1** feature inventory `docs/feature-inventory.md`, 78 rows~~ ✅ 2026-10-02 head #285 → user: **all as recommended** (2026-10-02)
+  - [ ] **FIX-R2** U-FIX-8 (SW2-02…07) + FIX-B6 (advisor provider defaults, Anthropic browser header, request-shape probe)
+  - [ ] **CHAT-ISO** same card, several chats: A/B isolation probe, 「重置本聊天地图数据」 button, orphan cleanup after a chat is deleted (local storage, room gallery / scrapbook images, per-chat custom worldbook), worldbook JIT state carried into the next chat (I-33, I-34)
+  - [ ] **INV-2** apply the inventory's 建议 column: 11 rows default off, 6 parked (off and hidden from settings), nothing deleted
   - [ ] **DIGEST-1** zh digest of the ~10 most important default-decided items (D28)
-  - [ ] **FIX-B6** advisor provider defaults + Anthropic browser header + request-shape probe
-  - [ ] **SEC-1** security pass: pack / chat text reaching innerHTML, hostile-pack probe (B7)
-  - [ ] **S10a** design → renames + one-time migration (D24)
-  - [ ] **DIST-1** npm package + npmmirror line + stable channel + update check via the line (D15, D21, D22, B19)
-  - [ ] **BUNDLE-1** release bundling + parity probes (D23)
-  - [ ] **REL-DOCS** player guide, licences, 18+ notice, key notice, feedback channel, compatibility matrix (D25–D27, D29, B3, B18)
-  - [ ] **REL-0.9.8** release gate (Stage B checklist + TT sweep no P0 / P1 incl. no-proxy) → tag v0.9.8 on stable (D14, B17)
+  - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
+- [ ] **PUB** public-release prep (parked until the user decides to share; D15, D21–D27, D29): S10a renames + migration, DIST-1 npm + npmmirror line + stable channel, SLIM-1 history rewrite after DIST-1 and before going public (user 2026-10-02), BUNDLE-1, SEC-1, REL-DOCS
 - [ ] **Stage D** Real tavern test ②: Eden card + one other card · later · prompt none · RESULT (your reply)
-- [ ] **S10** (split into S10a before v0.9.8 and S10b parked, D24) Second rename batch, Eden data into `map/packs/eden/`, repo split and slimming (stage E; re-confirm before starting) · later · prompt S10 · RESULT S10 (pending)
+- [ ] **S10** (S10a moves to PUB, S10b parked; D24, D30) Second rename batch, Eden data into `map/packs/eden/`, repo split and slimming (stage E; re-confirm before starting) · later · prompt S10 · RESULT S10 (pending)
 - [ ] **S11** Skill rewrite + `tools/card_to_pack.py` (stage E) · later · prompt S11 · RESULT S11 (pending)
 - [ ] **S12** (parked by D14 until after v0.9.8) Translate code comments to English (optional) · later · prompt S12 · RESULT S12 (pending)
 - [ ] **S13** (parked by D14 until after v0.9.8) Wrap-up: finalise ARCHITECTURE, CHANGELOG, todo, handoff, memory · later · prompt S13 · RESULT S13 (pending)
@@ -150,6 +148,8 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [x] ~~**U-FIX-7** (TT sweep-2, P1, report §2; shot `L-labels-no-herego-after-replay.jpg`) After closing the replay bar 「当前位置」 stayed hidden and the here highlight stayed on the replayed floor's place: push() only posts the place when the host's value changed. Source: sweep-2 on head #278.~~ ✅ 2026-10-02 c83465b2 — tlExit re-sends the current place. Re-checked in TT on head #280. Test replay_exit_ufix7.
 - [ ] **U-FIX-8** (TT sweep-2, P2 batch, report §3) SW2-02 credits note keeps a dangling 「脚本」 after the path is cut; SW2-03 the 高级 page shifts when the pack picker arrives late (a click meant for 再看一次 hits 编辑模式); SW2-04 replay at the newest floor shows no place (should equal the live place); SW2-05 gallery thumbnails are blank black tiles while loading (no placeholder); SW2-06 「开发者」 heading with no rows; SW2-07 upper default view: the top-left island's pin sits on the top edge and its name is hidden. Fixed already: SW2-01 (1e37ef25), SW2-08 「嘴里」 from 塞进她的嘴里 (1809c044, re-check in TT). Source: sweep-2 on head #278 / #280.
 - [ ] **I-32** Four probes red after the S7 settings IA / one-shell changes (probe-side staleness, found by the stage C sweep, `docs/plans/stage-c-probes.md`): `e7` (estate dock / 「⋯」 check expects the old estate chrome), `fix3` (`estate-build`: build line not visible with the estate view open), `v097` (desk + phone, `locator.click` timeout), `v2a` (`null.checked` on a lazily built settings control). `autoupd097` was repaired in the sweep, so the old v2a / autoupd097 baseline shrinks to v2a. Source: RESULT C-ACCEPT.
+- [ ] **I-33** Same-card multi-chat gaps (review session 2026-10-02, user-forwarded): no test switches between two chats of the same card (the stub host never changes the chat id); no 「重置本聊天地图数据」; deleting a chat leaves local-storage rows until the startup sweep (cap 30), room-gallery / scrapbook images and the per-chat custom worldbook forever; the add-on worldbook JIT state of chat A stays active in chat B until B's first recompute. → CHAT-ISO
+- [ ] **I-34** Memory leak on in-place restart (update and reload, version switch, pack switch) with the panel open: about 8 MB per restart, root cause unknown; a page refresh clears it (review session 2026-10-02). → CHAT-ISO investigates; fix if small, else report
 
 
 ## 2. Eden content
