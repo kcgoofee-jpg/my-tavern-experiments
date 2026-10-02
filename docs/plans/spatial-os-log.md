@@ -1635,3 +1635,15 @@ blocker: none
 open: I-32 (four stale probes), I-30, I-31
 cleanup: done
 === END ===
+
+=== RESULT TT-SWEEP-1 ===
+status: DONE
+items: setup (backup, throw-away branch, four seed lines) ✓ · H ✓ (H3 ✗ no period switch reachable) · W ✓ (W1 first-open hint not seen) · U / M / L ✓ at night only · M route plan ✗ not entered · E1–E5, E7 ✓ · E6 ✗ · E8 ✗ · D1, D2, D4 ✓ · D3 ✗ (key missing) · S all seven pages ✓ · G ✗ · X partial · narrow: 800 px only (TT minimum width)
+commits: (this commit) docs: file TT sweep-1 findings as U-FIX-1…U-FIX-5
+pushed: yes (head # printed by the push in the chat report)
+tests: node not run (docs-only change) | smoke not run (docs-only change) | arch n/a | probes: none
+deviations: narrow pass at 800 px because the TT window cannot go below 800 (prompt: ~420 px); two early findings (F1–F3 not switching, camera auto-orbit) were retracted — the TT window was in the background and its frames were throttled; the report says so.
+blocker: none
+open: U-FIX-4 needs the design intent of the top-bar clock (popover with a period switch or not); the floating 「世界地图」 button moved from the right to the left side after the first map open — unclear whether the sweep caused it (the 惯用手 setting is the same as at the start)
+cleanup: done
+=== END ===
