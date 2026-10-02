@@ -6,6 +6,7 @@
   4. 三张高度层云片（真三维，只挡在它下面的岛）；不投影
   5. 相机：project.fit_camera（焦点 / 画框 / 俯角来自 view.camera）；成图旁写 meta（相机 dict、每岛三维锚点与投影多边形），前端 / 三维模式 / 合成都只读它
 TC_OBLIQUE_GREY=1：灰模构图测试（不追加模型、材质统一灰）。
+D41 正交分支：ortho_camera(sc, cam) 按相机文件（project.cam_file）摆 Blender 正交相机，三层共用（上层见 blender/upper_oblique.py）。
 """
 import json, math, os, random, sys
 import bpy
@@ -170,6 +171,21 @@ def append_model(col, blend, origin, X, Y, Z, s, skip=('bg_', 'cam', 'sun', 'whi
         col.objects.link(o)
         if o.parent is None: o.parent = root
     return root
+
+
+def ortho_camera(sc, cam, res_x=None, unit=1.0, z0=0.0, name='obl_cam'):
+    """D41：按相机文件摆正交相机。cam = project.cam_file(...)（米制世界）；场景单位 unit 米、海拔 z0 米处为场景 z = 0
+    （上层 assembler 用米制：unit 1、z0 0；层脚本用 100 m 单位时传 unit=100、z0=700）。res_x 小于定稿像素时出同框草图。"""
+    f = cam['frame']; W, H = f['px']; k = (res_x or W) / W
+    R, Up, F = Vector(cam['right']), Vector(cam['up']), Vector(cam['fwd'])
+    c = Vector(f['centre_m']); pos = c - F * 6000.0
+    cd = bpy.data.cameras.new(name); cd.type = 'ORTHO'; cd.sensor_fit = 'HORIZONTAL'; cd.ortho_scale = f['w_m'] / unit
+    cd.clip_start = 1.0 / unit; cd.clip_end = 20000.0 / unit
+    co = bpy.data.objects.new(name, cd); sc.collection.objects.link(co); sc.camera = co
+    co.matrix_world = Matrix(((R.x, Up.x, -F.x, pos.x / unit), (R.y, Up.y, -F.y, pos.y / unit), (R.z, Up.z, -F.z, (pos.z - z0) / unit), (0, 0, 0, 1)))
+    sc.render.resolution_x = int(round(W * k)); sc.render.resolution_y = int(round(H * k)); sc.render.resolution_percentage = 100
+    sc.render.pixel_aspect_x = sc.render.pixel_aspect_y = 1.0
+    return co
 
 
 def finish(layer, islands, sun, world, tower=None, cfg=None):
