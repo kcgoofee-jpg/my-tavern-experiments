@@ -74,3 +74,9 @@ test('U-FIX-6: a store carried from a longer chat (branch) re-anchors: old text 
   const again = R.step(r.stash, msgs, {});
   assert.equal(again.changed, false, 'stable on the next round');
 });
+
+test('「塞进 / 放进」 name a destination, not the item (TT sweep-2: 「嘴里」 from 塞进她的嘴里)', () => {
+  assert.deepEqual(names('拿起那条擦过脏水的白丝巾，走回去强行塞进她的嘴里，命令她含着。'), ['白丝巾']);
+  assert.deepEqual(names('他把钥匙塞进口袋。'), ['钥匙']);
+  assert.deepEqual(names('她拿起一块木板。'), ['木板']);
+});

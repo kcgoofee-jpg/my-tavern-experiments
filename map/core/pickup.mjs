@@ -9,7 +9,7 @@
 // 本模块不写任何东西——落盘一律由宿主经 ledger / varssync 的结算闸门做（时序纪律见 tavern/settlement-guard.mjs）。
 
 /** 扫描规则的版本：规则改了就加一——存着的文字行带旧版本的指纹，下一轮在窗口里按新规则重放一次（误收的行自愈） */
-export const SCAN_VER = 2;
+export const SCAN_VER = 3;
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
 export const MAX_NAME = 20;         // 物品名的长度上限（更长多半是句子而不是名词）
 const NEAR = 24;                    // 已知物品名：动词要出现在它前面这么多字符内才算「这一下拿的是它」
@@ -30,6 +30,10 @@ export const EN_VERBS = Object.freeze(['picks up', 'picked up', 'grabs', 'grabbe
 export const STRICT_VERBS = Object.freeze(['获得', '得到', '拿取']);
 export const STRICT_EN = Object.freeze(['obtains', 'obtained', 'gets', 'got', 'takes', 'took', 'receives', 'received', 'acquires', 'acquired']);
 export const VERBS = Object.freeze([...ZH_VERBS, ...EN_VERBS]);
+/** 「放进 / 塞进」类：后面跟的是去处（塞进她的嘴里、揣进口袋），东西在前面（把字句）——直接带 / 引号形不收 */
+const INTO = new Set(['揣进口袋', '揣进怀里', '揣进', '揣入', '塞进', '装进', '放进', '放入']);
+/** 方位收尾的名字是去处不是东西（嘴里、箱中、柜内、桌上） */
+const PLACE_END = /[里中内上下旁边]$/;
 
 /** 动词后面允许缀的体标记（拿了 / 拿起了 / 拿住…） */
 const ASPECT = ['了', '着', '过', '到', '起', '住', '下', '进', '入', '走', '来', '去', '好', '上', '出'];
@@ -198,8 +202,8 @@ export function scan(s, o = {}) {
   const place = clip(o.place, 60), map = clip(o.map, 40);
   const hits = [];   // [{ at, verb, name, … }]：带位置以便按出现顺序排； quoted = true 的名字原样收（不做断句清理）
   const each = (re, f) => { re.lastIndex = 0; for (let m; (m = re.exec(text));) f(m); };
-  for (const re of C.quoted) each(re, m => hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }));
-  each(C.bare, m => { if (!/^\s*的/.test(m[3])) hits.push({ at: m.index, verb: m[1], name: m[3], quant: !!m[2] }); });   // 「带走的动静」：动词在修饰后面的名词，不是拿到了它
+  for (const re of C.quoted) each(re, m => { if (!INTO.has(m[1])) hits.push({ at: m.index, verb: m[1], name: m[2], quoted: true }); });
+  each(C.bare, m => { if (!/^\s*的/.test(m[3]) && !INTO.has(m[1])) hits.push({ at: m.index, verb: m[1], name: m[3], quant: !!m[2] }); });   // 「带走的动静」：动词在修饰后面的名词，不是拿到了它
   each(C.bareStrict, m => { if (m[2]) hits.push({ at: m.index, verb: m[1], name: m[3], quant: true }); });   // 严格类：必须带量词
   each(C.ba, m => hits.push({ at: m.index, verb: m[2], name: m[1] }));
   each(C.en, m => hits.push({ at: m.index, verb: m[1], name: m[2], en: true }));
@@ -219,7 +223,8 @@ export function scan(s, o = {}) {
     if (out.length >= limit) break;
     const name = h.en ? tidyEn(h.name) : h.quoted || h.known ? clip(h.name, MAX_NAME) : tidy(h.name, h.quant ? 1 : 2);
     if (!isItemName(name) || C.not(name) || seen.has(name) || QUANT_ONLY.test(name)) continue;
-    if (!h.quoted && !h.known && !h.en && !h.quant && !bareOk(name)) continue;   // 无引号 / 无量词 / 不在已知表：只在名字够具体时才收
+    if (!h.quoted && !h.known && !h.en && !h.quant && !bareOk(name)) continue;
+    if (!h.quoted && !h.known && !h.en && PLACE_END.test(name) && name.length <= 3) continue;   // 「嘴里」「手中」：去处   // 无引号 / 无量词 / 不在已知表：只在名字够具体时才收
     if (!h.known && blocked(text, h.at, h.verb, sp)) continue;                    // 否定 / 疑问 / 对话 / 意图（已知名路径在上面查过）
     seen.add(name);
     out.push({ kind: 'loot', id: itemId(name), name, ...(place ? { place } : {}), ...(map ? { map } : {}), floor,
