@@ -2047,3 +2047,14 @@ blocker: none
 open: (1) the record for a landmark whose text lives in maps.json (not in addon_places) shows the card's own text and an empty record body — nothing is lost, but such places have no record-level 说明 yet; PLACE-1a left those 42 entries as they are. (2) `map/estate/vendor/three.module.min.js` is not in the repo; a fresh worktree must copy it from the main checkout before the 3D probes can run.
 cleanup: done (probe servers closed; the vendor copy is gitignored)
 === END ===
+=== RESULT COPY-1 addendum (复核与探针修正) ===
+status: DONE
+items: 1 盘点 docs/copy-inventory.md 已核（828 i18n 键 + 27 包 strings + 约 110 代码发射点）✓ · 2 评级标准 docs/copy-style.md 已核 ✓ · 3 改写已核：更新提示（标题只剩版本号，正文 = build.json notes + 怎么更新，构建编码 / sha 不上屏）、世界书同步提示（新增 / 更新 / 保留，无版本号跳变）、MVU → 聊天变量、一键 / 我们 / ⚠→去掉 ✓ · 4 门控 tools/check_copy.py 正查 0 违规 + 自测过，smoke 两步绿 ✓ · 5 截图已对着现行代码重出四张 after，覆盖旧图 ✓ · 6 词表与规则 docs/copy-style.md；sweep 技能 §5b Words 段已指向它 ✓
+commits: 7a33d780 test(autoupd097): re-align the two pins COPY-1's rewrite broke
+pushed: not pushed (this block lands with the push below)
+tests: node 1611/1612 (0 fail, 1 skipped, 与基线同) | smoke PASS（含「用户文案门控」与自测两步、架构看门狗 PASS；check_arch_doc 仍 10 条仅警告，与基线同） | arch PASS | probes: autoupd097 22/22 PASS（本次修前 20/22，见下）
+deviations: (1) 本次是复核 + 补漏，不重做已落地的 6 项——COPY-1 已由上一会话在 6e6282b3 落地并推送，本次逐条验证后再补两处漏；(2) 四张 after 截图里「更新提示」与「世界书同步」两张在面板关着时拍——按现行设计通知层在地图面板打开时不显示（host-checks 的 showUpdPrompt 推迟 + notice.mjs 的 hold），旧 before 图是面板开着拍的，配对时构图不同，文案本身可读；(3) 未改任何用户文案字符串，只改了探针钉子
+blocker: none
+open: (1) 本次发现并修掉的漏：COPY-1 改了更新 / 跟随提示文案，但 tools/browser/autoupd097.mjs 仍钉着旧串（follow_newer 要 #81、notes_link 要普通提示里的 CHANGELOG 链），改写后一直红；已改成断言新形状（无构建号 / 无 sha、正文有 notes 行、普通提示无链接），实测 22/22 绿。建议：以后改用户文案时，把 tools/browser 里钉该字符串的探针一起列进改写清单。(2) map/estate/main.js 的独立字符串表仍只抽查过。(3) 发版时要在 map/data/build.json 写 1–3 行 notes，否则更新提示只有「怎么更新」一行。
+cleanup: done（探针服务已停；/tmp/copy1_*.mjs 留在 /tmp；工作树在推送后删除）
+=== END ===
