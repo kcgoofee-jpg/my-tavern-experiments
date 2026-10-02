@@ -9,7 +9,7 @@
 const row = (name, id, btnClass, icon, keepsDrawer, fallback) => Object.freeze({ name, id, btnClass, icon, keepsDrawer, fallback });
 export const KERNEL_TABS = Object.freeze([
   row('events', 'ev', 'evtab', 'bell', true, 1), row('characters', 'ch', 'chtab', 'users', true, 2), row('items', 'it', 'ittab', 'parts', true, 3),
-  row('places', 'pl', 'pltab', 'pin', false, 0), row('legend', 'lg', 'lgtab', 'info', false, 0),
+  row('places', 'pl', 'pltab', 'room', false, 0), row('legend', 'lg', 'lgtab', 'info', false, 0),
 ]);
 
 const NAMES = ['events', 'characters', 'items', 'places'];   // the names K-R57 knows; `legend` is not orderable

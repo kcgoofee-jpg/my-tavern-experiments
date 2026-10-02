@@ -147,7 +147,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-body); }
   button { font-family: inherit; }
   #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); }   /* 工具栏再宽也不撑宽整页（E5 r2 无障碍 P1） */
-  .ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }   /* UI-COH-1: one icon size everywhere (docs/ui-coherence.md §2) */
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
   /* ---------- 工具栏（桌面 48 / 手机 44，一行，不横向滚动） ---------- */
@@ -199,7 +199,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #stDot > i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; transition: background var(--dur-2); }
   #stDot:has(#tierState.busy) > i { background: var(--accent); } #stDot:has(#tierState.stuck) > i { background: var(--alert); } #stDot:has(#tierState.stuck) { cursor: pointer; }
   #stDot.flash > i { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 35%, transparent); }
-  #stDot[hidden] { display: none; }
+  #stDot[hidden] { display: none; } #tierState.ok { position: absolute; width: 1px; height: 1px; min-width: 0; min-height: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* UI-COH-1: loaded = the dot only; text lives in tooltip / aria */
   /* ---------- 弹层：图层 ▾（桌面）；设置 = 分组首页 + 子页（§5）：桌面占右栏那一列，手机全屏 ---------- */
   .pop { position: fixed; z-index: var(--zu-pop); top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
     background: var(--glass-2); color: var(--ink); border: 1px solid var(--glass-line); border-radius: var(--r-glass); padding: var(--sp-5) 14px; box-shadow: var(--elev-panel);
@@ -481,7 +481,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     header { gap: var(--sp-3); padding-left: var(--sp-4); }
     #crumbs { font-size: var(--fs-body); flex: 1 1 auto; min-width: 38vw; }   /* U19 / U22: the title keeps >= 38 % and ellipsises inside that */
     #crumbs > a, #crumbs > .sep, #crumbs .ringc { display: none; }
-    #crumbs b { font-weight: 700; }
+    #crumbs b { font-weight: 700; }   /* UI-COH-1: b and .cur flex rules for phones live in crumb-menu's stylesheet (map/app/crumb-menu.mjs) */
     #tierState { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     #stDot { min-width: 44px; min-height: 44px; justify-content: center; padding: 0; }
     #layWrap { display: none !important; }
@@ -489,8 +489,8 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     body:not(.estate) #setBtn, body.shell3d #setBtn { display: none; }   /* HEADER-1: one ⋯ on the phone, the dock's (3D shows the dock too) */
     .btn { height: 36px; } .btn.ic { width: 36px; }
     .seg { height: 40px; }
-    #thumbBtn { display: inline-flex; width: 44px; height: 44px; border-radius: var(--r-glass); background: var(--glass-2); box-shadow: var(--elev-float); }
-    #dock { right: var(--sp-4); }
+    #thumbBtn { display: inline-flex; width: 44px; height: 44px; }
+    #dock { right: var(--sp-4); }   /* UI-COH-1: the phone dock is one glass strip — its strip rules live in control-column.mjs */
     html[data-hand="left"] #dock { right: auto; left: var(--sp-4); align-items: flex-start; }
     #zoom button { width: 44px; height: 44px; }
     #zoom #zAll, #zoom #lblTog { display: none; }   /* U-18: the phone row is + / − / 定位到我 / ⋯; 看全区 and Aa live in ⋯ (settings home) */
@@ -501,7 +501,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
     body.sheetfull #dock { visibility: hidden; }
     /* 层切换：抽屉摘要行左侧的层名胶囊「中层 ▾」，一次点开往上展开（§10.14） */
     #evbar .uis-lead #layers { flex-direction: column-reverse; padding: 0; border: 0; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-    #evbar .uis-lead #layers button { min-width: 0; min-height: 44px; padding: 0 10px; font-size: var(--fs-control); border: 1px solid var(--line); background: var(--surface); }
+    #evbar .uis-lead #layers button { min-width: 0; min-height: 44px; padding: 0 10px; font-size: var(--fs-control); border: 0; background: transparent; border-radius: var(--r-m); }   /* UI-COH-1: bare in the drawer head, like the tabs */
     #evbar .uis-lead #layers:not(.compact) { position: absolute; left: var(--sp-4); bottom: calc(100% - 4px); padding: var(--sp-2); gap: var(--sp-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--sh-3); }
     #layers.compact button:not(.on) { display: none; }
     #layers.compact button.on::after { content: '▾'; margin-left: 6px; font-size: 10px; opacity: .7; }

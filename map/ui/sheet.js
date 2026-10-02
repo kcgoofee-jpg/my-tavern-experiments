@@ -5,7 +5,7 @@
 //   s.label(id, html, short?)（short = { n, fresh }：右栏收起时显示 图标 + 数字角标；fresh > 0 = 红色「新」角标，其余是中性色计数） · s.showTab(id, on) · s.panel(id) · s.button(id) · s.el · s.head · s.lead
 // 三档：收起（柄 + 一行摘要）/ 半开（容器 40%）/ 全开（容器 80%）；高度按 iframe 容器算（dvh 在酒馆 iframe 里不可靠）。
 // 桌面 ≥ 900 或横屏矮屏（高 < 480）：右栏（收起 = 48 px 竖条；半开 360；全开 480，左边缘可拖宽到 min(720, 50vw)，按本机记住）。
-// 等价操作（WCAG 2.5.7）：文字按钮循环 收起 → 半开 → 全开；拖柄、列表到顶继续下拉只是加速方式。
+// 等价操作（WCAG 2.5.7）：收放按钮（纯图标，aria-label 承载文字）循环 收起 → 半开 → 全开；拖柄、列表到顶继续下拉只是加速方式。
 (function () {
   if (window.UISheet) return;
   const CSS = `
@@ -27,14 +27,15 @@ html.rm .uis{transition:none}
 .uis-lead:empty{display:none}
 .uis-tabs{flex:1 1 auto;min-width:0;display:flex;gap:var(--sp-2,4px);overflow-x:auto;scrollbar-width:none}
 .uis-tabs::-webkit-scrollbar{display:none}
-.uis-tabs [role=tab]{flex:none;display:inline-flex;align-items:center;gap:var(--sp-3,6px);min-height:36px;padding:0 var(--sp-5,12px);border:1px solid var(--line,rgba(255,255,255,.12));
+/* UI-COH-1：抽屉是读表面板，页签与开关不再各自带边框盒——面板本身就是容器（docs/ui-coherence.md §1） */
+.uis-tabs [role=tab]{flex:none;display:inline-flex;align-items:center;gap:var(--sp-3,6px);min-height:36px;padding:0 var(--sp-5,12px);border:0;
   border-radius:var(--r-m,8px);background:transparent;color:var(--ink,#d5dde4);font:500 var(--fs-control,13px)/1.2 var(--font-ui,system-ui);cursor:pointer;white-space:nowrap;position:relative}
 .uis-tabs [role=tab][hidden]{display:none}
 .uis-tabs [role=tab]:hover{background:var(--surface-2,rgba(255,255,255,.06))}
 .uis-tabs [role=tab][aria-selected=true]{background:var(--accent-weak,rgba(230,195,106,.14));box-shadow:inset 3px 0 0 var(--accent,#e6c36a);color:var(--ink,#d5dde4);font-weight:700}
 .uis-tabs [role=tab] em{font-style:normal;font-family:var(--font-mono,monospace);opacity:.85}
 .uis-tabs [role=tab]:focus-visible,.uis-tog:focus-visible{outline:2px solid var(--focus,#63b4be);outline-offset:2px}
-.uis-tog{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 var(--sp-4,8px);border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-m,8px);
+.uis-tog{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 var(--sp-4,8px);border:0;border-radius:var(--r-m,8px);
   background:transparent;color:var(--ink,#d5dde4);font:500 var(--fs-control,13px)/1 var(--font-ui,system-ui);cursor:pointer;white-space:nowrap}
 .uis-tog:hover{background:var(--surface-2,rgba(255,255,255,.06))}
 .uis-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 var(--sp-4,8px) var(--sp-4,8px)}
@@ -60,11 +61,13 @@ html.rm .uis{transition:none}
 .uis-tabs [role=tab] .s{display:none}
 /* 右栏收起：图标 + 角标（用户 2026-09-28：不用单字「事 / 人 / 地」）。已看过 = 中性色计数；有新 = 右上角红色实心圆 + 新条数（色觉模式下靠位置 / 形状 / 数字区分） */
 .uis.rail[data-state="peek"] .uis-tabs [role=tab] .s{position:relative;display:grid;place-items:center;width:40px;height:44px}
-.uis-tabs .s .ico{width:22px;height:22px}
+.uis-tabs .s .ico{width:20px;height:20px}
 .uis-tabs .s .bdg{position:absolute;right:0;bottom:1px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;border-radius:9px;background:var(--surface-2,#222a31);border:1px solid var(--line-strong,rgba(255,255,255,.24));color:var(--ink,#d5dde4);font:700 10px/1 var(--font-ui,system-ui,sans-serif)}
 .uis-tabs .s .bdg.new{top:1px;bottom:auto;background:var(--alert,#ff5a5a);border:2px solid var(--surface,#151b20);color:var(--on-alert,#1a0606)}
 .uis-tabs [role=tab][aria-selected=true] .s .bdg:not(.new){background:transparent;border-color:currentColor;color:inherit}
 .uis-tog .a{display:inline-grid;place-items:center}
+/* UI-COH-1（HEADER-1 后遗留）：拖柄与「展开」文字按钮重复——收放按钮改纯图标（箭头），词进 aria-label / tooltip */
+.uis-tog .t{display:none}
 .uis-tog .a .ico{width:20px;height:20px}
 .uis.rail[data-state="peek"] .uis-tog{min-height:40px;width:40px;align-self:center}
 .uis.rail .uis-tog{min-height:40px;min-width:40px}
@@ -114,7 +117,7 @@ html.rm .uis{transition:none}
       const open = state !== 'peek'; tog.setAttribute('aria-expanded', open ? 'true' : 'false');
       tog.querySelector('.t').textContent = open ? T.collapse : T.expand;
       tog.querySelector('.a').innerHTML = window.UIIcon ? UIIcon.svg(m === 'rail' ? (open ? 'chevR' : 'chevL') : (open ? 'chevD' : 'chevU')) : '';
-      tog.title = open ? T.collapse : T.expand; if (m === 'rail') tog.setAttribute('aria-label', tog.title); else tog.removeAttribute('aria-label');
+      tog.title = open ? T.collapse : T.expand; tog.setAttribute('aria-label', tog.title);
       if (m === 'rail') el.style.setProperty('--rail-now', (state === 'full' ? Math.max(railW, 480) : railW) + 'px'); else el.style.removeProperty('--rail-now');
       body.classList.toggle('two', !!o.twoColumns);
       report();

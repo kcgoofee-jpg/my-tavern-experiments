@@ -12,15 +12,17 @@
 #c3 .c3-top{position:absolute;top:calc(var(--sp-4,8px) + env(safe-area-inset-top));left:var(--sp-4,8px);right:calc(var(--rail-w-now,0px) + var(--sp-4,8px));display:flex;flex-direction:column;align-items:center;gap:var(--sp-3,6px)}
 #c3 .c3-row{display:flex;align-items:center;gap:var(--sp-4,8px);max-width:100%}
 #c3 .c3-top>*,#c3 .c3-row>*{pointer-events:auto}
-#c3 .c3-title{align-self:flex-start;display:flex;align-items:center;gap:var(--sp-4,8px);min-height:44px;padding:0 var(--sp-5,12px);border-radius:var(--r-l,12px);background:var(--surface-glass,rgba(21,27,32,.9));border:1px solid var(--line,rgba(255,255,255,.12));font:700 var(--fs-body,14px)/1.2 var(--font-ui,system-ui);color:var(--ink,#d5dde4);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#c3 .c3-title{align-self:flex-start;display:flex;align-items:center;gap:var(--sp-4,8px);min-height:44px;padding:0 var(--sp-5,12px);border-radius:var(--r-glass,14px);background:var(--glass-2,var(--surface,#151b20));border:1px solid var(--glass-line,rgba(255,255,255,.12));font:700 var(--fs-body,14px)/1.2 var(--font-ui,system-ui);color:var(--ink,#d5dde4);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #c3 .c3-title:empty{display:none}
-#c3 .c3-seg,#c3 .c3-sub{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-m,8px);background:var(--surface,#151b20);box-shadow:var(--sh-2,0 6px 20px rgba(0,0,0,.3));max-width:100%;overflow-x:auto;scrollbar-width:none}
+/* UI-COH-1: the 3D strips use the same glass, radius and selection grammar as the 2D chrome (docs/ui-coherence.md §1 / §4) */
+#c3 .c3-seg,#c3 .c3-sub{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--glass-line,rgba(255,255,255,.12));border-radius:var(--r-glass,14px);background:var(--glass-1,var(--surface,#151b20));box-shadow:var(--elev-float,var(--sh-2,0 6px 20px rgba(0,0,0,.3)));max-width:100%;overflow-x:auto;scrollbar-width:none}
 #c3 .c3-sub:empty,#c3 .c3-sub[hidden]{display:none}
-#c3 .c3-seg button,#c3 .c3-sub button{flex:none;min-height:40px;min-width:48px;padding:0 var(--sp-5,12px);border:0;border-radius:var(--r-s,4px);background:transparent;color:var(--ink,#d5dde4);font:500 var(--fs-control,13px)/1 var(--font-ui,system-ui);cursor:pointer}
+#c3 .c3-seg button,#c3 .c3-sub button{flex:none;min-height:40px;min-width:48px;padding:0 var(--sp-5,12px);border:0;border-radius:var(--r-m,8px);background:transparent;color:var(--ink,#d5dde4);font:500 var(--fs-control,13px)/1 var(--font-ui,system-ui);cursor:pointer}
 #c3 .c3-seg button:hover,#c3 .c3-sub button:hover{background:var(--surface-2,rgba(255,255,255,.06))}
-#c3 .c3-seg button[aria-checked=true],#c3 .c3-sub button.on,#c3 .c3-sub button[aria-pressed=true]{background:var(--accent,#e6c36a);color:var(--on-accent,#1a1406);font-weight:700}
+#c3 .c3-seg button[aria-checked=true],#c3 .c3-sub button.on{background:var(--accent-weak,rgba(230,195,106,.16));color:var(--ink,#d5dde4);font-weight:700;box-shadow:inset 3px 0 0 var(--accent,#e6c36a)}
+#c3 .c3-sub button[aria-pressed=true]{background:var(--accent-weak,rgba(230,195,106,.16));color:var(--ink,#d5dde4);font-weight:700;box-shadow:inset 3px 0 0 var(--accent,#e6c36a)}
 #c3 .c3-col{position:absolute;right:calc(var(--rail-w-now,0px) + var(--sp-5,12px));bottom:calc(var(--sheet-h,0px) + var(--sp-5,12px));display:flex;flex-direction:column;gap:var(--sp-1,2px);padding:var(--sp-2,4px);
-  background:var(--surface,#151b20);border:1px solid var(--line,rgba(255,255,255,.12));border-radius:var(--r-l,12px);box-shadow:var(--sh-2,0 6px 20px rgba(0,0,0,.3));pointer-events:auto;transition:bottom var(--dur-2,200ms) var(--ease-out,ease),right var(--dur-2,200ms) var(--ease-out,ease)}
+  background:var(--glass-1,var(--surface,#151b20));border:1px solid var(--glass-line,rgba(255,255,255,.12));border-radius:var(--r-glass,14px);box-shadow:var(--elev-float,var(--sh-2,0 6px 20px rgba(0,0,0,.3)));pointer-events:auto;transition:bottom var(--dur-2,200ms) var(--ease-out,ease),right var(--dur-2,200ms) var(--ease-out,ease)}
 #c3 .c3-col button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:var(--r-m,8px);background:transparent;color:var(--ink,#d5dde4);font:600 15px/1 var(--font-ui,system-ui);cursor:pointer}
 #c3 .c3-col button:hover{background:var(--surface-2,rgba(255,255,255,.06));color:var(--accent,#e6c36a)}
 #c3 .c3-col button[aria-pressed=false]{color:var(--muted,#8591a0)}

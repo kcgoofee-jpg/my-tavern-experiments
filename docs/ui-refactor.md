@@ -260,6 +260,13 @@ R0 additions (P5-6, P5-9, P5-10, P6-14):
   (level strip, drawer tabs, settings group, segmented controls), not a filled accent pill.
 - **Icons:** 1.5 px line, 20 px view box, 24 px container, round caps; text buttons and icon buttons are not mixed in
   one control group.
+- **One coherent chrome (UI-COH-1, D46):** the container language, the icon vocabulary table and the badge rule live in
+  `docs/ui-coherence.md` (canonical); in short: control groups are one continuous glass strip and their icon buttons
+  carry no border boxes of their own (the top bar's text buttons and lone buttons keep the 1 px outline); one icon set
+  (`ui/icons.js`), one size (20 px; 14 px carets inside text excepted), one icon = one meaning (locate = the
+  crosshair `fit`, place info = the building `room`, never the map pin); one badge class (`.bdg`, neutral; red only for
+  alerts); one selection grammar (§2.5 above, also in the 3D view segments); the phone dock (≤ 640 px) is a single
+  strip holding ⋯, the 3D view button, the nudge button and zoom.
 
 ### 2.6 Map labels
 

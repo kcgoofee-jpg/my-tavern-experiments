@@ -29,7 +29,7 @@ const CSS = `
 #crumbMenu .here{flex:none;width:8px;height:8px;box-sizing:border-box;border-radius:50%;border:1.5px solid var(--muted)}
 #crumbMenu .n{flex:none;min-width:16px;height:16px;padding:0 5px;box-sizing:border-box;border-radius:var(--r-pill);background:var(--alert);color:var(--on-alert);font:700 var(--fs-micro)/16px var(--font-mono);text-align:center}
 #crumbMenu hr{margin:var(--sp-2) var(--sp-3);border:0;border-top:1px solid var(--line)}
-@media (max-width:640px){#crumbs .cur > span{min-width:0;overflow:hidden;text-overflow:ellipsis}#crumbMenu{left:0!important;right:0;top:var(--hdr,44px)!important;width:auto;max-width:none;border-radius:0;border-width:0 0 1px}}`;
+@media (max-width:640px){#crumbs b{flex:1 1 auto;display:flex;min-width:0}#crumbs .cur{flex:0 1 auto;min-width:0}#crumbs .cur > span{min-width:0;overflow:hidden;text-overflow:ellipsis}#crumbMenu{left:0!important;right:0;top:var(--hdr,44px)!important;width:auto;max-width:none;border-radius:0;border-width:0 0 1px}}`;
 let menu = null, btn = null;
 const T = (k, zh, v) => uiTextOr(k, zh, v);
 
@@ -63,7 +63,7 @@ function item(id, o) {
 function fill() {
   const m = model(); build();
   menu.setAttribute('aria-label', T('crumb.menu', '切换层'));
-  menu.innerHTML = (m.levels.length > 1 ? m.levels.map(l => item(l.id, l)).join('') : '') + (m.levels.length > 1 && m.scenes.length ? '<hr role="separator">' : '') + m.scenes.map(s => item(s.id, { scene: true })).join('');
+  menu.innerHTML = (m.levels.length > 1 ? m.levels.map(l => item(l.id, l)).join('') : '') + (m.levels.length && m.scenes.length ? '<hr role="separator">' : '') + m.scenes.map(s => item(s.id, { scene: true })).join('');
 }
 function place() { if (!btn) return; const r = btn.getBoundingClientRect(); menu.style.left = Math.max(8, Math.min(r.left, innerWidth - menu.offsetWidth - 8)) + 'px'; }
 export const isOpen = () => !!menu && !menu.hidden;

@@ -67,7 +67,7 @@ test('cardSheet(false) falls back to ev when it is visible, else ch, else nothin
 
 test('KERNEL_TABS: the five rows of the design, frozen', () => {
   assert.deepEqual(KERNEL_TABS.map(t => [t.name, t.id, t.btnClass, t.icon, t.keepsDrawer, t.fallback]),
-    [['events', 'ev', 'evtab', 'bell', true, 1], ['characters', 'ch', 'chtab', 'users', true, 2], ['items', 'it', 'ittab', 'parts', true, 3], ['places', 'pl', 'pltab', 'pin', false, 0], ['legend', 'lg', 'lgtab', 'info', false, 0]]);
+    [['events', 'ev', 'evtab', 'bell', true, 1], ['characters', 'ch', 'chtab', 'users', true, 2], ['items', 'it', 'ittab', 'parts', true, 3], ['places', 'pl', 'pltab', 'room', false, 0], ['legend', 'lg', 'lgtab', 'info', false, 0]]);
   assert.ok(Object.isFrozen(KERNEL_TABS) && KERNEL_TABS.every(Object.isFrozen));
 });
 

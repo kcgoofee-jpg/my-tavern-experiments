@@ -25,7 +25,7 @@ const CSS = `
 body.shell3d #v3seg{display:inline-flex;gap:var(--sp-1);padding:var(--sp-1);border-radius:var(--r-m)}
 #v3seg button,#v3menu button{all:unset;box-sizing:border-box;cursor:pointer;min-height:36px;padding:0 var(--sp-5);border-radius:var(--r-s);font:500 var(--fs-control)/1 var(--font-ui);display:inline-flex;align-items:center;color:var(--ink)}
 #v3seg button:hover,#v3menu button:hover{background:var(--surface-2)}
-#v3seg button[aria-checked=true],#v3menu button[aria-checked=true]{background:var(--accent);color:var(--on-accent);font-weight:700}
+#v3seg button[aria-checked=true],#v3menu button[aria-checked=true]{background:var(--accent-weak);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}   /* UI-COH-1: the shared selection grammar (docs/ui-coherence.md §4) */
 #v3seg button:focus-visible,#v3menu button:focus-visible{box-shadow:var(--focus-ring)}
 body.shell3d #dock{display:flex}
 body.shell3d #evbar:not([hidden]){display:flex!important}

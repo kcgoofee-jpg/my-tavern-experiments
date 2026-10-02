@@ -101,14 +101,14 @@ function retryTiles() {   // 失败的瓦片 OSD 不会再请求（resetItems �
   tileActs(false); const id = currentMapId, v = osdViewer.viewport.getBounds(); if (!id) return;
   setCurrentMapId(null); setUserMoved(true); go(id).then(() => osdViewer.addOnceHandler('open', () => osdViewer.viewport.fitBounds(v, true)));
 }
-// 「✓ 已加载」：只在加载遮罩消失之后出现（E5 V13），--ok 色 1.5 秒后淡成 --muted，再 1.5 秒收起
+// 「已加载」：只在加载遮罩消失之后出现（E5 V13）。UI-COH-1：文字不再出现在顶栏（#tierState.ok 隐藏、只有圆点），
+// 它只活在 tooltip / aria 里，1.5 秒后连同类名一起清掉
 let tsT2 = 0;
 function tsOk(n = 0) {
   const ts = $('#tierState'); clearTimeout(tsT2);
   if (!$('#loading').classList.contains('done') && n < 40) { ts.textContent = ''; ts.className = ''; tsT2 = setTimeout(() => tsOk(n + 1), 400); return; }
   ts.textContent = uiText('loaded'); ts.className = 'ok';
-  tsT2 = setTimeout(() => { if (ts.className !== 'ok') return; ts.className = '';
-    tsT2 = setTimeout(() => { if (ts.textContent === uiText('loaded') && !ts.className) ts.textContent = ''; }, 1500); }, 1500);
+  tsT2 = setTimeout(() => { if (ts.className === 'ok') { ts.className = ''; ts.textContent = ''; } }, 1500);
 }
 // ---------------- 清晰度上限 ----------------
 // 不能改 source.maxLevel（OSD 会按它重算每层比例，请求不存在的瓦片），所以包一层选层函数（OSD 5.0.1 内部方法，已随仓库固定版本）。

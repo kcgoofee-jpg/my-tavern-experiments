@@ -8,8 +8,15 @@ import { narrowNow } from './subpage3d-host.mjs';
 import { showSet } from './settings.mjs';
 import { onBuilt } from './settings-pages.mjs';
 import { parentMap } from './nodes-runtime.mjs';
+// UI-COH-1（docs/ui-coherence.md §1）：手机（≤ 640 px）整条控制列 = 一条玻璃条，⋯ / 3D 视图 / 缩放 / 提醒 AI 都是条内的裸按钮；
+// 毛玻璃的关闭条件与 .g1 相同（低内存 / 3D / 触屏 / 减弱透明）。
+const DOCK_CSS = '@media (max-width:640px){#dock{gap:var(--sp-1);padding:var(--sp-2);border-radius:var(--r-glass);background:var(--glass-1);border:1px solid var(--glass-line);box-shadow:var(--elev-float);-webkit-backdrop-filter:blur(var(--glass-blur-1));backdrop-filter:blur(var(--glass-blur-1))}' +
+  '#dock>*,#dock .btn{background:transparent;border:0;box-shadow:none;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}' +
+  'html.lowmem #dock,html.noblur #dock,html.view3d #dock,html.rm #dock{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}' +
+  '@media (pointer:coarse),(prefers-reduced-transparency:reduce){#dock{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}}';
 // 控制列 #dock：手机 = ⋯（设置首页，含上一级 / 关闭地图 / 切层）+ 缩放；桌面 = 层切换 + 缩放 + 标注。位置跟着抽屉（--sheet-h）/ 右栏（--rail-w-now）
 export function makeDock() {
+  if (!document.getElementById('dockCss')) { const st = document.createElement('style'); st.id = 'dockCss'; st.textContent = DOCK_CSS; document.head.append(st); }
   const dock = document.createElement('div'), tb = document.createElement('button'); dock.id = 'dock';
   tb.type = 'button'; tb.id = 'thumbBtn'; tb.className = 'btn ic'; tb.dataset.i18nAria = tb.dataset.i18nTitle = 'more';
   tb.setAttribute('aria-controls', 'setPop'); tb.setAttribute('aria-expanded', 'false'); tb.innerHTML = iconSvg('more');
