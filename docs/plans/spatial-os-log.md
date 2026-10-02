@@ -1712,3 +1712,14 @@ cleanup: done
 counts: 在用 60 · 半成品 8 · 没用 6 · 待实测 4 (total 78); recommend 保留 61 / 默认关 11 / 暂停 6 / 可删 0
 coverage: rows=78 keys=96 layers=21 problems=0; ids unique: true
 === END ===
+=== RESULT DIGEST-1 ===
+status: DONE
+items: 1 read the five sheets (97 ids) + feature inventory ✓ · 2 docs/decision-digest.md (zh, 3-line intro, 12 items / 20 ids, empty 保留 / 改 column) ✓ · 3 closing line with the other 77 ids ✓ · 4 D28 standing rule in docs/todo.md §3 + 「新的默认决定」 list section in the digest ✓ · todo DIGEST-1 struck ✓
+commits: 36197e73 docs(digest): DIGEST-1 zh digest of the default-decided review items (D28)
+         (this commit) docs(log): RESULT DIGEST-1
+pushed: yes (head #N in the chat report)
+tests: node 1490/1491 (1 skipped) | smoke PASS | arch PASS | probes: none (docs only)
+deviations: 12 items instead of ~10 (several group 2–3 ids that are one decision for the user, 20 ids in all); the P sheet was bulk-confirmed 2026-10-01 but is included because that confirmation came without a plain-words digest; no decision changed
+open: the user fills 保留 / 改 for the 12 items
+cleanup: done
+=== END ===
