@@ -734,3 +734,7 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-03,tc_low_obl_dark,draft,512,8,0.1,0,darwin,no_output,0.1,0.00
 2026-10-03,tc_low_obl_dark,draft,512,8,0.1,0,darwin,no_output,0.1,0.00
 2026-10-03,tc_low_obl_dark,draft,512,8,0.1,0,darwin,no_output,0.1,0.00
+2026-10-03,tc_low_obl_dayshift,final,7920,128,11.7,0,darwin,ok,0,0
+2026-10-03,tc_low_obl_nightshift,final,7920,128,12.0,0,darwin,ok,0,0
+2026-10-03,tc_low_obl_dark,draft,512,8,0.2,0,darwin,no_output,0.2,0.00
+2026-10-03,tc_low_obl_dark,draft,512,8,0.2,0,darwin,no_output,0.2,0.00
