@@ -7,15 +7,20 @@ import { altOn } from './app/map-switch.mjs';
 export const NIGHT_KEY = 'edenMapNight';
 export function createTint({ getClock }) {
   const nightOn = () => { try { return LocalStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
-  // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。夜档保留旧的 nighttint 类
+  // v0.9.6（B11 / C1）：按时段分四档（晨 / 日 / 暮 / 夜）；颜色只参考 docs/drafts/upper_tod_*.jpg 的整体色调，不另出图。
   // 有效档位（关掉开关 / 读不到世界时间时为 ''）也是多时段底图（maps.json periods，app/map-switch.mjs）的依据；已配底图的档位（昼 / 夜）不再叠色调，免得双重变暗
   // U-FIX-4：时钟胶囊里选了时段（clock.view）= 用户明确要看这一档，开关关着也照用
+  // FOG-1（D40 / A7）：合成模式（alt.composite）各层都取自己的时段底图，与「这档有自己的底图」同样不再叠色 —— 旧式 alt 备用底图
+  //（没有 composite、没有时段版本）照旧叠色；完全没有时段底图的图（世界图 / 各地点图）改挂 data-gradetod，由 A7 的整体调色接管。
   function todNow() { const clock = getClock(); return clock?.view || (nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''); }
   function night() { const clock = getClock(), m = document.body.dataset.map, tier = viewField(m, 'x-tint') === 'period', on = (nightOn() || !!clock?.view) && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
-    const swapped = !altOn(m) && pickPeriod(mapRegistry?.maps?.[m]?.periods, tod, clock?.bands).exact;   // 这档有自己的底图 → 不再叠色调；备用底图（「显示下方城市」）压过时段底图且没有时段版本 → 照常叠本档色调（免得双重上色）；用的是邻档的底图时仍叠本档色调
-    document.body.classList.toggle('nighttint', tod === 'night' && !swapped);
+    const pick = pickPeriod(mapRegistry?.maps?.[m]?.periods, tod, clock?.bands);
+    const legacyAlt = altOn(m) && !!mapRegistry?.maps?.[m]?.alt?.base && !mapRegistry?.maps?.[m]?.alt?.composite;
+    const swapped = !legacyAlt && pick.exact;
+    document.body.classList.toggle('nighttint', tod === 'night' && !swapped && !!pick.src);
     if (swapped) document.body.dataset.baseTod = tod; else delete document.body.dataset.baseTod;   // 底图本身就是这一档：CSS 不再叠这一档的色调
+    if (pick.src === null && tod) document.body.dataset.gradetod = tod; else delete document.body.dataset.gradetod;   // A7：没有时段底图的图按时段整体调色
     if (tod && tod !== 'day') document.body.dataset.tod = tod; else delete document.body.dataset.tod; }
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
   document.addEventListener('change', e => { if (e.target?.id === 'tgAltBox') setTimeout(night, 0); });   // 备用底图开 / 关：色调判定跟着变

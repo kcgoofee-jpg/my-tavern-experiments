@@ -18,6 +18,7 @@ import { plugins } from './plugins.mjs';
 import { busOn } from './bus.mjs';
 import { validate2, withDefaults } from '../core/pack-v2.mjs';
 import { swapPack } from './pack-live.mjs';
+import { updateInsets } from './hires-inset-tiles.mjs';
 import { syncGlassClock } from './theme.mjs';
 import { visibilityGuard } from './visibility.mjs';
 // 嵌入酒馆（悬浮按钮面板）的消息接口：
@@ -84,7 +85,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:inv' && typeof plugins.StashView !== 'undefined') plugins.StashView.fromHost(e.data);   // 空间化背包（Part 5-1）：地点卡「存放」行
     if (e.data?.type === 'eden-map:media' && typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.fromHost(e.data);   // K-R106: the pack's media source (a card's picture table + the chat's tags)
     if (e.data?.type === 'eden-map:visible') visibilityGuard.set('panel', e.data.on === false);
-    if (e.data?.type === 'eden-map:clock') { plugins.CustomNamesView.setClock(e.data); applyPeriod(); syncGlassClock(e.data); }   // 世界时间 → 夜色 / 多时段底图
+    if (e.data?.type === 'eden-map:clock') { plugins.CustomNamesView.setClock(e.data); applyPeriod(); updateInsets(); syncGlassClock(e.data); }   // 世界时间 → 夜色 / 多时段底图 / 插图只在白天（FOG-1 A1）
     if (e.data?.type === 'eden-map:outfit') plugins.CustomNamesView.setOutfit(e.data);   // 主角着装 → 本人地点卡
     if (e.data?.type === 'eden-map:fly') plugins.CustomNamesView.flyTo(e.data.target);   // v0.9.5 EdenMap.flyTo(target)
     if (e.data?.type === 'eden-map:varmap' && typeof plugins.StatPathMappingView !== 'undefined') plugins.StatPathMappingView.set(e.data);   // v0.9.5 变量映射（换卡兼容）

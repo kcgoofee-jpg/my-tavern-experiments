@@ -36,7 +36,7 @@ export async function slowWarmAlt() {
   if (leanBg()) return;   // 省流（含拿不到网络信息的触屏）：后台不拉另一版底图
   slowStop = false;
   for (const m of Object.values(mapRegistry.maps)) {
-    if (!m.alt?.base || m.status === 'planned') continue;
+    if (!m.alt?.base || m.alt?.composite || m.status === 'planned') continue;   // composite（FOG-1 D40）不再整张换备用底图，不预热它
     try {
       const x = await getText(m.alt.base);
       const T = +x.match(/TileSize="(\d+)"/)[1], f = x.match(/Format="(\w+)"/)[1];

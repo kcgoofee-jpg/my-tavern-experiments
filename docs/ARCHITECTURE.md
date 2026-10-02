@@ -221,6 +221,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `pack-edit.mjs` | Edit mode model (K-R100): `createEditor` with its operations (move, reparent, alias, new place, start, pictures, base map, discard) and the draft's storage (text in LocalStore, picture bytes in the gallery IndexedDB under `edit:<pack id>`). |
 | `pack-live.mjs` | Shows a schema-2 pack without a reload (K-R95, K-R100): project, swap the registry and the node runtime, redraw the open map; the edit draft is installed as a filter. |
 | `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
+| `period-now.mjs` | The world's effective period (`''` when the period system is off) — the one reader shared by the base-image switch, the insets, the feathered edge and the outskirts ring. Side-effect free on purpose: a self-installing module (top-level `setInterval`) may not be imported from app core, or `node --test` never exits. |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
 | `profile-live.mjs` | Makes an applied profile take effect without a reload: one effect per preference key, host prefs, then refreshes the open settings page. |
@@ -249,6 +250,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `tavernhelper-settings.mjs` | Settings for TavernHelper features: worldbook add-on sync, state injection, macros, injection depth. |
 | `text-lookup.mjs` | `uiTextOr`: UI text from the dictionary when it has the key, else the fallback with variables filled in. |
 | `theme.mjs` | Per-view theme from the pack (`ui.theme.views`, K-R70): one `<style id="packTheme">`, `body[data-glow]` for the view that defines a glow. |
+| `tier-fog.mjs` | Self-installing layer for a city tier (FOG-1): the feathered edge of the base image (a generated mask that follows the item rect, image only — markers stay legible), the period haze of the composite, and the D40 three-layer composite (the map's own period base, an islands mask, the tier below) driven by `maps.json` `alt.composite`. No card terms: the plan is data. |
 | `topbar.mjs` | Top bar layout, background warm-up, version code. |
 | `traffic-view.mjs` | Viewer rendering of light streams on the `fx` slot canvas. |
 | `transit-env.mjs` | The viewer's router environment (K-R109, K-R112): the transit graph of the open pack, where each station and place is drawn (tree answer, marker anchor from the points files through the JSON cache), `endOf`, `planBetween`, and the polyline of a trip along the network. |

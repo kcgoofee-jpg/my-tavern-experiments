@@ -376,7 +376,15 @@
       "alt": {
         "label": "显示下方城市",
         "label_en": "Show city below",
-        "base": "art/tc_upper_city.dzi"
+        "base": "art/tc_upper_city.dzi",
+        "composite": {
+          "under": "tc_mid",
+          "mask": "data/tc_upper_islands_mask.png",
+          "offset": [
+            0,
+            0
+          ]
+        }
       },
       "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容",
       "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content",
@@ -658,7 +666,7 @@
         "sub_en": "Steel & Neon"
       },
       "kind": "points",
-      "base": "art/tc_mid.dzi",
+      "base": "art/tc_mid_day.dzi",
       "periods": {
         "dawn": "art/tc_mid_dawn.dzi",
         "day": "art/tc_mid_day.dzi",
@@ -1187,7 +1195,7 @@
         "alt_en": "Ground to −200 m"
       },
       "kind": "points",
-      "base": "art/tc_low.dzi",
+      "base": "art/tc_low_day.dzi",
       "periods": {
         "dawn": "art/tc_low_dawn.dzi",
         "day": "art/tc_low_day.dzi",

@@ -3,8 +3,9 @@
 // ---------------- 云（方案 B，v0.9.2；原型 map/_proto/clouds.html，说明 docs/clouds.md §6）----------------
 // 自成一块，挂点只有两处：① 经 setGo 包一层 go()（主城层与层之间的切层转场）；② 监听 body[data-map] 与「显示下方城市」开关（漂移云显隐）。
 // (a) 漂移：只在上层、云开（没勾「显示下方城市」）时；远近两层，拖动视差 0.85 / 1.2。精灵 art/clouds/puff1–6.png 与瓦片同一基址（jsDelivr 线路也通），用到才加载。
-// (b) 切层：9 条斜带 × 3 团从两头扫入 → 全白里换层 → 往两侧散开；转场中点一下跳过。
-// 减少动态效果：不漂移、直接换层。省流（lean()）：不漂移、零精灵请求，切层用白幕淡入淡出。
+//     精灵按时段调色（FOG-1 item 6 / A3）：夜里压成深蓝灰团，不再是亮斑；颜色走 --puff-* 令牌，跟 body[data-tod]。
+// (b) 切层（v0.9.6 起）：短的升 / 降转场，旧画面缩放淡出、新画面轻微缩放淡入 —— 没有全白扫屏（旧方案已废），夜里自然走暗。
+// 减少动态效果：不漂移，雾团静布画面（仍按时段调色，FOG-1 item 7）；切层直接换。省流（lean()）：不漂移、零精灵请求，切层直接换。
 import { mapRegistry, currentMapId, depthData, osdViewer } from './state.mjs';
 import { $ } from './dom-helpers.mjs';
 import { narrow } from './viewport-mode.mjs';
@@ -20,11 +21,16 @@ import { visibilityGuard } from './visibility.mjs';
   const RMq = matchMedia('(prefers-reduced-motion: reduce)'), RM = () => RMq.matches;
   const ANG = 35 * Math.PI / 180, UX = Math.cos(ANG), UY = -Math.sin(ANG), PX = -UY, PY = UX, AR = 440 / 800;
   const SPR = k => artUrl(`art/clouds/puff${k % 6 + 1}.png`);   // N14 a：美术按稳定的 @<art_sha> 取
+  // 精灵按时段调色（--puff-* 令牌；data-tod 只在时段系统开时存在 → 关掉时段 = 白天 = 不调色）
+  const PUFF_CSS = '.cl-drift img{filter:var(--puff-day)}body[data-tod=dawn] .cl-drift img{filter:var(--puff-dawn)}'
+    + 'body[data-tod=dusk] .cl-drift img{filter:var(--puff-dusk)}body[data-tod=night] .cl-drift img{filter:var(--puff-night)}';
+  let cssDone = false;
+  const injectCss = () => { if (cssDone) return; cssDone = true; const s = document.createElement('style'); s.id = 'puffTintCss'; s.textContent = PUFF_CSS; document.head.appendChild(s); };
   // 默认视野下约 5–8 团看得见（原型太稀）：远层小、慢、淡，近层大、快、稍浓
   const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const isTC = id => { const m = mapRegistry?.maps?.[id]; return !!m && m.kind === 'points' && !!m.group; };
-  const want = () => !!viewField(currentMapId, 'x-clouds') && !altOn(currentMapId) && !RM() && !lean();
+  const want = () => !!viewField(currentMapId, 'x-clouds') && !altOn(currentMapId) && !lean();
   let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
   const size = () => { const c = osdViewer.container; return [c.clientWidth, c.clientHeight]; };
   function mount() {
@@ -35,9 +41,11 @@ import { visibilityGuard } from './visibility.mjs';
     dc.after(box); return true;                                  // 底图画布之上、标记叠加层之下
   }
   function build() {
+    injectCss();
     anims.forEach(a => a.cancel()); anims = []; for (const id in lay) lay[id].replaceChildren();
     const [vw, vh] = size(), D = Math.hypot(vw, vh); let s = 0;
     const nk = vw > vh ? .8 : 1;                                  // 横屏同样团数会显得挤：少 20 %
+    const still = RM();                                           // 减少动态：雾团静布（不漂移，仍按时段调色）
     for (const [id, L] of Object.entries(LAYERS)) for (let k = 0, n = Math.round(L.n * nk); k < n; k++) {
       const el = new Image(); el.alt = ''; el.decoding = 'async'; el.src = SPR(s++);
       const w = D * rnd(...L.size), h = w * AR; el.style.width = w + 'px';
@@ -45,6 +53,7 @@ import { visibilityGuard } from './visibility.mjs';
       const cx = vw / 2 + PX * off - w / 2, cy = vh / 2 + PY * off - h / 2, T = D * .6 + w * .5;
       const op = rnd(...L.op), dur = rnd(...L.dur) * 1000;
       lay[id].appendChild(el);
+      if (still) { el.style.transform = `translate3d(${cx - UX * T * .3}px,${cy - UY * T * .3}px,0)`; el.style.setProperty('--puff-op', String(op * .8)); continue; }
       anims.push(el.animate([
         { transform: `translate3d(${cx - UX * T}px,${cy - UY * T}px,0)`, opacity: 0 },
         { opacity: op, offset: .12 }, { opacity: op, offset: .88 },

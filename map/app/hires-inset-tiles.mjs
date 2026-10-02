@@ -2,6 +2,7 @@
 // 放大到插图覆盖的小范围时叠一张单独渲染的高分辨率瓦片图；缩出去或还没放大到那儿就把它摘掉，省流量。
 // 通用实现：任何图只要在 maps.json 里加一条 insets，就自动生效（新月湾、别的地方以后同样加法）。
 import { mapRegistry, aspect, currentMapId, osdViewer } from './state.mjs';
+import { periodNow } from './period-now.mjs';
 // 插图启用阈值：底图「屏幕像素 / 源像素」到 ≈1 就换成插图（早于 locate.mjs 里 1.5 的硬顶，衔接自然，不会先糊一下再变清楚）
 export const ACTIVATE_PX = 1;
 const items = new Map();   // inset.id -> { it?: OpenSeadragon.TiledImage, loading?: bool }
@@ -13,8 +14,11 @@ export function basePxRatio() {
   return cs.x * z / it.getContentSize().x;
 }
 const centerIn = b => { const c = osdViewer.viewport.getCenter(true); return c.x >= b[0] && c.x <= b[2] && c.y / aspect >= b[1] && c.y / aspect <= b[3]; };
+// A1（FOG-1）：插图目前只有白天一版（per-period 插图见 SETTING-1 批次 1）—— 时段不是白天就先不叠，免得zoom进去夜里跳回白天
+export const insetAllowed = () => { const p = periodNow(); return !p || p === 'day'; };
 // 当前视野命中的插图（供 locate.mjs 的清晰度上限、到顶提示复用）
 export function activeInset() {
+  if (!insetAllowed()) return null;
   const m = mapRegistry.maps[currentMapId]; if (!m || m.kind === 'estate') return null;
   for (const ins of insetsOf(m)) if (centerIn(ins.bounds)) return ins;
   return null;
@@ -33,7 +37,7 @@ export function resetInsets() { items.clear(); }
 export function updateInsets() {
   if (!osdViewer?.world.getItemCount()) return;
   const m = mapRegistry.maps[currentMapId], want = new Set();
-  if (m && m.kind !== 'estate') { const ratio = basePxRatio();
+  if (m && m.kind !== 'estate' && insetAllowed()) { const ratio = basePxRatio();
     for (const ins of insetsOf(m)) if (ratio >= ACTIVATE_PX && centerIn(ins.bounds)) { want.add(ins.id); ensure(ins); } }
   for (const id of [...items.keys()]) if (!want.has(id)) drop(id);
 }

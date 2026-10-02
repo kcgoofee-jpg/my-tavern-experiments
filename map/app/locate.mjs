@@ -22,13 +22,15 @@ const viewNorm = (m, key) => { const v = m.view; return v?.[key] && v.extent_m?.
 // 放大到某个地方（主场景等）另外渲了一张局部高清插图（maps.json insets[]）时，这条像素上限改按插图自己的分辨率算，
 // 而不是按底图——插图分辨率够高，允许再多放大一些（目标：插图最深处约 1 源像素 ≈ 1 屏幕像素）；插图本身见 app/hires-inset-tiles.mjs。
 export const MAX_PX = 1.5, INSET_MAX_PX = 1, RING_W = 10;
+// v0.9.7（FOG-1 item 5）：分层的最远一档 = 城区约占半个视口宽 —— 再缩出去就直接交接回世界图（交叉淡入），不再留下雾海里的一小块城
+export const TIER_MIN_ZOOM = .5;
 export function applyZoomLimit() { if (mapRegistry.maps[currentMapId]?.kind === 'estate') return; const it = osdViewer.world.getItemAt(0); if (!it) return;
   const mw = viewNorm(mapRegistry.maps[currentMapId], 'min_width_m') || 0, cw = osdViewer.container.clientWidth;
   const ins = activeInset();
   // 插图覆盖的范围只占底图的一小块（bounds 宽度），像素上限要按「那一小块在屏幕上能占多宽」折算，不能直接拿插图像素宽比整张底图宽
   const pw = ins ? cw / (ins.res_px[0] / (ins.bounds[2] - ins.bounds[0]) * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
-  // v0.9.6「主城周边」：主城各层最远能缩到 RING_W 倍图宽（约 30 km），城边拖得出去（visibilityRatio 放宽），不再撞到硬边
-  const ring = window.ScaleHandoffApi?.isTier(currentMapId); osdViewer.viewport.minZoomLevel = ring ? 1 / RING_W : null; osdViewer.viewport.visibilityRatio = ring ? .15 : 1;
+  // v0.9.6「主城周边」：主城各层拖得出去（visibilityRatio 放宽），不再撞到硬边；缩放下限见 TIER_MIN_ZOOM（FOG-1 item 5）
+  const ring = window.ScaleHandoffApi?.isTier(currentMapId); osdViewer.viewport.minZoomLevel = ring ? TIER_MIN_ZOOM : null; osdViewer.viewport.visibilityRatio = ring ? .15 : 1;
   osdViewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); osdViewer.viewport.applyConstraints();
   zoomHint(ins);
 }

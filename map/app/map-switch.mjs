@@ -20,7 +20,7 @@ export const altOn = id => { try { return LocalStore.get(ALT_KEY + id) === '1'; 
 // 时钟消息带 bands）。地图没有该档位的底图时取顺序上最近的一档（core/period-pick.mjs；平手取不暗的、再取靠前的），一档都没有 = base
 const periodOf = id => { const c = plugins.CustomNamesView?.clock; return pickPeriod(mapRegistry.maps[id]?.periods, plugins.CustomNamesView?.todNow?.() || '', c?.bands).src; };
 export const srcKey = b => (b && typeof b === 'object' ? b.url : b);   // 底图可以是 DZI 路径，也可以是 { type: 'image', url }（schema-2 包的示意图 / 单张图，K-R96）
-const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) ? m.alt.base : (periodOf(id) || m.base); };
+const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) && m.alt.base && !m.alt.composite ? m.alt.base : (periodOf(id) || m.base); };   // composite（FOG-1 D40）底图仍是本层自己的时段图；旧式 alt 才整张换备用底图
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
 // 底图一律按视图范围（view.extent_m）摆：一个世界单位宽、从原点起，与 DZI 有多少像素无关（N10-P0）；标记 / 路线 / 缩放上限都是视图的比例
 const placeOf = id => { const f = baseFrame(mapRegistry.maps[id]?.view?.extent_m); return { x: f.x, y: f.y, width: f.width }; };

@@ -201,6 +201,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-edit.mjs` | 编辑模式的模型（K-R100）：`createEditor` 与它的操作（移动、改上级、叫法、新地点、起点、图片、底图、放弃）和草稿存储（文字在 LocalStore，图片字节在图集 IndexedDB 的 `edit:<包 id>` 作用域）。 |
 | `pack-live.mjs` | 不重载地显示 schema-2 包（K-R95、K-R100）：投影、换注册表与节点运行时、重画当前地图；编辑草稿作为过滤器装在这里。 |
 | `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关、导出为包（K-R98、K-R99、K-R103）。 |
+| `period-now.mjs` | 世界当前生效的时段（时段系统关掉时为 `''`）：底图换档、插图、羽化边缘与城外环共用的那一个读法。刻意做成无副作用——自装模块（顶层 `setInterval`）不能被 app 核心 import，否则 `node --test` 永不退出。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
 | `profile-live.mjs` | 方案应用后不重载即生效：每个偏好键一个效果、宿主偏好、再刷新打开着的设置页。 |
@@ -229,6 +230,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `tavernhelper-settings.mjs` | 设置里的酒馆助手功能：世界书附加条目同步、状态注入、类宏、注入深度。 |
 | `text-lookup.mjs` | `uiTextOr`：字典有键时取字典文字，否则用兜底并代入变量。 |
 | `theme.mjs` | 包的分视图主题（`ui.theme.views`，K-R70）：一个 `<style id="packTheme">`，带光晕的视图由 `body[data-glow]` 标出。 |
+| `tier-fog.mjs` | 分层的自装模块（FOG-1）：底图外缘的羽化渐隐（跟着底图矩形走的生成掩模，只吃画面，标记照常清楚）、合成模式的高空霾，以及 D40 的三层合成（本层同时段底图 + 岛掩模 + 下一层），计划全在 `maps.json` 的 `alt.composite` 里，代码零卡词。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic-view.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
 | `transit-env.mjs` | 查看器的路线器环境（K-R109、K-R112）：当前包的交通图，每个站点与地点画在哪里（树的答案、经 JSON 缓存从点位文件取标记锚点），`endOf`、`planBetween`，以及沿交通网的行程折线。 |

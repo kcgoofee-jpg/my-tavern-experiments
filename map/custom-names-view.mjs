@@ -386,6 +386,7 @@ const CustomNamesView = (() => {
   body.nighttint #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:radial-gradient(ellipse at 50% 40%,rgba(20,32,70,.18),rgba(6,10,28,.38));mix-blend-mode:multiply;transition:opacity .6s}
   body[data-tod=dawn]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:linear-gradient(180deg,rgba(255,196,200,.16),rgba(214,200,230,.10));mix-blend-mode:multiply;transition:opacity .6s}
   body[data-tod=dusk]:not([data-base-tod]) #osd::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:var(--zl-1);background:linear-gradient(180deg,rgba(255,170,120,.22),rgba(200,140,150,.16));mix-blend-mode:multiply;transition:opacity .6s}
+  /* A7（FOG-1）的 data-gradetod 调色在 app/tier-fog.mjs（本文件只管有夜色叠加的三态） */
   @media (prefers-reduced-motion:reduce){body.nighttint #osd::after,body[data-tod] #osd::after{transition:none}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   document.addEventListener('DOMContentLoaded', () => renderUI());
