@@ -964,6 +964,86 @@
    "notes": "register = periods.night in maps.json"
   },
   {
+   "id": "var:tc_upper_city:dawn",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Upper map, city-below view, dawn period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below city --tod dawn --out logs/campaign/full/tc_upper_city_dawn_full.png"
+   },
+   "notes": "TIER-1 request (render line decides when, D20 low intensity): the 'show city below' base wins over the period images and has only a day look; until these exist the viewer tints it per period. register = a periods map for the alt base in maps.json (needs a small data/code step)"
+  },
+  {
+   "id": "var:tc_upper_city:day",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Upper map, city-below view, day period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below city --tod day --out logs/campaign/full/tc_upper_city_day_full.png"
+   },
+   "notes": "TIER-1 request (render line decides when, D20 low intensity): the 'show city below' base wins over the period images and has only a day look; until these exist the viewer tints it per period. register = a periods map for the alt base in maps.json (needs a small data/code step)"
+  },
+  {
+   "id": "var:tc_upper_city:dusk",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Upper map, city-below view, dusk period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below city --tod dusk --out logs/campaign/full/tc_upper_city_dusk_full.png"
+   },
+   "notes": "TIER-1 request (render line decides when, D20 low intensity): the 'show city below' base wins over the period images and has only a day look; until these exist the viewer tints it per period. register = a periods map for the alt base in maps.json (needs a small data/code step)"
+  },
+  {
+   "id": "var:tc_upper_city:night",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Upper map, city-below view, night period",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "args": "--below city --tod night --out logs/campaign/full/tc_upper_city_night_full.png"
+   },
+   "notes": "TIER-1 request (render line decides when, D20 low intensity): the 'show city below' base wins over the period images and has only a day look; until these exist the viewer tints it per period. register = a periods map for the alt base in maps.json (needs a small data/code step)"
+  },
+  {
    "id": "fix:climate_tower",
    "lane": "standard",
    "type": "review",

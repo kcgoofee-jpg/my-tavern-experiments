@@ -1154,6 +1154,7 @@
       }
     },
     "tc_low": {
+      "tint": "period",
       "tier_label": "天城下层",
       "tier_label_en": "Lower tier",
       "econ": "以太元 Æ；实体货币只在黑市（灰票，匿名芯片卡）；日薪约 80–150Æ；商品进中层缴 5% 入境税",

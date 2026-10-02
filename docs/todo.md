@@ -76,6 +76,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **v12** (plan §19, D30–D31, 2026-10-02): v0.9.8 is the user's own milestone, not a public release; public-release prep is a separate stage started only when the user decides to share. S10b, S11–S13 and stage F stay parked; whether general development resumes after v0.9.8 is the user's call then.
   - ~~**SWEEP-2** TT re-sweep~~ ✅ 2026-10-02 (RESULT U-FIX-R1; 0 P0, P1 fixed and re-checked)
   - ~~**ARCH-1**~~ ✅ 2026-10-02 head #284 (RESULT ARCH-1)
+  - ~~**TIER-1** upper-tier pin drift (pin shift and float removed; depth data only changes label opacity / haze, K-R133), city-below base tinted per period, `tint` flag on tc_low, probe `tools/browser/tier_pins.mjs`; render request `var:tc_upper_city:*` in the ledger~~ ✅ 2026-10-02 (RESULT TIER-1)
   - ~~**INV-1** feature inventory `docs/feature-inventory.md`, 78 rows~~ ✅ 2026-10-02 head #285 → user: **all as recommended** (2026-10-02)
   - [x] ~~**FIX-R2** U-FIX-8 (SW2-02…07) + FIX-B6 (advisor provider defaults, Anthropic browser header, request-shape probe)~~ ✅ 2026-10-02 FIX-R2
   - ~~**OOC-1** the map understands OOC (D32): 4 templates + 「提醒 AI」 button on the AI link page (fills, never sends), OOC lines are not action, player correction `（OOC 地图：现在在 X）` / `（OOC 地图：Y 在 X）`~~ ✅ 2026-10-02 (RESULT OOC-1). The player-guide section listing the templates is part of PUB REL-DOCS.

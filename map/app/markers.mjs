@@ -2,9 +2,8 @@
 import { worldData, mapRegistry, aspect, currentMapId, currentMapData, overviewMapData, depthData, osdViewer } from './state.mjs';
 import * as storage from '../core/storage.mjs';   // Part 6-4：动作注入模式（edenMapInject）从本机读
 import { $, esc } from './dom-helpers.mjs';
-import { narrow } from './viewport-mode.mjs';
 import { toImg } from './coordinates.mjs';
-import { island as depthIsland, parallaxOn } from '../core/depth.mjs';
+import { island as depthIsland } from '../core/depth.mjs';
 import { routePaths } from '../core/layer-geometry.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { LANG, localName, uiText, translateName } from './i18n.mjs';
@@ -122,38 +121,15 @@ function smoothPath(P) {
 // ---------------- 纵深（U16 视差 / 漂浮、U17 标签按远近） ----------------
 // 数据只有一份：map/data/<layer>_depth.json（maps.json 的 depth 字段，切层时由 map-switch.mjs 取来）；公式只在 core/depth.mjs，这里不再实现第二遍。
 //   标签不透明度 = label 通道（近 1.0 → 远 0.65）；远岛（d ≥ FAR_D）平时只留图钉，悬停 / 聚焦 / 打开卡片才全显。
-//   视差 = parallax 通道（近 1.0 → 远 0.2），按底图屏幕位移累加；漂浮 ±2 px、周期 8–14 s（越远越慢）。
-//   开关：数据里 channels.parallax.enabled 是总开关；手机（narrow）与「减少动态效果」一律不晃（设定稿 §手机 375 px：手机视差默认关）。
-const RMq = matchMedia('(prefers-reduced-motion: reduce)');
+//   一条规则（所有层）：纵深数据只改标签不透明度 / 雾；图钉等压在底图上的叠加物不相对底图移动（不做视差、不漂浮）。视差只属于屏幕固定的云层（clouds.mjs）。
 const FAR_D = 0.6;
-let depthEls = [], depthAcc = { x: 0, y: 0, last: null }, depthHooked = false;
-const depthOn = () => parallaxOn(depthData) && !narrow && !RMq.matches;
 function depthFx(el, meta) {
-  el.style.removeProperty('--lab'); el.classList.remove('far', 'flt'); el._par = 1;
+  el.style.removeProperty('--lab'); el.classList.remove('far');
   const cfg = depthData, id = meta?.island;
   if (!cfg?.islands?.[id]) return;
   const isl = depthIsland(id, cfg);
-  el._par = isl.parallax;
   el.style.setProperty('--lab', String(isl.label));
   el.classList.toggle('far', isl.d >= FAR_D);
-  if (depthOn()) { el.classList.add('flt'); el.style.setProperty('--fdur', (8 + isl.d * 6).toFixed(1) + 's'); }
-}
-function depthPan() {
-  if (!depthEls.length || !depthOn()) return;
-  const vp = osdViewer.viewport, c = vp.getCenter(true), sc = osdViewer.container.clientWidth / vp.getBounds(true).width;
-  if (depthAcc.last) {
-    depthAcc.x -= (c.x - depthAcc.last.x) * sc; depthAcc.y -= (c.y - depthAcc.last.y) * sc;
-    for (const el of depthEls) {
-      const p = el._par ?? 1;
-      el.style.setProperty('--px', (depthAcc.x * p).toFixed(1) + 'px');
-      el.style.setProperty('--py', (depthAcc.y * p).toFixed(1) + 'px');
-    }
-  }
-  depthAcc.last = c;
-}
-function hookDepth() {
-  if (depthHooked || !osdViewer) return; depthHooked = true;
-  osdViewer.addHandler('viewport-change', depthPan); osdViewer.addHandler('animation', depthPan);
 }
 // Part 6-4：改了注入模式后关掉当前卡片即可——入口是开卡时现算的（见 showCard 的 extra），
 // 不走「重画整层标记」那条路：pointOverlays 只加不清，重画会把标记叠一层。
@@ -161,7 +137,6 @@ window.MarkersApi = { closeCard: () => { try { closeCard(); } catch (e) {} } };
 // 渲染脚本导出的点位地图（主城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = mapRegistry.maps[currentMapId], d = currentMapData || { markers: [], islands: [] }, od = overviewMapData || {};
-  depthEls = []; depthAcc = { x: 0, y: 0, last: null }; hookDepth();   // 切层：视差累加归零，重新收集有纵深的标记
   window.ScaleHandoffApi?.ring();   // v0.9.6：城外一圈（最先加，排在标记下面）
   if (m.overlay?.type === 'barriers' && od.islands?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
@@ -204,7 +179,7 @@ export function pointOverlays() {
     const el = markerEl({ ...meta, rank: k.rank, sub: (meta.sub || '').replace(/\{\{user\}\}\s*/g, uiText('you')), extra: () => econHtml(meta) + links(meta) });
     el.dataset.mid = k.id;   // the marker's id (a node id for a schema-2 pack): edit mode (pack-edit-view.mjs) finds the node through it
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
-    depthFx(el, meta); depthEls.push(el);
+    depthFx(el, meta);
     placeN(el, k.nx, k.ny); }
 }
 export function setCardFrom(v) { return (cardFrom = v); }

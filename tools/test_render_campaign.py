@@ -460,7 +460,7 @@ class RealItemList(unittest.TestCase):
             if not order or order[-1] != g:
                 order.append(g)
         self.assertEqual(order, ['estate', 'review', 'lm', 'scene', 'base', 'var', 'fix', 'inst'])
-        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 8, 1, 2])
+        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 12, 1, 2])
         self.assertEqual(ids[14:22], ['lm:blood_mill', 'lm:freight_yard', 'lm:lower_bar', 'lm:slums', 'lm:rebirth_workshop',
                                      'lm:schneider_clinic', 'lm:elite_club', 'lm:hunting_camp'])
 

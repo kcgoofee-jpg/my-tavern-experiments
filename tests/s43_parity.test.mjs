@@ -33,7 +33,7 @@ test('LEGEND-1: every first-pack layer that has legend rows keeps its own menu d
 
 test('clouds / tint: maps.json flags become view fields; only the tiers that had the behaviour carry them', () => {
   const clouds = Object.keys(pack.views).filter(k => pack.views[k]['x-clouds']), tint = Object.keys(pack.views).filter(k => pack.views[k]['x-tint'] === 'period');
-  assert.deepEqual(clouds, ['tc_upper']); assert.deepEqual(tint.sort(), ['tc_mid', 'tc_upper']);
+  assert.deepEqual(clouds, ['tc_upper']); assert.deepEqual(tint.sort(), ['tc_low', 'tc_mid', 'tc_upper']);
   assert.ok(Object.values(pack.views).every(v => v['x-clouds'] === undefined || v['x-clouds'] === true));
   assert.equal(viewField('tc_upper', 'x-clouds'), true); assert.equal(viewField('tc_mid', 'x-clouds'), undefined); assert.equal(viewField('nope', 'x-tint'), undefined);
   const town = fromV1(townInputs()).pack; assert.ok(Object.values(town.views).every(v => v['x-clouds'] === undefined && v['x-tint'] === undefined));

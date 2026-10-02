@@ -1799,3 +1799,15 @@ blocker: none
 open: per-card profile binding (PROFILE-2 in todo); 精简 keys: edenMapLayers (weather, quests, wander, traffic, vision off), edenMapRM=on, edenMapNoFx=1, edenMapPortraits=0, edenMap3dQ=1, edenMapTierV2=save, edenMap3dAutoRotate=0, edenMapGlassClock=0, edenMapTick=0, edenMapGallery=0
 cleanup: done
 === END ===
+
+=== RESULT TIER-1 ===
+status: DONE
+items: 1 pin drift (depthPan / hookDepth / shift part of depthFx / --px --py / pin float removed; parallax.enabled untouched, clouds keep parallax) ✓; 2 one-rule kernel note (K-R133, en + zh) ✓; 3 city-below base tinted per period + ledger request var:tc_upper_city:{dawn,day,dusk,night} ✓; 4 tint flag uniform (tint: period added to tc_low; data-tod hook unchanged) ✓; 5 probe tools/browser/tier_pins.mjs ✓
+commits: see git log (one commit, "fix(map): upper-tier pins no longer drift ...")
+pushed: yes
+tests: node 1532/1534 (no drop; 2 skipped as before) | smoke PASS | arch PASS | probes: tier_pins=PASS (upper pan max offset 79.6 px / 17.63 px after 2 s before, 0.03 / 0 px after; mid and low 0.03 / 0.02 before and after)
+deviations: tests/s43_parity.test.mjs and tools/test_render_campaign.py expectations updated for the added tc_low flag and four ledger items (placed in the var group)
+blocker: none
+open: none
+cleanup: done
+=== END ===

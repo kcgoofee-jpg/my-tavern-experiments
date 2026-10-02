@@ -507,6 +507,8 @@ v1 按固定的六级解析。改写成节点后，每一级都是树上的一�
 
 **K-R132 —— 建筑的名字。** 3D 清单可带 `building: { title, subtitle?, summary?, i18n?: { <lang>: { title?, subtitle?, summary? } } }`：查看器显示的标题、副标题与一句话简介（外壳的无障碍名字、建筑的卡）。楼层名字是现有 K-R104 `floors[]` 各项上的 `label` 与 `i18n`；`building.floors` 键会被 schema 拒绝（一份列表、一个位置）。没有这个块时，查看器说「Building」、不显示副标题与简介、用楼层 id 当名字。所有文字都是纯文本、用 `textContent` 设置。（地标清单里的 `building: { min, max }` 是它的包围盒，由 `props/viewer3d.html` 读取，不是这个块。）可选的 `view.ext = { target: [x, y, z], size: [w, d, h] }` 以 layout 米给外观视图取景；没有时用模型包围盒。
 
+**K-R133 —— 纵深通道不移动叠加物（TIER-1）。** 视图的纵深数据（`x-depth`、`channels.*`）只能改标签不透明度和雾；画在底图上的叠加物（图钉、标签、轮廓）不相对底图移动。`parallax` 通道只属于屏幕固定的云层。时段色调跟随实际显示的底图：备用底图（`x-alt`）开着且没有时段版本时，照常叠当前时段的色调。
+
 ### 4.6 查看器里的 schema-2 包
 
 **K-R96 —— 打开 schema-2 包。** `core/pack.mjs` 在 `schema: 1` 之外也收 `schema: 2`：schema-2 清单的 `validate` 只查 `id` 与 `title`，`load` 返回带 `schema` 的解析结果，并把清单放在 `v2` 里；查看器（`app/current-pack.mjs`）接着跑 `resolveBlocks`（块文件相对包目录）、`validate2`（只有随引擎发布的包才算可信，即从 `packs/<id>/` 加载的包）与 `withDefaults`。查看器用一份内存里的投影工作，`projectV2(pack, { base })`（`core/pack-v2-view.mjs`，纯函数），形状就是它现在画的注册表；没有任何查看器模块自己读 schema 2，schema-1 的包也从不经过它。

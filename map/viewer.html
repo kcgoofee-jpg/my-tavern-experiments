@@ -382,18 +382,14 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   .lg { padding: var(--sp-3) var(--sp-4); } .lg h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-body); }
   .lg dl { margin: 0; } .lg dt { font-weight: 700; font-size: var(--fs-small); color: var(--ink); }
   .lg dd { margin: 0 0 var(--sp-3); font-size: var(--fs-small); color: var(--muted); }
-  /* 纵深 U16 / U17：标签与图钉包在 .mki 里，视差位移（--px/--py）与漂浮只动这一层（.mk 的 transform 是 OSD 定位用的） */
-  .mk .mki { display: flex; flex-direction: column; align-items: center; transform: translate(var(--px, 0px), var(--py, 0px)); }
+  /* 纵深 U16 / U17：标签与图钉包在 .mki 里，纵深只改标签不透明度，不移动图钉（.mk 的 transform 是 OSD 定位用的） */
+  .mk .mki { display: flex; flex-direction: column; align-items: center; }
   .mk .lab { opacity: var(--lab, 1); translate: var(--ldx, 0px) var(--ldy, 0px); }   /* --ldx / --ldy: declutter slides a name back inside the map edge (U-FIX-5 U-01, SW2-07) */
   .mk:hover, .mk:focus-visible { z-index: var(--zv-markers-hover); }
   .mk:hover .lab, .mk:focus-visible .lab, .mk.active .lab { opacity: 1; }
   /* 远岛（d ≥ 0.6）：平时只留图钉，悬停 / 聚焦 / 打开卡片才全显 */
   .mk.far .lab { visibility: hidden; }
   .mk.far:hover .lab, .mk.far:focus-visible .lab, .mk.far.active .lab, .mk.far.l1 .lab { visibility: visible; }   /* S7-2 2.6: an L1 name shows on a far island at the default zoom */
-  /* 漂浮 ±2 px（周期 8–14 s，越远越慢）：用 translate 属性，不与上面的 transform 打架 */
-  .mk.flt .mki { animation: flt var(--fdur, 11s) ease-in-out infinite alternate; }
-  @keyframes flt { from { translate: 0 -2px; } to { translate: 0 2px; } }
-  @media (prefers-reduced-motion: reduce) { .mk.flt .mki { animation: none; } }
   .mk.undock:not(.here):not(.active) { visibility: hidden; pointer-events: none; }
   body.far .mk:not(.active) .lab small { display: none; }
   body.nomarkers .mk { display: none; }

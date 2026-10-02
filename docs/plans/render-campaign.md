@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T08:23:44Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T10:15:41Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 51 | 0 | 0 | 0 | 0 | 0 | 51 |
-| hero | 21 | 0 | 1 | 0 | 0 | 0 | 22 |
+| standard | 51 | 0 | 4 | 0 | 0 | 0 | 55 |
+| hero | 22 | 0 | 0 | 0 | 0 | 0 | 22 |
 
 Below-gate (user spot-check): none
 
@@ -63,9 +63,13 @@ Below-gate (user spot-check): none
 | 46 | `var:tc_low:day` | variant | done | - |  |  | Period variant tc_low / day |
 | 47 | `var:tc_low:dusk` | variant | done | - |  |  | Period variant tc_low / dusk |
 | 48 | `var:tc_low:night` | variant | done | - |  |  | Period variant tc_low / night |
-| 49 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
-| 50 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
-| 51 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
+| 49 | `var:tc_upper_city:dawn` | variant | open | render |  |  | Upper map, city-below view, dawn period |
+| 50 | `var:tc_upper_city:day` | variant | open | render |  |  | Upper map, city-below view, day period |
+| 51 | `var:tc_upper_city:dusk` | variant | open | render |  |  | Upper map, city-below view, dusk period |
+| 52 | `var:tc_upper_city:night` | variant | open | render |  |  | Upper map, city-below view, night period |
+| 53 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
+| 54 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
+| 55 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
 
 ## Hero lane
 
@@ -88,7 +92,7 @@ Below-gate (user spot-check): none
 | 15 | `var:tc_upper:day` | variant | done | - |  |  | Upper map day period |
 | 16 | `var:tc_upper:dusk` | variant | done | - |  |  | Upper map dusk period |
 | 17 | `var:tc_upper:night` | variant | done | - |  |  | Upper map night period |
-| 18 | `estate:b1b2` | estate | open | final |  |  | Estate basement B1 / B2 interior refinement |
+| 18 | `estate:b1b2` | estate | done | - |  |  | Estate basement B1 / B2 interior refinement |
 | 19 | `lm:round_table_hall` | landmark | done | - |  |  | New model: round table hall |
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
 | 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
