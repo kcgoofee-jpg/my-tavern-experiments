@@ -6,7 +6,7 @@ import { createChatData } from './chat-data.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'kfView', 'stash', 'changedInv', 'tlWalk', 'ledgerRecord', 'autoCache', 'mvuBridge', 'onChatSwitch',
+  'floorNow', 'ghost', 'kfView', 'stash', 'changedInv', 'tlWalk', 'ledgerRecord', 'autoCache', 'mvuBridge', 'onChatSwitch', 'SCRIPT', 'VER', 'plainVer',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -148,7 +148,9 @@ export function createRootStore(host) {
     // 用到才建（v0.9.5）：还没有任何自定义时不建世界书；已经建过的照常写（条目停用）
     if (!has && !(await wbExists(WBN))) { wbState = on ? 'empty' : ''; sendCustom(); return true; }
     // PLACE-1a：一条常驻索引（只有名字对照）+ 每个有说明 / 用途 / 事实的地点一条关键词条目；关掉同步只是全部停用
-    const entries = mvr.wbEntries(custom, { on });
+    const W = host.WBSm ?? await import(scriptBase + 'tavern/worldbook-sync.mjs').catch(() => null), info = { version: host.plainVer(host.VER) || host.SCRIPT?.version || '', build: Number.isInteger(host.SCRIPT?.build) ? host.SCRIPT.build : null };
+    const keyed = mvr.wbEntries(custom, { on }).length - 1;   // WB-2: a disabled readme entry goes first (what the book is, written when, by which map build)
+    const entries = mvr.wbEntries(custom, { on, readme: W?.customReadme?.({ map: info, now: Date.now(), lang: host.uiLang === 'en' ? 'en' : 'zh', on, count: keyed }) });
     if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, entries); else await createWorldbook(WBN, entries);
     if (!on) { wbState = ''; sendCustom(); return true; }
     // 绑定：聊天槽空着绑到这个聊天；被别的书占着就退到角色附加世界书 / 全局（N15），别的绑定一律不动

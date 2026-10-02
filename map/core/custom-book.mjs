@@ -25,10 +25,11 @@ export function recordOf(c, key, pack = null) {
 /** Is there anything to write? (a rename, or a place with a description, use line or facts) */
 export const hasContent = c => !!indexText(c) || Object.keys(c?.items || {}).some(k => keyed(c, k));
 /** Entries of the custom book in the TH world-book entry shape. o = { on (false = written but disabled), pack, lang, entryName (the index entry's name) }.
- *  The index entry is always first (the book is recognised by its name; with no rename it is disabled and empty). */
+ *  o.readme = { name, content }: a disabled readme entry goes first. The index entry is recognised by its name (with no rename it is disabled and empty). */
 export function bookEntries(c, o = {}) {
   const on = o.on !== false, L = o.lang === 'en' ? 'en' : 'zh', out = [], idx = indexText(c, o);
   const rec = { prevent_incoming: true, prevent_outgoing: true };
+  if (o.readme) out.push({ name: o.readme.name, enabled: false, strategy: { type: 'selective', keys: [] }, position: { type: 'after_character_definition', order: 1 }, content: o.readme.content, recursion: rec, extra: { eden_readme: 1 } });   // WB-2: the book explains itself (always disabled, first)
   out.push({ name: o.entryName || 'Map custom', enabled: on && !!idx, strategy: { type: 'constant', keys: [] }, position: { type: 'after_character_definition', order: 903 }, content: idx || '（空）', recursion: rec });
   let i = 0;
   for (const k of Object.keys(c?.items || {})) {

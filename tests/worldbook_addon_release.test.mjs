@@ -24,7 +24,8 @@ test('default version is VERSION, or VERSION-dev once released', { timeout: 1200
   const V = readFileSync(join(ROOT, 'VERSION'), 'utf8').trim(), d = mkdtempSync(join(tmpdir(), 'wb-'));
   try {
     const r = run('--out', join(d, 'x.json')); assert.equal(r.status, 0, r.stderr);
-    if (tags.includes('map-v' + V)) assert.match(r.stdout, new RegExp(`输出按 ${V.replace(/\./g, '\\.')}-dev`));
+    const next = V.replace(/(\d+)$/, n => String(+n + 1));   // WB-2: after a release the build is the next patch, -dev
+    if (tags.includes('map-v' + V)) assert.match(r.stdout, new RegExp(`输出按 ${next.replace(/\./g, '\\.')}-dev`));
     else assert.doesNotMatch(r.stdout, /-dev/);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

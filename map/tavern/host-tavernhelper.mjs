@@ -92,18 +92,19 @@ export function createWbAuto(deps) {
   const wbSaved = () => { try { return JSON.parse(lsGet('edenMapWbSync') || 'null'); } catch (e) { return null; } };
   async function wbStatus(withPlan = true) {
     const W = await wbMod(); if (!W) return { api: false };
-    const ship = withPlan ? await wbShip() : null, st = await W.inspect(thFn, ship);
+    const ship = withPlan ? await wbShip() : null, st = await W.inspect(thFn, ship, { jit: jitOn(), ...mapFacts() });
     return { api: !!st.api, exists: !!st.exists, where: st.where || null, legacy: st.legacy || [], plan: st.plan || null, offline: withPlan && !ship, book: W.BOOK, error: st.error || null };
   }
   async function wbWrite(o = {}) {
     const W = await wbMod(), ship = await wbShip(); if (!W) return { ok: false, reason: 'noapi' };
-    const r = await W.sync(thFn, ship, { consent: true, jit: jitOn(), ...o });
-    if (r.ok) { wbLast = { at: Date.now(), ver: r.plan?.to || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, auto: !!o.auto }; lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync(); }
+    const r = await W.sync(thFn, ship, { consent: true, jit: jitOn(), ...mapFacts(), ...o });
+    if (r.ok) { wbLast = { at: Date.now(), ver: r.plan?.to || null, label: r.plan?.toLabel || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, auto: !!o.auto }; lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync(); }
     return r;
   }
   // 全自动（用户 2026-09-28）：总开关 edenMapWbOn（默认开，'0' = 关）。打开地图 / 换聊天时：书没有就建并挂到当前角色附加世界书；版本变了静默合并；每个版本只提示一次；每个聊天换版本时提醒一次。
   // 墓碑（用户撤销过 / 自己删过书）存酒馆助手全局变量 eden_wb_tomb（跨设备）+ 本机 LS；只有在「数据与映射」手动写入才清掉。多标签页：navigator.locks 互斥，锁里重新读书再写；没有锁时靠合并幂等。
   const wbOn = () => lsGet('edenMapWbOn') !== '0';
+  const mapFacts = () => ({ map: deps.mapInfo?.() || null, lang: deps.uiLang() === 'en' ? 'en' : 'zh', now: Date.now() });   // WB-2: the readme entry's facts (map build, language, time)
   const jitOn = () => lsGet('edenMapWbJit') === '1';   // D43: while the JIT is on, the entries it switched off stay off through a sync
   /** D43: the JIT was switched off -> enable every entry it had disabled (only our book, only entries marked extra.eden_jit) */
   async function jitRestore() {
@@ -131,7 +132,7 @@ export function createWbAuto(deps) {
     let tomb = wbTomb();
     let r = await W.withLock('eden-map-wb', async () => {
       if (!tomb && wbSaved()) { const st = await W.inspect(thFn, null), v = W.tombVerdict(wbMissAt, { now: Date.now(), exists: st.exists, api: st.api, saved: true }); wbMissAt = v.missAt; if (v.tomb) { setTomb(true); tomb = true; } }   // N15：相隔 ≥ 5 秒两次都没看到才立墓碑，单次没看到就重建
-      return W.autoRun(thFn, ship, { on: wbOn(), jit: jitOn(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
+      return W.autoRun(thFn, ship, { on: wbOn(), jit: jitOn(), ...mapFacts(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
     });
     if (!r || life.dead) return r;
     // 任务二：书在、内容也同步了，但一处都没挂 → 静默挂一档（autoRun 只在「新建 / 迁移」时试绑，sync 这条路不管绑定）
@@ -140,14 +141,14 @@ export function createWbAuto(deps) {
     let toasted = false;
     if (r.ok) lsSet('edenMapWbSyncAt', String(Date.now()));   // PLACE-1a: when this device last synced successfully (the record card's sync line)
     if (r.ok && (r.wrote || r.action !== 'sync')) {
-      wbLast = { at: Date.now(), ver: r.plan?.to || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, conflict: r.plan?.conflict?.length || 0, auto: true };
+      wbLast = { at: Date.now(), ver: r.plan?.to || null, label: r.plan?.toLabel || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, conflict: r.plan?.conflict?.length || 0, auto: true };
       lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync();
       const v = r.plan?.to;
       if (v && lsGet('edenMapWbNoticeVer') !== v && gvar('eden_wb_notice') !== v) {   // 只有真正写了的那个标签页、写成功后才提示；每个版本一次
         lsSet('edenMapWbNoticeVer', v); gset('eden_wb_notice', v); toasted = true;
         const p = r.plan, en = deps.uiLang() === 'en';
         hostToast(r.action === 'sync' ? (en ? 'Map worldbook add-on updated' : '地图世界书附加条目已更新') : (en ? 'Map worldbook add-on installed' : '已自动装好地图世界书附加条目'),
-          [en ? `${p.from || '—'} → ${p.to}` : `${p.from || '—'} → ${p.to}（新增 ${p.add.length}、更新 ${p.update.length}、保留你改过的 ${p.keep.length + p.conflict.length}）`,
+          [en ? `${p.fromLabel || '—'} → ${p.toLabel}` : `${p.fromLabel || '—'} → ${p.toLabel}（新增 ${p.add.length}、更新 ${p.update.length}、保留你改过的 ${p.keep.length + p.conflict.length}）`,
            ...(p.conflict.length ? [en ? `${p.conflict.length} entries you edited also changed upstream (kept yours)` : `你改过，上游也改了：${p.conflict.slice(0, 4).join('、')}${p.conflict.length > 4 ? ' …' : ''}（保留你的）`] : []),
            en ? 'Turn off in Settings › Data & mapping' : '可在 设置 › 数据与映射 关掉'], 9000);
       }
@@ -257,7 +258,7 @@ export function createWbAuto(deps) {
             const ship = await wbShip(), S = ship ? W.shipped(ship) : null;
             for (const eid of Array.isArray(ship?.index?.[id]) ? ship.index[id] : []) {
               const c = (Array.isArray(book) ? book : []).find(x => x?.extra?.eden_id === eid), e = S?.entries.find(x => x.extra.eden_id === eid), st = W.entryState(c, e);
-              entries.push({ book: W.BOOK, id: eid, name: c?.name || e?.name || '', content: (st === 'pending' ? e?.content : c?.content) ?? '', ver: (st === 'pending' ? e : c)?.extra?.eden_ver || null, state: st,
+              entries.push({ book: W.BOOK, id: eid, name: c?.name || e?.name || '', content: (st === 'pending' ? e?.content : c?.content) ?? '', ver: W.verLabel((st === 'pending' ? e : c)?.extra?.eden_ver, S) || null, state: st,
                 ...(st === 'edited' ? { upstream: c.extra.eden_conflict?.content ?? e?.content ?? '' } : {}) });
             }
             const cn = deps.customBookName?.(), cb = cn ? await getBook(cn).catch(() => null) : null;   // this chat's custom book: the player's text for this place

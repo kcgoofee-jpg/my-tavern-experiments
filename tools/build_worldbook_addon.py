@@ -9,6 +9,7 @@
   - 事件类型、大类顺序、稀有度、示范原文：首个包的事件块（map/packs/eden/overlay.v2.json 的 events，经 map/tavern/events-parse.mjs 的 taxonomy() 用 node 读取）
   - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/place-resolver.mjs 的当前地点解析同一份词表）
 条目：
+  0 说明（WB-2；始终关着，不发给模型，地图写书时重写它的正文：版本、写入时间、条数）
   1 地图联动规范 v4（WB-1，D43；常驻，聊天深度 2 的 system 消息）：每种标签一块（地点 / 人物 / 事件 / 事实 / 改名与用途；物品写在正文里），各一个填好的示范
   2 地图事件类型 v2（常驻，角色定义之后）：9 大类 66 种 + 稀有度
   3 地图当前地点 v3（常驻，角色定义之后）：地图认得的地点叫法（房间 / 区域 / 地标），只是词表
@@ -22,7 +23,7 @@
      发布物另带 index：{ 记录 id: [条目 id] }（房间 → 房间条目，已有「地点-*」的地点 → 它的条目，地标 → 所在层的方位条目），宿主按 id 查档案。
 我们的规则只提到我们自己的东西（⌖ 标签、地图.*），不引用卡里的字段名或原文。
 示范标签只用包的示范表里的原文（事件块 examples、overlay llm["x-tag-examples"]；模型照抄时地图不落点）。
-全部条目默认启用（D43）；关键词条目仍是关键词触发。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
+全部条目默认启用（D43，说明条除外）；关键词条目仍是关键词触发。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
 用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json] [--force]
 默认输出：~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v<版本>.json；只用标准库 + node。
@@ -123,13 +124,16 @@ def build(version):
     common = city_facts(json.load(open(os.path.join(ROOT, 'map/data/maps.json'), encoding='utf-8')).get('unplaced', {}).get('items', []))
     # 规范放在聊天记录里离末尾两层的位置（at_depth，深度 2，system）：模型写回复时最近读到它；类型表与叫法词表是查阅用的，留在角色定义之后
     places = addon_places()
-    return [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + places + room_entries(reg, places, lore), n
+    return [README] + [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + places + room_entries(reg, places, lore), n
 
 
 # WB-1（D43）规范里的示范：都在包的示范表里（overlay llm["x-tag-examples"] 或解析器内置的示范），照抄不上图；tests/wb1_rules.test.mjs 核对每条的写法能被解析
 RULE_EX = {'place': '⌖地点 天城·中层·辉光大教堂', 'char': '⌖人物 绫濑遥 @ 伊甸庄园·东侧长廊', 'fact': '⌖事实 会客厅：暗门通主人专用通道',
            'rename': '⌖改名 书房 → 星图室', 'use': '⌖用途 书房：整理旧地图'}
 RULES_AT = {'position': 4, 'depth': 2, 'role': 0}
+# WB-2: the readme entry. Always disabled (never injected), first in the book; the map script rewrites its text on every write (version, time, counts: tavern/worldbook-readme.mjs).
+README = ('说明 · 伊甸地图附加条目', '（这一条的内容由地图脚本在写入这本书时生成：版本、写入时间、条数，以及要不要删旧书。它始终关着，不会发给模型。）', 1,
+          {'constant': False, 'disable': True, 'key': [], 'position': 0, 'depth': 4})
 
 
 KW = {'constant': False, 'position': 0, 'depth': 4}   # 关键词触发，照卡里设定条目的写法（角色定义之前、深度 4）
@@ -346,6 +350,7 @@ SHIP_CATEGORIES = {            # 精确编号 → 类别
     'map.link-rules': 'rules',
     'map.event-types': 'events',
     'map.current-location': 'places',
+    'map.readme': 'readme',
 }
 SHIP_CATEGORY_PREFIXES = {     # 编号前缀 → 类别（同一族条目共用一类）
     'map.bearing.': 'places',
@@ -370,6 +375,7 @@ def to_ship(book, version):
     `category` = 稳定编号 → 标准类别字典（rules / events / places / characters / lore，未登记回退 other），通用扩展宿主按类别挑条目。
     worldbook-sync.mjs 只读 ver / aliases / entries，多出的顶层键无害。"""
     import hashlib, os
+    ROLE = {0: 'system', 1: 'user', 2: 'assistant'}
     POS = {0: 'before_character_definition', 1: 'after_character_definition', 2: 'before_author_note', 3: 'after_author_note', 4: 'at_depth', 5: 'before_example_messages', 6: 'after_example_messages'}
     # 旧对话兼容：条目别名表（旧编号 → 新编号）单一来源 map/data/worldbook_aliases.json，原样嵌进发布物（worldbook-sync.mjs 合并前先换编号）。
     # 发布的稳定编号 = 别名表里的英文点号编号（用户 2026-09-28）；条目名 / 关键词不变
@@ -381,10 +387,15 @@ def to_ship(book, version):
         assert re.fullmatch(r'[a-z0-9][a-z0-9.-]*', eid), f'条目「{base}」没有英文编号：在 map/data/worldbook_aliases.json 的 ids 里加「{base}: 英文.点号.编号」'
         ents.append({'id': eid, 'name': e['comment'], 'enabled': not e['disable'], 'content': e['content'],
                      'strategy': {'type': 'constant' if e['constant'] else 'selective', 'keys': list(e['key']), **({'keys_secondary': {'logic': 'and_any', 'keys': list(e['keysecondary'])}} if e['keysecondary'] else {})},
-                     'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': 'system', 'depth': e['depth'], 'order': e['order']},
+                     'position': {'type': POS.get(e['position'], 'after_character_definition'), 'role': ROLE.get(e['role'] or 0, 'system'), 'depth': e['depth'], 'order': e['order']},
                      'probability': e['probability'], 'recursion': {'prevent_incoming': bool(e['excludeRecursion']), 'prevent_outgoing': bool(e['preventRecursion'])}})
     h = hashlib.sha1(json.dumps(ents, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:8]
-    return {'schema': SHIP_SCHEMA, 'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': f'{re.sub(r"-dev$", "", version)}+{h}', 'category': ship_categories(ents), '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, **({'index': INDEX} if INDEX else {}), 'entries': ents}
+    ver = f'{re.sub(r"-dev$", "", version)}+{h}'
+    try: prev = json.load(open(os.path.join(ROOT, 'map', 'data', 'worldbook_addon.json'), encoding='utf-8'))   # the committed ship, also when a test writes the new one elsewhere
+    except (OSError, ValueError): prev = {}
+    import datetime
+    built = prev.get('built') if prev.get('ver') == ver and prev.get('built') else datetime.date.today().isoformat()   # WB-2: the day this exact content first shipped (a re-ship of the same content keeps it)
+    return {'schema': SHIP_SCHEMA, 'book': '伊甸地图·世界书附加条目', 'version': version, 'ver': ver, 'built': built, 'category': ship_categories(ents), '_credit': CREDIT, 'aliases': {'ids': al.get('ids', {})}, **({'index': INDEX} if INDEX else {}), 'entries': ents}
 
 
 def tokens(s):
@@ -411,7 +422,7 @@ def check(book, ref_path):
 def selftest(items):
     """用 events.mjs / app/place-resolver.mjs 自己核对：示范原文都不上图；【地点】里每个地标都能推断出层；当前地点示例能落点。"""
     import re
-    rules, here = items[0][1], items[2][1]
+    rules, here = (next(x[1] for x in items if x[0].startswith(n)) for n in ('地图联动规范', '地图当前地点'))
     spans = re.findall(r'<span style="display:none"[^>]*>[^<]*</span>', rules)
     places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', here, re.M) for w in m.group(2).split('、')]   # v4：地标清单在叫法词表里
     probes = {'伊甸庄园·书房': 'eden_estate', '伊甸庄园·玫瑰园': 'eden_estate', '天城·中层·天城执法局总局': 'tc_mid', '天城·下层·7号井黑市': 'tc_low', '中层 霓虹街': 'tc_mid'}
@@ -487,6 +498,12 @@ def build_pack(pid, out=None):
     print(f'写入 {out}（{len(items)} 条）')
 
 
+def dev_of(v):
+    """WB-2: the version of a build made after release v: the next patch, -dev (0.9.7 released -> 0.9.8-dev), so the label never claims to be the released version."""
+    m = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)', v)
+    return f'{m[1]}.{m[2]}.{int(m[3]) + 1}-dev' if m else f'{v}-dev'
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--version', help='默认取 VERSION；已发布则 <VERSION>-dev')
@@ -500,8 +517,8 @@ def main():
     released = lambda v: subprocess.run(['git', 'rev-parse', '-q', '--verify', f'refs/tags/map-v{v}'], cwd=ROOT, capture_output=True).returncode == 0
     if a.version is None:
         v = open(os.path.join(ROOT, 'VERSION')).read().strip() if os.path.exists(os.path.join(ROOT, 'VERSION')) else '0.9.1'
-        a.version = f'{v}-dev' if released(v) else v
-        if a.version != v: print(f'VERSION {v} 已发布（map-v{v}），输出按 {a.version}（要写正式版本号：--version <新版本>）')
+        a.version = dev_of(v) if released(v) else v
+        if a.version != v: print(f'VERSION {v} 已发布（map-v{v}），输出按 {a.version}（下一个版本的开发中构建；要写正式版本号：--version <新版本>）')
     elif released(a.version) and not a.force:
         sys.exit(f'v{a.version} 已发布（有 map-v{a.version} 标签），拒绝覆盖已发布的附加世界书；确实要重写请加 --force，或用 --version {a.version}-dev / 新版本号')
     items, n = build(a.version)
@@ -516,8 +533,8 @@ def main():
     kw = 0
     for c, content, _, *ex in items:
         const = (ex[0] if ex else {}).get('constant', True)
-        t = tokens(content); tot += t if const else 0; kw += 0 if const or c.startswith('地图方位') else t
-        print(f'  {c}：{len(content)} 字符，约 {t} tokens' + ('（EJS 源码，不直接发给模型）' if c.startswith('地图方位') else '' if const else '（关键词触发）'))
+        t = tokens(content); tot += t if const else 0; kw += 0 if const or c.startswith(('地图方位', '说明')) else t
+        print(f'  {c}：{len(content)} 字符，约 {t} tokens' + ('（EJS 源码，不直接发给模型）' if c.startswith('地图方位') else '（始终关着，不发给模型）' if c.startswith('说明') else '' if const else '（关键词触发）'))
     print(f'写入 {out}（{len(items)} 条，{n} 种类型）')
     rooms = [(c, t) for c, t, *_ in items if c in ROOM_EID]
     if rooms: print(f'PLACE-1a 房间条目 {len(rooms)} 条，共 {sum(len(t) for _, t in rooms)} 字符；单条平均约 {sum(tokens(t) for _, t in rooms) // len(rooms)} tokens，最多 {max(tokens(t) for _, t in rooms)}；带次要关键词 {sum(1 for c, _, _, *x in items if c in ROOM_EID and x[0].get("keysecondary"))} 条')

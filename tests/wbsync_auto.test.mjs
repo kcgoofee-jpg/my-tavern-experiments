@@ -223,7 +223,7 @@ test('英文编号迁移（2026-09-28）：旧中文编号的书（含用户改�
   assert.equal(link.content, '用户改过的联动规范'); assert.ok(link.extra.eden_conflict); assert.equal(link.uid, cf.uid);
   assert.deepEqual(W.conflicts(after).map(x => x.name), [cf.name]);
   // 条目名（用户 / 模型看得到的）不变
-  for (const e of kept) assert.equal(after.find(x => x.extra.eden_id === e.id).name, e.name);
+  for (const e of kept) if (e.id !== 'map.readme') assert.equal(after.find(x => x.extra.eden_id === e.id).name, e.name);   // WB-2: the readme's name carries the version, so it changes on purpose
   // 二次同步：无操作
   const snap = clone(after), w0 = t.writes.length;
   const p2 = W.plan(after, S); assert.equal(p2.changed, false); assert.equal(p2.alias, 0);

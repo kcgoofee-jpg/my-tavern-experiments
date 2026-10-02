@@ -1,9 +1,11 @@
 {
  "schema": 1,
  "book": "伊甸地图·世界书附加条目",
- "version": "0.9.7-dev",
- "ver": "0.9.7+e3ce0083",
+ "version": "0.9.8-dev",
+ "ver": "0.9.8+91ac0ba2",
+ "built": "2026-10-02",
  "category": {
+  "map.readme": "readme",
   "map.link-rules": "rules",
   "map.event-types": "events",
   "map.current-location": "places",
@@ -140,6 +142,7 @@
  "_credit": "原作角色卡：Yehehua（类脑社区），原作发布帖 https://discord.com/channels/1380075940285124724/1534464824141025321 。本附加条目是经作者同意的二次创作；「地点-*」条目描述地图上的地点设定；「天城常识-*」「庄园常识-*」是把卡里已有设定按地图需要归纳的口径。",
  "aliases": {
   "ids": {
+   "说明 · 伊甸地图附加条目": "map.readme",
    "地图联动规范": "map.link-rules",
    "地图事件类型": "map.event-types",
    "地图当前地点": "map.current-location",
@@ -634,6 +637,27 @@
   ]
  },
  "entries": [
+  {
+   "id": "map.readme",
+   "name": "说明 · 伊甸地图附加条目",
+   "enabled": false,
+   "content": "（这一条的内容由地图脚本在写入这本书时生成：版本、写入时间、条数，以及要不要删旧书。它始终关着，不会发给模型。）",
+   "strategy": {
+    "type": "selective",
+    "keys": []
+   },
+   "position": {
+    "type": "before_character_definition",
+    "role": "system",
+    "depth": 4,
+    "order": 1
+   },
+   "probability": 100,
+   "recursion": {
+    "prevent_incoming": true,
+    "prevent_outgoing": true
+   }
+  },
   {
    "id": "map.link-rules",
    "name": "地图联动规范 v4",

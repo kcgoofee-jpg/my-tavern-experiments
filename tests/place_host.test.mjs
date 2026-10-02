@@ -62,7 +62,7 @@ test('wb-peek by record id: the entry the sync wrote (synced / edited / pending)
     await h.onTh({ op: 'wb-peek', id: ID, name: '惩罚室' });
     let m = posts.at(-1); assert.equal(m.type, 'eden-map:wb-peek'); assert.equal(m.id, ID); assert.equal(m.syncAt, 1790000000000);
     const e = m.entries.find(x => x.id === 'map.room.room-b2-03'), shipped = SHIP.entries.find(x => x.id === 'map.room.room-b2-03');
-    assert.equal(e.state, 'synced'); assert.equal(e.content, shipped.content); assert.equal(e.ver, SHIP.ver); assert.equal(e.name, '地点-惩罚室');
+    assert.equal(e.state, 'synced'); assert.equal(e.content, shipped.content); assert.equal(e.ver, W.verLabel(SHIP.ver, W.shipped(SHIP)));   // WB-2: a readable version (release, date, id) assert.equal(e.name, '地点-惩罚室');
     assert.equal(m.entries.find(x => x.state === 'custom').content, '本聊天自定义正文'); assert.equal(m.items[0].summary, unwrap(shipped.content), 'the old card still gets the same body');
     book.find(x => x.extra.eden_id === 'map.room.room-b2-03').content = '酒馆里改过的正文';
     await h.onTh({ op: 'wb-peek', id: ID, name: '惩罚室' }); const ed = posts.at(-1).entries.find(x => x.id === 'map.room.room-b2-03');

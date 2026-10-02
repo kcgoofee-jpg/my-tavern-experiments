@@ -131,7 +131,8 @@ export function createHostApi(host) {
   // B1 世界书附加条目 + 全自动 + eden-map:th 设置消息：host-tavernhelper.mjs createWbAuto（整块原样搬过去，行为不变）
   const facts = createFacts();   // S7-1: what each AI-link feature did last (feature-health.mjs); the flows write into it through the host bag's `facts` getter
   const { wbAuto, sendTh, onTh } = createWbAuto({ scriptBase, LS, lsGet, lsSet, life, manifest: MAN, packId: PACK_ID, base: () => host.BASE, alive: () => host.alive, uiLang: () => host.uiLang, thBtns: () => thBtns,
-    chatId, cardKey, post, hostToast, stateInject, injectPreview: () => host.injectPreview(), macroSet, prefSync, facts, navFacts: () => host.navFacts(), navSchedule: () => host.navSchedule(), xtalClear: () => host.xtalClear(), macroVal: k => host.macroVal(k), panelHidden: () => !!host.panel?.hidden, customBookName: () => host.mvuReaders?.wbName(host.customChat) || '' });
+    chatId, cardKey, post, hostToast, stateInject, injectPreview: () => host.injectPreview(), macroSet, prefSync, facts, navFacts: () => host.navFacts(), navSchedule: () => host.navSchedule(), xtalClear: () => host.xtalClear(), macroVal: k => host.macroVal(k), panelHidden: () => !!host.panel?.hidden, customBookName: () => host.mvuReaders?.wbName(host.customChat) || '',
+    mapInfo: () => ({ version: plainVer(VER) || SCRIPT.version || '', build: Number.isInteger(SCRIPT.build) ? SCRIPT.build : null, at: SCRIPT.at || null }) });   // WB-2: which map build writes the book (the readme entry)
   return {
     api, facts, get cardId() { return cardId; }, set cardId(v) { cardId = v; }, emit, emitMoved, exposed, inner, knowRooms, onTh, replayLayers, scriptInfo, sendTh, subs,
     get tavernhelperApiModule() { return tavernhelperApiModule; }, get transitMod() { return transitMod; }, wbAuto,

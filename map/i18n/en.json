@@ -823,7 +823,7 @@
   "fc.spatial.cost": "About 120 tokens per reply",
   "fc.wbJit.name": "Worldbook JIT",
   "fc.wbJit.purpose": "Only the add-on worldbook entries of where you are (and its neighbours) are enabled; leaving disables them",
-  "fc.wbJit.more": "Saves context on large worlds; touches only entries of our own add-on book.",
+  "fc.wbJit.more": "Saves context on large worlds; touches only entries of our own add-on book. Cost: every change of place alters what the model receives and makes the prompt cache rewrite from that point, so it is off by default; leave it off unless context is short.",
   "fc.wbXtal.name": "Fact crystallisation",
   "fc.wbXtal.purpose": "Fact tags in replies become keyword entries of the add-on book",
   "fc.wbXtal.more": "Suits long campaigns; a fact you delete in the book never comes back.",

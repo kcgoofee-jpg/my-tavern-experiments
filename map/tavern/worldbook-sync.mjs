@@ -8,6 +8,8 @@
 //   - 新版不再发的我们的条目 → 停用，不删。
 // 绑定（全局 / 角色 / 聊天）：已经绑在哪里就保持；第一次由用户选；旧的带版本号的书（手动导入的「… v0.9.5」）可迁移到稳定名并按原绑定重绑，旧书默认留着，用户再确认才删。
 // 书名 = 包的前缀（清单 worldbook.prefix，没写 = 包标题）+「·世界书附加条目」；宿主读到清单后调 setPrefix（没调用前是中性默认）。后缀是文案，留给 S4-4。
+import { README_ID, readme, readmeKey, verLabel, customReadme } from './worldbook-readme.mjs';
+export { README_ID, verLabel, customReadme };
 const SUFFIX = '世界书附加条目', reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export let PREFIX = 'Map·';
 export let BOOK = PREFIX + SUFFIX;
@@ -25,9 +27,14 @@ const own = e => e && typeof e === 'object' && e.extra && typeof e.extra.eden_id
 export function shipped(ship) {
   if (!ship || typeof ship.ver !== 'string' || !Array.isArray(ship.entries)) return null;
   const ids = ship.aliases && typeof ship.aliases.ids === 'object' && ship.aliases.ids ? ship.aliases.ids : {};
-  return { ver: ship.ver, version: ship.version || '', aliases: { ids }, entries: ship.entries.filter(e => e && typeof e.id === 'string').map(e => {
-    const { id, ...rest } = e; return { ...rest, extra: { eden_id: id, eden_ver: ship.ver, eden_hash: hashText(e.content) } }; }) };
+  return { ver: ship.ver, version: ship.version || '', built: ship.built || '', aliases: { ids }, entries: ship.entries.filter(e => e && typeof e.id === 'string').map(e => {
+    const { id, ...rest } = e; return { ...rest, extra: { eden_id: id, eden_ver: ship.ver, eden_hash: hashText(e.content), eden_pos: hashText(posKey(e.position)) } }; }) };
 }
+// WB-2: where an entry sits (position type; role and depth only for at_depth; order). The shipped position is kept in extra.eden_pos at write time:
+// an installed entry whose position no longer matches that stamp was moved by the user, and a later layout change leaves it where they put it.
+const posKey = p => (p?.type === 'at_depth' ? JSON.stringify(['at_depth', p.role || 'system', p.depth ?? 0, p.order ?? null]) : JSON.stringify([p?.type || 'after_character_definition', p?.order ?? null]));
+const userMoved = c => !!c.extra?.eden_pos && c.extra.eden_pos !== hashText(posKey(c.position));
+const needsMove = (c, e) => !userMoved(c) && posKey(c.position) !== posKey(e.position);
 /** 已装书的版本标记：我们的条目里最多的那个 eden_ver */
 export function installedVer(entries) {
   const n = {}; for (const e of arr(entries)) if (own(e) && e.extra.eden_ver) n[e.extra.eden_ver] = (n[e.extra.eden_ver] || 0) + 1;
@@ -71,22 +78,26 @@ const dropJit = x => { const { eden_jit, ...rest } = x; return rest; };
 export function plan(installed, ship, o = {}) {
   const S = shipped(ship); if (!S) return null;
   const cur = installed ? arr(installed) : null, N = normalize(cur || [], S), byId = new Map(N.list.filter(own).map(e => [e.extra.eden_id, e]));
-  const out = { first: !cur, from: cur ? installedVer(cur) : null, to: S.ver, version: S.version, add: [], update: [], keep: [], conflict: [], same: [], retire: [], enable: [], dup: 0, alias: 0, user: 0 };
+  const out = { first: !cur, from: cur ? installedVer(cur) : null, to: S.ver, version: S.version, add: [], update: [], keep: [], conflict: [], same: [], retire: [], enable: [], move: [], readme: false, dup: 0, alias: 0, user: 0 };
+  out.toLabel = verLabel(S.ver, S); out.fromLabel = out.from ? verLabel(out.from, S) : '';
   for (const c of cur || []) if (own(c) && resolveId(c.extra.eden_id, S.aliases.ids) !== c.extra.eden_id) out.alias++;
   out.dup = (cur || []).filter(own).length - N.list.filter(own).length - N.extras.length;   // 丢掉的（没改过的）重复条数
   let flag = 0;
+  const R = S.entries.find(e => e.extra.eden_id === README_ID);
+  if (R) { const cr = byId.get(README_ID); out.readme = !cr || cr.enabled !== false || cr.extra.eden_readme !== readmeKey({ S, jit: o.jit, lang: o.lang }); }   // the readme entry: rewritten when the version, the JIT switch or the language changed
   for (const e of S.entries) {
+    if (e.extra.eden_id === README_ID) continue;
     const c = byId.get(e.extra.eden_id);
     if (c && c.enabled === false && !keepOff(c, o)) out.enable.push(c.name || e.name);
     if (!c) out.add.push(e.name);
-    else if (edited(c) && hashText(c.content) !== e.extra.eden_hash) { const k = conflictOf(c, e); (k ? out.conflict : out.keep).push(c.name || e.name); if (k ? c.extra.eden_conflict?.hash !== e.extra.eden_hash : !!c.extra.eden_conflict) flag++; }
-    else if (c.content === e.content && c.name === e.name && sameSec(c, e) && !c.extra.eden_retired && !c.extra.eden_conflict && !c.extra.eden_dup && c.extra.eden_hash === e.extra.eden_hash) out.same.push(e.name);   // 只有版本标记不同：写时顺手更新标记
+    else if (edited(c) && hashText(c.content) !== e.extra.eden_hash) { if (needsMove(c, e)) out.move.push(c.name || e.name); const k = conflictOf(c, e); (k ? out.conflict : out.keep).push(c.name || e.name); if (k ? c.extra.eden_conflict?.hash !== e.extra.eden_hash : !!c.extra.eden_conflict) flag++; }
+    else if (c.content === e.content && c.name === e.name && sameSec(c, e) && !c.extra.eden_retired && !c.extra.eden_conflict && !c.extra.eden_dup && c.extra.eden_hash === e.extra.eden_hash && !needsMove(c, e)) out.same.push(e.name);   // 只有版本标记不同：写时顺手更新标记
     else out.update.push(e.name);
   }
   const ids = new Set(S.entries.map(e => e.extra.eden_id));
   for (const c of cur || []) if (!own(c)) out.user++;
   for (const c of N.list) if (own(c) && !ids.has(c.extra.eden_id) && !c.extra.eden_retired) out.retire.push(c.name);
-  out.changed = out.first || out.add.length + out.update.length + out.retire.length + out.enable.length + out.alias + out.dup > 0 || out.from !== S.ver || flag > 0 || N.extras.some(c => !c.extra.eden_dup);
+  out.changed = out.first || out.readme || out.add.length + out.update.length + out.retire.length + out.enable.length + out.move.length + out.alias + out.dup > 0 || out.from !== S.ver || flag > 0 || N.extras.some(c => !c.extra.eden_dup);
   return out;
 }
 const lowered = (c, ver) => ({ ...c, position: { ...(c.position || {}), order: RETIRED_ORDER }, extra: { ...c.extra, eden_retired: c.extra.eden_retired || ver, eden_order: c.extra.eden_order ?? c.position?.order ?? null } });
@@ -94,22 +105,35 @@ const lowered = (c, ver) => ({ ...c, position: { ...(c.position || {}), order: R
 export function merge(installed, ship, o = {}) {
   const S = shipped(ship); if (!S) return arr(installed);
   const N = normalize(arr(installed), S), byId = new Map(S.entries.map(e => [e.extra.eden_id, e])), seen = new Set(), out = [];
+  let prevReadme = null;
   for (const c of N.list) {
     if (!own(c)) { out.push(c); continue; }
+    if (c.extra.eden_id === README_ID && byId.has(README_ID)) { prevReadme = c; seen.add(README_ID); continue; }   // the readme is rebuilt below and goes first
     const e = byId.get(c.extra.eden_id); seen.add(c.extra.eden_id);
     if (!e) { out.push(lowered(c, S.ver)); continue; }                               // 新版不再发：降优先级，不删不停用
+    // WB-2: the position (type, role, depth, order) follows the shipped layout unless the user moved the entry (extra.eden_pos stamp)
+    const move = needsMove(c, e), pos = c.extra.eden_retired ? { ...(c.position || {}), order: c.extra.eden_order ?? e.position?.order } : move ? e.position : c.position;
     if (edited(c) && hashText(c.content) !== e.extra.eden_hash) {                     // 用户改过：内容原样保留
       const { eden_conflict, eden_retired, eden_order, ...x } = c.extra;
-      const pos = eden_retired ? { ...(c.position || {}), order: eden_order ?? e.position?.order } : c.position;
-      const on = onState(c, o), xx = on.enabled ? dropJit(x) : x;
-      out.push({ ...c, ...on, position: pos, extra: conflictOf(c, e) ? { ...xx, eden_conflict: { ver: S.ver, hash: e.extra.eden_hash, content: e.content } } : xx }); continue; }
+      const on = onState(c, o), xx = on.enabled ? dropJit(x) : x, xp = move || eden_retired ? { ...xx, eden_pos: e.extra.eden_pos } : xx;
+      out.push({ ...c, ...on, position: pos, extra: conflictOf(c, e) ? { ...xp, eden_conflict: { ver: S.ver, hash: e.extra.eden_hash, content: e.content } } : xp }); continue; }
     const { eden_conflict, eden_retired, eden_order, ...x } = c.extra || {};
-    const on = onState(c, o);
-    out.push({ ...c, ...e, uid: c.uid, ...on, extra: { ...(on.enabled ? dropJit(x) : x), ...e.extra } });   // D43：启用（JIT 开着时它关的保持关）
+    const on = onState(c, o), keepPos = userMoved(c) && !eden_retired;
+    out.push({ ...c, ...e, ...(keepPos ? { position: c.position } : {}), uid: c.uid, ...on, extra: { ...(on.enabled ? dropJit(x) : x), ...e.extra, ...(keepPos ? { eden_pos: c.extra.eden_pos } : {}) } });   // D43：启用（JIT 开着时它关的保持关）
   }
   for (const c of N.extras) out.push(lowered({ ...c, extra: { ...c.extra, eden_dup: true } }, S.ver));   // 改过的重复副本：留着，降优先级
-  for (const e of S.entries) if (!seen.has(e.extra.eden_id)) out.push({ ...e });
+  for (const e of S.entries) if (!seen.has(e.extra.eden_id) && e.extra.eden_id !== README_ID) out.push({ ...e });
+  const R = byId.get(README_ID);
+  if (R) out.unshift(readmeEntry(R, prevReadme, S, out, o));
   return out;
+}
+/** WB-2: the readme entry (always disabled, first in the book): text from worldbook-readme.mjs, counts taken from the book as it will be written. */
+function readmeEntry(R, prev, S, list, o) {
+  const mine = list.filter(c => own(c) && !c.extra.eden_retired && !c.extra.eden_dup && c.extra.eden_id !== README_ID), isConst = c => c.strategy?.type === 'constant';
+  const f = { title: o.title || PREFIX.replace(/·$/, '') + '附加条目', S, map: o.map, now: o.now ?? Date.now(), auto: o.auto, jit: !!o.jit, lang: o.lang,
+    counts: { total: mine.length, constant: mine.filter(isConst).length, keyword: mine.filter(c => !isConst(c)).length, on: mine.filter(c => c.enabled !== false).length, off: mine.filter(c => c.enabled === false).length } };
+  const r = readme(f);
+  return { ...(prev || {}), ...R, ...(prev ? { uid: prev.uid } : {}), enabled: false, name: r.name, content: r.content, extra: { ...(prev?.extra || {}), ...R.extra, eden_readme: readmeKey(f), eden_hash: hashText(r.content) } };
 }
 /** 「你改过，上游也改了」的条目名单（UI 标出来） */
 export function conflicts(entries) { return arr(entries).filter(c => own(c) && c.extra.eden_conflict).map(c => ({ name: c.name, ver: c.extra.eden_conflict.ver })); }
@@ -164,7 +188,7 @@ export async function sync(fn, ship, o = {}) {
   if (!st.exists && o.auto && !o.create) return { ok: false, reason: 'missing', plan: p };   // 自动模式要建书必须由 autoRun 判定过（没有墓碑）
   try {
     if (!st.exists) {
-      const ents = S.entries.map(e => ({ ...e }));
+      const ents = merge([], ship, o);
       if (fn('createWorldbook')) {
         const made = await fn('createWorldbook')(BOOK, ents);
         if (made === false) {                                                   // 别的标签页刚建好：不覆盖，改为合并
@@ -250,7 +274,7 @@ export async function autoRun(fn, ship, o = {}) {
   let hasChar = false; try { hasChar = !!(fn('getCharWorldbookNames') && await fn('getCharWorldbookNames')('current')); } catch (e) {}
   let r;
   if (act === 'sync' && !st.plan.changed) r = { ok: true, plan: st.plan, wrote: false, bound: st.where };
-  else r = await sync(fn, ship, { consent: true, auto: true, jit: !!o.jit, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'global', migrate: act === 'migrate' ? st.legacy[0] : null });
+  else r = await sync(fn, ship, { consent: true, auto: true, jit: !!o.jit, map: o.map, lang: o.lang, now: o.now, title: o.title, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'global', migrate: act === 'migrate' ? st.legacy[0] : null });
   if (!r.ok) return { action: act, ...r };
   // N15：每次都看一眼——书在却哪儿都没挂（含重新导入的卡、附加列表被重置）就挂回去；不再推断「记过的角色 = 用户解绑」
   try {

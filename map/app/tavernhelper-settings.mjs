@@ -28,10 +28,10 @@ function renderWb() {
   if (!w) h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_state', '状态'))}</span><button type="button" class="btn" id="wbLook">${esc(uiTextOr('th.wb_look', '检查'))}</button></div>`;
   else if (!w.api) h += `<small>${esc(uiTextOr('th.wb_noapi', '这个酒馆助手版本没有世界书写入接口：请照旧手动导入「世界书附加条目」文件'))}</small>`;
   else {
-    const st = w.exists ? (w.plan && !w.plan.changed ? uiTextOr('th.wb_uptodate', '已是最新 {v}', { v: w.plan.to }) : uiTextOr('th.wb_old', '已安装 {v}，可更新到 {to}', { v: w.plan?.from || '?', to: w.plan?.to || '?' })) : uiTextOr('th.wb_none', '还没写入');
+    const st = w.exists ? (w.plan && !w.plan.changed ? uiTextOr('th.wb_uptodate', '已是最新 {v}', { v: w.plan.toLabel || w.plan.to }) : uiTextOr('th.wb_old', '已安装 {v}，可更新到 {to}', { v: w.plan?.fromLabel || w.plan?.from || '?', to: w.plan?.toLabel || w.plan?.to || '?' })) : uiTextOr('th.wb_none', '还没写入');
     h += `<div class="hrow"><span>${esc(w.book || '')}</span><span>${esc(st)}</span></div>`;
     if (w.exists) h += `<div class="hrow"><span>${esc(uiTextOr('th.wb_bound', '绑定'))}</span><span>${esc(w.where ? uiTextOr(...W[w.where]) : uiTextOr('th.wb_unbound', '没绑定（不会生效）'))}</span></div>`;
-    if (L?.at) h += `<small>${esc(uiTextOr('th.wb_last', '上次同步 {t} · {v}', { t: when(L.at), v: L.ver || '?' }))}${L.auto ? ' · ' + esc(uiTextOr('th.wb_auto_tag', '自动')) : ''}</small>`;
+    if (L?.at) h += `<small>${esc(uiTextOr('th.wb_last', '上次同步 {t} · {v}', { t: when(L.at), v: L.label || L.ver || '?' }))}${L.auto ? ' · ' + esc(uiTextOr('th.wb_auto_tag', '自动')) : ''}</small>`;
     if (w.offline) h += `<small>${esc(uiTextOr('th.wb_offline', '取不到 CDN 上的条目（离线？）：稍后再试，或照旧手动导入'))}</small>`;
     const p = w.plan;
     if (p && diffShown) {
