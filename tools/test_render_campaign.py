@@ -459,14 +459,16 @@ class RealItemList(unittest.TestCase):
         for g in groups:
             if not order or order[-1] != g:
                 order.append(g)
-        self.assertEqual(order, ['estate', 'review', 'lm', 'scene', 'base', 'var', 'fix', 'inst'])
-        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 12, 1, 2])
+        self.assertEqual(order, ['estate', 'review', 'lm', 'scene', 'base', 'var', 'fix', 'inst', 'obl', 'out', 'glb', 'bake', 'site8k'])
+        self.assertEqual([groups.count(g) for g in order], [2, 12, 8, 7, 11, 12, 1, 2, 5, 5, 4, 4, 9])
         self.assertEqual(ids[14:22], ['lm:blood_mill', 'lm:freight_yard', 'lm:lower_bar', 'lm:slums', 'lm:rebirth_workshop',
                                      'lm:schneider_clinic', 'lm:elite_club', 'lm:hunting_camp'])
 
     def test_leftover_items_end_the_standard_lane(self):
         by = {i['id']: i for i in self.items}
-        self.assertEqual(self.lane('standard')[-3:], ['fix:climate_tower', 'inst:supreme_court', 'inst:tiancheng_univ'])
+        std = self.lane('standard')
+        tail = std.index('obl:tc_mid:day')
+        self.assertEqual(std[tail - 3:tail], ['fix:climate_tower', 'inst:supreme_court', 'inst:tiancheng_univ'], 'the D41 block follows the leftovers')
         for k in ('fix:climate_tower', 'inst:supreme_court', 'inst:tiancheng_univ'):
             self.assertEqual(by[k]['type'], 'review', 'reuses the review stages (no new stage table)')
         self.assertEqual(by['fix:climate_tower']['targets'], ['tc_upper:climate_tower'])
@@ -477,7 +479,10 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(ids[1], 'eden:r5', 'the shipped estate2 Eden continues first (user 2026-09-30)')
         self.assertEqual(ids[2:11], ['isle:' + x for x in ('eden', 'silver_crown', 'isle4', 'isle5', 'isle6', 'isle9', 'isle10', 'isle25', 'isle30')])
         self.assertEqual(ids[11:], ['base:tc_upper', 'var:tc_upper:16k', 'var:tc_upper:dawn', 'var:tc_upper:day', 'var:tc_upper:dusk',
-                                  'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world'])
+                                  'var:tc_upper:night', 'estate:b1b2', 'lm:round_table_hall', 'lm:sun_arena', 'lm:union_tower', 'base:world',
+                                  'obl:tc_upper:day', 'obl:tc_upper:dawn', 'obl:tc_upper:dusk', 'obl:tc_upper:night',
+                                  'obl:tc_upper_eden:day', 'obl:tc_upper_eden:dawn', 'obl:tc_upper_eden:dusk', 'obl:tc_upper_eden:night',
+                                  'base:world_cities', 'var:world:borders', 'var:world:night', 'estate:cutaway'])
 
     def test_dependencies_and_specs(self):
         by = {i['id']: i for i in self.items}
@@ -495,6 +500,20 @@ class RealItemList(unittest.TestCase):
         self.assertEqual(by['eden:r5']['spec'], {'res': 3200, 'spp': 128})
         self.assertEqual(by['eden:r5']['targets'], ['tc_upper:eden', 'eden_estate:cover', 'eden_estate:site'])
         self.assertNotIn('eden_manor.py', json.dumps(by['estate:b1b2']['hints']))
+
+    def test_d41_block(self):
+        """D41 (SETTING-1): oblique bases lock the shared camera first; one batch at a time through depends; low periods retired."""
+        by = {i['id']: i for i in self.items}
+        self.assertEqual(by['obl:tc_upper:day']['type'], 'basemap')
+        for k in ('obl:tc_mid:day', 'obl:tc_low:dayshift'):
+            self.assertIn('obl:tc_upper:day', by[k]['depends'], 'the upper day base locks the shared camera')
+        self.assertIn('obl:tc_upper_eden:night', by['obl:tc_mid:day']['depends'])
+        self.assertIn('estate:cutaway', by['glb:budget:upper']['depends'])
+        self.assertEqual(set(by['site8k:site_fief1']['depends']), {'bake:night:' + g for g in ('upper', 'mid', 'low', 'sites')})
+        for k in ('var:tc_low:dawn', 'var:tc_low:day', 'var:tc_low:dusk'):
+            self.assertTrue(by[k]['notes'].startswith('RETIRED (D41'), k)
+        self.assertNotIn('RETIRED', by['var:tc_low:night']['notes'])
+        self.assertEqual(by['out:tc_mid:night']['spec'], {'res': 4000, 'spp': 64})
 
     def test_item_shape_and_ascii(self):
         for i in self.items:

@@ -2,12 +2,12 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-01T10:15:41Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T10:25:18Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 51 | 0 | 4 | 0 | 0 | 0 | 55 |
-| hero | 22 | 0 | 0 | 0 | 0 | 0 | 22 |
+| standard | 55 | 0 | 0 | 0 | 27 | 0 | 82 |
+| hero | 22 | 0 | 1 | 0 | 11 | 0 | 34 |
 
 Below-gate (user spot-check): none
 
@@ -63,13 +63,40 @@ Below-gate (user spot-check): none
 | 46 | `var:tc_low:day` | variant | done | - |  |  | Period variant tc_low / day |
 | 47 | `var:tc_low:dusk` | variant | done | - |  |  | Period variant tc_low / dusk |
 | 48 | `var:tc_low:night` | variant | done | - |  |  | Period variant tc_low / night |
-| 49 | `var:tc_upper_city:dawn` | variant | open | render |  |  | Upper map, city-below view, dawn period |
-| 50 | `var:tc_upper_city:day` | variant | open | render |  |  | Upper map, city-below view, day period |
-| 51 | `var:tc_upper_city:dusk` | variant | open | render |  |  | Upper map, city-below view, dusk period |
-| 52 | `var:tc_upper_city:night` | variant | open | render |  |  | Upper map, city-below view, night period |
+| 49 | `var:tc_upper_city:dawn` | variant | done | - |  |  | Upper map, city-below view, dawn period |
+| 50 | `var:tc_upper_city:day` | variant | done | - |  |  | Upper map, city-below view, day period |
+| 51 | `var:tc_upper_city:dusk` | variant | done | - |  |  | Upper map, city-below view, dusk period |
+| 52 | `var:tc_upper_city:night` | variant | done | - |  |  | Upper map, city-below view, night period |
 | 53 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
 | 54 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
 | 55 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
+| 56 | `obl:tc_mid:day` | basemap | blocked | audit |  |  | Mid oblique base, day: canyon light, neon on (D41) |
+| 57 | `obl:tc_mid:dusk` | variant | blocked | render |  |  | Mid oblique, dusk (D41) |
+| 58 | `obl:tc_mid:night` | variant | blocked | render |  |  | Mid oblique, night (D41) |
+| 59 | `obl:tc_low:dayshift` | basemap | blocked | audit |  |  | Low oblique base, day shift: artificial light only (D41) |
+| 60 | `obl:tc_low:nightshift` | variant | blocked | render |  |  | Low oblique, night shift (D41) |
+| 61 | `out:tc_mid:day` | variant | blocked | render |  |  | Outskirts ring tc_mid / day, low-res (D41 scale) |
+| 62 | `out:tc_mid:dusk` | variant | blocked | render |  |  | Outskirts ring tc_mid / dusk, low-res (D41 scale) |
+| 63 | `out:tc_mid:night` | variant | blocked | render |  |  | Outskirts ring tc_mid / night, low-res (D41 scale) |
+| 64 | `out:tc_low:dayshift` | variant | blocked | render |  |  | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
+| 65 | `out:tc_low:nightshift` | variant | blocked | render |  |  | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
+| 66 | `glb:budget:upper` | estate | blocked | final |  |  | Landmark models, upper group: budget re-export (D41 B3) |
+| 67 | `glb:budget:mid` | estate | blocked | final |  |  | Landmark models, mid group: budget re-export (D41 B3) |
+| 68 | `glb:budget:low` | estate | blocked | final |  |  | Landmark models, low group: budget re-export (D41 B3) |
+| 69 | `glb:budget:sites` | estate | blocked | final |  |  | Landmark models, sites group: budget re-export (D41 B3) |
+| 70 | `bake:night:upper` | estate | blocked | final |  |  | Landmark models, upper group: night emissive bake (D41 B4) |
+| 71 | `bake:night:mid` | estate | blocked | final |  |  | Landmark models, mid group: night emissive bake (D41 B4) |
+| 72 | `bake:night:low` | estate | blocked | final |  |  | Landmark models, low group: night emissive bake (D41 B4) |
+| 73 | `bake:night:sites` | estate | blocked | final |  |  | Landmark models, sites group: night emissive bake (D41 B4) |
+| 74 | `site8k:site_kavalierki` | basemap | blocked | audit |  |  | Opening site map site_kavalierki at 8000 px (D41 B6) |
+| 75 | `site8k:yuanyu_sanctum` | basemap | blocked | audit |  |  | Opening site map yuanyu_sanctum at 8000 px (D41 B6) |
+| 76 | `site8k:yuanyu_city` | basemap | blocked | audit |  |  | Opening site map yuanyu_city at 8000 px (D41 B6) |
+| 77 | `site8k:site_highland` | basemap | blocked | audit |  |  | Opening site map site_highland at 8000 px (D41 B6) |
+| 78 | `site8k:site_fief1` | basemap | blocked | audit |  |  | Opening site map site_fief1 at 8000 px (D41 B6) |
+| 79 | `site8k:site_fief2` | basemap | blocked | audit |  |  | Opening site map site_fief2 at 8000 px (D41 B6) |
+| 80 | `site8k:site_fief3` | basemap | blocked | audit |  |  | Opening site map site_fief3 at 8000 px (D41 B6) |
+| 81 | `site8k:site_fief4` | basemap | blocked | audit |  |  | Opening site map site_fief4 at 8000 px (D41 B6) |
+| 82 | `site8k:site_fief5` | basemap | blocked | audit |  |  | Opening site map site_fief5 at 8000 px (D41 B6) |
 
 ## Hero lane
 
@@ -97,4 +124,16 @@ Below-gate (user spot-check): none
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
 | 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
 | 22 | `base:world` | basemap | done | - |  |  | Final-spec audit / re-render of base map world |
+| 23 | `obl:tc_upper:day` | basemap | open | audit |  |  | Upper oblique base, day: islands only with alpha (D41) |
+| 24 | `obl:tc_upper:dawn` | variant | blocked | render |  |  | Upper oblique, dawn period: islands only with alpha (D41) |
+| 25 | `obl:tc_upper:dusk` | variant | blocked | render |  |  | Upper oblique, dusk period: islands only with alpha (D41) |
+| 26 | `obl:tc_upper:night` | variant | blocked | render |  |  | Upper oblique, night period: islands only with alpha (D41) |
+| 27 | `obl:tc_upper_eden:day` | variant | blocked | render |  |  | Eden oblique hi-res inset, day period (D41 B6) |
+| 28 | `obl:tc_upper_eden:dawn` | variant | blocked | render |  |  | Eden oblique hi-res inset, dawn period (D41 B6) |
+| 29 | `obl:tc_upper_eden:dusk` | variant | blocked | render |  |  | Eden oblique hi-res inset, dusk period (D41 B6) |
+| 30 | `obl:tc_upper_eden:night` | variant | blocked | render |  |  | Eden oblique hi-res inset, night period (D41 B6) |
+| 31 | `base:world_cities` | basemap | blocked | audit |  |  | World map day re-render with city patches (D41 B7) |
+| 32 | `var:world:borders` | variant | blocked | render |  |  | World map borders at full resolution, thin lines (D41 B7) |
+| 33 | `var:world:night` | variant | blocked | render |  |  | World map night variant with city lights (D41 B7) |
+| 34 | `estate:cutaway` | estate | blocked | final |  |  | Estate floors view: real interior materials, AO bake, practical lamps (D41 B5) |
 

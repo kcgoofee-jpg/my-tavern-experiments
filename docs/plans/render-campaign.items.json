@@ -901,7 +901,7 @@
     "script": "blender/tiancheng_low.py",
     "args": "--out logs/campaign/full/tc_low_dawn_full.png"
    },
-   "notes": "register = periods.dawn in maps.json; TODO: blender/tiancheng_low.py has no dawn lighting (only --day; night is the default); add it before rendering"
+   "notes": "RETIRED (D41, 2026-10-02): the low tier has no daylight (card L34, L363); it now has one artificial-light regime in two shift variants (obl:tc_low:dayshift / nightshift). This top-down period image is superseded; OBLIQUE-CODE points the top-down toggle at the night image for every period. Previous note: register = periods.dawn in maps.json; TODO: blender/tiancheng_low.py has no dawn lighting (only --day; night is the default); add it before rendering"
   },
   {
    "id": "var:tc_low:day",
@@ -921,7 +921,7 @@
     "script": "blender/tiancheng_low.py",
     "args": "--day --out logs/campaign/full/tc_low_day_full.png"
    },
-   "notes": "exists: 8000x64 spp rendered 2026-09-29, not registered in maps.json periods; after the audit the worker may skip render / tiles; register = periods.day in maps.json"
+   "notes": "RETIRED (D41, 2026-10-02): the low tier has no daylight (card L34, L363); it now has one artificial-light regime in two shift variants (obl:tc_low:dayshift / nightshift). This top-down period image is superseded; OBLIQUE-CODE points the top-down toggle at the night image for every period. Previous note: exists: 8000x64 spp rendered 2026-09-29, not registered in maps.json periods; after the audit the worker may skip render / tiles; register = periods.day in maps.json"
   },
   {
    "id": "var:tc_low:dusk",
@@ -941,7 +941,7 @@
     "script": "blender/tiancheng_low.py",
     "args": "--out logs/campaign/full/tc_low_dusk_full.png"
    },
-   "notes": "register = periods.dusk in maps.json; TODO: blender/tiancheng_low.py has no dusk lighting (only --day; night is the default); add it before rendering"
+   "notes": "RETIRED (D41, 2026-10-02): the low tier has no daylight (card L34, L363); it now has one artificial-light regime in two shift variants (obl:tc_low:dayshift / nightshift). This top-down period image is superseded; OBLIQUE-CODE points the top-down toggle at the night image for every period. Previous note: register = periods.dusk in maps.json; TODO: blender/tiancheng_low.py has no dusk lighting (only --day; night is the default); add it before rendering"
   },
   {
    "id": "var:tc_low:night",
@@ -1099,6 +1099,667 @@
     "landmark": "tiancheng_univ_court"
    },
    "notes": "model exists: self-check r1 7.5 / 7.5 (docs/card-buildings.md); confirm it meets the P2 institution bar or fix"
+  },
+  {
+   "id": "obl:tc_mid:day",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Mid oblique base, day: canyon light, neon on (D41)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day",
+    "obl:tc_upper:dawn",
+    "obl:tc_upper:dusk",
+    "obl:tc_upper:night",
+    "obl:tc_upper_eden:day",
+    "obl:tc_upper_eden:dawn",
+    "obl:tc_upper_eden:dusk",
+    "obl:tc_upper_eden:night"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod day --out logs/campaign/full/tc_mid_obl_day_full.png"
+   },
+   "notes": "Batch 2 (~4 Mac-h for day / dusk / night). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. shared camera: ortho, az 165, pitch 35, 0.44 m/px, frame fitted to the tier content and snapped to 16:10; the render writes the camera file (s0.6). Uses the camera locked by obl:tc_upper:day (same orientation and m/px; own frame, deck at z = 50 m). Canyon light: sun on crowns only, streets in shade, soft dark zones under the islands; neon and holograms on at ~40 % of night. Facades and window emissive textures needed (no point lights for windows). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_mid:dusk",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Mid oblique, dusk (D41)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_mid:day"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod dusk --out logs/campaign/full/tc_mid_obl_dusk_full.png"
+   },
+   "notes": "Batch 2. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as obl:tc_mid:day. Light: warm sky, sun on the tallest crowns only, neon ~70 %, windows coming on; also serves the dawn period. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_mid:night",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Mid oblique, night (D41)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_mid:day"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod night --out logs/campaign/full/tc_mid_obl_night_full.png"
+   },
+   "notes": "Batch 2. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as obl:tc_mid:day. Light: the whole grid lit, each district in its own character: core warm-gold crowns and white offices, high district clean white with the cathedral floodlit, commercial C densest magenta / cyan neon and holograms, outer residential warm windows with sparse neon, ring barracks floodlights, glowing rail lines with lit trains, car-light streams; only parks, canals and open lots stay dark; self-check s0.8 item 3 (>= 80 % of 250 m cells lit). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_low:dayshift",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Low oblique base, day shift: artificial light only (D41)",
+   "targets": [
+    "tc_low:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day",
+    "obl:tc_mid:day",
+    "obl:tc_mid:dusk",
+    "obl:tc_mid:night"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--shift day --out logs/campaign/full/tc_low_obl_dayshift_full.png"
+   },
+   "notes": "Batch 3 (~3 Mac-h for both shifts). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. shared camera: ortho, az 165, pitch 35, 0.44 m/px, frame fitted to the tier content and snapped to 16:10; the render writes the camera file (s0.6). Same orientation and m/px as the upper camera; ground at z = 0. No sun, no sky light; factories fully on (furnace glow through roof vents, lit steam), sodium lamps, freight headlights; the well-7 shaft is the only daylight (cold white column and pool). Serves the dawn and day periods. Self-check s0.8 item 5 (dark pass). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_low:nightshift",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Low oblique, night shift (D41)",
+   "targets": [
+    "tc_low:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_low:dayshift"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--shift night --out logs/campaign/full/tc_low_obl_nightshift_full.png"
+   },
+   "notes": "Batch 3. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as the day shift. Part of the factories dark, sodium lamps on, black-market / bar / fight-pit neon brighter, more black pockets in the slums; the well-7 shaft carries only a faint violet-cyan spill from the mid neon. Serves the dusk and night periods. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "out:tc_mid:day",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Outskirts ring tc_mid / day, low-res (D41 scale)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_mid:day",
+    "obl:tc_low:dayshift",
+    "obl:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 4000,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--outskirts --tod day --out logs/campaign/full/tc_mid_out_day_full.png"
+   },
+   "notes": "Batch 4 (~2 Mac-h for all five). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. About 12 x 7.5 km of ground around the column, same orientation, frame ~14080 x 8800 m at ~3.5 m/px, centred on the tier frame; nothing generated inside the column; density and light thin outward and dissolve into the FOG-1 fog; no markers, no new places; the ring barracks continue along the outer band (same place, no new marker). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "out:tc_mid:dusk",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Outskirts ring tc_mid / dusk, low-res (D41 scale)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_mid:dusk",
+    "obl:tc_low:dayshift",
+    "obl:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 4000,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--outskirts --tod dusk --out logs/campaign/full/tc_mid_out_dusk_full.png"
+   },
+   "notes": "Batch 4 (~2 Mac-h for all five). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. About 12 x 7.5 km of ground around the column, same orientation, frame ~14080 x 8800 m at ~3.5 m/px, centred on the tier frame; nothing generated inside the column; density and light thin outward and dissolve into the FOG-1 fog; no markers, no new places; the ring barracks continue along the outer band (same place, no new marker). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "out:tc_mid:night",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Outskirts ring tc_mid / night, low-res (D41 scale)",
+   "targets": [
+    "tc_mid:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_mid:night",
+    "obl:tc_low:dayshift",
+    "obl:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 4000,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/tiancheng_mid.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--outskirts --tod night --out logs/campaign/full/tc_mid_out_night_full.png"
+   },
+   "notes": "Batch 4 (~2 Mac-h for all five). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. About 12 x 7.5 km of ground around the column, same orientation, frame ~14080 x 8800 m at ~3.5 m/px, centred on the tier frame; nothing generated inside the column; density and light thin outward and dissolve into the FOG-1 fog; no markers, no new places; the ring barracks continue along the outer band (same place, no new marker). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "out:tc_low:dayshift",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Outskirts ring tc_low / dayshift, low-res (D41 scale)",
+   "targets": [
+    "tc_low:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_low:dayshift",
+    "obl:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 4000,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--outskirts --shift day --out logs/campaign/full/tc_low_out_dayshift_full.png"
+   },
+   "notes": "Batch 4 (~2 Mac-h for all five). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. About 12 x 7.5 km of ground around the column, same orientation, frame ~14080 x 8800 m at ~3.5 m/px, centred on the tier frame; nothing generated inside the column; density and light thin outward and dissolve into the FOG-1 fog; no markers, no new places; freight lines radiate out, slums sprawl, sodium dots thin to black. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "out:tc_low:nightshift",
+   "lane": "standard",
+   "type": "variant",
+   "title": "Outskirts ring tc_low / nightshift, low-res (D41 scale)",
+   "targets": [
+    "tc_low:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_low:nightshift",
+    "obl:tc_low:dayshift"
+   ],
+   "spec": {
+    "res": 4000,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/tiancheng_low.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--outskirts --shift night --out logs/campaign/full/tc_low_out_nightshift_full.png"
+   },
+   "notes": "Batch 4 (~2 Mac-h for all five). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. About 12 x 7.5 km of ground around the column, same orientation, frame ~14080 x 8800 m at ~3.5 m/px, centred on the tier frame; nothing generated inside the column; density and light thin outward and dissolve into the FOG-1 fog; no markers, no new places; freight lines radiate out, slums sprawl, sodium dots thin to black. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "glb:budget:upper",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, upper group: budget re-export (D41 B3)",
+   "targets": [
+    "map/props:upper"
+   ],
+   "fill": "specific",
+   "depends": [
+    "estate:cutaway"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 7 (~8 Mac-h for the four groups, ~59 props). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Group = the props whose marker sits on the upper maps. Desktop tier 4-8 MB (hero landmarks at the top), textures 1-2K (base colour, normal, ORM) baked from the procedural materials, meshopt geometry, KTX2 textures (normals UASTC, colour ETC1S); phone tier <= 2 MB with 512-1K textures under the existing *_low.glb names (viewer3d picks the tier). verify = open each model in the viewer at day and night and look at it before shipping. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "glb:budget:mid",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, mid group: budget re-export (D41 B3)",
+   "targets": [
+    "map/props:mid"
+   ],
+   "fill": "specific",
+   "depends": [
+    "estate:cutaway"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 7 (~8 Mac-h for the four groups, ~59 props). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Group = the props whose marker sits on the mid maps. Desktop tier 4-8 MB (hero landmarks at the top), textures 1-2K (base colour, normal, ORM) baked from the procedural materials, meshopt geometry, KTX2 textures (normals UASTC, colour ETC1S); phone tier <= 2 MB with 512-1K textures under the existing *_low.glb names (viewer3d picks the tier). verify = open each model in the viewer at day and night and look at it before shipping. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "glb:budget:low",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, low group: budget re-export (D41 B3)",
+   "targets": [
+    "map/props:low"
+   ],
+   "fill": "specific",
+   "depends": [
+    "estate:cutaway"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 7 (~8 Mac-h for the four groups, ~59 props). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Group = the props whose marker sits on the low maps. Desktop tier 4-8 MB (hero landmarks at the top), textures 1-2K (base colour, normal, ORM) baked from the procedural materials, meshopt geometry, KTX2 textures (normals UASTC, colour ETC1S); phone tier <= 2 MB with 512-1K textures under the existing *_low.glb names (viewer3d picks the tier). verify = open each model in the viewer at day and night and look at it before shipping. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "glb:budget:sites",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, sites group: budget re-export (D41 B3)",
+   "targets": [
+    "map/props:sites"
+   ],
+   "fill": "specific",
+   "depends": [
+    "estate:cutaway"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 7 (~8 Mac-h for the four groups, ~59 props). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Group = the props whose marker sits on the sites maps. Desktop tier 4-8 MB (hero landmarks at the top), textures 1-2K (base colour, normal, ORM) baked from the procedural materials, meshopt geometry, KTX2 textures (normals UASTC, colour ETC1S); phone tier <= 2 MB with 512-1K textures under the existing *_low.glb names (viewer3d picks the tier). verify = open each model in the viewer at day and night and look at it before shipping. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "bake:night:upper",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, upper group: night emissive bake (D41 B4)",
+   "targets": [
+    "map/props:upper"
+   ],
+   "fill": "specific",
+   "depends": [
+    "glb:budget:upper",
+    "glb:budget:mid",
+    "glb:budget:low",
+    "glb:budget:sites"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 8 (~7 Mac-h for the four groups). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. One emissive map per landmark with windows or fixtures (windows, door lamps, signs, lamp heads), shown at night in the same period as the map; nothing glows where the model has no fixture. Same pass as the budget re-export output. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "bake:night:mid",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, mid group: night emissive bake (D41 B4)",
+   "targets": [
+    "map/props:mid"
+   ],
+   "fill": "specific",
+   "depends": [
+    "glb:budget:mid",
+    "glb:budget:upper",
+    "glb:budget:low",
+    "glb:budget:sites"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 8 (~7 Mac-h for the four groups). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. One emissive map per landmark with windows or fixtures (windows, door lamps, signs, lamp heads), shown at night in the same period as the map; nothing glows where the model has no fixture. Same pass as the budget re-export output. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "bake:night:low",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, low group: night emissive bake (D41 B4)",
+   "targets": [
+    "map/props:low"
+   ],
+   "fill": "specific",
+   "depends": [
+    "glb:budget:low",
+    "glb:budget:upper",
+    "glb:budget:mid",
+    "glb:budget:sites"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 8 (~7 Mac-h for the four groups). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. One emissive map per landmark with windows or fixtures (windows, door lamps, signs, lamp heads), shown at night in the same period as the map; nothing glows where the model has no fixture. Same pass as the budget re-export output. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "bake:night:sites",
+   "lane": "standard",
+   "type": "estate",
+   "title": "Landmark models, sites group: night emissive bake (D41 B4)",
+   "targets": [
+    "map/props:sites"
+   ],
+   "fill": "specific",
+   "depends": [
+    "glb:budget:sites",
+    "glb:budget:upper",
+    "glb:budget:mid",
+    "glb:budget:low"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 64
+   },
+   "hints": {
+    "script": "blender/export_optimized.py",
+    "viewer": "map/props/viewer3d.html"
+   },
+   "notes": "Batch 8 (~7 Mac-h for the four groups). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. One emissive map per landmark with windows or fixtures (windows, door lamps, signs, lamp heads), shown at night in the same period as the map; nothing glows where the model has no fixture. Same pass as the budget re-export output. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_kavalierki",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_kavalierki at 8000 px (D41 B6)",
+   "targets": [
+    "site_kavalierki:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site kavalierki --res 8000 --samples 128 --out logs/campaign/full/site_kavalierki_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:yuanyu_sanctum",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map yuanyu_sanctum at 8000 px (D41 B6)",
+   "targets": [
+    "yuanyu_sanctum:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site yuanyu_sanctum --res 8000 --samples 128 --out logs/campaign/full/yuanyu_sanctum_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:yuanyu_city",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map yuanyu_city at 8000 px (D41 B6)",
+   "targets": [
+    "yuanyu_city:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site yuanyu_city --res 8000 --samples 128 --out logs/campaign/full/yuanyu_city_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_highland",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_highland at 8000 px (D41 B6)",
+   "targets": [
+    "site_highland:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site highland --res 8000 --samples 128 --out logs/campaign/full/site_highland_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_fief1",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_fief1 at 8000 px (D41 B6)",
+   "targets": [
+    "site_fief1:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief1 --res 8000 --samples 128 --out logs/campaign/full/site_fief1_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_fief2",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_fief2 at 8000 px (D41 B6)",
+   "targets": [
+    "site_fief2:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief2 --res 8000 --samples 128 --out logs/campaign/full/site_fief2_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_fief3",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_fief3 at 8000 px (D41 B6)",
+   "targets": [
+    "site_fief3:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief3 --res 8000 --samples 128 --out logs/campaign/full/site_fief3_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_fief4",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_fief4 at 8000 px (D41 B6)",
+   "targets": [
+    "site_fief4:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief4 --res 8000 --samples 128 --out logs/campaign/full/site_fief4_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "site8k:site_fief5",
+   "lane": "standard",
+   "type": "basemap",
+   "title": "Opening site map site_fief5 at 8000 px (D41 B6)",
+   "targets": [
+    "site_fief5:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "bake:night:upper",
+    "bake:night:mid",
+    "bake:night:low",
+    "bake:night:sites"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/opening_sites.py",
+    "args": "--site fief5 --res 8000 --samples 128 --out logs/campaign/full/site_fief5_8k_full.png"
+   },
+   "notes": "Batch 9 (~2.5 Mac-h for all nine). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Top-down terrain map as before, 4000 -> 8000 px; markers re-exported by the script must match (check_maps); the period colour grade comes from FOG-1 (A7), no period images. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
   },
   {
    "id": "layout:tc_upper",
@@ -1560,6 +2221,287 @@
     "args": "--out logs/campaign/full/world_full.png"
    },
    "notes": "audit first: current DZI 8000 px wide; render / tiles may be skipped when the audit shows the tiles already meet the spec; no world final in logs/render_times.csv (only world_yuanyu drafts): default 8000/128"
+  },
+  {
+   "id": "obl:tc_upper:day",
+   "lane": "hero",
+   "type": "basemap",
+   "title": "Upper oblique base, day: islands only with alpha (D41)",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod day --out logs/campaign/full/tc_upper_obl_day_full.png"
+   },
+   "notes": "Batch 1 (~6 Mac-h incl. the four Eden insets). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. audit = add the orthographic branch to blender/project.py + oblique.py and a transparent film (render-line code), grey-model draft 2000/16 to check the frame. shared camera: ortho, az 165, pitch 35, 0.44 m/px, frame fitted to the tier content and snapped to 16:10; the render writes the camera file (s0.6). Content: islands, undersides, cores, falls and mist, platforms, ward arcs (none on Eden), climate tower, cloud sheets c1-c3 as semi-transparent alpha; no cloud-sea floor, no city (the viewer composites the mid tier below, D40). This item locks the camera for mid and low. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper:dawn",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper oblique, dawn period: islands only with alpha (D41)",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod dawn --out logs/campaign/full/tc_upper_obl_dawn_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as obl:tc_upper:day (hash must match). Light: low warm sun, a few windows still lit, cores always on. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper:dusk",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper oblique, dusk period: islands only with alpha (D41)",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod dusk --out logs/campaign/full/tc_upper_obl_dusk_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as obl:tc_upper:day (hash must match). Light: low orange sun, windows coming on, landing beacons on. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper:night",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Upper oblique, night period: islands only with alpha (D41)",
+   "targets": [
+    "tc_upper:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod night --out logs/campaign/full/tc_upper_obl_night_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Same camera file as obl:tc_upper:day (hash must match). Light: real emissives: main-house windows warm 2700 K at 60-80 % with per-room variation, garden and path lamps, fountain lights, landing beacon rings and approach strips, faint cyan ward arcs (none on Eden), aether cores and rune rings (brightest cool light), crystal glints, climate tower crown and field rings; weak cool moonlight only; no sourceless glow on clouds. register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper_eden:day",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Eden oblique hi-res inset, day period (D41 B6)",
+   "targets": [
+    "tc_upper:eden"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:day"
+   ],
+   "spec": {
+    "res": 6000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod day --crop <Eden projected bbox + 10 % from the camera file> --res <2x pixel density> --out logs/campaign/full/tc_upper_obl_eden_day_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Folded into the upper oblique: same camera, a --crop of Eden at twice the pixel density (~0.22 m/px), so the inset is aligned by construction and gets its own camera file. Replaces the top-down per-period Eden insets (the top-down toggle keeps the day inset and skips it at night, A1). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper_eden:dawn",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Eden oblique hi-res inset, dawn period (D41 B6)",
+   "targets": [
+    "tc_upper:eden"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:dawn"
+   ],
+   "spec": {
+    "res": 6000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod dawn --crop <Eden projected bbox + 10 % from the camera file> --res <2x pixel density> --out logs/campaign/full/tc_upper_obl_eden_dawn_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Folded into the upper oblique: same camera, a --crop of Eden at twice the pixel density (~0.22 m/px), so the inset is aligned by construction and gets its own camera file. Replaces the top-down per-period Eden insets (the top-down toggle keeps the day inset and skips it at night, A1). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper_eden:dusk",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Eden oblique hi-res inset, dusk period (D41 B6)",
+   "targets": [
+    "tc_upper:eden"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:dusk"
+   ],
+   "spec": {
+    "res": 6000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod dusk --crop <Eden projected bbox + 10 % from the camera file> --res <2x pixel density> --out logs/campaign/full/tc_upper_obl_eden_dusk_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Folded into the upper oblique: same camera, a --crop of Eden at twice the pixel density (~0.22 m/px), so the inset is aligned by construction and gets its own camera file. Replaces the top-down per-period Eden insets (the top-down toggle keeps the day inset and skips it at night, A1). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "obl:tc_upper_eden:night",
+   "lane": "hero",
+   "type": "variant",
+   "title": "Eden oblique hi-res inset, night period (D41 B6)",
+   "targets": [
+    "tc_upper:eden"
+   ],
+   "fill": "specific",
+   "depends": [
+    "obl:tc_upper:night"
+   ],
+   "spec": {
+    "res": 6000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/tiancheng_upper.py",
+    "env": "TC_OBLIQUE=1",
+    "args": "--tod night --crop <Eden projected bbox + 10 % from the camera file> --res <2x pixel density> --out logs/campaign/full/tc_upper_obl_eden_night_full.png"
+   },
+   "notes": "Batch 1. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Folded into the upper oblique: same camera, a --crop of Eden at twice the pixel density (~0.22 m/px), so the inset is aligned by construction and gets its own camera file. Replaces the top-down per-period Eden insets (the top-down toggle keeps the day inset and skips it at night, A1). register / ship wait for the OBLIQUE-CODE step (maps.json views).  Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "base:world_cities",
+   "lane": "hero",
+   "type": "basemap",
+   "title": "World map day re-render with city patches (D41 B7)",
+   "targets": [
+    "world:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "out:tc_mid:day",
+    "out:tc_mid:dusk",
+    "out:tc_mid:night",
+    "out:tc_low:dayshift",
+    "out:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/world_render.py",
+    "args": "--out logs/campaign/full/world_cities_full.png"
+   },
+   "notes": "Batch 5 (~2 Mac-h with borders and night). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Tiancheng reads as a grey urban patch (metro ~40 km, ~25 px at 1.5 km/px); every world place of type capital gets a smaller patch; terrain otherwise unchanged. audit = add the city-patch pass to the world script. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "var:world:borders",
+   "lane": "hero",
+   "type": "variant",
+   "title": "World map borders at full resolution, thin lines (D41 B7)",
+   "targets": [
+    "world:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "out:tc_mid:day",
+    "out:tc_mid:dusk",
+    "out:tc_mid:night",
+    "out:tc_low:dayshift",
+    "out:tc_low:nightshift"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 1
+   },
+   "hints": {
+    "script": "blender/overlays.py",
+    "args": "--borders --res 8000 --out logs/campaign/full/borders_full.png"
+   },
+   "notes": "Batch 5. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Replaces the upscaled borders_4000.png: thin lines (1-1.5 px at 100 %) drawn at the base full width; register = the borders overlay in maps.json points at the new DZI. Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "var:world:night",
+   "lane": "hero",
+   "type": "variant",
+   "title": "World map night variant with city lights (D41 B7)",
+   "targets": [
+    "world:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "base:world_cities"
+   ],
+   "spec": {
+    "res": 8000,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/world_render.py",
+    "args": "--tod night --out logs/campaign/full/world_night_full.png"
+   },
+   "notes": "Batch 5. setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Dark terrain and sea, Tiancheng the brightest light patch, the other capitals smaller; no lights where there is no city. register = periods.night on the world map (the existing period switch handles it; the FOG-1 ring takes this image at night). Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
+  },
+  {
+   "id": "estate:cutaway",
+   "lane": "hero",
+   "type": "estate",
+   "title": "Estate floors view: real interior materials, AO bake, practical lamps (D41 B5)",
+   "targets": [
+    "eden_estate:*"
+   ],
+   "fill": "specific",
+   "depends": [
+    "base:world_cities",
+    "var:world:borders",
+    "var:world:night"
+   ],
+   "spec": {
+    "res": 2048,
+    "spp": 128
+   },
+   "hints": {
+    "script": "blender/estate2/house_web.py",
+    "rooms": "blender/estate2/floorplans.py",
+    "setting": "docs/eden-estate.md (floor / wall / ceiling and lighting per room)"
+   },
+   "notes": "Batch 6 (~4 Mac-h). setting: docs/tiancheng-maps.md s0 (D41); self-check s0.8; no user review. Interior materials per room from docs/eden-estate.md, ambient occlusion baked (2K per floor atlas), the lamps the doc lists (chandeliers, sconces, desk lamps) as emissive fixtures that light the night look; no colour plates (D35). Does not touch the paused Eden r6 exterior refinement. Coordinate with ESTATE-MODES-1 (window glow material names). Queue order is enforced by depends: one batch at a time (D20); batches 1-9 in docs/tiancheng-maps.md s0.9."
   }
  ]
 }

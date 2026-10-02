@@ -1,11 +1,11 @@
 # Todo — the single tracker
 
 状态 2026-10-02（每步结束重写，≤ 5 行）：
-- 阶段：v11「先发伊甸」（计划 §18）——ARCH-1 完成（空 catch 棘轮、文档关口降为警告、中文为正本）。
-- 最近 head：#283 起（以 `map/data/head.json` 为准）；U-FIX-1…7 已修，sweep-2 无 P0。
-- 在跑：渲染战役 R（仅 Mac、低强度）；INV-1 功能清单并行进行。
-- 等你：在 `docs/decision-digest.md` 里给 12 条默认决定逐条填保留 / 改；v0.9.8 前你自己抽查一遍（R1）。
-- 下一步（v12）：v0.9.8 是自用里程碑——FIX-R2（U-FIX-8 + FIX-B6）、CHAT-ISO（同卡多聊天）、INV-2、DIGEST-1 → 抽查 → 打标签；公开发布准备另起一段。
+- 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42），SETTING-1 完成：地图设定按效果重写（D41）。
+- 最近 head：以 `map/data/head.json` 为准。
+- 在跑：FOG-1 / LOOK-1 / ESTATE-MODES-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视。
+- 等你：`docs/decision-digest.md` 逐条填保留 / 改；v0.9.8 前抽查一遍（R1）。
+- 下一步：OBLIQUE-CODE（斜视投影与俯视开关）→ 渲染批 1 上层斜视 → REL-0.9.8。
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -90,6 +90,29 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **PLACE-1a** place record data + builder + sync: `core/place-record.mjs`, node fields `facts` / `access`, one keyword entry per room with text (71), ship `index`, JIT same-floor rooms, custom block fields and per-place custom entries, id-based wb-peek (spec: `docs/place-record.md` appendix A) · next
   - [ ] **PLACE-1b** place UI: 地点 tab shows the current place record + parent chain + nearby, no credits / empty floors; archive card with sync state; one editor on place / room / zone / building / person cards; room-card local inputs removed; duplicate 3D label fix (spec: `docs/place-record.md` appendix B) · after PLACE-1a
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
+- [ ] **EFFECT** effect-first audit (coordinator, 2026-10-02; user: all as recommended; D38–D42). One line per audit item with its owner step; render items live in the ledger (`docs/plans/render-campaign.md`), batches 1–9 in `docs/tiancheng-maps.md` §0.9.
+  - ~~**SETTING-1** setting rewrite for effect: per-tier light, oblique 2.5D main view with one orthographic camera, scale and outskirts, camera files, appendix OBLIQUE-CODE, render plan in the ledger (D41)~~ ✅ 2026-10-02 (RESULT SETTING-1)
+  - [ ] **OBL** oblique main view (upper → mid → low; top-down as a toggle) · setting SETTING-1 ✓ · code **OBLIQUE-CODE** (spec: `docs/tiancheng-maps.md` appendix OBLIQUE-CODE) · renders `obl:tc_upper:*`, `obl:tc_mid:*`, `obl:tc_low:*` (batches 1–3)
+  - [ ] **LIGHT** per-tier light (upper four periods with real night emissives; mid neon by day, whole grid lit at night; low two shifts, low dawn / day / dusk retired) · setting SETTING-1 ✓ · renders batches 1–3
+  - [ ] **SCALE** central column + ~12 km outskirts ring + fog; world map city patch · setting SETTING-1 ✓ · code FOG-1 (feather, fog, zoom floor) + OBLIQUE-CODE (outskirts placement) · renders `out:*` (batch 4), `base:world_cities` (batch 5)
+  - [ ] **D40** upper tier composited over the mid tier · code FOG-1 (top-down, mask cut-out), then OBLIQUE-CODE (oblique: islands alpha over mid + haze) · renders `obl:tc_upper:*`
+  - [ ] **A1** Eden inset pops to daylight at night · code FOG-1 (skip off-day) · renders `obl:tc_upper_eden:*` (batch 1)
+  - [ ] **A2** fog of war default off, light desaturation instead of a black veil · LOOK-1
+  - [ ] **A3** tier-switch cloud sweep through white at night · FOG-1
+  - [ ] **A4** estate exterior keeps golden-hour sun shadows at night · ESTATE-MODES-1
+  - [ ] **A5** landmark viewers without day / night; 3D has no backdrop · ESTATE-MODES-1
+  - [ ] **A6** default base images disagree on the period · FOG-1
+  - [ ] **A7** maps without period images stay in daylight (colour grade) · FOG-1
+  - [ ] **A8** Eden ward ring removed, one 「安保」 chip · LOOK-1
+  - [ ] **A9** per-tier UI skins removed · LOOK-1
+  - [ ] **A10** transit lines thin and glowing (lite) · LOOK-1; snapping lines to the rendered rails · **TRANSIT-LOOK** (later data step)
+  - [ ] **A11** one marker per spot (2D), no overlapping labels (3D) · LOOK-1
+  - [ ] **X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38) · ESTATE-MODES-1
+  - [ ] **B3** landmark model budgets 4–8 MB, 1–2K textures, meshopt + KTX2, phone tier ≤ 2 MB · renders `glb:budget:*` (batch 7)
+  - [ ] **B4** landmark night bakes · renders `bake:night:*` (batch 8)
+  - [ ] **B5** estate cutaway materials + AO + practical lamps · renders `estate:cutaway` (batch 6; window glow material names from ESTATE-MODES-1)
+  - [ ] **B6** per-period Eden insets (oblique) and site maps at 8000 px · renders `obl:tc_upper_eden:*` (batch 1), `site8k:*` (batch 9)
+  - [ ] **B7** world map full-res thin borders, city-light patches, night variant · renders `base:world_cities`, `var:world:borders`, `var:world:night` (batch 5)
 - [ ] **PUB** public-release prep (parked until the user decides to share; D15, D21–D27, D29): S10a renames + migration, DIST-1 npm + npmmirror line + stable channel, SLIM-1 history rewrite after DIST-1 and before going public (user 2026-10-02), BUNDLE-1, SEC-1, REL-DOCS
 - [ ] **Stage D** Real tavern test ②: Eden card + one other card · later · prompt none · RESULT (your reply)
 - [ ] **S10** (S10a moves to PUB, S10b parked; D24, D30) Second rename batch, Eden data into `map/packs/eden/`, repo split and slimming (stage E; re-confirm before starting) · later · prompt S10 · RESULT S10 (pending)

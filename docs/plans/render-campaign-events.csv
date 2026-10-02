@@ -554,3 +554,19 @@ ts,id,stage,event,agent,gate,note
 2026-10-01T10:15:19Z,estate:b1b2,final,done,gemini-1,,
 2026-10-01T10:15:33Z,estate:b1b2,verify,done,gemini-1,,
 2026-10-01T10:15:41Z,estate:b1b2,ship,done,gemini-1,,
+2026-10-02T10:25:18Z,var:tc_upper_city:dawn,render,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dawn,tiles,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dawn,register,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dawn,ship,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:day,render,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:day,tiles,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:day,register,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:day,ship,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dusk,render,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dusk,tiles,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dusk,register,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:dusk,ship,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:night,render,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:night,tiles,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:night,register,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"
+2026-10-02T10:25:18Z,var:tc_upper_city:night,ship,skip,setting-1,,"retired (D41): upper oblique main view, the city below is composited in the viewer (D40); top-down keeps the existing images"

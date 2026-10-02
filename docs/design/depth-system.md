@@ -84,6 +84,8 @@
 - **meta 接入**：`make_dzi` 的 `*.dzi.meta.json` 也记录 depth 哈希（配合 check_render_deps）。
 
 ## 8. view: oblique（斜视主地图；v14 预览已实现，8K 待用户确认）
+
+> **D41（2026-10-02）**：斜视成为上层、中层、下层共用的主视图。相机改为**正交**（`camera.proj: "ortho"`，方位 165°、俯角 35°，三层同一朝向、同一米 / 像素），`lens_mm` / `sensor_mm` / `focus_frame` 只留给预览。画框按层内容拟合，每张底图旁发布相机文件。现行规格：`docs/tiancheng-maps.md` §0.2、§0.6 与附录 OBLIQUE-CODE；本节与之冲突处以那里为准。
 用户决定（2026-09-28）：上层主地图改成 2.5D 斜视成图；另有一个真三维模式，以后由别的任务用同一份数据做。全部按层配置，不写死 tc_upper。
 
 ### 8.1 按层配置（`<layer>_depth.json` 新增 `view` 段，schema 同步）

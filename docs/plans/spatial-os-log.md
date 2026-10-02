@@ -1828,5 +1828,13 @@ tests: node 1545/1546 (1 skipped as before; no code change) | smoke PASS | arch 
 deviations: rooms with only a name and a floor (13 of 84 nodes: corridors, plant rooms, porches) get no worldbook entry; such an entry adds no information and its generic keys would fire constantly. Their archive says there is no description yet and offers 编辑. City landmarks keep their line in the three bearing entries instead of a new entry each.
 blocker: none
 open: duplicate 3D label 「医疗与改造室」: the room table has one record, the cause is not located yet (PLACE-1b item 5, probe estate_labels_unique)
+=== RESULT SETTING-1 ===
+status: DONE
+items: 1 setting rewrite (docs/tiancheng-maps.md s0 new canonical setting: oblique main view, one orthographic camera az 165 / pitch 35 / 0.44 m/px shared by the three tiers, per-tier light, tier image contents, outskirts ring, world city patch, camera files, self-check, render order; upper-setting.md and depth-system.md s8 superseded lines struck with "D41 删除"; eden-estate.md pointer) ✓ | 2 appendix OBLIQUE-CODE (views in maps.json, camera file, ortho projection / unprojection / affine, overlays, hit-testing, top-down toggle, D40 composite placement, checks and probe) ✓ | 3 ledger: 39 items added (hero 12, standard 27), batches 1-9 serialised by depends, var:tc_upper_city:* skipped (retired), var:tc_low:{dawn,day,dusk} notes RETIRED ✓ | 4 D41 in both plan editions, todo EFFECT block (every audit item with its owner) ✓ | 5 summary ~/eden-map-review/setting-1/新设定摘要.md ✓
+commits: see git log (one commit, "docs(setting): D41 ...")
+pushed: yes
+tests: node 1545/1546 (1 skipped as before) | smoke PASS | arch PASS | probes: none (docs only)
+deviations: the 50 mm perspective of upper-setting s9.1 is replaced by an orthographic camera (composite alignment, uniform scale, affine marker projection); frames are fitted per tier with one shared orientation and m/px, so the D40 composite is a pure translation. The low tier also goes oblique (same camera) for one projection path. tools/test_render_campaign.py updated for the new item groups and a D41 test (ledger, not product code). Provenance tags removed from upper-setting.md while touching it.
+open: FOG-1 plans to add top-down var:tc_upper_islands_alpha:* and var:tc_upper_eden:{dawn,dusk,night}; under D41 these are top-down-only and should be skipped as retired once they land (the oblique items cover them).
 cleanup: done
 === END ===
