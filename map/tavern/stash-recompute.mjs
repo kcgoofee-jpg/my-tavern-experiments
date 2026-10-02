@@ -61,6 +61,15 @@ export function replayMessage(stash, msg, ctx = {}) {
   return scanMessage({ ...cur, items, slot }, msg, ctx);
 }
 
+/** U-FIX-6: the chat is shorter than the store's scan position (a branch carried another chat's store, or messages were deleted). The text rows of messages
+ *  that no longer exist go (they are recomputable from the chat; rows of other channels stay), and the store scans again from the newest message. */
+function reanchor(cur, newest) {
+  const items = Object.fromEntries(Object.entries(cur.items).filter(([, r]) => !(r.src === 'text' && r.msgIndex > newest)));
+  let slot = cur.slot;
+  if (slot) slot = { ...slot, facts: Object.fromEntries(Object.entries(slot.facts || {}).filter(([id, f]) => !(f.msgIndex > newest) || (items[id] && items[id].src !== 'text'))) };
+  return { ...cur, items, slot, since: Math.min(cur.since ?? newest, newest), upTo: newest - 1 };
+}
+
 /** The live fold of one round: replay the messages whose text changed since their rows were made, scan the messages after `upTo` (never before `since`),
  *  and scan the newest message again (a swipe or an edit of it may now say something else). A store without a start anchors on the newest message.
  *  -> { stash, changed, added, replayed }; `changed` = the rows, slot or tombstones differ (the scan position alone is not a change worth a write). */
@@ -71,6 +80,7 @@ export function step(stash, msgs, ctx = {}) {
   let cur = start, added = 0, replayed = 0;
   const newest = list[list.length - 1];
   if (cur.since === null) cur = { ...cur, since: newest.msgIndex, upTo: newest.msgIndex - 1 };
+  else if (cur.since > newest.msgIndex || (cur.upTo ?? -Infinity) >= newest.msgIndex) cur = reanchor(cur, newest.msgIndex);
   const byIndex = new Map(list.map(m => [m.msgIndex, m]));
   const stale = [...new Set(Object.values(cur.items).filter(r => r.src === 'text' && r.mark && byIndex.has(r.msgIndex) && r.mark !== markOf(byIndex.get(r.msgIndex).text)).map(r => r.msgIndex))].sort((a, b) => a - b);
   const done = new Set();

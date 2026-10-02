@@ -59,3 +59,18 @@ test('rows read with older scan rules are replayed once: the false positives go,
   const again = R.step(r.stash, [{ msgIndex: 12, text, place: '' }], {});
   assert.equal(again.replayed, 0, 'once only');
 });
+
+test('U-FIX-6: a store carried from a longer chat (branch) re-anchors: old text rows past the end go, the new floors are scanned', async () => {
+  const R = await import('../map/tavern/stash-recompute.mjs');
+  const S = await import('../map/tavern/stash-store.mjs');
+  let st = S.empty(126);
+  st = S.put(st, { name: '动静', place: '南侧地窖', note: S.TEXT_NOTE(128), qty: 1, src: 'text', carried: true, msgIndex: 128, mark: 'x' }).stash;
+  st = S.put(st, { name: '旧地图', place: '书房', note: '', qty: 1, src: 'map', carried: true, msgIndex: 129 }).stash;
+  const msgs = [{ msgIndex: 0, text: '开场。' }, { msgIndex: 1, text: '⌖火灾｜某处｜2｜起火｜' }, { msgIndex: 3, text: '绫濑遥从地上捡起了一把「黄铜钥匙」，收进口袋。' }];
+  const r = R.step({ ...st, upTo: 130 }, msgs, {});
+  const names = Object.values(r.stash.items).map(x => x.name).sort();
+  assert.deepEqual(names, ['旧地图', '黄铜钥匙'].sort(), 'text row of a missing message gone, the map pickup kept, the key scanned');
+  assert.equal(r.stash.since, 3);
+  const again = R.step(r.stash, msgs, {});
+  assert.equal(again.changed, false, 'stable on the next round');
+});
