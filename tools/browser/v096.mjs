@@ -57,7 +57,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   // 4 过渡环：缩到最远 → 环可见、面包屑「天城周边」；再推 → 回世界图
   await ev(p, () => { ViewerDebug.osdViewer.viewport.zoomTo(ViewerDebug.osdViewer.viewport.getMinZoom(), null, true); ViewerDebug.osdViewer.viewport.applyConstraints(true); }); await B.wait(1200);
   const ring = await ev(p, () => ({ w: ViewerDebug.osdViewer.viewport.getBounds(true).width, holder: !!document.querySelector('.tc-ring canvas'), vis: document.querySelector('.tc-ring')?.style.visibility, crumb: document.getElementById('crumbs').textContent }));
-  rep.check('ring_visible', ring.holder && ring.vis !== 'hidden' && ring.w > 6, JSON.stringify(ring));
+  rep.check('ring_visible', ring.holder && ring.vis !== 'hidden' && ring.w > 1.9 && ring.w < 2.2, JSON.stringify(ring));
   rep.check('ring_crumb', /天城周边/.test(ring.crumb), ring.crumb);
   await snap(p, 'ring_375');
   await ev(p, () => { for (let i = 0; i < 2; i++) { ViewerDebug.osdViewer.viewport.zoomBy(1 / 1.3); ViewerDebug.osdViewer.viewport.applyConstraints(); } });

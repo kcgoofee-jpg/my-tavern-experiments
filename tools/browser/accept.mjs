@@ -57,16 +57,22 @@ try {
 
   if (on('cloud')) await step('云雾开关', async () => {
     await B.goMap(p, 'tc_upper');
-    const b0 = (await B.viewerState(p)).base;
+    // D40（FOG-1）：开关不再整张换成「白天专用的城市底图」，而是把下一层的时段底图 + 岛掩模 + 高空霾合成上来
+    const st = () => p.evaluate(() => ({ base: (() => { try { const s = ViewerDebug.osdViewer.world.getItemAt(0)?.source; return s?.tilesUrl || s?.url || ''; } catch (e) { return ''; } })(),
+      comp: window.__tierFogProbe?.state()?.comp || null }));
+    const s0 = await st();
     // E5：图层开关收进「图层 ▾」弹层（窄屏在「⋯」里），先打开
     const openLay = () => p.evaluate(() => { if (!document.querySelector('#tgAlt').offsetParent) ViewerDebug.showLay(true); });
     await openLay();
-    await p.locator('#tgAlt').click(); await B.wait(2500);
-    const b1 = (await B.viewerState(p)).base; await B.shot(p, OUT, 'desk_cloud_city');
+    await p.locator('#tgAlt').click(); await B.wait(2800);
+    const s1 = await st(); await B.shot(p, OUT, 'desk_cloud_city');
     await openLay(); await p.locator('#tgAlt').click(); await B.wait(2000);
-    const b2 = (await B.viewerState(p)).base;
+    const s2 = await st();
     await p.evaluate(() => ViewerDebug.showLay(false));
-    rep.check('云雾开关（上层 ↔ 显示下方城市）', !/upper_city/.test(b0) && /upper_city/.test(b1) && !/upper_city/.test(b2), [b0, b1, b2].map(x => x.replace(/\/$/, '').split('/').pop()).join(' → '));
+    const name = x => x.replace(/\/$/, '').split('/').pop();
+    rep.check('云雾开关（上层 → 显示下方城市：底图不变，三层合成上 / 下）',
+      !/upper_city/.test(s0.base) && !s0.comp && s0.base === s1.base && !!s1.comp && !!s1.comp.mask && !!s1.comp.under && !s2.comp,
+      `底图 ${name(s0.base)}${s0.base === s1.base ? '（不变）' : ' → ' + name(s1.base)}；合成 ${s0.comp ? 'on' : 'off'} → ${s1.comp ? 'on' : 'off'} → ${s2.comp ? 'on' : 'off'}`);
   });
 
   if (on('fly')) await step('事态飞行', async () => {
