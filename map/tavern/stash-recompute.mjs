@@ -9,6 +9,8 @@ import * as S from './stash-store.mjs';
 import { hashText } from './context.mjs';
 
 const num = v => (Number.isInteger(v) ? v : null);
+/** a text row's fingerprint: the message text and the scan rules it was read with (new rules -> the row is replayed once) */
+const markOf = text => hashText(text) + '.' + P.SCAN_VER;
 const keyOf = (a, b) => (a === b ? 0 : a === null ? -1 : b === null ? 1 : a - b);
 /** what a save has to keep: the rows, the slot, the tombstones (the scan position is not worth a write on its own) */
 const content = s => JSON.stringify([s.items, s.slot, s.removed, s.seq]);
@@ -37,7 +39,7 @@ export function scanMessage(stash, msg, ctx = {}) {
   let facts = [];
   try { facts = P.scan(text, { known, floor: mi, place: msg.place || '', vocab: ctx.vocab }); } catch (e) { facts = []; }
   let added = 0;
-  const mark = hashText(text);
+  const mark = markOf(text);
   for (const f of facts) {
     if (cur.items[f.id] || cur.removed[f.id] >= mi) continue;
     const r = S.put(cur, { id: f.id, name: f.name, place: f.place || '', note: S.TEXT_NOTE(mi), qty: 1, src: 'text', carried: true, msgIndex: mi, mark });
@@ -70,7 +72,7 @@ export function step(stash, msgs, ctx = {}) {
   const newest = list[list.length - 1];
   if (cur.since === null) cur = { ...cur, since: newest.msgIndex, upTo: newest.msgIndex - 1 };
   const byIndex = new Map(list.map(m => [m.msgIndex, m]));
-  const stale = [...new Set(Object.values(cur.items).filter(r => r.src === 'text' && r.mark && byIndex.has(r.msgIndex) && r.mark !== hashText(byIndex.get(r.msgIndex).text)).map(r => r.msgIndex))].sort((a, b) => a - b);
+  const stale = [...new Set(Object.values(cur.items).filter(r => r.src === 'text' && r.mark && byIndex.has(r.msgIndex) && r.mark !== markOf(byIndex.get(r.msgIndex).text)).map(r => r.msgIndex))].sort((a, b) => a - b);
   const done = new Set();
   for (const mi of stale) { const r = replayMessage(cur, byIndex.get(mi), ctx); cur = r.stash; added += r.added; replayed++; done.add(mi); }
   const upTo0 = cur.upTo ?? -Infinity;

@@ -68,7 +68,7 @@ export function createStashFlow(host) {
   let roundMsgs = [];   // 本轮的楼层窗口：[{ msgIndex, text, place }]，ledgerSync 折叠它
   /** 本轮的正文窗口记下来（折叠在放行点跑），最新一楼的拾取事实照旧入 lootFacts（W11 审计与携带用）。返回新增条数 */
   function scanPickups(msgs, place) {
-    if (!pickupModule || !host.alive || life.dead) return 0;
+    if (!pickupModule || life.dead) return 0;   // U-FIX-2：查看器睡着 / 卸载（alive = false）也照扫——背包是聊天的产物，不跟着面板开关
     roundMsgs = (msgs || []).map((m, i, a) => { let at = null; return { msgIndex: m.floor, text: m.text, get place() { return at ??= (i === a.length - 1 || m.floor === host.floorNow ? place : placeAt(m.floor, m.raw)); } }; });
     const last = msgs?.[msgs.length - 1]; if (!last?.text) return 0;
     let facts = []; try { facts = pickupModule.scan(last.text, { known: knownItems(), floor: last.floor, place, vocab: vocab() }); } catch (e) { return 0; }
@@ -89,7 +89,7 @@ export function createStashFlow(host) {
   /** 一轮的结算（W11）：折叠本轮正文窗口进背包（新增 / 重放 / 虚拟槽位），再对最新事实做漏项审计与待结算携带。
    *  审计看到的缺口（比如玩家用接口删掉的东西）不再补：折叠是唯一的写入者，水位只记「已看过」。 */
   function ledgerSync() {
-    if (!ledgerModule || !stashStoreModule || !stashRecomputeModule || !stash || !host.alive || life.dead || !roundMsgs.length) return null;
+    if (!ledgerModule || !stashStoreModule || !stashRecomputeModule || !stash || life.dead || !roundMsgs.length) return null;   // 推给查看器的 sendInv 自己看 alive
     const rt = stashStoreModule.retag(stash, worldIds());
     const probe = ledgerModule.slotProbe(host.mvuBridge.mvuStat());
     const r = stashRecomputeModule.step(rt.stash, roundMsgs, { worldNames: worldNames(), vocab: vocab(), probe });
