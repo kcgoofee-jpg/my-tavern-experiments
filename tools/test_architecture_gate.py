@@ -94,7 +94,7 @@ def main():
         assert not gate.check_baseline_shape(base), f'账本不合法：{gate.check_baseline_shape(base)}'
         for name, fn in (('z-index', gate.check_zindex), ('卡词', gate.check_terms),
                          ('内联样式', gate.check_inline_style), ('体量', gate.check_line_count),
-                         ('注释卡词', gate.check_comment_terms)):
+                         ('注释卡词', gate.check_comment_terms), ('空 catch', gate.check_empty_catch)):
             bad, info = fn(baseline=base)
             assert not bad, f'{name} 防线对仓库现状有违规：{bad[:3]}'
             assert info['scanned'] > 100, f'{name} 扫描面太小（{info["scanned"]}）= glob 写坏了在静默空转'
@@ -342,6 +342,54 @@ def main():
         assert not bad and info['scanned'] > 100, f'仓库现状注释里有卡词或扫描面太小：{bad[:3]} {info["scanned"]}'
         assert not base.get('comment_terms'), f'账本 comment_terms 现为空，只许缩不许长：{base.get("comment_terms")}'
     case('拦截：注释里的新卡词（// /* */ <!-- --> / 令牌样式表）；map/core 硬零；仓库现状零', comment_terms_rules)
+
+    def empty_catch_rules():
+        silent = ("try { a(); } catch (e) {}\n"
+                  "try { a(); } catch {}\n"
+                  "p.catch(() => {});\n"
+                  "p.catch(()=>{});\n"
+                  "p.catch(e => {});\n"
+                  "try { a(); } catch (e) {  /* quota */  }\n"
+                  "try {\n  a();\n} catch (e) {\n}\n")
+        logs = ("try { a(); } catch (e) { console.warn('[map] x: a failed', e); }\n"
+                "p.catch(e => console.warn('[map] x: p failed', e));\n"
+                "p.catch(() => null);\n"
+                "try { a(); } catch (e) { fallback = 1; }\n"
+                "// try { a(); } catch (e) {}\n")
+        root = fake_root({'map/app/new.mjs': silent})
+        bad, info = gate.check_empty_catch(baseline={}, root=root)
+        assert info['counts'] == {'map/app/new.mjs': 7}, f'空 catch 计数不对：{info["counts"]}'
+        assert bad and 'map/app/new.mjs:1:' in bad[0], f'新文件的空 catch 没被拦（或没写行号）：{bad}'
+        root = fake_root({'map/app/ok.mjs': logs})
+        bad, info = gate.check_empty_catch(baseline={}, root=root)
+        assert not bad and not info['counts'], f'记日志 / 有处理的 catch 与注释不该算空 catch：{bad} {info["counts"]}'
+        root = fake_root({'map/app/old.mjs': silent})
+        bad, _ = gate.check_empty_catch(baseline={'empty_catch': {'map/app/old.mjs': 7}}, root=root)
+        assert not bad, f'账本内持平应放行：{bad}'
+        bad, _ = gate.check_empty_catch(baseline={'empty_catch': {'map/app/old.mjs': 6}}, root=root)
+        assert bad and '7 > 账本 6' in bad[0], f'计数变大没被拦：{bad}'
+        bad, info = gate.check_empty_catch(baseline={'empty_catch': {'map/app/old.mjs': 9}}, root=root)
+        assert not bad and info['lowerable'] == [('map/app/old.mjs', 7, 9)], f'变小应放行并报可下调：{bad} {info["lowerable"]}'
+        root = fake_root({'map/core/store.mjs': "try { a(); } catch (e) {}\n"})
+        bad, _ = gate.check_empty_catch(baseline={'empty_catch': {'map/core/store.mjs': 1}}, root=root)
+        assert not bad and not gate.check_baseline_shape({'empty_catch': {'map/core/store.mjs': 1}}), 'core 的空 catch 应按账本算，不是硬零'
+        bad, _ = gate.check_empty_catch(baseline={}, root=root)
+        assert bad, 'core 里新增空 catch（不在账本）应被拦'
+    case('空 catch 棘轮：新增 / 变大拦、记日志与注释放行、变小放行并报可下调', empty_catch_rules)
+
+    def empty_catch_shrink_message():
+        base = gate.load_baseline()
+        fake = {**base, 'empty_catch': {**base['empty_catch'], 'map/app/about-build.mjs': base['empty_catch']['map/app/about-build.mjs'] + 5}}
+        saved = gate.load_baseline
+        try:
+            gate.load_baseline = lambda path=None: fake
+            out = io.StringIO()
+            with redirect_stdout(out):
+                rc = gate.main([])
+        finally:
+            gate.load_baseline = saved
+        assert rc == 0 and 'baseline can shrink' in out.getvalue(), f'变小时 main 应放行并打印 baseline can shrink：{rc} {out.getvalue()[-300:]}'
+    case('空 catch 棘轮：main 对变小的账本打印「baseline can shrink」', empty_catch_shrink_message)
 
     tmp.cleanup()
     if failures:

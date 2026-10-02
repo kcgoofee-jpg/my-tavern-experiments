@@ -38,11 +38,14 @@
      `style.setProperty('--…')` 与声明全是 `--x: v` 的 `style="…"`（CSS 自定义属性是传动态几何的许可通道）、`style.transform` 与
      `style.left/top/width/height`（动态几何）。
 
-「只减不增」账本（ratchet）：tools/arch_baseline.json = {"lines","zindex","terms","inline_style","comment_terms"}，
+「只减不增」账本（ratchet）：tools/arch_baseline.json = {"lines","zindex","terms","inline_style","comment_terms","empty_catch"}，
 只列有违规的文件，数字只许变小。工具生成，不手写：
   python3 tools/check_architecture.py                     检查（有违规 exit 1，逐条 文件:行号 或 文件:计数>账本）
   python3 tools/check_architecture.py --init-baseline     账本不存在时首次生成
   python3 tools/check_architecture.py --update-baseline   下调账本到当前计数；绝不抬高数字、绝不加新文件，有增长即拒绝
+
+  9. 空 catch（D16）：引擎文件里 `catch (e) {}` / `catch {}` / `.catch(() => {})` 等吞错写法按文件计数，≤ 账本 "empty_catch"
+     （map/core 也按账本算，不是硬零）。新文件或计数变大即失败；该记日志的换成 console.warn（logbuf 收进反馈报告）。
 
 引擎范围（ENGINE_GLOBS）之外永不扫描：map/vendor/、map/estate/ 下的 vendor / model / assets 等（S7-3 起 map/estate/*.js 与 index.html 在范围内）、map/props/*/（逐道具数据）、
 map/packs/、map/data/、map/section.js、viewer.html 以外的 map/*.html、map/_proto/、map/tavern/test-*.html、
@@ -76,7 +79,9 @@ COMMENT_EXTRA_GLOBS = ['map/ui/*.css']   # 检查 8 在引擎文件之外多扫�
 I18N_FILES = ['map/i18n/zh.json', 'map/i18n/en.json']   # 检查 4 额外扫这两本词典的「值」
 
 # 账本五栏：键名即检查名。
-KINDS = ('lines', 'zindex', 'terms', 'inline_style', 'comment_terms')
+KINDS = ('lines', 'zindex', 'terms', 'inline_style', 'comment_terms', 'empty_catch')
+# map/core 对这些栏不是硬零：吞错的 catch 在 core 里也有「预期且无害」的（存储配额、隐私模式），照账本只减不增。
+CORE_SOFT_KINDS = {'empty_catch'}
 BASELINE_NOTE = ('Ratchet ledger for tools/check_architecture.py: counts may only go down; '
                  'regenerate with --update-baseline (never hand-edit, never add a file).')
 
@@ -219,7 +224,7 @@ def check_baseline_shape(baseline):
     bad = []
     for kind in KINDS:
         for rel, n in _section(baseline, kind).items():
-            if rel.startswith(CORE_PREFIX):
+            if rel.startswith(CORE_PREFIX) and kind not in CORE_SOFT_KINDS:
                 bad.append(f"arch_baseline.json[{kind}]: {rel} 不许进账本——map/core 是硬线，违规必须当场改掉")
             if not isinstance(n, int) or n <= 0:
                 bad.append(f"arch_baseline.json[{kind}]: {rel} 的计数 {n!r} 不是正整数（无违规的文件不该列）")
@@ -233,7 +238,7 @@ def _ratchet(kind, hits, baseline, scanned, subset):
     bad, lowerable = [], []
     for rel in sorted(hits):
         h = hits[rel]
-        cap = 0 if rel.startswith(CORE_PREFIX) else allowed.get(rel, 0)
+        cap = 0 if rel.startswith(CORE_PREFIX) and kind not in CORE_SOFT_KINDS else allowed.get(rel, 0)
         if len(h) <= cap:
             continue
         if cap == 0:
@@ -244,7 +249,7 @@ def _ratchet(kind, hits, baseline, scanned, subset):
         else:
             bad.append(f"{rel}: 计数 {len(h)} > 账本 {cap}（只减不增）")
     for rel, cap in sorted(allowed.items()):
-        if rel.startswith(CORE_PREFIX) or (subset and rel not in scanned):
+        if (rel.startswith(CORE_PREFIX) and kind not in CORE_SOFT_KINDS) or (subset and rel not in scanned):
             continue
         cur = len(hits.get(rel, []))
         if cur < cap:
@@ -496,6 +501,34 @@ def check_inline_style(files=None, baseline=None, root=ROOT):
     return bad, _info(scanned, counts, low)
 
 
+# ---------------------------------------------------------------- 检查 9：空 catch（D16：对用户安静，对日志不沉默）
+
+# `catch (e) {}` / `catch {}` / `.catch(() => {})` / `.catch(e => {})` / `.catch(function () {})`，空白与（已剥掉的）注释不影响判断。
+EMPTY_CATCH_RE = re.compile(
+    r'\bcatch\s*(?:\(\s*[\w$]*\s*\))?\s*\{\s*\}'
+    r'|\.catch\s*\(\s*(?:\(\s*[\w$]*\s*\)|[\w$]+|function\s*\(\s*[\w$]*\s*\))\s*(?:=>\s*)?\{\s*\}\s*\)')
+
+
+def scan_empty_catch(files=None, root=ROOT):
+    hits = {}
+    tip = "——吞错的 catch 要么 console.warn('[map] <模块>: <什么> failed', e)（logbuf 会收进反馈报告），要么留着并写注释说明为什么无害"
+    targets = engine_files(root) if files is None else [Path(f) for f in files]
+    for p in targets:
+        src = code_of(p, p.read_text(encoding='utf-8'))
+        found = [(m.start(), f"空 catch{tip}") for m in EMPTY_CATCH_RE.finditer(src)]
+        if found:
+            hits[rel_of(p, root)] = [(line_of(src, pos), msg) for pos, msg in found]
+    return hits, len(targets)
+
+
+def check_empty_catch(files=None, baseline=None, root=ROOT):
+    baseline = load_baseline() if baseline is None else baseline
+    hits, n = scan_empty_catch(files, root)
+    scanned = {rel_of(p, root) for p in (engine_files(root) if files is None else files)}
+    bad, low, counts = _ratchet('empty_catch', hits, baseline, scanned, files is not None)
+    return bad, _info(scanned, counts, low)
+
+
 # ---------------------------------------------------------------- 账本维护
 
 # ---------------------------------------------------------------- 检查 7：旧 TC* 全局（S5-3，硬零）
@@ -520,7 +553,7 @@ def current_counts(root=ROOT):
     _, li = check_line_count(baseline={}, root=root)
     out = {'lines': dict(li['counts'])}
     for kind, scan in (('zindex', scan_zindex), ('terms', scan_terms), ('inline_style', scan_inline_style),
-                       ('comment_terms', scan_comment_terms)):
+                       ('comment_terms', scan_comment_terms), ('empty_catch', scan_empty_catch)):
         hits, _ = scan(root=root)
         out[kind] = {rel: len(h) for rel, h in hits.items() if h}
     return out
@@ -568,7 +601,7 @@ def _cli(args):
             print(f"拒绝：{BASELINE_PATH.relative_to(ROOT)} 已存在；下调用 --update-baseline")
             return 1
         cur = current_counts()
-        core = [f"{k} {rel}" for k in KINDS for rel in cur[k] if rel.startswith(CORE_PREFIX)]
+        core = [f"{k} {rel}" for k in KINDS if k not in CORE_SOFT_KINDS for rel in cur[k] if rel.startswith(CORE_PREFIX)]
         if core:
             print("拒绝生成：map/core 有违规，硬线不进账本，先改掉：")
             for c in core:
@@ -618,7 +651,7 @@ def main(argv=None):
 
     def note_lowerable(info, kind):
         for rel, cur, cap in info['lowerable']:
-            print(f"    可下调 {kind} {rel}: {cap} → {cur}")
+            print(f"    可下调 {kind} {rel}: {cap} → {cur}（baseline can shrink: python3 tools/check_architecture.py --update-baseline）")
 
     bad, info = check_line_count(baseline=baseline)
     top = max(info['sizes'].items(), key=lambda kv: kv[1]) if info['sizes'] else ('-', 0)
@@ -664,12 +697,18 @@ def main(argv=None):
     note_lowerable(info, 'comment_terms')
     fails += bad
 
+    bad, info = check_empty_catch(baseline=baseline)
+    print(f"  [空 catch] 引擎 {info['scanned']} 个文件，空 catch 共 {sum(info['counts'].values())} 处"
+          f"（账本 {sum(_section(baseline, 'empty_catch').values())}；只减不增，吞错要么记日志要么写注释）{tail(info, bad)}")
+    note_lowerable(info, 'empty_catch')
+    fails += bad
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：8 道防线全过")
+    print("架构看门狗：9 道防线全过")
     return 0
 
 
