@@ -25,7 +25,7 @@ const styles = page => page.evaluate(() => {
     badges: [...document.querySelectorAll('.bdg')].length, otherBadges: [...document.querySelectorAll('[class*="badge"], [class*="bdg"]')].filter(e => !e.classList.contains('bdg') && !e.querySelector('.bdg') && !e.classList.contains('bdg new')).length,
     togText: (() => { const t = document.querySelector('.uis .uis-tog .t'); if (!t) return 'none'; const c = cs(t); return c.display === 'none' ? 'hidden' : 'visible'; })(),
     crumbFlex: (() => { const b = document.querySelector('#crumbs b'); return b ? round(cs(b).flexGrow) : null; })(),
-    tierOk: (() => { const t = document.getElementById('tierState'); t.className = 'ok'; const c = cs(t); const r = { pos: c.position, w: round(c.width) }; t.className = ''; return r; })(),
+    tierOk: (() => { const t = document.getElementById('tierState'); t.className = 'ok'; const c = cs(t); const r = { disp: c.display }; t.className = ''; return r; })(),
     plIcon: (() => { const b = document.querySelector('[data-tab="pl"]'); const d = b?.querySelector('svg path')?.getAttribute('d') || ''; if (!window.UIIcon) return d.slice(0, 12);
       const first = n => UIIcon.P[n].match(/d="([^"]+)"/)[1]; return d === first('room') ? 'room' : d === first('pin') ? 'pin' : 'other'; })(),
   };
@@ -38,7 +38,7 @@ async function run(preset) {
     const s1 = await styles(p);
     rep.check(`${tag} zoom strip: every button same radius, size, no border box, 1.75 stroke, 20 px icon`,
       s1.zoom.length >= 3 && s1.zoom.every(b => b.r === s1.zoom[0].r && b.w === s1.zoom[0].w && b.bw === '0px/0px' && b.sw === '1.75px' && b.iw === 20), JSON.stringify(s1.zoom));
-    rep.check(`${tag} the loaded state hides its text (dot only)`, s1.tierOk.pos === 'absolute' && s1.tierOk.w === 1, JSON.stringify(s1.tierOk));
+    rep.check(`${tag} the loaded state hides its text (dot only)`, s1.tierOk.disp === 'none', JSON.stringify(s1.tierOk));
     // events + characters: the drawer (rail on desktop, sheet on the phone) appears
     await p.evaluate(() => { EventsView.set({ type: 'eden-map:events', items: [{ id: 'e1', name: '晚宴', floor: 140, kind: 'social' }], floor: 140 }); CharactersView?.set?.({ type: 'eden-map:chars', items: [], floor: 140 }); });
     await B.wait(600);

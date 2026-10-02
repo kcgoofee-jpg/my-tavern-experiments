@@ -199,7 +199,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   #stDot > i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; transition: background var(--dur-2); }
   #stDot:has(#tierState.busy) > i { background: var(--accent); } #stDot:has(#tierState.stuck) > i { background: var(--alert); } #stDot:has(#tierState.stuck) { cursor: pointer; }
   #stDot.flash > i { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 35%, transparent); }
-  #stDot[hidden] { display: none; } #tierState.ok { position: absolute; width: 1px; height: 1px; min-width: 0; min-height: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* UI-COH-1: loaded = the dot only; text lives in tooltip / aria */
+  #stDot[hidden] { display: none; } #tierState.ok { display: none; }   /* UI-COH-1: loaded = the dot only; the words live in #stDot's tooltip / aria (stDotLabel still reads textContent) */
   /* ---------- 弹层：图层 ▾（桌面）；设置 = 分组首页 + 子页（§5）：桌面占右栏那一列，手机全屏 ---------- */
   .pop { position: fixed; z-index: var(--zu-pop); top: calc(var(--hdr, 44px) + var(--sp-3)); width: 260px; max-width: calc(100vw - 24px); box-sizing: border-box;
     background: var(--glass-2); color: var(--ink); border: 1px solid var(--glass-line); border-radius: var(--r-glass); padding: var(--sp-5) 14px; box-shadow: var(--elev-panel);

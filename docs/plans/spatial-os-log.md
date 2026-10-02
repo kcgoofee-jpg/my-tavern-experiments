@@ -1967,3 +1967,15 @@ blocker: none
 open: none (register/ship stages intentionally parked for OBLIQUE-CODE)
 cleanup: done (cache .blends deleted after each queue job, no Blender PIDs left, no queue entries left)
 === END ===
+
+=== RESULT UI-COH-1 follow-up ===
+status: DONE
+items: leftover fix ✓ (post-push polish found by the previous session but not committed: #tierState.ok now hides by display:none instead of the clip-rect 1 px hack — stDotLabel still reads textContent for the tooltip / aria; probe assertion follows)
+commits: (this commit)
+pushed: yes
+tests: node 1590/1592 (2 skipped, same as base) | smoke PASS | arch PASS | probes: ui_coh 15/15 PASS
+deviations: none (log-only follow-up; no behavior change beyond the hiding mechanism)
+blocker: none
+open: none
+cleanup: done (probe server killed)
+=== END ===
