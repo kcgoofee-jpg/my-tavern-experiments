@@ -3,6 +3,7 @@
 // 路线数据来自当前图（curData.routes，与画航线的 SVG 同源、同一套归一化坐标）；没有路线的图一帧都不画。
 // 节拍同天气层：可见性守卫按下暂停位即停（P7-4），省流档减车。
 import { registry, declared } from './layer-host.mjs';
+import { layerStore, saveVisible } from './declared-layers.mjs';
 import { trafficField, routeList } from '../core/traffic.mjs';
 import { canvasLayer, drawFlow, toScreen } from './block-canvas.mjs';
 import { busOn } from './bus.mjs';
@@ -25,7 +26,7 @@ export const trafficRunning = () => layer.running();
 let done = false;
 export function registerTrafficLayer() {
   if (done) return registry.has('traffic'); done = true;
-  registry.register(declared('traffic', { initialVisible: true, mount: () => layer.mount(), unmount: () => layer.unmount(), setVisible: v => layer.setVisible(v) }));
+  registry.register(declared('traffic', { initialVisible: layerStore().traffic === '1', mount: () => { const ok = layer.mount(); if (ok !== false && !registry.isVisible('traffic')) layer.setVisible(false); return ok; }, unmount: () => layer.unmount(), setVisible: v => { saveVisible('traffic', v); layer.setVisible(v); } }));
   busOn({ key: 'traffic.hostMsg', type: 'message', fn: e => { if (window.__isFromHost?.(e) && e.data?.type === 'eden-map:clock') night = !!e.data.night; } });
   window.TrafficApi = { running: trafficRunning, night: trafficNight, describe: () => ({ cars: trafficField(routeList(currentMapData?.routes), { t: 0, seed, quality: quality(), night }).length, night }) };
   return true;

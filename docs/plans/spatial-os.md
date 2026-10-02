@@ -97,6 +97,7 @@ manifest.json      only id / schema:2 / title are required; optional lang (zh/en
 | D30 | **v0.9.8 is the user's own milestone** (2026-10-02): it is not a public release. Items whose reason is "before going public" (S10a, DIST-1, SLIM-1, BUNDLE-1, SEC-1, REL-DOCS) move to a separate public-release prep stage, started only when the user decides to share. D15 and D22–D29 stay valid for that stage. |
 | D31 | **Feature inventory accepted as recommended** (2026-10-02): INV-2 applies the 建议 column of `docs/feature-inventory.md` (11 default off, 6 parked, nothing deleted). |
 | D32 | **OOC: templates + 「提醒 AI」 button + OOC exclusion + player correction syntax, before v0.9.8** (2026-10-02, OOC-1): four ready OOC sentences (place, persons, event tag, picked-up items) fill the chat input from the AI link page and never send; OOC segments in player messages are never read as action, event, person or place; `（OOC 地图：现在在 X）` / `（OOC 地图：Y 在 X）` in a chat floor corrects the place / a person's position and is recomputed like any floor. The player-guide section that lists the templates belongs to PUB REL-DOCS. |
+| D33 | **U-13 changed by the user** (2026-10-02): wheel zoom on by default in 3D (`edenMap3dWheelZoom` unset = on, explicit `0` = pan); Ctrl / Alt mappings stay; other digest items kept. |
 
 ---
 

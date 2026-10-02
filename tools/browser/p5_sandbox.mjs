@@ -20,7 +20,7 @@ try {
     window.__msgs = [];
     addEventListener('message', e => { try { window.__msgs.push(e.data); } catch (err) {} });
   });
-  const H = await openHost(D, { here: '天城执法局总局', ls: { edenMapInject: 'sys' } });
+  const H = await openHost(D, { here: '天城执法局总局', ls: { edenMapInject: 'sys', 'edenMapOn:scrap': '1' } });
   await H.open();
   const vf = await H.viewer();
   const toViewer = async msg => { await D.page.evaluate(m => { document.querySelector('#eden-map-root .em-frame')?.contentWindow?.postMessage(m, '*'); }, msg); await B.wait(500); };

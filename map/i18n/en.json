@@ -443,7 +443,7 @@
   "s.rm_hint": "Turns off sliding, floating and flashing animations on the map; \"Follow system\" uses the system's reduce-motion setting",
   "s.auto3d_hint": "While you drag the model in 3D, an open drawer drops to its lowest step to clear the view",
   "s.rot3d_hint": "After 30 s without input the 3D camera slowly circles the model; any touch stops it; never with reduced motion",
-  "s.wheel3d_hint": "On: the mouse wheel zooms in 3D (Shift pans); off: the wheel pans",
+  "s.wheel3d_hint": "On (default): the mouse wheel zooms in 3D (Shift pans); off: the wheel pans",
   "s.search": "Search settings",
   "s.update": "Updates & version",
   "k.esc": "Close the top layer / lower the drawer",

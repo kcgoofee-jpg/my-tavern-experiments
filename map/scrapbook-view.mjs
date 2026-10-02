@@ -6,6 +6,7 @@
 // 索引的全部规则（钉 / 摘 / 翻 / 统计）在纯核心 map/core/scrapbook.mjs，node 单测 tests/scrapbook.test.mjs。
 import * as SB from './core/scrapbook.mjs';
 import * as storage from './core/storage.mjs';
+import { parkedOn } from './core/parked.mjs';
 import { chatId } from './app/extension-api.mjs';   // 当前聊天 id（let 活绑定：宿主换了聊天，键跟着换）
 import { esc } from './app/dom-helpers.mjs';
 import { register } from './app/plugins.mjs';
@@ -129,4 +130,4 @@ const ScrapbookView = (() => {
     key,
   };
 })();
-register('ScrapbookView', ScrapbookView);
+if (parkedOn('scrap')) register('ScrapbookView', ScrapbookView);   // INV-2: parked (not registered, so no pin / note entry shows) until edenMapOn:scrap = '1'

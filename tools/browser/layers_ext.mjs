@@ -43,7 +43,8 @@ try {
 
   // ---- (f-town) the two kernel rows exist in the town too, hidden, ticked by default
   const k0 = { nav: await row(f, 'nav-ops'), props: await row(f, 'local-props') };
-  rep.check('start: the kernel rows nav-ops and local-props exist, hidden until they hold something, ticked by default', k0.nav?.hidden && k0.props?.hidden && k0.nav.checked && k0.props.checked, JSON.stringify(k0));
+  rep.check('start: the kernel rows nav-ops and local-props exist, hidden until they hold something, unticked by default (INV-2)', k0.nav?.hidden && k0.props?.hidden && !k0.nav.checked && !k0.props.checked, JSON.stringify(k0));
+  await f.evaluate(() => { for (const id of ['tgNavOps', 'tgProps']) document.getElementById(id).click(); }); await B.wait(300);   // the rest of the probe draws them, so the user's explicit choice is stored here
 
   // ---- (a) MVU values
   let d = await decl(f);
@@ -176,7 +177,7 @@ try {
     await E.page.goto(B.BASE + 'viewer.html', { waitUntil: 'commit' }); await ready(E.page);
     const e = await E.page.evaluate(() => { const reg = window.LayerHostApi?.describe(); const rows = id => { const l = document.getElementById('lyr-' + id); return l ? { hidden: l.hidden, checked: !!l.querySelector('input')?.checked, text: l.querySelector('span')?.textContent } : null; };
       return { markers: reg?.slots.find(s => s.id === 'markers')?.layers, nav: rows('nav-ops'), props: rows('local-props'), all: reg?.slots.reduce((n, s) => n + s.layers.length, 0), ids: reg?.slots.map(s => s.id + ':' + s.layers.length).join(), menu: document.querySelectorAll('#layList > label').length, api: typeof window.EdenMap?.addLayer, noop: document.querySelectorAll('[data-nav], .lyr-prop').length }; });
-    rep.check('(f) the first pack gains exactly two layers (nav-ops, local-props: 22 registered, 17 menu rows), both rows hidden and ticked, nothing drawn', e.all === 22 && e.menu === 17 && e.nav?.hidden && e.props?.hidden && e.nav.checked && e.props.checked && e.nav.text === 'AI 参谋标注' && e.props.text === '本机道具' && e.noop === 0, JSON.stringify(e));
+    rep.check('(f) the first pack gains exactly two layers (nav-ops, local-props: 22 registered, 17 menu rows), both rows hidden and unticked (INV-2), nothing drawn', e.all === 22 && e.menu === 17 && e.nav?.hidden && e.props?.hidden && !e.nav.checked && !e.props.checked && e.nav.text === 'AI 参谋标注' && e.props.text === '本机道具' && e.noop === 0, JSON.stringify(e));
     rep.check('(f) both sit in the markers slot after security and markers', e.markers?.join() === 'markers,security,nav-ops,local-props' || e.markers?.slice(-2).join() === 'nav-ops,local-props', JSON.stringify(e.markers));
     rep.check('no page errors (first pack)', !E.errors.length, E.errors.join(' | '));
     await E.ctx.close();

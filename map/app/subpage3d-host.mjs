@@ -207,7 +207,8 @@ export function estateLook() {
   w.postMessage({ type: 'estate:cvd', mode: TCCvd.mode() }, SUB_ORIGIN);   // 色觉模式（E7）：主场景 / 三维页换配色，不重载
   let fps = false; try { fps = window.LocalStore?.get('edenMapDebugFps') === '1'; } catch (e) {}
   w.postMessage({ type: 'estate:fps', on: fps }, SUB_ORIGIN);   // 调试：显示帧率——三维子页自己画一份（画布角上，带 tier / draws），开着子页时外层顶栏那份就该让位，不然同时看到两个数字（U，2026-09-28）
-  { const ls = k => { try { return window.LocalStore?.get(k) === '1'; } catch (e) { return false; } }; w.postMessage({ type: 'estate:camera', autoRotate: ls('edenMap3dAutoRotate'), wheelZoom: ls('edenMap3dWheelZoom'), rm: !!window.__reducedMotion }, SUB_ORIGIN); }   // I-06: camera settings and reduced motion, no reload
+  { const ls = k => { try { return window.LocalStore?.get(k) === '1'; } catch (e) { return false; } }, wz = () => { try { return window.LocalStore?.get('edenMap3dWheelZoom') !== '0'; } catch (e) { return true; } };   // U-13 / D33: wheel zoom is on unless the stored value is '0'
+    w.postMessage({ type: 'estate:camera', autoRotate: ls('edenMap3dAutoRotate'), wheelZoom: wz(), rm: !!window.__reducedMotion }, SUB_ORIGIN); }   // I-06: camera settings and reduced motion, no reload
   setFpsMeter(false);
   w.postMessage({ type: 'estate:children', zones: estateZones(subpageSession.id) }, SUB_ORIGIN);   // 区域下的子地图（运行时节点树）：三维页据此给区域卡加「进入三维」，语言切换时标题跟着重发
   w.postMessage({ type: 'estate:chat', id: chatId || '' }, SUB_ORIGIN);   // 房间图集「按聊天」作用域用：主场景页读不到 SillyTavern 上下文，靠这条消息拿 chatId

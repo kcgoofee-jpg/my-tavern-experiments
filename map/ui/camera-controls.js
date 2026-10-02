@@ -82,8 +82,8 @@ export function makeHintCard({ root = document.body, storageKey, lines, dismissL
   return { el: card, dismiss, shown: !seen, dispose() { card.remove(); } };
 }
 
-// 滚轮映射（U-13，docs/ui-refactor.md 7.2）：捏合（ctrlKey）永远是缩放；Alt = 旋转；「鼠标滚轮缩放」关（默认）时普通滚动 = 平移，开时普通滚动 = 缩放、Shift = 平移。
-export function wheelAction(e, wheelZoom = false) {
+// 滚轮映射（U-13，docs/ui-refactor.md 7.2）：捏合（ctrlKey）永远是缩放；Alt = 旋转；「鼠标滚轮缩放」开（默认，D33）时普通滚动 = 缩放、Shift = 平移，关时普通滚动 = 平移。
+export function wheelAction(e, wheelZoom = true) {
   if (e.ctrlKey) return 'pinch';
   if (e.altKey) return 'rotate';
   if (wheelZoom) return e.shiftKey ? 'pan' : 'zoom';

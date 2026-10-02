@@ -240,7 +240,7 @@ const scene = new THREE.Scene();
 setTheme(document.documentElement.classList.contains('light') ? 'light' : 'dark');
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
 const controls = new OrbitControls(camera, canvas);
-const REDUCED_MOTION = prefersReducedMotion(); const CAM = { autoRotate: false, wheelZoom: false, rm: REDUCED_MOTION, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
+const REDUCED_MOTION = prefersReducedMotion(); const CAM = { autoRotate: false, wheelZoom: true, rm: REDUCED_MOTION, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
 controls.enableDamping = !REDUCED_MOTION; controls.dampingFactor = 0.09; controls.screenSpacePanning = false;
 controls.zoomToCursor = true; controls.rotateSpeed = coarse ? 0.7 : 0.9;
 controls.panSpeed = 0.9; controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -343,7 +343,7 @@ C.onInsets(i => { const b = i.bottom + 'px';
 
 let idleTimer = null;   // 5) 空闲 30 s 自动旋转（默认关，设置项 edenMap3dAutoRotate 开 = 一直转）
 function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.5; dirty = true; }   // I-06 / U-23: rotation is runtime state (setting or idle timer), never writes the key; reduced motion turns it off
-CAM.autoRotate = LSg('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LSg('edenMap3dWheelZoom') === '1'; applyRotate(); idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
+CAM.autoRotate = LSg('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LSg('edenMap3dWheelZoom') !== '0'; applyRotate(); idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => canvas.addEventListener(ev, () => idleTimer.markActive(), { passive: true }));
 idleTimer.markActive();
 

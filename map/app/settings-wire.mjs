@@ -47,7 +47,7 @@ onBuilt('map', () => {
   $('#fogReset').onclick = () => window.FogApi?.reset();
   sw('#optMinimap', 'edenMapMinimap', false, v => document.body.classList.toggle('nominimap', !v));
   sw('#optAuto3d', 'edenMap3dAuto', false, () => estateLook());
-  sw('#opt3dRotate', 'edenMap3dAutoRotate', false, () => estateLook()); sw('#opt3dWheel', 'edenMap3dWheelZoom', false, () => estateLook());   // I-06 / U-13
+  sw('#opt3dRotate', 'edenMap3dAutoRotate', false, () => estateLook()); sw('#opt3dWheel', 'edenMap3dWheelZoom', true, () => estateLook());   // I-06 / U-13
 });
 onBuilt('people', () => {
   const cs = $('#optCharStats'), cm = $('#optCharMore');

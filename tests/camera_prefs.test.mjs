@@ -9,14 +9,14 @@ import { KEYS } from '../map/core/storage.mjs';
 
 const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 
-test('wheel mapping table: pinch always zooms, Alt rotates, plain wheel pans by default and zooms when the setting is on (Shift pans then)', () => {
+test('wheel mapping table: pinch always zooms, Alt rotates, plain wheel zooms by default (D33) and pans when the setting is off (Shift pans when on)', () => {
   const E = (o = {}) => ({ ctrlKey: false, altKey: false, shiftKey: false, ...o });
   const table = [
     [E({ ctrlKey: true }), false, 'pinch'], [E({ ctrlKey: true }), true, 'pinch'], [E({ altKey: true }), false, 'rotate'], [E({ altKey: true }), true, 'rotate'],
     [E(), false, 'pan'], [E({ shiftKey: true }), false, 'pan'], [E(), true, 'zoom'], [E({ shiftKey: true }), true, 'pan'],
   ];
   for (const [e, on, want] of table) assert.equal(wheelAction(e, on), want, JSON.stringify([e, on]));
-  assert.equal(wheelAction(E()), 'pan', 'the setting defaults to off');
+  assert.equal(wheelAction(E()), 'zoom', 'the setting defaults to on (D33)');
 });
 test('rotation: the setting or the idle flag turns it on; reduced motion turns it off whatever else is set', () => {
   assert.equal(rotateOn({}), false); assert.equal(rotateOn({ setting: true }), true); assert.equal(rotateOn({ idle: true }), true);
@@ -31,8 +31,8 @@ test('the idle timer drives runtime state only: it fires onIdle / onActive and w
 test('neither 3D page writes edenMap3dAutoRotate any more (the old setAutoRotate wrote it on every idle rotation)', () => {
   for (const f of ['map/estate/main.js', 'map/props/viewer3d.html']) { const s = rd(f); assert.doesNotMatch(s, /setItem\([^)]*3dAutoRotate/, f); assert.doesNotMatch(s, /function setAutoRotate/, f); assert.match(s, /rotateOn\(/, f); assert.match(s, /wheelAction\(/, f); }
 });
-test('the new storage key is registered (default off, owner the camera module) and the settings rows exist', () => {
-  assert.deepEqual(KEYS.edenMap3dWheelZoom, { owner: 'ui/camera-controls.js', def: '0' });
+test('the new storage key is registered (default on since D33, owner the camera module) and the settings rows exist', () => {
+  assert.deepEqual(KEYS.edenMap3dWheelZoom, { owner: 'ui/camera-controls.js', def: '1' });
   assert.match(rd('map/app/settings-pages.mjs'), /opt3dWheel/); assert.match(rd('map/app/settings-wire.mjs'), /edenMap3dWheelZoom/);
 });
 test('protocol: eden-map:visible, estate:dispose / estate:disposed and estate:camera (wheelZoom, rm) are registered with typed fields', () => {

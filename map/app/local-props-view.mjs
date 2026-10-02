@@ -48,7 +48,7 @@ function hook() {
 }
 export function registerLocalPropsLayer() {
   if (registry.has(ID)) return true;
-  registry.register(declared(ID, { initialVisible: layerStore()[ID] !== '0', countNow: () => count, mount: () => { hook(); later(); return true; }, unmount: clear, setVisible: v => { saveVisible(ID, v); drawLocalProps(); } }));
+  registry.register(declared(ID, { initialVisible: layerStore()[ID] === '1', countNow: () => count, mount: () => { hook(); later(); return true; }, unmount: clear, setVisible: v => { saveVisible(ID, v); drawLocalProps(); } }));
   window.LocalPropsApi = { describe: () => ({ count, drawn: els.length, placements: read().length }) };
   return true;
 }

@@ -124,6 +124,9 @@ test('纯度：core/roster.mjs 不碰 DOM / 酒馆全局 / 存储 / 网络', () 
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 
+// INV-2: the table-database / image-generation bridges are parked until edenMapOn:<id> = '1'; these tests exercise them, so the flags are stored.
+globalThis.localStorage = { getItem: k => (String(k).startsWith('edenMapOn:') ? '1' : null), setItem() {}, removeItem() {} };
+
 function stubEnv({ chat = [], latest = null, db = null } = {}) {
   const hadWin = 'window' in globalThis;
   globalThis.window = globalThis;

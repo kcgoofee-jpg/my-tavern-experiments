@@ -6,6 +6,7 @@
 // 节拍与车流 / 天气一致：fx 槽位画布 + 可见性守卫（P7-4）；省流档岗哨减半。
 // 数据不另起门户：岗位来自地图自己的巡逻环，城墙（walls）默认没有，有水系 / 隔墙的包可由宿主推来。
 import { registry, slotEl, declared } from './layer-host.mjs';
+import { layerStore, saveVisible } from './declared-layers.mjs';
 import { conePolygon, crossing, patrolCones } from '../core/vision.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
@@ -98,16 +99,17 @@ let done = false;
 export function registerVisionLayer() {
   if (done) return registry.has('vision'); done = true;
   registry.register(declared('vision', {
-    initialVisible: true,
+    initialVisible: layerStore().vision === '1',   // INV-2: off unless the user ticked it
     mount: () => {
       const host = slotEl('fx'); if (!host) return false;
       cv = document.createElement('canvas'); cv.className = 'vscv'; cv.setAttribute('aria-hidden', 'true');
       Object.assign(cv.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none' });
-      host.appendChild(cv); cx = cv.getContext('2d'); mounted = true; xyCache.clear(); size(); start();
+      host.appendChild(cv); cx = cv.getContext('2d'); mounted = true; xyCache.clear(); size();
+      if (registry.isVisible('vision')) start(); else cv.style.display = 'none';   // INV-2: off by default, nothing runs until ticked
       return true;
     },
     unmount: () => { stop(); mounted = false; try { cv?.remove(); } catch (e) {} cv = null; cx = null; },
-    setVisible: v => { if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
+    setVisible: v => { saveVisible('vision', v); if (!mounted) return; cv.style.display = v ? '' : 'none'; v ? start() : stop(); },
   }));
   busOn({ key: 'vision.resize', type: 'resize', fn: () => size() });
   busOn({ key: 'vision.hostMsg', type: 'message', fn: e => {

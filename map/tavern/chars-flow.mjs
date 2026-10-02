@@ -43,7 +43,7 @@ export function createCharsFlow(host) {
   // 聊天 ⌖人物 标签在流水线的消息窗口里、柏宝绘外貌库按需加载。临时名册拼装（known 名单 flatMap）由装配系统统一输出。
   mvuBridge.roster.use('chat', { rows: ctx => !host.CHM || !Array.isArray(ctx?.msgs) ? [] : ctx.msgs.flatMap(m => host.CHM.parseChars(m.text).map(c => ({ name: c.name, place: c.place, source: 'chat' }))) });
   let imagegenBridgeModule = null; import(scriptBase + 'tavern/imagegen-bridge.mjs').then(m => { imagegenBridgeModule = m; }).catch(e => console.warn('[map] chars-flow: imagegen-bridge import failed', e));   // 可选依赖：没装 / 加载失败只是没有柏宝绘来源
-  mvuBridge.roster.use('baibai', { rows: () => imagegenBridgeModule ? imagegenBridgeModule.characters().list : [] });
+  mvuBridge.roster.use('baibai', { rows: () => imagegenBridgeModule && imagegenBridgeModule.available() ? imagegenBridgeModule.characters().list : [] });
   // 保底名册（Pack 0 数据挂载点 manifest.data.roster，通用化 v1 前是 mvu-readers.mjs 的硬编码数组）：包声明了才取；
   // eden（无注入的内置默认）走内置档路径。取不到就没有兜底行，不挡启动。
   MAN.then(man => { const rp = man?.data?.roster, rb = PACK_ID === 'eden' ? '' : 'packs/' + PACK_ID + '/';   // 路径读自包清单 data.roster；没声明 = 没有兜底行

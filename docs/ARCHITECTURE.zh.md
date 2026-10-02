@@ -76,6 +76,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `kind-palette.mjs` | 3D 清单没有声明的房间类别所用的生成颜色（K-R131）：八个对色觉友好的颜色，按类别 id 的稳定哈希挑选。纯函数。 |
 | `label-tiers.mjs` | 地图标签分档（S7-2，`docs/ui-refactor.md` 2.6）：`labelCaps(narrow)` 与 `tierOf(n, caps)`：第 n 个放得下的标签，前 12 个（手机 6 个）是 L1，之后到 30 个（15 个）是 L2，再多的隐藏。 |
 | `layer-defaults.mjs` | 内核自带图层的宣告（K-R79）：17 个视口图层的槽位、kind、order、菜单行与所用绘制积木，收在一份冻结清单里；`kernelDecl(id)`。纯函数。 |
+| `parked.mjs` | 暂停的功能（INV-2）：默认关、并从设置与图层菜单里藏起来的五个功能 id；只有 `edenMapOn:<id>` 明确存了 `'1'` 才打开（`parkedOn`）。不删任何东西。 |
 | `layer-geometry.mjs` | 宣告式图层的纯几何与样式（K-R80）：`line` 积木的航线路径（与旧循环的冻结副本对拍）、由视图数据到要素的转换、要素的解析样式、图例色块、流光性格表、首次可见规则。纯函数。 |
 | `layer-registry.mjs` | LayerRegistry 核心：10 个视口槽位、图层注册与排序、可见性、滤镜链、`patch` / `applicable`（K-R79、K-R82）、`describe()` 摘要。 |
 | `layer-spec.mjs` | 宣告式图层（K-R79、K-R81、K-R82）：来源解析、要素与图层的规整、设定包 `layers` 行与内核清单的合并、`applies` 求值、该块的 `validate2` 规格。纯函数。 |

@@ -11,6 +11,7 @@ import { thFn, fnOk } from './host-tavernhelper.mjs';
 import * as SNP from './mvu-snapshot.mjs';
 import * as AD from './stat-path-mapping.mjs';
 import * as DB from './tabledb-bridge.mjs';
+import { parkedOn } from '../core/parked.mjs';
 import * as MDm from './interaction-modes.mjs';
 import * as SAN from './sanitize.mjs';
 import * as RS from '../core/roster.mjs';
@@ -282,7 +283,7 @@ export class MVUBridge {
 
   // ---------------- 表格数据库插件（tabledb-bridge.mjs，只读） ----------------
   #dbApiRef = null; #dbCb = null;
-  #findApi() { return DB.findApi(this.o.wins()); }
+  #findApi() { return parkedOn('tabledb') ? DB.findApi(this.o.wins()) : null; }   // INV-2: parked until edenMapOn:tabledb = '1'
   #dbHook(a) {   // 插件可能比地图晚加载：每次取接口时补登记一次更新回调
     a ||= this.#findApi(); if (!a || a === this.#dbApiRef || this.o.life?.dead) return a;
     this.#dbApiRef = a; this.#dbCb = () => this.o.onTableUpdate?.();

@@ -51,10 +51,10 @@ function hook() {
   try { new MutationObserver(later).observe(document.body, { attributes: true, attributeFilter: ['data-map'] }); } catch (e) {}
   busOn({ key: 'navops.hostMsg', type: 'message', fn: e => { if (!window.__isFromHost?.(e) || e.data?.type !== 'eden-map:ops') return; ops = { clues: rows(e.data.clues), markers: rows(e.data.markers) }; later(); } });
 }
-/** registerNavOpsLayer() (boot): the kernel layer nav-ops; on by default (the navigator itself is the opt-in), its stored choice in `edenMapLayers`. */
+/** registerNavOpsLayer() (boot): the kernel layer nav-ops; off by default since INV-2 (a stored '1' turns it on), its stored choice in `edenMapLayers`. */
 export function registerNavOpsLayer() {
   if (registry.has(ID)) return true;
-  registry.register(declared(ID, { initialVisible: layerStore()[ID] !== '0', countNow: () => count, mount: () => { hook(); later(); return true; }, unmount: clear,
+  registry.register(declared(ID, { initialVisible: layerStore()[ID] === '1', countNow: () => count, mount: () => { hook(); later(); return true; }, unmount: clear,
     setVisible: v => { saveVisible(ID, v); drawNavOps(); } }));
   window.NavOpsApi = { describe: () => ({ clues: ops.clues.length, markers: ops.markers.length, drawn: els.length, count }) };
   return true;

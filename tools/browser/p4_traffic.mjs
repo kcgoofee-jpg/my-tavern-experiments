@@ -37,6 +37,8 @@ try {
     rep.check('fx 槽位有 weather + traffic 两层', st.fx.includes('traffic') && st.fx.includes('weather'), JSON.stringify(st.fx));
     rep.check('菜单有「车流」开关', st.box);
     rep.check('当前图有路线数据', st.routes > 0, `${st.routes} 条`);
+    rep.check('车流默认关（INV-2）：不画、不跑 rAF', await p.evaluate(() => window.TrafficApi?.running?.() === false && window.LayerHostApi?.registry?.isVisible?.('traffic') === false));
+    await p.evaluate(() => { const b = document.getElementById('tgTraffic'); if (b) { b.checked = true; b.dispatchEvent(new Event('change')); } }); await B.wait(900);
     const a = await painted(p); await B.wait(900); const b = await painted(p);
     rep.metric('painted', { a, b });
     rep.check('车流画出光点', a.ok && a.painted > 5, JSON.stringify(a));

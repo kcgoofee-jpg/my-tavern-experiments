@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { createLife } from '../map/tavern/host-lifecycle.mjs';
 import { MVUBridge } from '../map/tavern/mvu-bridge.mjs';
 import { useEden } from './helpers/eden-profile.mjs';
+
+// INV-2: the table-database / image-generation bridges are parked until edenMapOn:<id> = '1'; these tests exercise them, so the flags are stored.
+globalThis.localStorage = { getItem: k => (String(k).startsWith('edenMapOn:') ? '1' : null), setItem() {}, removeItem() {} };
 useEden();   // the first pack's variable and roster declarations (its overlay blocks); the engine itself names no card
 
 // ---- 桩环境 ----

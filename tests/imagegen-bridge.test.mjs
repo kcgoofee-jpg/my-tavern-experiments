@@ -5,6 +5,8 @@ import assert from 'node:assert';
 import * as B from '../map/tavern/imagegen-bridge.mjs';
 
 const KEY = 'STBaiBaiImage';
+// INV-2: the bridge is parked until edenMapOn:imagegen = '1'; these tests exercise it, so the flag is stored.
+globalThis.localStorage = { getItem: k => (k === 'edenMapOn:imagegen' ? '1' : null), setItem() {}, removeItem() {} };
 
 function withApi(api, fn) {
   const had = Object.prototype.hasOwnProperty.call(globalThis, KEY);

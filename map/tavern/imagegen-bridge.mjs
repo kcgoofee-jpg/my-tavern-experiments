@@ -16,6 +16,8 @@
 // 接口版本：只认 apiVersion === 1（结构只增不改不删，改含义才升版本）。不匹配就不调 generate，
 // 免得把一个我们不认识的参数形态塞进去。
 
+import { parkedOn } from '../core/parked.mjs';
+
 const KEY = 'STBaiBaiImage';
 const READY_EVT = 'st-baibai-image:ready';
 const CHANGED_EVT = 'st-baibai-image:changed';
@@ -33,7 +35,7 @@ export function api() {
   }
   return null;
 }
-export function available() { return !!api(); }
+export function available() { return parkedOn('imagegen') && !!api(); }   // INV-2: parked until edenMapOn:imagegen = '1'
 
 // 错误码 → 人话。按它文档的要求用 code 分支，不匹配 message 文案（那里随时会改）。
 export const ERROR_TEXT = {

@@ -1767,5 +1767,14 @@ tests: node 1509 (+5 new), 0 fail | smoke PASS | arch PASS | probes: ui3d1=PASS 
 deviations: the 「地图」 label could not be reproduced: no room, zone or UI string in the 3D data is named 「地图」 (only 档案与地图室 on F2); most likely a chat-derived person or a custom name from the user's seeded chat. Fixed the real cause found in the planner: a label hidden by the building measured width 0 and a guessed 60 px was cached forever, so later overlaps went undetected; now never cached. The U-21 priority beyond the existing pinned > hover > kind rank was not extended (the 3D page does not know the current place / events).
 blocker: none
 open: whoever sees 「地图」 again: send the room / chat so the source can be named
+=== RESULT INV-2 ===
+status: DONE
+items: default-off rows ✓ (layers traffic / vision / nav-ops / local-props now start hidden, a stored '1' shows them; the C3-C9 switches were already default 0) · parked rows ✓ (scrapbook, stash3d, tabledb bridge, imagegen bridge, C8 card: off and hidden, `edenMapOn:<id>` = '1' turns one on; sound not parked, see deviations) · U-13 ✓ (edenMap3dWheelZoom default 1; unset = zoom, '0' = pan; settings switch, subpage3d host, estate CAM, viewer3d all agree) · docs ✓ (inventory 用户标记, digest 保留 / 改：默认开, D33 in both plan editions, todo struck) · tests ✓ (tests/inv2_defaults.test.mjs)
+commits: see git log (one commit)
+pushed: yes
+tests: node 1501/1501 | smoke PASS | arch PASS | probes: layers_ext=PASS p4_traffic=PASS p5_sandbox=PASS accept=PASS estate3d=FAIL(B2 medical block, same on baseline) v097=FAIL(compose click timeout, same on baseline)
+deviations: F-53 sound is not parked: a sound layer exists only when a pack declares it (town) and is already off until ticked, so hiding it would break the pack's own opt-in. F-63 (sandbox) has no switch of its own; it only runs under C9, already off. Probes layers_ext / p4_traffic / p5_sandbox updated for the new defaults (tick the row / set the stored flag first).
+blocker: none
+open: placing a local prop while the local-props layer is off draws nothing until the row is ticked (consider auto-showing on placement); a pack cannot yet turn a parked feature on (only a stored '1')
 cleanup: done
 === END ===

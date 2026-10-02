@@ -33,7 +33,7 @@ const EMBED = Q.get('embed') === '1' || location.protocol === 'about:' || locati
 const SHELL = window.__shell === 'host';   // 壳模式（S7-3）：查看器的顶栏、楼层条、工具栏、抽屉与卡片就是这页的控件；本页只画画布、画布里的标注和人物头像
 let STATS = Q.get('stats') === '1';   // ?stats=1 或查看器「调试：显示帧率」设置（estate:fps 消息，实时开关）
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const CAM = { autoRotate: false, wheelZoom: false, rm: REDUCED, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
+const CAM = { autoRotate: false, wheelZoom: true, rm: REDUCED, idle: false };   // I-06: camera settings from the viewer (estate:camera) plus the runtime idle flag; nothing here writes a key
 const COARSE = matchMedia('(pointer: coarse)').matches;
 const LS = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 let LANG = (Q.get('lang') || LS('edenMapLang') || 'zh').startsWith('en') ? 'en' : 'zh';
@@ -1042,7 +1042,7 @@ window.addEventListener('message', (e) => {
   else if (d.type === 'estate:media' && d.rooms && typeof d.rooms === 'object') {   // K-R101：包图片按房间名；https 的只在宿主说开关开着时才给地址
     PICS = Object.fromEntries(Object.entries(d.rooms).map(([name, p]) => [name, Array.isArray(p) ? p.filter((x) => x && typeof x.id === 'string').map((x) => ({ id: x.id, item: x.item, url: nodePictures({ [x.id]: x.item }, [x.id], { base: '', remoteOn: d.remote === true })[0]?.url ?? null })) : []]));
   }
-  else if (d.type === 'estate:stash') { stashRaw = Array.isArray(d.items) ? { items: d.items } : null; rebuildProps(); }   // Part 8-1：世界藏物表
+  else if (d.type === 'estate:stash') { stashRaw = Array.isArray(d.items) && LS('edenMapOn:stash3d') === '1' ? { items: d.items } : null; rebuildProps(); }   // Part 8-1：世界藏物表（INV-2：三维藏物暂停，edenMapOn:stash3d = '1' 才收）
   else if (d.type === 'estate:taken') { propTaken = new Set(Array.isArray(d.ids) ? d.ids.filter((x) => typeof x === 'string') : []); rebuildProps(); }   // 已经在手里的：地上不再发光
   else if (d.type === 'estate:routine') setNpcRoutine(d.schedule, d.clock);   // Part 8-2：日程表 + 起点时钟 → 三维里的人自己去该去的地方
 });
@@ -1202,7 +1202,7 @@ function applyPreset(id) {
 }
 /** I-06 / U-23: rotation is runtime state (the setting or the idle timer); it never writes the key, and reduced motion turns it off */
 function applyRotate() { controls.autoRotate = rotateOn({ setting: CAM.autoRotate, idle: CAM.idle, rm: CAM.rm }); controls.autoRotateSpeed = 0.4; wake(); }
-CAM.autoRotate = LS('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LS('edenMap3dWheelZoom') === '1'; applyRotate();
+CAM.autoRotate = LS('edenMap3dAutoRotate') === '1'; CAM.wheelZoom = LS('edenMap3dWheelZoom') !== '0'; applyRotate();
 idleTimer = makeIdleTimer(30000, () => { CAM.idle = true; applyRotate(); }, () => { CAM.idle = false; applyRotate(); });
 ['pointerdown', 'wheel', 'keydown'].forEach((ev) => window.addEventListener(ev, () => { idleTimer.markActive(); presets?.setActive('free'); }, { passive: true, capture: true }));
 idleTimer.markActive();
