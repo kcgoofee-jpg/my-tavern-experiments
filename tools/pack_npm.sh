@@ -1,61 +1,100 @@
 #!/usr/bin/env bash
-# 打 npm 包（只做准备和 dry-run，不发布）：把地图对外需要的文件拷到临时目录，生成 package.json，跑 `npm pack --dry-run`。
-# 用法：bash tools/pack_npm.sh [--keep]      # --keep：保留临时目录并打印路径（本机要发布时进去 `npm publish`）
-# 包名 tiancheng-map-assets，版本跟 VERSION；发布后国内镜像地址：
-#   https://registry.npmmirror.com/tiancheng-map-assets/<版本>/files/map/viewer.html
-# （map/tavern/eden-map.js 的 LINES 里已预留 npmmirror 线路，enabled: false，首次发布验证后再打开）
-# 注意：不要在这里执行 npm publish——发布由本机手动做。
+# 打 npm 包（只准备与 dry-run，**不发布**）：按 tools/npm_layout.py 的分包表把 map/ 拷进临时目录，
+# 生成 package.json，跑 `npm pack --dry-run` 报体积；带 --out 时真的打出 .tgz。
+#
+# 背景（2026-10-03）：本仓约 1 GB，超过 jsDelivr 单包 50 MB 上限，cdn.jsdelivr.net 与国内镜像
+# cdn.jsdmirror.com 一律 403，整条 CDN 链路取不到东西。改走 npm 线路，运行时按「底图层族 / 模型组 /
+# 代码」分包，每包控制在 --target-mb 以内（默认 40 MB；真实上限以 npm / npmmirror / jsDelivr 实测为准）。
+#
+# 用法：
+#   bash tools/pack_npm.sh                        # 每包 dry-run，报体积与文件数
+#   bash tools/pack_npm.sh --out dist/npm         # 真打 tgz 到 dist/npm
+#   bash tools/pack_npm.sh --target-mb 25         # 换目标体积（会改分包表）
+#   bash tools/pack_npm.sh --only eden-map-engine # 只做一个包
+#   bash tools/pack_npm.sh --list                 # 只列包名
+#
+# 发布（本脚本不做；需要本机 npm 登录，验证码 / 二次验证请自己来，脚本不碰任何凭据）：
+#   npm publish --registry https://registry.npmjs.org --access public
+#   npm publish --registry https://registry.npmmirror.com
 set -euo pipefail
 cd "$(dirname "$0")/.."
-KEEP=0; [ "${1:-}" = --keep ] && KEEP=1
-NAME=tiancheng-map-assets
-VER=$(tr -d ' \n' < VERSION)
-TMP=$(mktemp -d "${TMPDIR:-/tmp}/${NAME}.XXXXXX")
-trap '[ "$KEEP" = 1 ] || rm -rf "$TMP"' EXIT
 
-# 白名单（v2 起按目录收，避免漏新模块）：查看器页面与全部经典 / 模块脚本（map/*.js *.mjs、app/、core/、ui/）、卡内脚本（tavern/*.js *.mjs）、
-# 数据、界面语言、庄园三维（estate/ 除 NOTES 与 reviews）、通用三维查看器与道具（props/）、第三方库、底图瓦片（dzi + _files/）与首屏缩略图
-mkdir -p "$TMP/map/art" "$TMP/map/data" "$TMP/map/tavern" "$TMP/map/i18n" "$TMP/map/ui" "$TMP/map/app" "$TMP/map/core"
-cp map/viewer.html map/*.js map/*.mjs "$TMP/map/"
-cp map/tavern/*.js map/tavern/*.mjs "$TMP/map/tavern/"
-cp map/app/*.mjs "$TMP/map/app/"; cp map/core/*.mjs "$TMP/map/core/"
-cp map/data/*.json "$TMP/map/data/"
-cp map/i18n/*.json "$TMP/map/i18n/"
-cp map/ui/*.css map/ui/*.js map/ui/*.mjs "$TMP/map/ui/"
-rsync -a --exclude NOTES.md --exclude reviews map/estate "$TMP/map/"
-[ -d map/props ] && rsync -a --exclude '*.blend' --exclude '*.md' map/props "$TMP/map/"
-cp -R map/vendor "$TMP/map/"
-[ -d map/packs ] && cp -R map/packs "$TMP/map/"   # 设定包（通用化）
-[ -f map/art/world_1k.jpg ] && cp map/art/world_1k.jpg "$TMP/map/art/"
-for d in map/art/*.dzi; do
-  b=${d%.dzi}; cp "$d" "$TMP/map/art/"
-  [ -d "${b}_files" ] && cp -R "${b}_files" "$TMP/map/art/"
+TARGET_MB=40; OUT=; ONLY=; LIST=0; KEEP=0
+while [ $# -gt 0 ]; do case "$1" in
+  --target-mb) TARGET_MB=$2; shift ;;
+  --out) OUT=$2; shift ;;
+  --only) ONLY=$2; shift ;;
+  --list) LIST=1 ;;
+  --keep) KEEP=1 ;;
+  -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+  *) echo "未知参数 $1" >&2; exit 2 ;;
+esac; shift; done
+
+PLAN=$(mktemp); TMP=$(mktemp -d "${TMPDIR:-/tmp}/eden-npm.XXXXXX")
+trap '[ "$KEEP" = 1 ] || rm -rf "$TMP" "$PLAN"' EXIT
+python3 tools/npm_layout.py --target-mb "$TARGET_MB" --json > "$PLAN"
+[ -n "$OUT" ] && mkdir -p "$OUT"
+
+python3 - "$PLAN" "$TMP" "$ONLY" <<'PY'
+import json, os, subprocess, sys
+plan_path, tmp, only = sys.argv[1], sys.argv[2], sys.argv[3]
+plan = json.load(open(plan_path))
+for pkg in plan['packages']:
+    if only and pkg['name'] != only:
+        continue
+    d = os.path.join(tmp, pkg['name'])
+    os.makedirs(d, exist_ok=True)
+    files = [f for f in pkg['files'] if os.path.exists(f)]
+    missing = len(pkg['files']) - len(files)
+    if missing:
+        print('   提醒：%s 有 %d 个文件本地不在（工作树不是最新 ref？）' % (pkg['name'], missing))
+    subprocess.run(['rsync', '-a', '--files-from=-', './', d + '/'],
+                   input='\n'.join(files), text=True, check=True)
+    if pkg['kind'] == 'engine':                      # 运行时索引随引擎包走
+        os.makedirs(os.path.join(d, 'map/data'), exist_ok=True)
+        with open(os.path.join(d, 'map/data/assets.json'), 'w', encoding='utf-8') as f:
+            json.dump(plan['assets'], f, ensure_ascii=False, indent=2, sort_keys=True)
+            f.write('\n')
+    pj = {
+        'name': pkg['name'], 'version': plan['version'],
+        'description': 'Runtime files for the Eden Map viewer (%s), published from '
+                       'kcgoofee-jpg/my-tavern-experiments map/ by tools/pack_npm.sh.' % pkg['kind'],
+        'license': 'SEE LICENSE IN README.md',
+        'repository': {'type': 'git', 'url': 'git+https://github.com/kcgoofee-jpg/my-tavern-experiments.git'},
+        'homepage': 'https://github.com/kcgoofee-jpg/my-tavern-experiments',
+        'files': ['map'], 'keywords': ['sillytavern', 'map', 'eden-map'],
+    }
+    with open(os.path.join(d, 'package.json'), 'w', encoding='utf-8') as f:
+        json.dump(pj, f, ensure_ascii=False, indent=2)
+        f.write('\n')
+    with open(os.path.join(d, 'README.md'), 'w', encoding='utf-8') as f:
+        f.write('# %s\n\nRuntime package published from `kcgoofee-jpg/my-tavern-experiments`'
+                ' (`map/`), generated by `tools/pack_npm.sh`; not maintained by hand.\n\n'
+                'City skeleton (c) OpenStreetMap contributors, ODbL 1.0.\n' % pkg['name'])
+    print('  %-30s %7.1f MB %6d files' % (pkg['name'], pkg['bytes'] / 1048576, pkg['count']))
+PY
+
+if [ "$LIST" = 1 ]; then
+  python3 -c "import json,sys; [print(p['name']) for p in json.load(open(sys.argv[1]))['packages']]" "$PLAN"
+  exit 0
+fi
+
+echo
+echo "== npm pack --dry-run（npm 视角的真实体积）"
+for d in "$TMP"/*/; do
+  name=$(basename "$d")
+  ( cd "$d" && npm pack --dry-run 2>&1 | grep -E "total files|package size|unpacked size" \
+    | tr '\n' ' ' | sed "s|^|  $name |" )
+  echo
 done
-# 自检：查看器 / 宿主里出现的相对模块与脚本路径都要在包里
-for f in $(grep -ohE '(src|href)="(app|core|ui)/[^"]+"|\x27(app|core|tavern|ui)/[a-z0-9_-]+\.m?js\x27' map/viewer.html | grep -oE '(app|core|tavern|ui)/[a-z0-9_.-]+'); do
-  [ -f "$TMP/map/$f" ] || { echo "pack_npm: 缺 map/$f" >&2; exit 1; }
-done
-cp README.md "$TMP/"
-[ -f LICENSE ] && cp LICENSE "$TMP/"
-LICENSE_FIELD=$([ -f LICENSE ] && echo "SEE LICENSE IN LICENSE" || echo "SEE LICENSE IN README.md")
 
-command cat > "$TMP/package.json" <<EOF
-{
-  "name": "$NAME",
-  "version": "$VER",
-  "description": "天城地图：查看器、卡内脚本与 Blender 渲染的底图瓦片（DZI）。城市骨架 © OpenStreetMap contributors (ODbL)。",
-  "license": "$LICENSE_FIELD",
-  "repository": { "type": "git", "url": "git+https://github.com/kcgoofee-jpg/my-tavern-experiments.git" },
-  "homepage": "https://github.com/kcgoofee-jpg/my-tavern-experiments",
-  "files": ["map/viewer.html", "map/*.js", "map/*.mjs", "map/app/", "map/core/", "map/props/", "map/tavern/", "map/data/", "map/i18n/", "map/ui/", "map/estate/", "map/vendor/", "map/art/", "map/packs/", "README.md"],
-  "keywords": ["sillytavern", "map", "deepzoom", "openseadragon"]
-}
-EOF
-
-echo "== $NAME@${VER}（临时目录 ${TMP}）"
-N=$(find "$TMP/map" -type f | wc -l | tr -d ' '); S=$(du -sh "$TMP/map" | cut -f1)
-echo "   map/ 下 $N 个文件，共 $S"
-( cd "$TMP" && npm pack --dry-run 2>&1 | grep -E "total files|package size|unpacked size|name:|version:" ) || echo "（没有 npm：只统计了文件数和大小）"
-[ -f LICENSE ] || echo "提醒：仓库没有 LICENSE 文件，package.json 的 license 暂填 \"SEE LICENSE IN README.md\"；发布前请决定许可证。"
-[ "$KEEP" = 1 ] && echo "保留临时目录：${TMP}（发布：cd 进去后 npm publish，务必先确认版本号）"
-echo "未发布（这个脚本不会执行 npm publish）。"
+if [ -n "$OUT" ]; then
+  for d in "$TMP"/*/; do
+    ( cd "$d" && npm pack --pack-destination "$OUT" >/dev/null ) || echo "打包失败：$d" >&2
+  done
+  echo "tgz 已写到 $OUT"
+fi
+echo "临时目录：${TMP}（--keep 保留）"
+echo "未发布。发布命令（需要本机 npm 登录，验证码 / 二次验证请自己来）："
+echo "  npm publish --registry https://registry.npmjs.org --access public"
+echo "  npm publish --registry https://registry.npmmirror.com"
