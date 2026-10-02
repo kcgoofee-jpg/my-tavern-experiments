@@ -69,7 +69,8 @@ export function createTimelineFlow(host) {
     if (!tlOn) return; tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on');
     if (life.dead) return;
     tlTrailAt = -1; sendTrips();   // 轨迹恢复成当下的行程（回放期间临时画过的那条线撤掉）
-    push(); if (host.alive) { post({ type: 'eden-map:chars', v: 1, floor: host.floorNow, items: host.chars, rosters: host.roster, groups: mvuBridge.groupsView(host.roster), rep: host.rep, stageOrder: mvuBridge.stageOrder, portraits: mvuBridge.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
+    push(); if (host.alive) post({ type: 'eden-map:here', value: mvuBridge.here() });   // U-FIX-7：回放推过别的地点；push 只在地点变了才发，这里把当下的地点补发回去（当前位置按钮、高亮跟着回来）
+    if (host.alive) { post({ type: 'eden-map:chars', v: 1, floor: host.floorNow, items: host.chars, rosters: host.roster, groups: mvuBridge.groupsView(host.roster), rep: host.rep, stageOrder: mvuBridge.stageOrder, portraits: mvuBridge.portraits }); sendEvents(); }   // 回当下：地点 / 人物 / 事态全部重推
   }
   tlBtn.addEventListener('click', () => (tlOn ? tlExit() : tlEnter()));
   tlEl.querySelector('.em-tl-x').addEventListener('click', tlExit);
