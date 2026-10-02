@@ -76,7 +76,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
 - [ ] **v11** order to v0.9.8 (plan §18, D14–D29, 2026-10-02); S10b (split), S11, S12, S13 and stage F parked until after v0.9.8
   - [ ] **SWEEP-2** TT re-sweep of U-FIX-1…7 on the current head → U-FIX until P0 / P1 = 0
   - [x] ~~**ARCH-1** D16 rule + empty-catch ratchet + ARCHITECTURE §4; D17 gates to warnings + short RESULT; D18 Chinese canonical; B14 brief §1; B12 short status line~~ ✅ 2026-10-02 `764f9539`
-  - [ ] **INV-1** feature inventory with first-open cost (D19, B19) → user marks → **INV-2** defaults off
+  - ~~**INV-1** feature inventory with first-open cost (D19, B19): `docs/feature-inventory.md`, 78 rows~~ ✅ 2026-10-02 (sha in its RESULT) → user marks → **INV-2** defaults off
   - [ ] **DIGEST-1** zh digest of the ~10 most important default-decided items (D28)
   - [ ] **FIX-B6** advisor provider defaults + Anthropic browser header + request-shape probe
   - [ ] **SEC-1** security pass: pack / chat text reaching innerHTML, hostile-pack probe (B7)

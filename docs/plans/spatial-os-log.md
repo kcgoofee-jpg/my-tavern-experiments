@@ -1699,4 +1699,16 @@ tests: node 1489 pass + 1 skipped / 1491 (was 1468 + 1 / 1469 at start; +20 smok
 deviations: (1) the empty-catch pattern in the prompt flags 480 sites, above the ~120 stop line; the plan's "60" counted only `.catch(() => {})` (65 today), the other 415 are try/catch forms the prompt lists explicitly, so the ratchet was introduced at 480 rather than stopping. (2) core/logbuf.mjs now stores an Error argument as "name: message" (JSON.stringify gives "{}", which would make every new warn useless in the feedback report); one test added. (3) the ledger allows map/core files for this one kind (logbuf, storage, protocol keep intentional empty catches); the other kinds stay hard zero for core. (4) the 36 warn sites cover module import() and network fetches in llm-flow, eden-map.js, chars-flow, stash-flow, timeline-flow, host-api, host-checks; 38 storage / JSON / host-page catches in those files and logbuf got a reason comment; 51 more in the same files stay uncommented, and the remaining ~340 sites in other files are untouched (baseline only). (5) CLAUDE.md and AGENTS.md are symlinks to docs/agent-brief.md, so one file edit covered all three; the zh edition was edited by hand. (6) check_ascii and check_version stay hard, as the prompt says; the D17 row in both plan editions was amended to match. (7) tests/gallery_flow.test.mjs "the table is read from the card at run time" failed once under the full parallel run and passed alone and on re-run (timing flake, not related to this change).
 open: none
 cleanup: done
+=== RESULT INV-1 ===
+status: DONE
+items: 1 docs/feature-inventory.md (Chinese, 78 rows F-01…F-78, all 11 columns) ✓ · 2 coverage (21 kernel layers, 96 storage keys, C1–C10, AI 参谋 + ops sandbox, items / stash, replay, dice, editor + pack export, automatic pack, galleries, 3D modes, local props, EdenMap.* API, macros, ledger npc / events) ✓ · 3 state rules applied ✓ · 4 header (counts + five parking rows) ✓ · verify (coverage script) ✓ · todo INV-1 struck ✓
+commits: (this commit) docs: feature inventory INV-1 (D19)
+pushed: yes (head #N in the chat report)
+tests: node not run (docs only) | smoke PASS | arch PASS | probes: none
+deviations: first-open cost is estimated from the import graph (static + dynamic imports from viewer.html and the host script) and file sizes, not measured with browser network logging; real first-screen traffic is listed as open. The doc-language gate passed without an exemption (no change to tools/check_doc_language.py).
+blocker: none
+open: 4 rows marked 待实测 (F-18 route planning, F-43 original gallery, F-51 3D day-night / relief, F-62 AI 参谋); measured first-open network traffic (reload_perf-style probe); user marks column is empty, INV-2 waits for it
+cleanup: done
+counts: 在用 60 · 半成品 8 · 没用 6 · 待实测 4 (total 78); recommend 保留 61 / 默认关 11 / 暂停 6 / 可删 0
+coverage: rows=78 keys=96 layers=21 problems=0; ids unique: true
 === END ===
