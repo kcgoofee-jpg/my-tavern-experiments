@@ -1,6 +1,6 @@
-# Spatial OS refactor plan (v10: ship Eden first, D14–D21; v9: contract first + naming audit + author walkthrough + CLAUDE.md rewrite + test-feedback protocol + effort and reasoning tiers)
+# Spatial OS refactor plan (v11: ship Eden first, D14–D29; v9: contract first + naming audit + author walkthrough + CLAUDE.md rewrite + test-feedback protocol + effort and reasoning tiers)
 
-> Status: approved 2026-09-30 (plan v9); v10 re-plan adopted 2026-10-02 (D14–D21, §17). Plan of record; until the S10 repo split the Chinese edition docs/plans/spatial-os.zh.md is canonical (D18).
+> Status: approved 2026-09-30 (plan v9); v10 re-plan adopted 2026-10-02 (D14–D21, §17), v11 decision sheet the same day (D22–D29, §18). Plan of record; until the S10 repo split the Chinese edition docs/plans/spatial-os.zh.md is canonical (D18).
 
 ---
 
@@ -86,6 +86,14 @@ manifest.json      only id / schema:2 / title are required; optional lang (zh/en
 | D19 | **Feature inventory** (C6). One docs-only inventory (`docs/feature-inventory.md`, Chinese) lists every feature as used / unused / half-built with modules, default, tests. The user marks each; unused and half-built features default off and are parked; deletion only with the user's approval. |
 | D20 | **Code line first until v0.9.8** (C7; pending one confirmation). The render line runs at low intensity, one batch at a time, never blocking code-line tests on the Mac; release-relevant items first. |
 | D21 | **Slimming follows distribution** (C8). Once assets are served from a non-git channel (D15), new art stops being committed to the code repo and the history rewrite is one step, re-confirmed with the user before the force push. |
+| D22 | **Players install the stable channel** (B1): latest `map-v*` tag or npm version; `preview` is opt-in for testers. Tagging resumes at v0.9.8. |
+| D23 | **Release build bundled and minified** (B2), after the China line (D15); development keeps raw modules; parity probes bundle vs modules. |
+| D24 | **External-contract renames before going public** (B10): S10 splits into S10a (repo name / CDN path, `EdenMap`, storage keys, chat variable and its sub-keys, entry file name, one-time migration; before v0.9.8) and S10b (repo split; parked by D14). |
+| D25 | **Licences** (B8): engine code MIT; Eden pack content all rights reserved, bound by the original author's permission. Two notices. |
+| D26 | **18+ notice at distribution** (B9) in README, player guide, first post and pack credits; labelling only, nothing is filtered. |
+| D27 | **Key safety** (B5): one-line notice by the AI advisor key field (stored in this browser; the script can read it); 2FA on every account that pushes or publishes; the stable channel (D22) is the main mitigation. |
+| D28 | **Autopilot decisions surface to the user** (B11): a zh digest of the ~10 default-decided items that matter most (keep / change each); from now on default decisions go into one list reviewed at each stage end. |
+| D29 | **Feedback channel** (B4): GitHub issue form + the first post's thread; the in-map feedback dialog names them. |
 
 ---
 
@@ -633,3 +641,21 @@ Kept unchanged: the chat log is the only truth; never write `stat_data` or the u
 | 6 | Parked until a second author or card needs them: stage E (S10 rename / split, S12, S13) and stage F (native extension); revisited after the release. The contract system and the Jev recognition backend stay post-release candidates. | D14 | — |
 
 Render line: D20 (low intensity, one batch at a time) once the user confirms.
+
+## 18. v11 order to v0.9.8 (decision sheet, 2026-10-02)
+
+The user answered the decision sheet "all as recommended" (D15 and D20 confirmed; D22–D29). This order replaces §17 steps 2–6; B6, B7, B12, B14, B19 are taken in as tasks, B13, B15, B16, B18 stay optional.
+
+| # | Step | Decisions | Size |
+|---|---|---|---|
+| 1 | SWEEP-2 → U-FIX until P0 / P1 = 0 | — | S–M each |
+| 2 | ARCH-1: rule §2.6, empty-catch ratchet, ARCHITECTURE §4, gates to warnings, short RESULT, Chinese canonical, brief §1 "facts from origin/preview" (B14), short status line (B12) | D16–D18 | M |
+| 3 | INV-1 inventory with a first-open cost column (B19) → user marks → INV-2; DIGEST-1 autopilot digest (in parallel) | D19, D28 | S + S + S |
+| 4 | FIX-B6 advisor provider defaults and the Anthropic browser header; SEC-1 security pass on pack / chat text reaching markup (B7) | — | S, M |
+| 5 | S10a-design → S10a renames + one-time migration | D24 | M + L |
+| 6 | DIST-1 npm package + npmmirror line + stable channel + update check via the line (B19); npm contents and size shown to the user before publishing | D15, D21, D22 | L |
+| 7 | BUNDLE-1 release bundling | D23 | M |
+| 8 | REL-DOCS player guide (B3), licences, 18+ notice, key notice, feedback channel, compatibility matrix (B18) | D25–D27, D29 | M |
+| 9 | Release gate: Stage B checklist + TT sweep with no P0 / P1 including a no-proxy run (B17); tag v0.9.8 on the stable channel; first post links the original author's post | D14 | M |
+
+Prompts are dispatched by the coordinator directly to executor sessions (user decision 2026-10-02).
