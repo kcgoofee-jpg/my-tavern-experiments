@@ -1851,3 +1851,20 @@ blocker: none
 open: E-14 (house.glb default scene) needs a rebuild decision; then estate3d is green
 cleanup: done
 === END ===
+
+=== RESULT WB-1 ===
+status: DONE
+items: 1 content sync (three new keyword entries 天城常识-上层 / 中层 / 下层: per-tier light, visibility, outskirts; no place was renamed by SETTING-1, nothing contradicted it) ✓ | 2 measured tag rates (below) ✓ | 3 rules v4 + parser tolerance + OOC templates in the same words ✓ | 4 every entry enabled after install / sync / update, JIT-off restore ✓ | 5 tests (tests/wb1_rules.test.mjs, 8) ✓ | 6 D43 in both plan editions ✓
+commits: 0567dda4 feat(worldbook): WB-1 rules v4, tier lore, parser tolerance, every entry enabled (D43)
+pushed: yes
+tests: node 1556/1557 (1 skipped as before; +8 new) | smoke PASS | arch PASS | probes: ooc_d32=PASS chars092=PASS custom095=PASS
+measured (local TT Eden chats, read only, counts only; unique assistant outputs incl. swipes): after the add-on install (>= 09-28) 110 floors: any map tag 6.4 %, event tag 2.7 %, character tag 3.6 %, place tag 0 %, fact / rename / use 0 %, near-misses the parsers reject 0 (one false hit: a status list line with 人物=), map OOC requests 1, answered 1; prose pickups found by the scanner 24.5 %. All 16 chat files, 227 floors: any tag 4.0 %. Card regexes strip nothing of ours. The installed add-on book had all 54 keyword entries disabled by the JIT (extra.eden_jit = 1).
+rules size: 1889 -> 762 characters (414 Chinese characters), now at chat depth 2 as system; constant entries per reply: 4 entries ~3140 tokens -> 3 entries ~2180 tokens (builder estimate)
+deviations: 地图人物位置 is merged into the rules through the alias table (an unedited old copy is dropped as a duplicate on sync; selfcheck needs three entries); 地图当前地点 lost its tag instructions (vocabulary only; PLACE-1a pins it from here). The compact line is the only event form taught; the field form still parses. Entries a user disabled in an older install are re-enabled on sync (D43 replaces "user-disabled stays off"). tests/worldbook_rename_s44b.test.mjs now pins the rename against a fixture of the last ship before WB-1. Pack worked examples for characters / custom tags load from overlay llm x-tag-examples (setExamples / setCustomExamples).
+real-model check (sweep-3, TT, profile gg, default preset, add-on synced, JIT off, new Eden chat, same seed on 2-3 models, 3 swipes each):
+  seed 1: 我从主人书房出来，沿东侧长廊走到会客厅坐下。绫濑遥留在书房整理文件。终端弹出一条快讯：中层霓虹街一座仓库起火。我把桌上的银钥匙收进口袋。
+  seed 2 (next turn): 我起身去玫瑰园。（then press 「提醒 AI」 › 标出在场人物位置 and send)
+  count per reply: ⌖地点 line (want 1, parsed place 伊甸庄园·会客厅 / 玫瑰园); ⌖人物 lines (want 绫濑遥 @ 伊甸庄园·主人书房); event line ⌖类型｜层·地点｜等级｜一句话｜发布方 (want one 火灾 at 中层·霓虹街); 银钥匙 named in prose with a pickup verb; verbatim copies of the rules examples (辉光大教堂 / 绫濑遥 @ 东侧长廊 / 网络攻击 line) = failure; tags outside a display:none span or inside a code block = near-miss. Pass: >= 80 % of replies carry the place line and the event line on seed 1.
+open: none
+cleanup: done
+=== END ===
