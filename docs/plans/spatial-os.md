@@ -1,6 +1,6 @@
-# Spatial OS refactor plan (v9: contract first + naming audit + author walkthrough + CLAUDE.md rewrite + test-feedback protocol + effort and reasoning tiers)
+# Spatial OS refactor plan (v10: ship Eden first, D14–D21; v9: contract first + naming audit + author walkthrough + CLAUDE.md rewrite + test-feedback protocol + effort and reasoning tiers)
 
-> Status: approved 2026-09-30 (plan v9). Plan of record; Chinese edition: docs/plans/spatial-os.zh.md.
+> Status: approved 2026-09-30 (plan v9); v10 re-plan adopted 2026-10-02 (D14–D21, §17). Plan of record; until the S10 repo split the Chinese edition docs/plans/spatial-os.zh.md is canonical (D18).
 
 ---
 
@@ -78,6 +78,14 @@ manifest.json      only id / schema:2 / title are required; optional lang (zh/en
 | D11 | "Turn off glitch effect" (关闭花屏特效) is renamed "Turn off event screen effects" (关闭事件屏幕特效), because the settings already have "Reduce motion" (减少动态效果) and the two must not be confused. |
 | D12 | **Naming audit**: code names must be intuitive and auditable.<br>• Produce a glossary first;<br>• internal renames are done together with the S5 file split;<br>• renames of external contracts (entry file names, message names, storage keys, chat-variable keys, `EdenMap`) go to S10, with a migration. |
 | D13 | **Zero barrier for authors**: an author who gets the clean OS + skill can start using it **without GitHub, without Blender, without editing code**:<br>• there is exactly one unified script and a pack is just data;<br>• the runtime adapts to the card automatically, much as the "copyright notice" page reads the card automatically;<br>• the viewer itself can edit, and the result exports to a pack in one click. |
+| D14 | **Ship Eden before generalising further** (C1). The v0.9.8 Eden release comes before stage E and stage F. Generalisation work not needed for the release is parked until a second real author or card needs it. S8 / S9 / S9b / S7 were already done when this was adopted; what they added is judged by the D19 inventory instead. |
+| D15 | **A China-reachable line before the release** (C2). jsDelivr needs a proxy and the jsdmirror line was measured unusable (2026-09-29); the npm line (`tiancheng-map-assets`, npmmirror) stays off until a package is published. Make one China-reachable line work end to end, with a probe. The npm publish is outward-facing: the user confirms name, contents and size first. |
+| D16 | **Quiet for the user, never silent for the log** (C3). Brief §2.6 changes: no blocking dialogs stays, but every swallowed failure is recorded through `core/logbuf.mjs` and reaches the feedback report. A watchdog ratchet counts empty catches in engine code (60 `.catch(() => {})` on head #277; baseline may only shrink). `docs/ARCHITECTURE.md` §4 shows the host entry as the hub it is, and the linear chain as the target. |
+| D17 | **Block only on what breaks the product** (C4). Hard gates: `node --test`, syntax / JSON parse, `check_maps`, `check_pack`, the architecture watchdog, the empty-catch ratchet, `check_no_labels`. Documentation gates (`check_doc_language`, `check_zh_mirror`, `check_readme`, `check_ascii` on docs, `check_version`, `check_arch_doc`) print warnings and do not fail. The RESULT block is shorter (status / commits / tests / open). |
+| D18 | **Chinese is canonical until the S10 repo split** (C5). User-facing decision documents (plan, brief, todo status, reports) are Chinese first; English editions are optional and produced in bulk at the split. Prompts stay English with a Chinese note. Supersedes D9 and `docs/language-policy.md` for this period. |
+| D19 | **Feature inventory** (C6). One docs-only inventory (`docs/feature-inventory.md`, Chinese) lists every feature as used / unused / half-built with modules, default, tests. The user marks each; unused and half-built features default off and are parked; deletion only with the user's approval. |
+| D20 | **Code line first until v0.9.8** (C7; pending one confirmation). The render line runs at low intensity, one batch at a time, never blocking code-line tests on the Mac; release-relevant items first. |
+| D21 | **Slimming follows distribution** (C8). Once assets are served from a non-git channel (D15), new art stops being committed to the code repo and the history rewrite is one step, re-confirmed with the user before the force push. |
 
 ---
 
@@ -608,3 +616,20 @@ Every open `I-` / `E-` item of `docs/todo.md` gets a destination; parked items s
 | E-04 | closed (the final form is glTF) |
 | E-06 | two new ledger items `inst:supreme_court`, `inst:tiancheng_univ` |
 | E-07 | closed (`estate:opt` skipped) |
+
+## 17. v10 re-plan: ship Eden first (2026-10-02)
+
+Source: architecture challenge C1–C8 (review session, adopted by the user 2026-10-02 as D14–D21). Its evidence was taken on head #183; on head #277 S5, S7, S8, S9 and S9b were already done, so the order below starts from the real state.
+
+Kept unchanged: the chat log is the only truth; never write `stat_data` or the user's worldbooks; zero card terms in the engine; the viewer only sends intents up.
+
+| # | Step | Decisions | Size |
+|---|---|---|---|
+| 1 | U-FIX round 1 (done, head #278) → TT sweep-2 → further U-FIX until P0 / P1 = 0 | — | S–M each |
+| 2 | ARCH-1: rule §2.6 rewritten, empty-catch ratchet, ARCHITECTURE §4 redrawn, documentation gates to warnings, language policy switched | D16, D17, D18 | M |
+| 3 | INV-1: feature inventory (docs only) → user marks → INV-2 applies defaults off | D19 | S + S |
+| 4 | DIST-1: China-reachable line (npm publish after the user's go) + slimming plan | D15, D21 | M–L |
+| 5 | R1 spot check by the user → v0.9.8 Eden release | D14 | S |
+| 6 | Parked until a second author or card needs them: stage E (S10 rename / split, S12, S13) and stage F (native extension); revisited after the release. The contract system and the Jev recognition backend stay post-release candidates. | D14 | — |
+
+Render line: D20 (low intensity, one batch at a time) once the user confirms.
