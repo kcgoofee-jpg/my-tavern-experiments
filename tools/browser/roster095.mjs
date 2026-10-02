@@ -39,9 +39,9 @@ async function run(name, preset, charAsync = false) {
     await vf.evaluate(() => ViewerDebug.post({ type: 'eden-map:varmap-set', user: { gradeField: '级别', coreField: '数值' } }));
     await vf.waitForFunction(() => !!document.querySelector('#evbar .chgrp[data-g=members] .chstat'), null, { timeout: 8000 }).catch(() => {});
     const st1 = await vf.evaluate(() => document.querySelector('#evbar .chgrp[data-g=members] .chstat')?.textContent || '');
-    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); SettingsApi.open('people'); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); }); await B.wait(300);
     const st2 = await vf.evaluate(() => !!document.querySelector('#evbar .chstat'));
-    await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); ViewerDebug.post({ type: 'eden-map:varmap-set', user: {} }); }); await B.wait(300);
+    await vf.evaluate(() => { ViewerDebug.showSet(true); SettingsApi.open('people'); document.querySelector('#optCharStats').click(); ViewerDebug.showSet(false); ViewerDebug.post({ type: 'eden-map:varmap-set', user: {} }); }); await B.wait(300);
     rep.check(`${name} 名册数值：映射前不显示；映射后「B · 档 4 72」；「人物栏显示数值」关掉即隐藏`, !st0 && st1 === 'B · 档 4 72' && !st2, JSON.stringify({ st0, st1, st2 }));
     const lean0 = await vf.evaluate(() => CharactersView.portOn());   // 省流档（测试用 save）默认关
     await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#optPort').click(); ViewerDebug.showSet(false); }); await B.wait(300);

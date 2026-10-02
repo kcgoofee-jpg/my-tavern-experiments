@@ -164,10 +164,10 @@ try {
       JSON.stringify({ half: walk.half, from: walk.from, to: walk.to }));
     const moved3 = (walk.to || []).some((v, i) => Math.abs(v - walk.from[i]) > 1e-6);
     rep.check('到点落在新楼层（F2），三维坐标真的换了', walk.floor === 'F2' && moved3, `floor ${walk.floor} / ${JSON.stringify(walk.from)} → ${JSON.stringify(walk.to)}`);
-    // 头像真的画出来了（CSS2D 元素挂在 DOM 上）
+    // 头像真的画出来了（S7-3 起是在场人物的 .pc 标签，名字在 data-name）
     await B.wait(600);
-    const dom = await fr.evaluate(() => [...document.querySelectorAll('.npc b')].map(b => b.textContent));
-    rep.check('头像（CSS2D）在三维页里画出来了', dom.includes('探针乙'), dom.join('/'));
+    const dom = await fr.evaluate(() => [...document.querySelectorAll('.pc')].map(b => b.dataset.name));
+    rep.check('头像（在场人物标签）在三维页里画出来了', dom.includes('探针乙'), dom.join('/'));
   });
 
   const noise = e => /Failed to load resource: the server responded with a status of 404/.test(e) || /setPointerCapture/.test(e);

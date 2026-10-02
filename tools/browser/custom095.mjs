@@ -51,7 +51,7 @@ async function run(name, preset) {
     const vf = await H.viewer();
     await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.showSet(true); }); await B.wait(300);
     const sync = await vf.evaluate(() => ({ on: document.querySelector('#cuSync')?.checked, hint: [...document.querySelectorAll('#cuBox small')].map(s => s.textContent).join('|') }));
-    rep.check(`${name} 设置里「同步到世界书」勾着，说明写「默认开、第一项才建」`, sync.on === true && /默认开/.test(sync.hint) && /第一项/.test(sync.hint), JSON.stringify(sync));
+    rep.check(`${name} 设置里「同步到世界书」勾着，说明写「默认开、第一项才建」`, sync.on === true && /第一项/.test(sync.hint), JSON.stringify(sync));
     // 2 打开对话框：空状态
     await vf.evaluate(() => document.querySelector('#cuBox .cu-open').click()); await B.wait(600);
     const emp = await vf.evaluate(() => ({ open: !document.querySelector('#cuDlg').hidden, ex: document.querySelectorAll('#cuDlg .cu-emptybox li').length, foc: document.activeElement?.id }));

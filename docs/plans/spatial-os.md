@@ -178,6 +178,8 @@ I produce a 5-minute checklist and you test with the Eden card in the tavern; pr
 
 ### Stage C: experience and extensions
 
+~~Status line: S6, S7 (S7-1…S7-3), S8 (S8-1…S8-4b), S9 (S9-1…S9-3) and S9b are done and the stage was accepted by C-ACCEPT~~ ✅ 2026-10-02 (probe sweep `docs/plans/stage-c-probes.md`, screenshots, main synced; open tails are todo I-30, I-31, I-32 and E-13).
+
 - **S6 Entity protocol + drawer** (about 12h):
   - tab registry `app/tabs.mjs`;
   - the characters tab adapts to the level: at micro levels show only people present at the same node, at macro levels group by the node tree;

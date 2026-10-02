@@ -1623,3 +1623,15 @@ blocker: none
 open: the builder-side dedupe (drop hidden internal faces, offset duplicated floor layers by >= 1 mm) for a later estate-line step
 cleanup: done
 === END ===
+
+=== RESULT C-ACCEPT ===
+status: DONE
+items: 1 probe sweep (62 probes, 58 PASS, 4 FAIL filed as I-32; baseline file unchanged) ✓ · 2 screenshots 1440 + 375 in ~/eden-map-review/stage-c/ (world, upper, mid, low, estate exterior, estate B1 section with a located character, settings home, AI cards page, items tab, route plan on tc_mid) ✓ · 3 stage C marked done in todo §0 and the plan; tails I-30 (key 3), I-31 (375 dock column), I-32 (stale probes incl. v2a), E-13 builder dedupe stay open ✓ · 4 main synced (see chat report) ✓ · 5 R1 kit in ~/eden-map-review/tt/R1/ (测试清单.md 15 items, 结果.md, eden-map-preview-follow-preview.json) ✓
+commits: this commit (probe repairs, stage-c-probes en + zh, todo, plan, log)
+pushed: yes (head # in the chat report; log copy committed before the push)
+tests: node 1445 pass + 2 skipped / 1447 | smoke PASS | arch PASS | probes: 58 PASS of 62 (e7 1 check, fix3 estate-build, v097, v2a FAIL; tile_fail PASS in about 12 min) 
+deviations: (1) work done in a fresh worktree off origin/preview because the main checkout was 333 commits behind and dirty. (2) Eleven probes were repaired in tools/browser (settings sub-pages are built on first open; layer count 22; AI 参谋标注; presence chip .pc; build-line wording; lib.buildAllSettingsPages) - each fix under 30 lines. (3) Four probes were not repaired (more than the small-fix limit or unclear intent) and are filed as I-32. (4) The route-plan and low shots come from a one-off script in the scratchpad, items-tab shots from drawer_stash --shots. (5) The R1 checklist item wording for route planning uses the layer name 「交通网」 and the card link 「路线 · 约 N 分钟」 as seen in the probe.
+blocker: none
+open: I-32 (four stale probes), I-30, I-31
+cleanup: done
+=== END ===

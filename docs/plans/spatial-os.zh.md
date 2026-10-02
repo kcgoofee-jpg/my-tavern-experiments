@@ -178,6 +178,8 @@ manifest.json      必填只有 id / schema:2 / title；可选 lang（zh/en…�
 
 ### 阶段 C：体验与扩展
 
+~~状态：S6、S7（S7-1…S7-3）、S8（S8-1…S8-4b）、S9（S9-1…S9-3）与 S9b 已完成，阶段 C 经 C-ACCEPT 验收~~ ✅ 2026-10-02（探针全扫 `docs/plans/stage-c-probes.md`、截图、main 已同步；遗留尾项见 todo I-30、I-31、I-32 与 E-13）。
+
 - **S6 实体协议 + 抽屉**（约 12h）：
   - 页签注册表 `app/tabs.mjs`；
   - 人物页按层级自适应：微观层只显示同一节点在场的人，宏观层按节点树分组；

@@ -30,7 +30,7 @@ async function load(P, name) {
   reqs.length = 0;
   const H = await openHost(P, { here: '', stat: {}, msgs: [{ message_id: 1, message: '到了。' }], chat: 'fp-' + name, scriptBase: `${B.BASE}gh/o/r@preview/map/`.replace(/map\/$/, 'map/') });
   await H.open(); const vf = await H.viewer(); await B.wait(1500);
-  const r = await vf.evaluate(async () => { const m = await import('./app/settings.mjs'); return { about: m.about, line: document.querySelector('#buildLine')?.textContent || '', build: await fetch('data/build.json').then(x => x.json()).catch(() => null) }; });
+  const r = await vf.evaluate(async () => { SettingsApi.open('update'); await new Promise(z => setTimeout(z, 400)); const m = await import('./app/settings.mjs'); return { about: m.about, line: document.querySelector('#buildLine')?.textContent || '', build: await fetch('data/build.json').then(x => x.json()).catch(() => null) }; });
   const S = await (await (await P.page.$('#card')).contentFrame()).evaluate(() => window.__edenMapScript || null);   // 脚本跑在卡片 iframe 里
   return { r, S, urls: [...reqs] };
 }

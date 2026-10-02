@@ -81,7 +81,7 @@ async function page({ latest = 'map-v9.9.9', build = { version: '9.9.9', code: '
 {
   const { P, p, H } = await page({ ls: { edenMapUpdSkip: '9.9.9' } });
   await H.open(); const vf = await H.viewer();
-  const sw = await vf.evaluate(() => { ViewerDebug.renderAbout(); const c = document.getElementById('optAutoCheck'); if (!c) return null; const was = c.checked; c.click(); return { was, ls: localStorage.getItem('edenMapAutoCheck') }; });
+  const sw = await vf.evaluate(() => { SettingsApi.open('update'); ViewerDebug.renderAbout(); const c = document.getElementById('optAutoCheck'); if (!c) return null; const was = c.checked; c.click(); return { was, ls: localStorage.getItem('edenMapAutoCheck') }; });
   rep.check('setting_toggle', sw && sw.was === true && sw.ls === '0', JSON.stringify(sw));
   await P.ctx.close();
 }

@@ -60,11 +60,11 @@ try {
   const oc = await vf.evaluate(() => !!document.querySelector('#card .cu-outfit'));
   rep.check('outfit-place', !oc, oc ? '地点卡还有着装' : '');
   // 设置：高级（线路）、显示（清晰度）、更新（版本）、数据（模板）、自定义
-  const pages = ['display', 'adv', 'update', 'data'];
+  const pages = ['home', 'adv', 'update', 'data'];
   for (const pg of pages) { await vf.evaluate(p => SettingsApi.open(p), pg); await B.wait(600); await B.shot(P.page, OUT, 'set-' + pg + sfx); }
   const rows = await vf.evaluate(() => {
     SettingsApi.open('adv'); const line = document.querySelector('#lineRow'); const lt = line && !line.hidden ? line.textContent + ' | ' + (document.querySelector('#lineNow')?.textContent || '') : '(hidden)';
-    SettingsApi.open('display'); const q = document.querySelector('#tiers'); const qt = q && q.offsetParent ? q.querySelectorAll('button').length + ' 档 | ' + [...q.querySelectorAll('button')].map(b => b.textContent + (b.disabled ? '(灰)' : '')).join(' ') + ' | ' + (document.querySelector('#tierWhy')?.textContent || '') : '(none)';
+    SettingsApi.open('home'); const q = document.querySelector('#tiers'); const qt = q && q.offsetParent ? q.querySelectorAll('button').length + ' 档 | ' + [...q.querySelectorAll('button')].map(b => b.textContent + (b.disabled ? '(灰)' : '')).join(' ') + ' | ' + (document.querySelector('#tierWhy')?.textContent || '') : '(none)';
     SettingsApi.open('update'); const v = document.querySelector('#aboutBox')?.textContent || '';
     return { lt, qt, v };
   });
@@ -92,8 +92,8 @@ try {
   const lt = await vf.evaluate(() => document.querySelector('#loading .uiprog')?.getAttribute('aria-valuetext') || ''); rep.check('estate-progress', /已|%/.test(lt), lt);
   await vf.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 90000 }).catch(() => {}); await B.wait(3000);
   await B.shot(P.page, OUT, 'estate' + sfx);
-  await vf.evaluate(() => SettingsApi.open('display')); await B.wait(500); await B.shot(P.page, OUT, 'estate-set-display' + sfx);
-  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: (SettingsApi.open('update'), document.querySelector('#build')?.offsetParent ? document.querySelector('#build').textContent : '') }));
+  await vf.evaluate(() => SettingsApi.open('home')); await B.wait(500); await B.shot(P.page, OUT, 'estate-set-display' + sfx);
+  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: (SettingsApi.open('update'), document.querySelector('#buildLine')?.offsetParent ? document.querySelector('#buildLine').textContent : '') }));
   await B.shot(P.page, OUT, 'estate-set-update' + sfx);
   rep.check('estate-tier', e3.n === 4 && /三维/.test(e3.why), JSON.stringify(e3));
   rep.check('estate-build', e3.build.length > 4, e3.build);

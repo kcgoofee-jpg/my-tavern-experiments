@@ -22,7 +22,7 @@ const LS = {}; for (let i = 0; i < 8; i++) LS[`edenMap:chat:old${i}:custom`] = '
 async function clean(preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
-    const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-clean', ls: LS }); await H.open(); const vf = await H.viewer(); await B.wait(800);
+    const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-clean', ls: LS }); await H.open(); const vf = await H.viewer(); await B.buildAllSettingsPages(vf); await B.wait(800);
     await vf.evaluate(() => SettingsApi.open('data')); await B.wait(1200);
     const btn = vf.locator('#storClean');
     rep.check(`${preset} 清理按钮可点（有旧聊天）`, !(await btn.isDisabled()));

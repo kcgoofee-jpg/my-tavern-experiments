@@ -268,3 +268,6 @@ export function reporter(outDir) {
     },
   };
 }
+
+// S7-1: settings sub-pages are built when first opened; probes that read a control on any page build them all first.
+export const buildAllSettingsPages = vf => vf.evaluate(async () => { for (const pg of ['map', 'people', 'data', 'update', 'license', 'adv', 'home']) { SettingsApi.open(pg); await new Promise(r => setTimeout(r, 120)); } });

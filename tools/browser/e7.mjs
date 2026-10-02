@@ -127,7 +127,7 @@ try {
     const p = P.page; await B.openViewer(P, { map: 'tc_upper' }); await B.wait(600);
     rep.check('自动：悬浮按钮拖在左半边 → 左手布局', await p.evaluate(() => document.documentElement.dataset.hand) === 'left');
     await p.locator('#thumbBtn').click(); await B.wait(300);
-    await p.locator('#setPop .sgroups button[data-page="display"]').click(); await B.wait(200);   // UI v2：惯用手在设置「显示」页
+    await p.evaluate(() => SettingsApi.open('home')); await B.wait(200);   // S7-1：惯用手在设置首页
     await p.locator('#handSeg button[data-hand="right"]').click(); await B.wait(300);
     await p.reload(); await p.waitForFunction(() => document.getElementById('loading')?.classList.contains('done'), null, { timeout: 20000 }).catch(() => {});
     const st = await p.evaluate(() => ({ hand: document.documentElement.dataset.hand, pref: localStorage.getItem('edenMapHand') }));
@@ -177,7 +177,7 @@ try {
     // 打开设置 → 显示 → 色觉模式：红绿
     await p.locator('#thumbBtn').click().catch(() => {}); await B.wait(200);
     await p.locator('#setBtn').click().catch(() => {}); await B.wait(200);
-    await p.locator('#setPop .sgroups button[data-page="display"]').click(); await B.wait(200);
+    await p.evaluate(() => SettingsApi.open('map')); await B.wait(200);   // S7-1：色觉模式在「地图与图层」
     await p.locator('#cvdSeg button[data-cvd="rg"]').click(); await B.wait(300);
     const rg = await p.evaluate(() => ({ cls: document.documentElement.classList.contains('cvd-rg'), stored: localStorage.getItem('edenMapCvd'),
       leg: [...document.querySelectorAll('.evleg button')].map(b => getComputedStyle(b).getPropertyValue('--c') || b.style.getPropertyValue('--c')) }));

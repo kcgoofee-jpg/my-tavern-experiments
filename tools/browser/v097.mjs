@@ -22,7 +22,7 @@ async function run(name, preset) {
   const P = await B.newPage(preset, { tier: 'save' });
   try {
     const H = await openHost(P, { here: HERE, stat: STAT, chat: 'v97-' + name }); const p = P.page;
-    await H.open(); const vf = await H.viewer(); await B.wait(1500);
+    await H.open(); const vf = await H.viewer(); await B.buildAllSettingsPages(vf); await B.wait(1500);
     if (on('compose')) {
       await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(2500);
       await vf.evaluate(() => document.querySelector('.mk[data-name="7 号井黑市"]')._open()); await B.wait(300);

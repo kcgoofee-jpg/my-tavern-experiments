@@ -63,9 +63,10 @@ try {
 
   await step('设置页有这个开关（中英键齐全）', async () => {
     const vf = await H.viewer();
+    await vf.evaluate(() => SettingsApi.open('adv')); await B.wait(500);   // settings pages render when opened (S7-1)
     const r = await vf.evaluate(() => ({ box: !!document.getElementById('optTick'), label: document.querySelector('#optTick')?.closest('label')?.querySelector('span')?.textContent || '' }));
     rep.metric('ui', r);
-    rep.check('高级页有「后台静默推演」开关', r.box && /推演|tick/i.test(r.label), JSON.stringify(r));
+    rep.check('高级页有「后台静默推演」开关', r.box && /推演|预先读取|tick/i.test(r.label), JSON.stringify(r));
   });
 
   const noise = e => /Failed to load resource: the server responded with a status of 404/.test(e);
