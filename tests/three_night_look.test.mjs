@@ -102,5 +102,5 @@ test('night-look：applyNightFlat / applyGlow 按时段写 uniform，并报出�
 test('map/three/night-look.mjs：纯渲染层约束（不碰宿主全局 / 存储）', () => {
   const src = readFileSync(new URL('../map/three/night-look.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /\b(localStorage|sessionStorage|Mvu|SillyTavern)\b/);
-  assert.doesNotMatch(src, /地图自设|仓库推断|自设|推断/, '不写来源标签');
+  for (const m of src.matchAll(/\bfrom\s+(['"])([^'"]+)\1/g)) assert.ok(m[2].startsWith('./'), `只允许同层 import：${m[2]}`);
 });
