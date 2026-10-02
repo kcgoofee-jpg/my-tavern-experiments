@@ -11,6 +11,7 @@
 #   7. 架构看门狗（tools/check_architecture.py，8 道防线（含注释卡词）+ tools/arch_baseline.json 只减不增账本）：
 #      引擎单文件 ≤400 行；core 零父级 import、core 与纯流水线不碰宿主全局（单一属主豁免表见脚本头）；
 #      禁裸 z-index 字面量、卡专有名词、内联外观样式（既有违规冻结在账本里，只许减少）
+#   7a. 文档类关口（check_doc_language / check_zh_mirror / check_readme / check_arch_doc 及其自测）走 warn_step：只警告不失败（D17）
 #   7b. 无来源标签（tools/check_no_labels.py）：map / tools / blender / skills / tests 与现行文档里不得出现「卡里有 / 自己编」式来源标注
 #   8. 树卫生（tools/check_tree_hygiene.py）：未跟踪且未忽略的文件单个 >10 MB 即失败（防 git add -A 把
 #      临时产物 / 中间瓦片误提交；CI 干净检出天然通过）
@@ -22,6 +23,9 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 FAIL=0
 step() { local name=$1; shift; local t=$SECONDS
   if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "✗ $name"; tail -15 "$TMP/out" | sed 's/^/    /'; FAIL=1; fi; }
+# D17：文档类关口只警告——失败时打印 ⚠ + 输出，永不置 FAIL（只拦会坏产品的东西）
+warn_step() { local name=$1; shift; local t=$SECONDS
+  if "$@" > "$TMP/out" 2>&1; then echo "✓ $name ($((SECONDS - t))s)"; else echo "⚠ $name（仅警告）"; tail -15 "$TMP/out" | sed 's/^/    /'; fi; }
 
 step "check_maps" python3 tools/check_maps.py
 python3 tools/check_render_deps.py | sed 's/^/  [警告] /'   # 只警告，不计入 FAIL（docs/render-deps.md）
@@ -31,8 +35,8 @@ step "架构看门狗（引擎行数 / 分层纯净 / 裸 z-index / 卡专有名
 step "架构看门狗门控自测（引用与账本拦得住 / 机制术语放行 / 仓库现状干净，防空转）" python3 tools/test_architecture_gate.py
 step "计划 §8 卡词 grep（引擎含注释零命中，仅允许表里的 S10 行，见 tools/check_stage_a_grep.py）" python3 tools/check_stage_a_grep.py
 step "§8 grep 门控自测（词表 / 排除 / 允许表）" python3 tools/check_stage_a_grep.py --self-test
-step "架构文档模块地图（每个引擎文件恰好列一次、列出的路径都存在，见 tools/check_arch_doc.py）" python3 tools/check_arch_doc.py
-step "架构文档门控自测" python3 tools/check_arch_doc.py --self-test
+warn_step "架构文档模块地图（每个引擎文件恰好列一次、列出的路径都存在，见 tools/check_arch_doc.py）" python3 tools/check_arch_doc.py
+warn_step "架构文档门控自测" python3 tools/check_arch_doc.py --self-test
 step "树卫生（未跟踪大文件防 git add -A 误提交，见 tools/check_tree_hygiene.py）" python3 tools/check_tree_hygiene.py
 step "纵深数学对拍（python ↔ golden；JS 侧在 node --test）" python3 tools/test_depth.py
 step "斜视投影对拍（python ↔ golden）" python3 tools/test_project.py
@@ -42,15 +46,15 @@ step "无空的已跟踪源文件" bash -c "! git ls-files -- '*.mjs' '*.js' '*.
 step "版本一致（VERSION ↔ build.json ↔ CHANGELOG ↔ README ↔ 标签）" python3 tools/check_version.py
 step "令牌内联一致（tokens.css ↔ viewer.html）" python3 tools/sync_tokens.py --check
 step "机器标识 ASCII 审计（路径 / JSON 键 / id 字段）" python3 tools/check_ascii.py
-step "文档语言（基线之后的新 .md 必须英文，见 docs/language-policy.md）" python3 tools/check_doc_language.py
-step "文档语言门控自测（英文过 / 中文拦 / 豁免真的豁免）" python3 tools/test_doc_language.py
-step "中英镜像结构一致（agent-brief / spatial-os 计划 / ARCHITECTURE，见 tools/check_zh_mirror.py）" python3 tools/check_zh_mirror.py
-step "中英镜像门控自测" python3 tools/check_zh_mirror.py --self-test
+warn_step "文档语言（基线之后的新 .md 必须英文，见 docs/language-policy.md）" python3 tools/check_doc_language.py
+warn_step "文档语言门控自测（英文过 / 中文拦 / 豁免真的豁免）" python3 tools/test_doc_language.py
+warn_step "中英镜像结构一致（agent-brief / spatial-os 计划 / ARCHITECTURE，见 tools/check_zh_mirror.py）" python3 tools/check_zh_mirror.py
+warn_step "中英镜像门控自测" python3 tools/check_zh_mirror.py --self-test
 step "无来源标签（不得出现「卡里有 / 自己编」式标注，见 docs/agent-brief.md §7 与 tools/check_no_labels.py）" python3 tools/check_no_labels.py
 step "无来源标签门控自测" python3 tools/check_no_labels.py --self-test
 step "庄园模型近共面面账本（会闪的：同朝向 + 顶点色不同 + 间距 ≥ 0.5 mm，余量 5%，见 tools/audit_coplanar.mjs、todo E-13）" node tools/audit_coplanar.mjs map/estate/model/house.glb map/estate/model/site.glb --baseline tools/coplanar_baseline.json --slack 0.05
-step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / 提到的路径都存在）" python3 tools/check_readme.py
-step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
+warn_step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / 提到的路径都存在）" python3 tools/check_readme.py
+warn_step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
 step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配 GPU）" python3 tools/render_preflight.py lint
 step "渲染守卫单测（看门狗状态机 / 预检 / 事故回归）" python3 tools/test_render_guard.py
 step "渲染真实性单测（退出码 0 但日志有 Traceback / 产物缺失 / 产物过期 → 失败，见 tools/render_truth.py）" python3 tools/test_render_truth.py

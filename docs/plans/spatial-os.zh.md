@@ -81,7 +81,7 @@ manifest.json      必填只有 id / schema:2 / title；可选 lang（zh/en…�
 | D14 | **先发伊甸，再谈泛化**（C1）。v0.9.8 伊甸版排在阶段 E、阶段 F 之前；发版用不到的泛化工作暂停，等真有第二位作者或第二张卡需要时再做。采纳时 S8 / S9 / S9b / S7 已经做完，它们带来的功能交给 D19 盘点来定去留。 |
 | D15 | **发版前先让国内能打开**（C2）。jsDelivr 要梯子；jsdmirror 线路 2026-09-29 实测直连不可用；npm 线路（`tiancheng-map-assets`，npmmirror）在发包前一直关着。发版前打通一条国内可达的线路，并配探针。npm 发布是对外动作：先把包名、内容和体积给用户确认。 |
 | D16 | **对用户安静，对日志不沉默**（C3）。简报 §2.6 改写：仍然不弹阻断对话框，但每个被吞掉的错误都经 `core/logbuf.mjs` 记录、进反馈报告。架构看门狗加一条棘轮：统计引擎代码里的空 catch（head #277 上 `.catch(() => {})` 有 60 处，基线只减不增）。`docs/ARCHITECTURE.md` §4 按实际画出宿主入口这个中枢，线性链路标为目标。 |
-| D17 | **只拦会坏产品的东西**（C4）。硬关口：`node --test`、语法 / JSON 解析、`check_maps`、`check_pack`、架构看门狗、空 catch 棘轮、`check_no_labels`。文档类关口（`check_doc_language`、`check_zh_mirror`、`check_readme`、文档的 `check_ascii`、`check_version`、`check_arch_doc`）只打印警告、不失败。RESULT 块精简为状态 / 提交 / 测试 / 待定。 |
+| D17 | **只拦会坏产品的东西**（C4）。硬关口（与 `tools/smoke.sh` 一致）：`node --test`、`node --check`、JSON 解析、`check_maps`、`check_pack`、架构看门狗（含空 catch 棘轮）、`check_stage_a_grep`、`check_no_labels`、`check_ascii`（机器标识）、`check_version`（发布一致性）、`check_tree_hygiene`、渲染守卫。警告类关口（`warn_step`：失败时打印 ⚠ 和输出，永不置失败）：`check_doc_language`、`check_zh_mirror`、`check_readme`、`check_arch_doc`，各带自测。RESULT 块精简为 status / items / commits / pushed / tests / deviations / open / cleanup。 |
 | D18 | **S10 拆仓前中文为正本**（C5）。给用户看的决策文档（计划、简报、todo 状态行、报告）中文优先；英文版可选，拆仓时批量补。提示词仍用英文加中文说明。这段时间内取代 D9 和 `docs/language-policy.md`。 |
 | D19 | **功能盘点**（C6）。一份只写文档的盘点（`docs/feature-inventory.md`，中文），逐项列出功能是在用 / 没用 / 半成品，以及模块、默认开关、测试数。用户逐项标记；没用和半成品默认关闭、暂停维护；删除要用户同意。 |
 | D20 | **v0.9.8 之前代码线为主**（C7；待用户确认一次）。渲染线低强度运行，一次一批，不挡 Mac 上代码线的测试；发版相关的条目优先。 |
