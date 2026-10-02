@@ -25,10 +25,10 @@ test('legend (LEGEND-1, D35): the first pack declares no ui.legend rows and does
   assert.equal(fromV1(townInputs()).pack.ui?.legend, undefined);
 });
 
-test('LEGEND-1: every first-pack layer that has legend rows keeps its own menu description (zh and en), so the layer menu explains it', () => {
+test('LEGEND-1: every first-pack layer that has legend rows keeps its own menu description (zh and en); since LOOK-1 A8 (D42) the pack declares no layer at all', () => {
   const ov = J('map/packs/eden/overlay.v2.json'); let n = 0;
   for (const l of ov.layers || []) if (l.legend?.length) { n++; assert.ok(l.menu?.title, l.id + ' zh'); assert.ok(l.menu?.i18n?.en?.title, l.id + ' en'); }
-  assert.ok(n >= 1);
+  assert.equal(n, 0);
 });
 
 test('clouds / tint: maps.json flags become view fields; only the tiers that had the behaviour carry them', () => {

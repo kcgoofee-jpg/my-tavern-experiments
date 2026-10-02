@@ -92,8 +92,10 @@ async function run(name, preset) {
       rep.check(`${name} 图层菜单有「安保」开关，默认关、无标签`, s0.lab && s0.off && s0.badges === 0, JSON.stringify(s0));
       await vf.evaluate(() => { const b = document.getElementById('tgSecBox'); b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); }); await B.wait(600);
       const s1 = await vf.evaluate(() => { const b = document.querySelector('.mk[data-name="伊甸庄园"] .secb'); document.querySelector('.mk[data-name="伊甸庄园"]')._open();
-        return { badge: b?.textContent, rows: [...document.querySelectorAll('#card .secbox dt')].map(x => x.textContent) }; });
-      rep.check(`${name} 打开后伊甸庄园有「结警监门」标签，地点卡列出结界 / 监控 / 门禁 / 警报`, s1.badge === '结警监门' && ['结界', '监控', '门禁', '警报'].every(k => s1.rows.includes(k)), JSON.stringify(s1));
+        return { badge: b?.textContent, icons: b?.querySelectorAll('.sic svg').length, pe: b ? getComputedStyle(b).pointerEvents : null,
+          rows: [...document.querySelectorAll('#card .secbox dt')].map(x => x.textContent) }; });
+      rep.check(`${name} 打开后伊甸庄园图钉旁一枚「安保」签（每类事实一枚小图标），地点卡列出结界 / 监控 / 门禁 / 警报`,
+        s1.badge === '安保' && s1.icons === 4 && s1.pe !== 'none' && ['结界', '监控', '门禁', '警报'].every(k => s1.rows.includes(k)), JSON.stringify(s1));
       await B.wait(300); await B.shot(p, OUT, `sec_${name}_card`);
       await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.go('tc_low'); }); await B.wait(2000);
       rep.check(`${name} 没有安保数据的图上开关隐藏`, await vf.evaluate(() => document.getElementById('tgSec').hidden));

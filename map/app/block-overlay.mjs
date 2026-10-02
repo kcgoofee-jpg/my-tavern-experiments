@@ -12,7 +12,8 @@ const CSS = `
 ${SLOTS.map(s => `.lyr[data-slot="${s}"] { z-index: var(--zv-${s}); }`).join('\n')}
 .lyr-svg { pointer-events: none; overflow: visible; }
 .lyr-svg path { fill: none; stroke: var(--lc); stroke-width: var(--lw); stroke-dasharray: var(--ld); opacity: var(--lo); vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
-.lyr-svg path.halo { stroke: rgba(8,10,14,.28); stroke-width: calc(var(--lw) + 1.4px); stroke-dasharray: none; }
+.lyr-svg path:not(.fill):not(.halo) { filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--lc) 75%, transparent)); }   /* A10-lite (D42): the lines glow softly instead of a dark outline */
+.lyr-svg path.halo { stroke: var(--lc); opacity: .2; stroke-width: calc(var(--lw) + 2.6px); stroke-dasharray: none; }   /* A10-lite (D42): the halo is a colour bloom under the line, not a dark keyline */
 .lyr-svg path.fill { fill: var(--lf); fill-opacity: var(--lfo); }
 .lyr-pt { pointer-events: none; color: var(--lc); opacity: var(--lo); }
 .lyr-pt i { display: block; width: var(--ls); height: var(--ls); border-radius: 50%; background: currentColor; border: 1.5px solid var(--map-label-ink, #fff8); box-sizing: border-box; }

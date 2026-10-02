@@ -67,19 +67,24 @@ const CharactersView = (() => {
     const k = d?.markers?.find(x => x.id === id); return k ? { nx: k.ax ?? k.nx, ny: k.ay ?? k.ny } : null; };
   async function where(c) {
     const d = drawnAt(hereRes(c.place), c.place); if (!d?.marker) return d;   // the node tree places it (app/spot.mjs); only a landmark needs its point from the map's data
-    const p = await markerXY(d.map, d.marker); return p ? { map: d.map, ...p } : { map: d.map };
+    const p = await markerXY(d.map, d.marker); return p ? { map: d.map, marker: d.marker, ...p } : { map: d.map };   // marker kept: A11 (D42) uses it to let the avatar replace the pin
   }
 
   async function set(d) { await mod(); if (!Array.isArray(d.items)) return; const hadP = Object.values(portraits).some(okUrl); items = d.items.slice(0, 60); rosters = d.rosters || null; groups = Array.isArray(d.groups) ? d.groups : null; rep = Number.isFinite(d.rep) ? d.rep : null; stageOrder = Array.isArray(d.stageOrder) ? d.stageOrder : null; portraits = d.portraits && typeof d.portraits === 'object' ? d.portraits : {}; if (hadP !== Object.values(portraits).some(okUrl)) portRow(); floor = d.floor || 0; loadPrefs(); await render(); bar(); if (flyName && currentMapId) fly(flyName); }
-  let seq = 0;
+  let seq = 0, pinEls = [];   // A11 (D42): the pins whose spots the avatar stack took over (class removed again on the next render)
   async function render() {
     for (const el of els) { if (typeof untrack === 'function') untrack(el); osdViewer?.removeOverlay(el); } els = [];
+    for (const e of pinEls) e.classList.remove('replaced'); pinEls = [];
     plugins.EstateShell?.people();   // a 3D building open: the same people, drawn in its rooms (S7-3; it sends only when the list changed)
     if (!osdViewer || !currentMapId || !osdViewer.world.getItemCount() || mapRegistry.maps[currentMapId]?.kind === 'estate' || !CM) return;
     const my = ++seq, groups = new Map();
     for (const c of items.filter(visible)) { const w = await where(c); if (my !== seq) return; if (!w || w.map !== currentMapId || w.nx == null) continue;
       const k = w.nx.toFixed(3) + ',' + w.ny.toFixed(3); if (!groups.has(k)) groups.set(k, { w, list: [] }); groups.get(k).list.push(c); }
     for (const { w, list } of groups.values()) {
+      // A11 (D42): one marker per spot — where the group sits on a landmark, its avatar replaces the pin (initials when there is no photo, a count for several people);
+      // the current-location pin stays (the here ring is its own signal)
+      if (w.marker) { const pin = document.querySelector(`.mk[data-mid="${CSS.escape(w.marker)}"]`);
+        if (pin && !pin.classList.contains('here') && !pin.classList.contains('replaced')) { pin.classList.add('replaced'); pinEls.push(pin); } }
       const el = document.createElement('div'); el.className = 'chm' + (w.approx ? ' approx' : ''); el.dataset.chars = list.map(c => c.name).join('|');
       el.innerHTML = '<span class="chg">' + list.slice(0, 3).map((c, i) => `<i class="av" style="--c:${color(c.name)};z-index:${3 - i}">${avImg(c.name) || esc(ini(c.name))}</i>`).join('')
         + (list.length > 3 ? `<i class="av more">+${list.length - 3}</i>` : '') + `<b>${esc(dn(list[0].name))}${list.length > 1 ? ' ' + esc(uiTextOr('ch.more', '等 {n} 人', { n: list.length })) : ''}</b>` + '</span>';
@@ -231,6 +236,8 @@ const CharactersView = (() => {
   function chatChanged() { loadPrefs(); render(); bar(); }
 
   const css = `
+  .mk.replaced{pointer-events:none}   /* A11 (D42): the avatar stack takes the spot; the pin and its label stay out of the way */
+  .mk.replaced .mki{visibility:hidden}
   .chm{position:relative;width:0;height:0;overflow:visible;pointer-events:auto;cursor:pointer;z-index:calc(var(--zv-markers) + 1)}
   .chm .chg{position:absolute;left:12px;top:-16px;display:flex;flex-wrap:nowrap;width:max-content;align-items:center;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
   /* fix3（用户 2026-09-28）：头像只留一圈人物色描边（2px），不再白边 + 外圈双层；状态（和你在一起）用右下角小圆点单独表示 */

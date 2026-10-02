@@ -589,9 +589,9 @@ function parseFloor(f) {
 /* ---------------- 标签：按等级、模式、缩放与重叠筛选 ---------------- */
 let labelSet = [];
 function updateLabelSet() {
-  labelSet = [];
-  for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
-  guard.dirty(); wake();
+  labelSet = []; for (const it of ITEMS) { const on = itemVisible(it); it.label.visible = on; it.label.element.classList.remove('occl'); if (on) labelSet.push(it); }
+  const seen = new Set(); for (const it of labelSet.slice().sort((a, b) => b.pri - a.pri)) { const n = nameOf(it); if (seen.has(n)) { it.label.visible = false; it.label.element.classList.add('hide'); } else seen.add(n); }   // A11 (D42): duplicate labels for the same room / passage name are merged — the highest-priority item keeps the label, the others stay quiet (still clickable)
+  labelSet = labelSet.filter(it => it.label.visible); guard.dirty(); wake();
 }
 const guard = createLabelGuard({ THREE, camera, floors: FLOORS.map((f) => { const b = polyBox((CARD.rooms || []).filter((r) => r.floor === f.id)); return { y: f.y, z: f.z, box: { x0: b.x0, x1: b.x1, z0: -b.y1, z1: -b.y0 } }; }), building: { x0: HOUSE_BOX.x0, x1: HOUSE_BOX.x1, z0: -HOUSE_BOX.y1, z1: -HOUSE_BOX.y0 }, mode: () => mode,
   labels: () => labelSet.map((it) => ({ el: it.label.element, anchor: it.label, hot: it === pinned || it === hover })) });   // 一条射线对几个包围盒：不碰模型网格

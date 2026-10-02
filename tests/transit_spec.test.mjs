@@ -119,7 +119,7 @@ test('options and style are clamped; extensions are carried', () => {
   assert.deepEqual(r.transit.options, { transfer_min: 30, walk_m_per_min: 20, access_max_min: 0, detour: 1.25 });
   assert.deepEqual(r.transit.style, { width: 8, labels: false, functions: { civic: { color: '#aabbcc' }, nature: { color: '--ok' } } });
   assert.equal(r.transit._note, 1); assert.deepEqual(r.transit['x-a'], { b: 1 }); assert.ok(!('junk' in r.transit));
-  assert.equal(normTransit(base()).transit.style.width, 4); assert.equal(normTransit(base()).transit.style.labels, true);
+  assert.equal(normTransit(base()).transit.style.width, 2.5); assert.equal(normTransit(base()).transit.style.labels, true);   // A10-lite (D42): thin lines by default
 });
 
 test('the fixture network: a view and node predicate drop what is not in the pack', () => {

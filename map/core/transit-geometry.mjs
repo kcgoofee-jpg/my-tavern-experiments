@@ -61,7 +61,7 @@ const segs = l => { const n = l.stops.length; return Array.from({ length: l.loop
 /** transitLayers(graph, view, { posOf, viewOf, nodePos, lang, t, nameOf, hasMarker, viewTitle, style, aspect }) -> synthetic layers in drawing order (§4.2-§4.4); empty ones are left out.
  *  viewOf(stationId) = the view a station is drawn on (for stubs); nodePos(nodeId) = where a node is drawn (a district given as a node and a radius); t(key) = a kernel word; aspect = height / width. */
 export function transitLayers(graph, view, { posOf, viewOf, nodePos, lang, t = fallbackT, nameOf, hasMarker = () => false, viewTitle = id => id, style, aspect = 1 } = {}) {
-  const T = graph.transit, st = style || T.style || {}, width = st.width || 4, labels = st.labels !== false, shared = sharedOffsets(graph);
+  const T = graph.transit, st = style || T.style || {}, width = st.width || 2.5, labels = st.labels !== false, shared = sharedOffsets(graph);   // A10-lite (D42): thin lines
   const name = id => (nameOf ? nameOf(id) : stationName(T, id, lang));
   const dist = { by: {} }, ar = [], lk = { by: {} }, ln = { by: {} }, lkF = [], lnF = [], dots = { by: { s: { size: 7, fill: '--map-label-ink', color: '--map-label-ink' }, x: { size: 11, fill: '#ffffff', color: '--map-label-ink', width: 2 } } }, dotF = [];
   const rank = { by: { r1: { size: 'body', tone: 'plain' }, r2: { size: 'small', tone: 'chip' }, r3: { size: 'micro', tone: 'plain', opacity: 0.85 } } }, rankF = [];
@@ -71,7 +71,7 @@ export function transitLayers(graph, view, { posOf, viewOf, nodePos, lang, t = f
     const k = kind('d', `${d.function}-${d.danger}`), o = DANGER[d.danger] || DANGER[0], color = (st.functions?.[d.function]?.color) || PALETTE[d.function] || PALETTE.other;
     const at = d.node !== undefined ? nodePos?.(d.node) : null, geo = d.pts ? { pts: d.pts } : at ? { at, r: d.r } : null;
     if (!geo) continue;
-    dist.by[k] = { fill: color, fill_opacity: 0.16, color: o.color || color, width: o.width, dash: o.dash };
+    dist.by[k] = { fill: color, fill_opacity: 0, color: o.color || color, width: o.width, dash: o.dash };   // A10-lite (D42): zones untinted — the outline and the legend carry the colour
     ar.push({ view, kind: k, ...geo });
     if (labels) {
       const c = d.pts ? centroid(d.pts) : at, words = [pickName(d, lang), t(functionLabelKey(d.function))];
@@ -107,7 +107,7 @@ const pickName = (o, lang) => (typeof lang === 'string' && (o.i18n?.[lang]?.name
 
 /** planLayers(graph, plan, view, { posOf, endPos, viewOf, suggested, viewTitle, style, aspect }) -> synthetic layers of a plan on `view` (§4.5); endPos('from' | 'to') = where the places themselves are. */
 export function planLayers(graph, plan, view, { posOf, endPos, viewOf, suggested = false, viewTitle = id => id, style, aspect = 1 } = {}) {
-  const width = (style || graph.transit.style || {}).width || 4, shared = sharedOffsets(graph), lines = { by: {} }, pts = { by: {} }, lab = { by: { 'p-stub': { size: 'micro', tone: 'chip' } } }, lf = [], pf = [], bf = [];
+  const width = (style || graph.transit.style || {}).width || 2.5, shared = sharedOffsets(graph), lines = { by: {} }, pts = { by: {} }, lab = { by: { 'p-stub': { size: 'micro', tone: 'chip' } } }, lf = [], pf = [], bf = [];
   const dash = suggested ? [8, 6] : null, opacity = suggested ? 0.8 : 1;
   plan.legs.forEach((leg, i) => {
     if (leg.kind === 'walk') {   // an access walk joins the place and its station; a direct walk joins the two places

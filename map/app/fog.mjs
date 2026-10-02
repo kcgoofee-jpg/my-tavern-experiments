@@ -1,4 +1,5 @@
-// 迷雾探索（P3，2026-09-28 起默认开；设置「显示 · 迷雾探索」可关）：没到过的地点图钉变暗、收起地名，底图盖一层遮罩，到过的地点周围挖开。
+// 迷雾探索（P3；LOOK-1 A2 / D42 起默认关；设置「显示 · 迷雾探索」可开）：没到过的地点图钉变暗、收起地名，底图盖一层很淡的冷灰纱（压暗 + 去饱和 ≤ 15 %），
+// 到过的地点周围用大半径的软边渐变挖开——不再是旧版的 55 % 黑幕挖圆洞。
 // 默认开着也不会一片全黑：markHere（locate.mjs）每次都会把解析出的当前地点记一次到访（here() 内部再判断 on()），新聊天 / 中途导入的聊天一进来就先挖开当前地点。
 // 到访 = 当前地点解析到这张图的某个标记（markHere）。记录按聊天：嵌在酒馆里发给宿主存进聊天变量 eden_map.探索；单独打开存本机。
 // 从 viewer.html 拆出的模块（arch-v2 §6）：核心状态与工具从 state / util 显式 import；存储统一走 core/storage.mjs 适配器
@@ -36,11 +37,11 @@ function paint() {
   const b = osdViewer.world.getItemAt(0).getBounds(), W = 512, H = Math.max(1, Math.round(W * b.height / b.width));
   const cv = document.createElement('canvas'); cv.id = 'fogCv'; cv.width = W; cv.height = H; cv.setAttribute('aria-hidden', 'true');
   const g = cv.getContext('2d'); if (!g) return;
-  g.fillStyle = 'rgba(8,10,14,.55)'; g.fillRect(0, 0, W, H);   // S7-2: the theme never touches the base map (docs/ui-refactor.md 2.1): one fog colour for both themes
-  g.globalCompositeOperation = 'destination-out'; const R = W * .07;
+  g.fillStyle = 'rgba(12,14,18,.15)'; g.fillRect(0, 0, W, H);   // S7-2: the theme never touches the base map (docs/ui-refactor.md 2.1); A2 (D42): a light veil only — a little darker and desaturated, never a black cover
+  g.globalCompositeOperation = 'destination-out'; const R = W * .14;   // A2: a wide radius so the explored areas fade out softly instead of round holes
   for (const e of mks) { if (e.classList.contains('fogged')) continue; const p = osdViewer.getOverlayById(e)?.location; if (!p) continue;
     const x = (p.x - b.x) / b.width * W, y = (p.y - b.y) / b.height * H, gr = g.createRadialGradient(x, y, 0, x, y, R);
-    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.6, 'rgba(0,0,0,.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, 2 * R, 2 * R); }
+    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.55, 'rgba(0,0,0,.9)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, 2 * R, 2 * R); }
   cv.style.pointerEvents = 'none';
   cv.style.filter = hazeCss();   // Part 8-3：与 depth-haze 槽同一条滤镜链（空气透视）
   osdViewer.addOverlay({ element: cv, location: b });   // 层叠归 #fogCv 的 --zv-fog 槽位常量（fog 槽，在标记之下），不再 prepend 抢 DOM 顺序

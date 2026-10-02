@@ -31,7 +31,7 @@ function legendOf(layers, T) {
   for (const k of ks) { const m = /^d-([a-z_]+)-(\d)$/.exec(k); if (m) { fns.add(m[1]); if (+m[2] > 0) dgs.add(+m[2]); } }
   for (const fn of [...fns].sort()) { rows.push({ label: uiText('transit.fn.' + fn), kind: 'f-' + fn }); by['f-' + fn] = { color: T.style?.functions?.[fn]?.color || PALETTE[fn] || PALETTE.other, width: 6 }; }
   for (const n of [...dgs].sort()) { rows.push({ label: uiText('transit.danger.' + n), kind: 'g' + n }); by['g' + n] = { color: DANGER[n].color, width: DANGER[n].width + 1, dash: DANGER[n].dash }; }
-  for (const l of T.lines || []) if (ks.has('l-' + l.id) || ks.has('n-' + l.id)) { rows.push({ label: lineName(T, l.id, LANG), kind: 'l-' + l.id }); by['l-' + l.id] = { color: l.color, width: T.style?.width || 4 }; }
+  for (const l of T.lines || []) if (ks.has('l-' + l.id) || ks.has('n-' + l.id)) { rows.push({ label: lineName(T, l.id, LANG), kind: 'l-' + l.id }); by['l-' + l.id] = { color: l.color, width: T.style?.width || 2.5 }; }
   return { rows, by };
 }
 

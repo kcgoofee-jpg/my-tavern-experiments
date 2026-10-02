@@ -64,8 +64,8 @@ test('transitLayers on the hill: districts, links, lines, stations, labels, badg
   assert.equal(bad.filter(f => f.kind === 'n-c1').length, 1, 'a line with one stop on this view: one badge');
   assert.deepEqual(bad.find(f => f.kind === 'stub'), { view: 'town_hill', at: [0.5, 0.5], kind: 'stub', label: '→ Fish Hall · Harbour' });
   assert.equal(by('transit-badges').style.by['n-t2'].badge, true); assert.equal(by('transit-badges').style.by['n-t2'].color, '#e8b33a');
-  assert.deepEqual(by('transit-lines').style.by['l-t2'], { color: '#e8b33a', width: 4, halo: true });
-  const d = by('transit-districts').style.by['d-civic-0']; assert.equal(d.fill, '#6c8ebf'); assert.equal(d.fill_opacity, 0.16);
+  assert.deepEqual(by('transit-lines').style.by['l-t2'], { color: '#e8b33a', width: 2.5, halo: true });   // A10-lite (D42): thin lines
+  const d = by('transit-districts').style.by['d-civic-0']; assert.equal(d.fill, '#6c8ebf'); assert.equal(d.fill_opacity, 0, 'A10-lite (D42): zones untinted');
   assert.deepEqual(by('transit-links').style.by['k-walk'], { color: '--muted', width: 1.2, dash: [1, 4] });
   assert.deepEqual(by('transit-labels').style.by.r1, { size: 'body', tone: 'plain' });
   for (const f of ls.flatMap(l => l.features)) assert.match(f.kind, /^[a-z][a-z0-9_-]{0,31}$/);
@@ -75,7 +75,7 @@ test('transitLayers on the harbour: the pier label, a circle district, danger ou
   const by = id => ls.find(l => l.id === id);
   assert.deepEqual(by('transit-districts').features.map(f => [f.kind, f.r || null]), [['d-commerce-2', null], ['d-nature-1', 0.08]]);
   assert.deepEqual(by('transit-districts').features[1].at, [0.85, 0.4]);
-  assert.deepEqual(by('transit-districts').style.by['d-commerce-2'], { fill: '#e0a64b', fill_opacity: 0.16, color: '--alert', width: 1.6, dash: [6, 3] });
+  assert.deepEqual(by('transit-districts').style.by['d-commerce-2'], { fill: '#e0a64b', fill_opacity: 0, color: '--alert', width: 1.6, dash: [6, 3] });
   assert.deepEqual(by('transit-districts').style.by['d-nature-1'].dash, [6, 4]);
   const labels = by('transit-labels').features.map(f => f.label);
   assert.ok(labels.includes('鱼市仓库 · Commerce · Danger') && labels.includes('灯塔岬 · Nature · Caution') && labels.includes('Pier'));
@@ -99,7 +99,7 @@ test('planLayers: start, end, change points, the lines of the leg on the view, a
   assert.deepEqual(by(hill, 'route-plan-lines').features.map(f => f.kind), ['p-t2']);
   assert.deepEqual(by(hill, 'route-plan-points').features.map(f => [f.kind, f.at]), [['p-change', [0.5, 0.5]], ['p-start', [0.18, 0.28]]]);
   assert.deepEqual(by(hill, 'route-plan-labels').features.map(f => f.label), ['→ Harbour']);
-  assert.deepEqual(by(hill, 'route-plan-lines').style.by['p-t2'], { color: '#e8b33a', width: 7, halo: true, dash: null, opacity: 1 });
+  assert.deepEqual(by(hill, 'route-plan-lines').style.by['p-t2'], { color: '#e8b33a', width: 5.5, halo: true, dash: null, opacity: 1 });   // A10-lite: the default width dropped to 2.5, the plan ride stays + 3
   const port = planLayers(graph, plan, 'town_harbour', { ...base, posOf: posOn('town_harbour'), endPos: w => (w === 'to' ? [0.86, 0.41] : null) });
   assert.deepEqual(by(port, 'route-plan-lines').features.map(f => f.kind), ['p-k-walk', 'p-k-walk'], 'the cable leg is a stub here: its other end is on the hill');
   const pts = by(port, 'route-plan-points'); assert.deepEqual(pts.features.map(f => f.kind), ['p-change', 'p-end'], 'the cable leg ends at the fish station, where the walk begins'); assert.equal(pts.style.by['p-end'].pulse, true);

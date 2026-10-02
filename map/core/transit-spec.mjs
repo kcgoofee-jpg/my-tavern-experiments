@@ -141,7 +141,7 @@ export function normTransit(block, { nodes = null, views = null } = {}) {
 
   const options = {};
   for (const [k, [lo, hi]] of Object.entries(RANGE)) options[k] = finite(block.options?.[k]) ? clamp(block.options[k], lo, hi) : DEFAULT_OPTIONS[k];
-  const st = isObj(block.style) ? block.style : {}, style = { width: finite(st.width) ? clamp(st.width, 2, 8) : 4, labels: st.labels !== false, functions: {} };
+  const st = isObj(block.style) ? block.style : {}, style = { width: finite(st.width) ? clamp(st.width, 2, 8) : 2.5, labels: st.labels !== false, functions: {} };   // LOOK-1 A10-lite (D42): thin lines by default
   for (const [fn, v] of Object.entries(isObj(st.functions) ? st.functions : {})) { const c = FUNCTIONS.includes(fn) && isObj(v) ? colour(v.color) : null; if (c) style.functions[fn] = { color: c }; else P('transit-invalid', fn, 'style.functions'); }
   return { transit: ext(block, { modes, stations, lines, links, districts, options, style }), problems };
 }

@@ -28,7 +28,7 @@ test('built-in profiles: recommended is the defaults, lean only holds preference
   for (const k of Object.keys(P.LEAN)) assert.ok(ks.has(k), k);
   assert.equal(P.cleanValues(P.LEAN).dropped, 0); assert.ok(P.cleanValues(P.LEAN).values.edenMapLayers);
 });
-const LIVE = { edenMapTheme: 'dark', edenMapFog: '0', edenMapLayers: '{"weather":"0","mylayer":"1"}', edenMapStateDepth: '5', 'edenMapOn:scrap': '1', edenMapInject: 'sys' };
+const LIVE = { edenMapTheme: 'dark', edenMapFog: '1', edenMapLayers: '{"weather":"0","mylayer":"1"}', edenMapStateDepth: '5', 'edenMapOn:scrap': '1', edenMapInject: 'sys' };   // fog: '1' is off-default since LOOK-1 A2
 const chat = { 'edenMap:chat:c1:fog': '{"seen":[1]}', 'edenMapSeen:c1': '3', edenMapNavCfg: '{"provider":"x","key":"SECRET"}', edenMapNavConsent: '1', edenMapNav: '120000', 'edenMap:varmap:x': '{}', edenMapPackPick: '{"a":"file"}' };
 test('save, change, apply restores every preference; per-chat data and the advisor config stay untouched', () => {
   const io = mem({ ...chat }); for (const [k, v] of Object.entries(LIVE)) io.m.set(k, v);
@@ -54,7 +54,7 @@ test('lean profile: writes its keys; an older profile without a key resets that 
 });
 test('modified marker ignores values equal to the default and layer entries equal to a layer default', () => {
   const io = mem(); const pr = createProfiles(io); assert.equal(pr.current().modified, false);
-  io.m.set('edenMapFog', '1'); io.m.set('edenMapLayers', '{"weather":"1","vision":"0"}'); io.m.set('edenMapStateOmit', '[]'); assert.equal(pr.current().modified, false);
+  io.m.set('edenMapFog', '0'); io.m.set('edenMapLayers', '{"weather":"1","vision":"0"}'); io.m.set('edenMapStateOmit', '[]'); assert.equal(pr.current().modified, false);   // fog '0' is the default since LOOK-1 A2
   io.m.set('edenMapLayers', '{"weather":"0"}'); assert.equal(pr.current().modified, true);
 });
 test('export / import round trip; unknown keys dropped and counted; secrets never imported', () => {

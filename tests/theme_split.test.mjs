@@ -1,13 +1,18 @@
 // S7-2 (U-04 B'): one chrome token set; the pack's per-view theme feeds only --map-*; ui.theme.chrome is the one pack-wide chrome accent (K-R70 amended).
+// LOOK-1 A9 (D42): the first pack no longer ships per-view skins — the mapping stays pinned here by a fixture of the old eden values.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { themeCss, chromeCss, onAccentFor, MAP_OF } from '../map/app/theme.mjs';
 import { applyOverlayUi } from '../map/core/overlay-v2.mjs';
-import { fromV1 } from '../map/core/compat-v1.mjs';
-import { edenInputs } from './helpers/eden-inputs.mjs';
 import { THEME_CSS_V1 } from './helpers/s43_frozen.mjs';
 
-const ui = fromV1(edenInputs()).pack.ui;
+const VIEWS = {
+  tc_mid: { tokens: { '--bg': '#120a1f', '--surface': '#1a1029', '--line': 'rgba(255, 61, 154, .24)', '--ink': '#f3e6ff', '--ink-2': '#dccbf0', '--muted': '#ac9ec3', '--accent': '#ff3d9a', '--on-accent': '#1a0610', '--accent-2': '#3de0ff', '--glow': '0 0 10px rgba(255, 61, 154, .7)', '--glow-text': '-1px 0 #3de0ff, 1px 0 #ff3d9a, 0 0 10px rgba(255, 61, 154, .7)' },
+    light: { '--bg': '#f1ecf7', '--surface': '#f9f6fc', '--line': 'rgba(29, 18, 48, .16)', '--ink': '#1d1230', '--ink-2': '#3a2b52', '--muted': '#66537f', '--accent': '#b3155f', '--on-accent': '#fff', '--accent-2': '#0f8fa8', '--glow': 'none', '--glow-text': 'none' } },
+  tc_low: { tokens: { '--bg': '#0b0b0b', '--surface': '#111411', '--line': 'rgba(159, 232, 112, .2)', '--ink': '#d8e8cc', '--ink-2': '#bcd0ae', '--muted': '#7aa35c', '--accent': '#9fe870', '--on-accent': '#0b1406', '--accent-2': '#f4f1e8', '--ok': 'var(--muted)' },
+    light: { '--bg': '#f4f1e8', '--surface': '#f8f6ef', '--line': 'rgba(27, 36, 20, .16)', '--ink': '#1b2414', '--ink-2': '#34402b', '--muted': '#55664a', '--accent': '#336619', '--on-accent': '#fff', '--accent-2': '#8a7a52' } },
+};
+const ui = { theme: { views: VIEWS } };
 const decls = css => Object.fromEntries([...css.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
 const ruleOf = (css, i) => decls(css.split('\n')[i].slice(css.split('\n')[i].indexOf('{')));
 

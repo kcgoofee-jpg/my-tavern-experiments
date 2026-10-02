@@ -3,7 +3,7 @@
 状态 2026-10-02（每步结束重写，≤ 5 行）：
 - 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42，X-RAY / A4 / A5 已完成）；SETTING-1 完成（D41）；WB-1 完成：附加世界书联动规范重写、全部条目默认启用（D43）。
 - 最近 head：以 `map/data/head.json` 为准。
-- 在跑：FOG-1 / LOOK-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视；外观模型重出（夜里的窗光）等台账。
+- 在跑：渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视；外观模型重出（夜里的窗光）等台账。
 - 等你：`docs/decision-digest.md` 逐条填保留 / 改；v0.9.8 前抽查一遍（R1）。
 - 下一步：OBLIQUE-CODE（斜视投影与俯视开关）→ 渲染批 1 上层斜视 → REL-0.9.8。
 
@@ -107,16 +107,16 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **SCALE** central column + ~12 km outskirts ring + fog; world map city patch · setting SETTING-1 ✓ · code FOG-1 ✓ (feather, period fog, zoom floor — the ~12 km outskirts ring itself is still to come) + OBLIQUE-CODE (outskirts placement) · renders `out:*` (batch 4), `base:world_cities` (batch 5)
   - [ ] **D40** upper tier composited over the mid tier · code FOG-1 ✓ (top-down: period base + island mask + the tier below + haze, generic layer order) · still open: OBLIQUE-CODE (the same composite over the oblique images, by `offset`) · renders `obl:tc_upper:*`
   - ~~**A1** Eden inset pops to daylight at night · code FOG-1 (skip off-day) · renders `obl:tc_upper_eden:*` (batch 1)~~ ✅ 2026-10-02 (FOG-1; per-period insets are in the SETTING-1 batch-1 ledger)
-  - [ ] **A2** fog of war default off, light desaturation instead of a black veil · LOOK-1
+  - ~~**A2** fog of war default off, light desaturation instead of a black veil · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: `edenMapFog` default `0`, veil rgba(12,14,18,.15) with wide soft-edged explored areas; FOG-1's night thresholds were calibrated under the old veil — recalibration is an open item in RESULT LOOK-1)
   - ~~**A3** tier-switch cloud sweep through white at night · FOG-1~~ ✅ 2026-10-02 (FOG-1; the white sweep is gone, the short rise / sink reads dark at night)
   - ~~**A4** estate exterior keeps golden-hour sun shadows at night~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1: night face flattens the baked daylight; window glow waits for `glb:estate:night-glow`)
   - ~~**A5** landmark viewers without day / night; 3D has no backdrop~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1: viewer3d reuses the period grade; both 3D pages get sky + cloud sea)
   - ~~**A6** default base images disagree on the period · FOG-1~~ ✅ 2026-10-02 (FOG-1; all three tiers’ period-less base is the day image)
   - ~~**A7** maps without period images stay in daylight (colour grade) · FOG-1~~ ✅ 2026-10-02 (FOG-1; `data-gradetod`: tone curve + blue shift + vignette)
-  - [ ] **A8** Eden ward ring removed, one 「安保」 chip · LOOK-1
-  - [ ] **A9** per-tier UI skins removed · LOOK-1
-  - [ ] **A10** transit lines thin and glowing (lite) · LOOK-1; snapping lines to the rendered rails · **TRANSIT-LOOK** (later data step)
-  - [ ] **A11** one marker per spot (2D), no overlapping labels (3D) · LOOK-1
+  - ~~**A8** Eden ward ring removed, one 「安保」 chip · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: the estate_ward overlay layer is gone, the chip reads 「安保」 with one small icon per kind, tapping opens the place card's security section)
+  - ~~**A9** per-tier UI skins removed · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: `ui.theme.views` dropped from the eden overlay; the kernel ability K-R70 stays, pinned by a fixture in the tests)
+  - ~~**A10** transit lines thin and glowing (lite) · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: default line width 4 → 2.5, the halo is a colour bloom plus a soft drop-shadow glow, district fills untinted) · snapping lines to the rendered rails · [ ] **TRANSIT-LOOK** (later data step)
+  - ~~**A11** one marker per spot (2D), no overlapping labels (3D) · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: the people stack replaces the pin at a landmark, the current-location pin stays; 3D labels merge duplicates by name on top of the UI-3D-1 cull)
   - ~~**X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38)~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1; the lit-windows look itself is the open half: `glb:estate:night-glow`)
   - [ ] **B3** landmark model budgets 4–8 MB, 1–2K textures, meshopt + KTX2, phone tier ≤ 2 MB · renders `glb:budget:*` (batch 7)
   - [ ] **B4** landmark night bakes · renders `bake:night:*` (batch 8)
