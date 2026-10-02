@@ -9,9 +9,10 @@
 // 本模块不写任何东西——落盘一律由宿主经 ledger / varssync 的结算闸门做（时序纪律见 tavern/settlement-guard.mjs）。
 
 import { stripOoc } from './ooc.mjs';
+import { SELF_WORDS } from './vocab.mjs';
 
 /** 扫描规则的版本：规则改了就加一——存着的文字行带旧版本的指纹，下一轮在窗口里按新规则重放一次（误收的行自愈） */
-export const SCAN_VER = 4;   // 4: OOC segments are stripped before the scan (D32), so a line scanned by an older build is replayed once
+export const SCAN_VER = 5;   // 5: self / body words are never items (DRAWER-1); 4: OOC segments are stripped before the scan (D32). A line scanned by an older build is replayed once
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
 export const MAX_NAME = 20;         // 物品名的长度上限（更长多半是句子而不是名词）
 const NEAR = 24;                    // 已知物品名：动词要出现在它前面这么多字符内才算「这一下拿的是它」
@@ -62,6 +63,9 @@ export const NOT_ITEMS_EN = Object.freeze(['chance', 'opportunity', 'attention',
 const DET = '(?:a|an|the|some|his|her|their|my|your|its)';
 const DET_LEAD = new RegExp(`^${DET}\\s+`, 'i');
 const NOT_SET = new Set(NOT_ITEMS), NOT_EN = new Set(NOT_ITEMS_EN);
+const SELF_ZH = new Set(SELF_WORDS.zh), SELF_EN = new Set(SELF_WORDS.en);
+/** a self / body word, ignoring a leading ellipsis or dash (「……肉棒」) and an English determiner */
+const isSelf = n => { const z = String(n ?? '').replace(/^[\s….·—-]+/, ''); return SELF_ZH.has(z) || SELF_EN.has(z.toLowerCase().replace(DET_LEAD, '')); };
 
 const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** FNV-1a → 36 进制（纯 ASCII id；与 core/stash.rowId 同一手法，但前缀 x 与藏物表 s 分开） */
@@ -78,7 +82,7 @@ export const isItemName = n => { const s = clip(n, MAX_NAME); return !!s && !NOT
  */
 const GENERIC = new Set(['手', '手里', '手中', '手上', '身上', '身边', '眼前', '这里', '那里', '之后', '以前', '之前',
   '上面', '下面', '里面', '外面', '背后', '怀中', '怀里', '一半', '东西', '那个', '这个', '什么', '一切']);
-const PRONOUN = /^[这那此其之我你他她它们谁上下里外前后内]/;
+const PRONOUN = /^[这那此其之我你他她它们谁上下里外前后内自]/;   // 自 = 自己 / 自身
 /**
  * 分句断点：抓取到的东西后面往往接着下一句（「拿到钥匙然后打开门」）——物品名到断点为止。
  * 只收长词与一眼能认的连词 / 副词，避免把「钥匙扣」这种复合词从中间切断。
@@ -179,7 +183,7 @@ export function compile(vocab) {
     en: new RegExp(`\\b(${altEn(enN)})\\b\\s+(?:${DET}\\s+)?([A-Za-z][A-Za-z'\\- ]{1,60})`, 'gi'),
     enQuoted: QUOTE_PAIRS.map(([a, b]) => new RegExp(`\\b(${altEn(enS)})\\b\\s+(?:${DET}\\s+)?${esc(a)}([^${esc(b)}\\n]{1,${MAX_NAME}})${esc(b)}`, 'gi')),
     known: new RegExp(`(?:${alt([...zhN, ...zhS])})|\\b(?:${altEn([...enN, ...enS])})\\b`, 'gi'),
-    not: n => nots.has(n) || notsEn.has(String(n).toLowerCase().replace(DET_LEAD, '')),
+    not: n => isSelf(n) || nots.has(n) || notsEn.has(String(n).toLowerCase().replace(DET_LEAD, '')),
   };
   CACHE = { key, val };
   return val;

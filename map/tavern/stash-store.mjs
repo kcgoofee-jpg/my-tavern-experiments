@@ -18,6 +18,9 @@ const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const msgOf = v => (Number.isInteger(v) ? v : null);
 const nodeOf = v => (typeof v === 'string' && NODE_RE.test(v) ? v : '');
 const qtyOf = v => { const q = Math.floor(+v); return Number.isFinite(q) && q > 1 ? Math.min(999, q) : undefined; };
+const MAX_NOT = 100;
+/** the per-chat "not an item" names (DRAWER-1): trimmed, unique, at most 100, in the order they were added */
+const notNames = v => [...new Set((Array.isArray(v) ? v : []).map(x => CUT(x, 60)).filter(Boolean))].slice(-MAX_NOT);
 const seqOf = (seq, items) => {
   const n = Math.max(Number(seq) || 0, ...Object.keys(items).map(i => +String(i).replace(/^i/, '') || 0));
   return Number.isFinite(n) && n > 0 ? n : Object.keys(items).length;
@@ -51,6 +54,7 @@ export function norm(raw) {
   const tomb = Object.entries(isObj(s.removed) ? s.removed : {}).filter(([, m]) => Number.isInteger(m)).sort((a, b) => a[1] - b[1]).slice(-MAX_REMOVED);
   for (const [id, m] of tomb) removed[CUT(id, 40)] = m;
   const out = { v: 1, items, seq: seqOf(s.seq, items), slot: slotNorm(s.slot), removed, since: msgOf(s.since), upTo: msgOf(s.upTo) };
+  const ni = notNames(s.notItems); if (ni.length) out.notItems = ni;
   if (isObj(s.from)) out.from = { keys: (Array.isArray(s.from.keys) ? s.from.keys : []).filter(k => typeof k === 'string').map(k => CUT(k, 20)).slice(0, 4), msgIndex: msgOf(s.from.msgIndex) };
   return out;
 }
@@ -148,12 +152,23 @@ export function retag(stash, worldIds) {
 
 /** Query: { place?, map?, name?, hidden?, carried? } all matching rows `{ id, ...row }`, sorted by place (code-point order; no place sorts as 未归位), stable. */
 export function rows(stash, q = {}) {
-  const out = Object.entries(norm(stash).items)
-    .filter(([, e]) => (!q.place || e.place === q.place) && (!q.map || e.map === q.map) && (!q.name || e.name.includes(q.name))
+  const cur = norm(stash), not = q.all ? new Set() : new Set(cur.notItems || []);   // a name the player marked "not an item" is kept out of every reader (q.all = the restore list)
+  const out = Object.entries(cur.items)
+    .filter(([, e]) => !not.has(e.name) && (!q.place || e.place === q.place) && (!q.map || e.map === q.map) && (!q.name || e.name.includes(q.name))
       && (q.hidden === undefined || e.hidden === !!q.hidden) && (q.carried === undefined || e.carried === !!q.carried))
     .map(([id, e]) => ({ id, ...e }));
   return out.sort((a, b) => (a.place || '未归位') < (b.place || '未归位') ? -1 : (a.place || '未归位') > (b.place || '未归位') ? 1 : 0);   // code-point order: no ICU, reproducible tests
 }
+
+/** Mark a name "not an item" (on) or bring it back (off). The rows stay in the store (a restore needs them); every reader skips them. -> { stash, changed } */
+export function setNotItem(stash, name, on = true) {
+  const cur = norm(stash), nm = CUT(name, 60); if (!nm) return { stash: cur, changed: false };
+  const has = (cur.notItems || []).includes(nm); if (has === !!on) return { stash: cur, changed: false };
+  const list = on ? [...(cur.notItems || []), nm] : (cur.notItems || []).filter(x => x !== nm);
+  return { stash: norm({ ...cur, notItems: list }), changed: true };
+}
+/** The names marked "not an item" that still match a row (what the viewer lists under "hidden N"). */
+export const notItemNames = stash => { const cur = norm(stash), have = new Set(Object.values(cur.items).map(e => e.name)); return (cur.notItems || []).filter(n => have.has(n)); };
 
 /** What `eden-map:inv.items` and `EdenMap.getInv()` carry (P-08, the external contract until S10): `[{ id, 名, 地点, 层, 暗格, 说明?, 数量? }]` in `rows()` order. */
 export const wireRows = stash => rows(stash).map(e => ({ id: e.id, 名: e.name, 地点: e.place, 层: e.map, 暗格: e.hidden, ...(e.note ? { 说明: e.note } : {}), ...(e.qty ? { 数量: e.qty } : {}) }));

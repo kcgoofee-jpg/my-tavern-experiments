@@ -193,7 +193,7 @@ export function createStashFlow(host) {
     if (!host.alive) return;
     const card = cardRows(); sentCard = JSON.stringify(card);
     if (!stashStoreModule || !stash) { post({ type: 'eden-map:inv', items: [], card }); return; }
-    post({ type: 'eden-map:inv', items: stashStoreModule.wireRows(stash), stash: { v: 1, rows: stashStoreModule.rows(stash), slot: slotView() }, card });
+    post({ type: 'eden-map:inv', items: stashStoreModule.wireRows(stash), stash: { v: 1, rows: stashStoreModule.rows(stash), slot: slotView(), notItems: stashStoreModule.notItemNames(stash) }, card });
   }
   function changedInv(save = true) { if (save) saveRoot(); sendInv(); }
   /** 换聊天：本场会话的结算状态清零（背包本身由 loadCustom 重新读） */

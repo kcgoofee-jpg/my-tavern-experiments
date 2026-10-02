@@ -98,8 +98,14 @@ export function mount(pdoc, ID, scriptOwner) {
   @media (pointer: coarse), (prefers-reduced-transparency: reduce) { #${ID} .em-bar { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--surface); } }
   #${ID} .em-bar .em-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   #${ID} .em-bar .em-line { display: none !important; }
-  #${ID} .em-bar .em-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--em-accent); margin: 0 2px; }   /* the one status dot: loading / ready / failed (the viewer's own dot hides when embedded) */
-  #${ID} .em-bar .em-dot[data-st="ok"] { background: var(--em-ok); } #${ID} .em-bar .em-dot[data-st="fail"] { background: var(--em-alert); }
+  /* the one status mark (the viewer's own dot hides when embedded): nothing when loaded; a small spinner while loading; a red dot when it failed (a click opens the line picker) */
+  #${ID} .em-bar .em-dot { flex: none; box-sizing: border-box; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px; }
+  #${ID} .em-bar .em-dot[data-st="ok"] { display: none; }
+  #${ID} .em-bar .em-dot[data-st="loading"] { border: 2px solid var(--em-line-2); border-top-color: var(--em-accent); animation: em-spin .8s linear infinite; }
+  #${ID} .em-bar .em-dot[data-st="fail"] { width: 8px; height: 8px; background: var(--em-alert); cursor: pointer; box-shadow: 0 0 0 4px transparent; }
+  #${ID} .em-bar .em-dot[data-st="fail"]:hover { box-shadow: 0 0 0 4px var(--em-surface-2); }
+  @keyframes em-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { #${ID} .em-bar .em-dot[data-st="loading"] { animation: none; border-top-color: var(--em-line-2); border-right-color: var(--em-accent); } }
   #${ID} .em-body { grid-row: 1; }
   #${ID} .em-bar .em-title { font-weight: 700; letter-spacing: .04em; }
   #${ID} .em-bar .em-here { color: var(--em-muted); margin-left: auto; font-size: 12px; min-width: 0; flex: 0 1 auto; max-width: 46%; overflow: hidden; white-space: nowrap; display: flex; align-items: center; }
@@ -107,9 +113,7 @@ export function mount(pdoc, ID, scriptOwner) {
   #${ID} .em-bar .em-here .em-more { flex: none; margin-left: 2px; color: var(--em-ink); }
   #${ID} .em-bar .em-here.em-full .em-nm { white-space: normal; }
   #${ID} .em-bar .em-here.em-unm { color: var(--em-ink); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-  #${ID} .em-bar .em-here.em-unm::before { background: var(--em-muted); }
   #${ID} .em-bar .em-here.em-unsure { opacity: .6; font-style: italic; }
-  #${ID} .em-bar .em-here::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--em-alert); vertical-align: 1px; }
   #${ID} .em-bar .em-here:empty { display: none; }
   #${ID} .em-bar .em-here.em-full { white-space: normal; max-width: 60%; line-height: 1.35; padding: 4px 0; }   /* 触屏没有悬停：点一下看全文 */
   #${ID} .em-bar button { font: inherit; cursor: pointer; }
@@ -221,6 +225,7 @@ export function mount(pdoc, ID, scriptOwner) {
   const dot = root.querySelector('.em-dot'), ld = root.querySelector('.em-load'), words = { zh: { loading: '加载中', ok: '已加载', fail: '加载失败' }, en: { loading: 'Loading', ok: 'Loaded', fail: 'Failed to load' } };
   const paintDot = () => { let l = 'zh'; try { l = localStorage.getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } const st = ld.hidden ? 'ok' : ld.querySelector('.acts')?.hidden === false ? 'fail' : 'loading'; dot.dataset.st = st; dot.setAttribute('aria-label', words[l][st]); dot.title = words[l][st]; };
   new MutationObserver(paintDot).observe(ld, { attributes: true, subtree: true, attributeFilter: ['hidden'] }); paintDot();
+  dot.addEventListener('click', () => { if (dot.dataset.st === 'fail') root.querySelector('.em-line')?.click(); });   // failed: the reason and the way out is the line picker (the load overlay keeps its retry / swap buttons)
   // N10 (5): the replay bar docks as a glass-1 bar above the drawer peek; the viewer shifts its dock up by the bar's height (--tl-h on the viewer's root, the frame is same-origin)
   const tl = root.querySelector('.em-tl'), fr = root.querySelector('.em-frame'), setTl = () => { try { fr.contentDocument?.documentElement.style.setProperty('--tl-h', tl.hidden ? '0px' : (tl.offsetHeight + 8) + 'px'); } catch (e) {} };
   new MutationObserver(setTl).observe(tl, { attributes: true, attributeFilter: ['hidden'] }); fr.addEventListener('load', setTl);

@@ -75,11 +75,11 @@ try {
   await H.page.evaluate(() => { window.__loot = []; addEventListener('message', e => { if (e.data?.type === 'eden-map:loot') window.__loot.push(e.data); }); });
   await fr.evaluate(j => StashMarkersApi.set(j), stashJson);
   await fr.evaluate(() => ViewerDrawer.setTab('it', 'half'));
-  await fr.waitForFunction(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].some(r => r.querySelector('b').textContent.includes(n) && r.querySelector('button')), first.name, { timeout: T });
-  await fr.evaluate(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].find(r => r.querySelector('b').textContent.includes(n)).querySelector('button').click(), first.name);
+  await fr.waitForFunction(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].some(r => r.querySelector('b').textContent.includes(n) && r.querySelector('button.take')), first.name, { timeout: T });
+  await fr.evaluate(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].find(r => r.querySelector('b').textContent.includes(n)).querySelector('button.take').click(), first.name);
   await H.page.waitForFunction(() => window.__loot.length > 0, null, { timeout: 5000 }).catch(() => {});
   const take = { n: await H.page.evaluate(() => window.__loot.length), id: await H.page.evaluate(() => window.__loot[0]?.id),
-    dis: await fr.evaluate(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].find(r => r.querySelector('b').textContent.includes(n))?.querySelector('button')?.disabled, first.name) };
+    dis: await fr.evaluate(n => [...document.querySelectorAll('.itgrp[data-g=here] .itrow')].find(r => r.querySelector('b').textContent.includes(n))?.querySelector('button.take')?.disabled, first.name) };
   rep.check('take_posts_one_loot_and_disables', take.n === 1 && take.id === first.id && take.dis === true, JSON.stringify(take));
   await H.close();
 

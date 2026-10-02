@@ -38,6 +38,7 @@ export const SCHEMA = {
   'eden-map:compose': [VIEWER_TO_HOST, { text: 'string', ooc: 'boolean?' }],
   'eden-map:action': [VIEWER_TO_HOST, { kind: 'string?', name: 'string?', map: 'string?', text: 'string?' }],   // Part 6-4：地图 POI → 聊天（文案与注入方式由宿主按设置决定，模块 tavern/place-action-injection.mjs）
   'eden-map:loot': [VIEWER_TO_HOST, { id: 'string', name: 'string', map: 'string?', place: 'string?', hidden: 'boolean?' }],   // Part 5-1：点了地上发光的拾取物（core/stash.mjs 藏物表的 id）
+  'eden-map:hide': [VIEWER_TO_HOST, { kind: 'string', key: 'string', on: 'boolean?' }],   // DRAWER-1: kind = event | item; on = false restores. Events go to <chat var>.evHide, item names to <chat var>.stash.notItems
   'eden-map:stealth': [VIEWER_TO_HOST, { dc: 'number', from: 'string?', to: 'string?', seen: 'boolean?', hits: 'array?', worst: 'object?' }],   // Part 5-2：这次移动穿过了谁的视野（dc = 最难的一下；worst = {id,name,dc,dist,at} W2 补发，检定失败环用）
   'eden-map:route-plan': [VIEWER_TO_HOST, { plan: 'object?' }],   // S8-4b K-R111: the user chose (or cleared, null) a route plan; the host re-checks it (checkPlan) and echoes eden-map:route
   'eden-map:explore': [VIEWER_TO_HOST, { map: 'string', name: 'string', chat: 'string?' }],   // 迷雾探索：记一次到访（只在开着时发）
@@ -57,6 +58,7 @@ export const SCHEMA = {
   'eden-map:chars': [HOST_TO_VIEWER, { items: 'array?', replay: 'boolean?', groups: 'array?' }],   // groups = [{ id, label, rows, present? }]：包声明的每个名册组一项（S4-4）；rosters 三表照旧，新查看器优先读 groups
   'eden-map:events': [HOST_TO_VIEWER, { items: 'array?' }],
   'eden-map:custom': [HOST_TO_VIEWER, {}],
+  'eden-map:hidden': [HOST_TO_VIEWER, { events: 'array?' }],   // DRAWER-1: the event keys hidden in this chat (type | place | first floor)
   'eden-map:inv': [HOST_TO_VIEWER, { items: 'array?', stash: 'object?', card: 'object?' }],   // items = 旧形状的行（地点卡「存放」行，Part 5-1）；stash = 统一背包的行与槽位摘要（K-R74）；card = 卡自己的物品表，只读（K-R76）；三者互不依赖，旧查看器只认 items
   'eden-map:media': [HOST_TO_VIEWER, { on: 'boolean', id: 'string?', cats: 'array?', chars: 'array?', scenes: 'array?' }],   // K-R106: the pack's media source: chars = the card's picture table as read (sent when it changes), scenes = the chat's tags resolved to a floor, a place text, a character and an address; on = false clears
   'eden-map:media-ask': [VIEWER_TO_HOST, {}],   // K-R106: the viewer loaded or its switch was turned on: send the media again

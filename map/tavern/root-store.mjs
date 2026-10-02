@@ -6,7 +6,7 @@ import { createChatData } from './chat-data.mjs';
 export const DEPS = [
   'contextPipeline', 'LS', 'MAN', 'PACK_ID', 'PACK_IN', 'scriptBase', 'chatId', 'checkpointResume', 'emit', 'hostToast', 'kfReset', 'life', 'panel', 'post', 'readVars',
   'recomputeSoon', 'wrapLS', 'BASE', 'explorationLedgerModule', 'stashStoreModule', 'keyframesModule', 'mvuReaders', 'uiLang', 'worldbookJitModule', 'WBSm', 'alive', 'chars', 'cp', 'custVer', 'explored',
-  'floorNow', 'ghost', 'kfView', 'stash', 'tlWalk', 'ledgerRecord', 'autoCache', 'mvuBridge', 'onChatSwitch',
+  'floorNow', 'ghost', 'kfView', 'stash', 'changedInv', 'tlWalk', 'ledgerRecord', 'autoCache', 'mvuBridge', 'onChatSwitch',
 ];
 export function createRootStore(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('root-store: missing dep ' + k);
@@ -17,7 +17,7 @@ export function createRootStore(host) {
   // 不写进 stat_data：卡的 MVU zod 结构会丢掉未知键。删除一项要整块替换，所以写入优先用 updateVariablesWith / replaceVariables（insertOrAssignVariables 是深合并，删不掉键）。
   // 剧情标签 ⌖改名 / ⌖用途：只处理比 eden_map.标签楼 新的楼层，处理后记下楼层；每条在地图的事态横条上方提示一次。
   // 「同步到世界书」默认开（v0.9.5；自己关过的保持关）；有了第一项自定义才建世界书「<包名>·自定义·<聊天>」（一个常驻条目），当前聊天没有绑定聊天世界书时绑定到这个聊天。
-  let custom = null, customChat = null, toastQ = [], regP = null;   // 标签楼层状态（tagFloor / tagLog / tagSeen）在流水线里（contextPipeline.tag）
+  let custom = null, customChat = null, toastQ = [], regP = null, evHide = [];   // evHide = the event keys the player hid in this chat (DRAWER-1)   // 标签楼层状态（tagFloor / tagLog / tagSeen）在流水线里（contextPipeline.tag）
   const varsOk = () => fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables'));
   const lsCustomKey = () => 'edenMap:chat:' + (chatId() || '') + ':custom2';   // A-11 本机退回的键（读取在桥里，写入后清掉它）
   async function writeVars(root, chat) {
@@ -59,7 +59,7 @@ export function createRootStore(host) {
   // S6-2：背包存 stash（一份、ASCII 键）；旧键 仓库 / 槽位 只读——加载时迁移一次，之后原样随每次保存带回去（整块替换不能把它们丢了），没有旧键的聊天不会多出它们
   let legacyKeep = {};
   const ledgerOf = () => { const r = host.ledgerRecord, d = r && typeof r === 'object' ? describeRecord(r) : null; return d && (d.npc || d.events) ? { ledger: recordNorm(r) } : {}; };   // K-R78: the key only when there is an entry
-  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...ledgerOf(), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}), ...(host.autoCache ? { auto: host.autoCache } : {}) }, customChat); };   // `auto` = the automatic pack's droppable cache (K-R95, tavern/auto-pack.mjs)
+  const saveRoot = () => { const { stash, explored, cp, kfView } = host; return life.dead ? Promise.resolve(false) : writeVars({ 自定义: custom, 标签楼: contextPipeline.tag.floor, 标签记录: contextPipeline.tag.log, 楼层指纹: contextPipeline.tag.seen, 行程: contextPipeline.trips, ...(stash ? { stash } : {}), ...(evHide.length ? { evHide } : {}), ...ledgerOf(), ...legacyKeep, ...(Object.keys(explored).length ? { 探索: explored } : {}), ...(cp ? { 检查点: cp } : {}), ...(kfView ? { 关键帧: kfView } : {}), ...(host.autoCache ? { auto: host.autoCache } : {}) }, customChat); };   // `auto` = the automatic pack's droppable cache (K-R95, tavern/auto-pack.mjs)
   // 旧版（≤ 0.9.2）本机叫法 edenMap:chat:<id>:custom / edenMap:custom → 并进来，旧键改名为 *.migrated（不删）
   // 只在这个聊天还没有 eden_map.自定义 时迁移一次（全局旧键不改名，靠这个条件避免每个聊天、每次刷新重复并入）
   async function migrateOld() {
@@ -83,6 +83,7 @@ export function createRootStore(host) {
     host.explored = host.explorationLedgerModule ? host.explorationLedgerModule.norm(v.探索) : (v.探索 && typeof v.探索 === 'object' ? v.探索 : {});
     // 统一背包（S6-2，K-R74）：有 stash 就读；没有而有旧键（仓库 / 槽位）就迁移一次；旧键的值原样留着（legacyKeep），不改不删。
     // 起点不取 floorNow（换聊天时它还是上一个聊天的值）：存储第一次扫描时对齐到最新一楼，和旧版「只看最新一楼」同一口径。
+    evHide = Array.isArray(v.evHide) ? [...new Set(v.evHide.filter(k => typeof k === 'string' && k).map(k => k.slice(0, 120)))].slice(-300) : [];
     legacyKeep = {}; let migrated = false;
     const SM = host.stashStoreModule ?? await import(new URL('stash-store.mjs', import.meta.url).href).catch(() => null);   // 模块还没到：等它，不能带着空的旧键保存
     if (customChat !== id) return;
@@ -113,7 +114,13 @@ export function createRootStore(host) {
     sendCustom(); emit('custom', host.mvuReaders.normCustom(custom)); recomputeSoon(50);
     if (custom?.同步世界书 || wbState) syncWb(!!custom?.同步世界书).catch(e => console.warn('[eden-map] 同步世界书失败', e));
   }
-  function sendCustom() { if (host.alive && custom) { post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); post({ type: 'eden-map:fog', explored: host.explored }); } flushToasts(); }
+  function sendCustom() { if (host.alive && custom) { post({ type: 'eden-map:custom', data: custom, vars: varsOk(), wb: wbOk(), wbState }); post({ type: 'eden-map:fog', explored: host.explored }); post({ type: 'eden-map:hidden', events: evHide }); } flushToasts(); }
+  /** the viewer's hide / restore intent (DRAWER-1): an event key goes into <chat var>.evHide; an item name goes into <chat var>.stash.notItems. Nothing else is touched. */
+  function onHide(d) {
+    const key = typeof d?.key === 'string' ? d.key.slice(0, 120) : '', on = d?.on !== false; if (!key || customChat !== chatId()) return;
+    if (d.kind === 'event') { const has = evHide.includes(key); if (has === on) return; evHide = on ? [...evHide, key].slice(-300) : evHide.filter(k => k !== key); saveRoot(); sendCustom(); return; }
+    if (d.kind === 'item' && host.stashStoreModule && host.stash) { const r = host.stashStoreModule.setNotItem(host.stash, key, on); if (r.changed) { host.stash = r.stash; host.changedInv(); } }
+  }
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
   async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await getWorldbookNames() || []).includes(n) : false; } catch (e) { return false; } }
   let wbState = '';
@@ -174,7 +181,7 @@ export function createRootStore(host) {
   function flushToasts() { if (!host.alive || !toastQ.length) return; post({ type: 'eden-map:toast', items: toastQ.splice(0) }); }
   return {
     get storageBudget() { return storageBudget; }, budgetSweep, resetChat: () => chatData.reset(), orphanSweep: () => chatData.orphanSweep(), get custom() { return custom; }, set custom(v) { custom = v; }, customChanged, get customChat() { return customChat; },
-    customTags, kindOf, loadCustom, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
+    customTags, kindOf, loadCustom, onHide, get evHide() { return evHide; }, reg, get regNow() { return regNow; }, saveRoot, sendCustom, store, storeWarn, varsOk,
     get wbState() { return wbState; }, set wbState(v) { wbState = v; },
   };
 }

@@ -107,7 +107,7 @@ const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'chars-flow': ['createCharsFlow', 'mvuBridge ooc oocRead gallery placeText cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed facts inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
-  'root-store': ['createRootStore', 'storageBudget budgetSweep orphanSweep resetChat custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
+  'root-store': ['createRootStore', 'storageBudget budgetSweep orphanSweep resetChat custom customChanged customChat customTags evHide kindOf loadCustom onHide reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],
   'host-checks': ['createHostChecks', 'autoCheck checkAt checkFacts checkItems checkP finishCheck followCheck followHead followNewer hostToast openSettings runCheck SC sendCheck setQ showSplash showUpdPrompt splash splashDue switchBranch switchVersion toastEl toastOnce toastWait updEl updPrompt updWait viewerVer'],
   'modes-flow': ['createModesFlow', 'cardSkip checkpointResume checkpointStep conflictsNow cp cpResume injectPreview MDm pointsFor spatialInject SpatialM spatialNow stateInject stateNow'],
 };

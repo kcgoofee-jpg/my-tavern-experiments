@@ -99,3 +99,10 @@ export function functionWord(text, lang) {
   const toks = zh ? [] : t.split(/[^\p{L}\p{N}']+/u).filter(Boolean);
   return Object.keys(FUNCTION).find(fn => (zh ? FUNCTION[fn].zh.some(w => t.includes(w)) : FUNCTION[fn].en.some(w => toks.some(k => k === w || k === w + 's' || k === w + "'s")))) || '';
 }
+
+// ---- self / body words (DRAWER-1): words that name the player's own self or body, never an item (「拿起自己」「握住了……」). A data list the pickup scan reads: the text is
+// left untouched (nothing is moderated), these words only never become an inventory row. A pack extends it through its pickup vocabulary `not_items`.
+export const SELF_WORDS = {
+  zh: ['自己', '自身', '本人', '身体', '身子', '躯体', '肉体', '头', '脑袋', '脸', '脸颊', '嘴', '嘴唇', '舌头', '牙齿', '脖子', '喉咙', '肩膀', '手臂', '胳膊', '手指', '手掌', '拳头', '胸', '胸口', '乳房', '腹部', '肚子', '腰', '背', '臀部', '屁股', '腿', '大腿', '膝盖', '脚', '脚踝', '头发', '眼睛', '耳朵', '鼻子', '皮肤', '肉棒', '阴茎', '阴蒂', '阴道', '小穴', '乳头', '下体', '私处'],
+  en: ['self', 'myself', 'yourself', 'himself', 'herself', 'itself', 'themselves', 'body', 'head', 'face', 'mouth', 'lips', 'tongue', 'neck', 'throat', 'shoulder', 'shoulders', 'arm', 'arms', 'hand', 'hands', 'finger', 'fingers', 'fist', 'chest', 'breast', 'breasts', 'belly', 'waist', 'back', 'hip', 'hips', 'leg', 'legs', 'thigh', 'thighs', 'knee', 'foot', 'feet', 'hair', 'eyes', 'ears', 'nose', 'skin', 'cock', 'penis', 'pussy', 'nipple', 'nipples'],
+};

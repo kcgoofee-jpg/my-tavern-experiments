@@ -22,6 +22,8 @@ import { hash01, spotOf } from './core/event-geo.mjs';
 import * as TCCvd from './app/color-vision-mode.mjs';
 import { createEventsFx } from './events-fx.mjs';
 import { uiTextOr } from './app/text-lookup.mjs';
+import { post } from './app/protocol-stamp.mjs';
+import * as HX from './hide-ui.mjs';
 import { provideTab, refreshTabs, saveTabSeen, tabSeen } from './app/tabs.mjs';   // the drawer's tab registry (S6-1): visibility, labels, fallback tab and the people pane live there
 const EventsView = (() => {
   const tn = z => (z && window.I18N?.tr?.(z)) || z || '';
@@ -45,7 +47,11 @@ const EventsView = (() => {
   let taxFor = null /* 已取过的分类（events 块对象），换了才重取 */, tab = 'ev', items = [], floor = 0, feedItems = [], shown = true, flyId = null, EVM = null, lastFly = null;
   const said = new Set();   // 已经播报过的新事件（读屏）
   const markersOf = {};                                    // 地图 id → 点位数据（按需加载）
-  const all = () => items.concat(feedItems);
+  // DRAWER-1: events the player hid in this chat (kept in the chat's own map variable by the host; key = type | node | first floor); a hidden event leaves the list, the map and every count
+  const evKey = e => [e.cat || '', e.node || e.place || '', e.first ?? ''].join('|');
+  let hidKeys = new Set(), showHid = false; const isHid = e => !e.feed && hidKeys.has(evKey(e)), redraw = () => { render(); renderBar(); badges(); };
+  const setHidden = l => { hidKeys = new Set(Array.isArray(l) ? l.filter(k => typeof k === 'string') : []); redraw(); };
+  const raw = () => items.concat(feedItems), all = () => raw().filter(e => !isHid(e));
   const vis = () => all().filter(e => !offed(e));   // 筛选后看得见的
   // 落点由节点树定（core/event-geo.mjs，K-R24）：卡内脚本盖了 node 的用 node；老脚本只发 layer + place，就按文字再定位一次；node 为 null = 认不出地点，只列出、不上图（K-01 B）
   const tierNow = () => { const S = window.ScaleHandoffApi; return S?.isTier(currentMapId) ? currentMapId : S?.lastTier || eventLevel(mapRegistry); };
@@ -234,8 +240,11 @@ const EventsView = (() => {
     const gs = ORDER.concat(cnt.其他 ? ['其他'] : []).filter(g => cnt[g] || off.has(g));   // 只列有事件的大类和已隐藏的（v0.9.2：9 个空类占两行）
     bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + (hintOnce() ? `<small>${esc(uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示');
+    const hidN = raw().filter(e => listed(e) && isHid(e)); if (!hidN.length) showHid = false;
+    bar.querySelector('.evleg').insertAdjacentHTML('beforeend', HX.hiddenToggle(hidN.length, showHid));
     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
-    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(uiTextOr('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(uiTextOr('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? uiTextOr('ev.feed', '数据源') : uiTextOr('ev.floor', '聊天第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(uiTextOr('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(uiTextOr('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? uiTextOr('ev.feed', '数据源') : uiTextOr('ev.floor', '聊天第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button>${HX.hideBtn(evKey(e), uiTextOr('ev.hide', '隐藏这条'))}</li>`).join('')
+      + (showHid ? hidN.map(e => HX.hiddenRow(evKey(e), [tn(e.cat), whereHere(e), e.text].filter(Boolean).map(esc).join(' · '))).join('') : '');
   }
   // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
   let hintSeen = null;
@@ -317,7 +326,7 @@ const EventsView = (() => {
   .evleg button.off{color:var(--muted);text-decoration:line-through;border-style:dashed!important}.evleg button.off i{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
   .evleg button:hover{border-color:var(--c)!important;background:var(--surface-2)}.evleg button:active{transform:scale(.97)}.evleg button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
   .evleg small{color:var(--muted);font-size:var(--fs-micro,11px);margin-left:2px}
-  #evbar li{border-top:1px solid var(--line)}
+  #evbar li{border-top:1px solid var(--line);position:relative} #evbar li>.hx{position:absolute;top:var(--sp-2,4px);right:var(--sp-2,4px)} #evbar li:has(>.hx)>button{padding-right:36px}
   #evbar li>button{display:grid;grid-template-columns:12px 1fr auto;gap:2px var(--sp-4,8px);align-items:baseline;width:100%;box-sizing:border-box;padding:var(--sp-3,6px);border-radius:var(--r-m,8px);transition:background var(--dur-1)}
   #evbar li>button:hover{background:var(--surface-2)} #evbar li>button:active{transform:scale(.99)}
   #evbar li i{width:10px;height:10px;background:var(--c);align-self:center} #evbar li.closed i{background:var(--muted)}
@@ -358,6 +367,8 @@ const EventsView = (() => {
     if (!S) return;
     const pe = S.panel('ev'), pc = S.panel('ch');
     if (pe) {
+      HX.ensureCss();
+      pe.addEventListener('click', e => { const r = HX.route(e); if (!r) return; if (r.act === 'toggle') showHid = !showHid; else { r.act === 'hide' ? hidKeys.add(r.key) : hidKeys.delete(r.key); post({ type: 'eden-map:hide', kind: 'event', key: r.key, on: r.act === 'hide' }); } redraw(); });
       pe.innerHTML = '<div class="evsum"></div><div class="evleg" role="group"></div><ol id="evlist"></ol>';
       pe.querySelector('.evleg').setAttribute('aria-label', uiTextOr('ev.legend_aria', '按大类筛选'));
       pe.querySelector('.evleg').addEventListener('click', e => { const b = e.target.closest('button[data-g]'); if (!b) return;
@@ -382,7 +393,7 @@ const EventsView = (() => {
   // P3-C：事态点层登记为 events 槽的 osd 图层；「事态」菜单行由 LayerRegistry 渲染（行内勾选 → setVisible → 这里的调度）
   registry.register(declared('events', { initialVisible: shown,
     setVisible: v => { shown = v; document.body.classList.toggle('noevents', !v); renderBar(); applyGlitch(); } }));
-  return { init, set, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
+  return { init, set, setHidden, zoneXY, renderBar: () => $('#evbar') && renderBar(), render: afterOpen, pollFeeds, flyTo, countOn, collapse, isOpen: () => isOpenNow() && !SH()?.el.hidden, get events() { return all(); } };
 })();
 register('EventsView', EventsView);
 export { EventsView };

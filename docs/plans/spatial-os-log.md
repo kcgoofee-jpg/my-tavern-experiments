@@ -1807,6 +1807,13 @@ commits: see git log (one commit, "fix(map): upper-tier pins no longer drift ...
 pushed: yes
 tests: node 1532/1534 (no drop; 2 skipped as before) | smoke PASS | arch PASS | probes: tier_pins=PASS (upper pan max offset 79.6 px / 17.63 px after 2 s before, 0.03 / 0 px after; mid and low 0.03 / 0.02 before and after)
 deviations: tests/s43_parity.test.mjs and tools/test_render_campaign.py expectations updated for the added tc_low flag and four ledger items (placed in the var group)
+=== RESULT DRAWER-1 ===
+status: DONE
+items: 1 hide event (x icon, 已隐藏 N toggle, restore; stored in eden_map.evHide, host echo eden-map:hidden) ✓ | 2 items folded by pickup place (merge ×N, newest first, fold per chat in local storage, not a pref) ✓ | 3 no repeated buttons: the per-row 「在地图上看」 and 「拾于」 are gone, row / place pin is the jump target; audit: 人物 and 事态 rows are already whole-row buttons, 地点 is a single card, so only 物品 needed converting; the 「拾取」 take button on world rows stays (an action, not a repeat) ✓ | 4 「这不是物品」 x + restore (eden_map.stash.notItems) ✓ | 5 stop words (自 in PRONOUN, vocab.SELF_WORDS, SCAN_VER 5) ✓ | 6 top-bar dots ✓ | 7 tests, probe drawer_1, 375 px, shots in ~/eden-map-review/drawer-1/{before,after} ✓
+commits: see git log of the push
+pushed: yes (head number in the chat report)
+tests: node 1545/1546 (1 skipped as before; 12 new in tests/drawer_1.test.mjs) | smoke PASS | arch PASS | probes: drawer_1=PASS (17 checks, 1440 and 375 px), drawer_stash=PASS (take selector updated), events_fx=PASS
+deviations: the not-item list is applied where rows are read (rows / wire / digest) and is an input of recompute, not a scan-time skip, so a restore brings the row back; 「身体」/「身子」 start with a quantifier char and leave 「体」/「子」 (not covered). Intents: new eden-map:hide (viewer to host) and eden-map:hidden (host to viewer) in protocol SCHEMA; no new storage key (fold state lives under the registered edenMap:chat: prefix).
 blocker: none
 open: none
 cleanup: done

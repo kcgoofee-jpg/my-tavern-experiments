@@ -270,7 +270,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (e.data?.type === 'eden-map:varmap-set') setVarUser(e.data.user);   // v0.9.5 设置「变量映射」
     if (e.data?.type === 'eden-map:compose' && typeof e.data.text === 'string') composeIn(e.data.text, e.data.ooc);   // v0.9.6 地图 → 聊天：只填不发
     if (e.data?.type === 'eden-map:action') injectAction(e.data);   // Part 6-4：点 POI → 注入动作（默认关，见 tavern/place-action-injection.mjs）
-    if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句
+    if (e.data?.type === 'eden-map:loot') takeLoot(e.data);   // Part 5-1：点了地上的发光拾取物 → 先写背包，再按设置注入一句; if (e.data?.type === 'eden-map:hide') RS.onHide(e.data);   // DRAWER-1: hide an event / mark an item as not an item (stored in the chat variable)
     if (e.data?.type === 'eden-map:stealth') stealthCheck(e.data);   // Part 5-2：这次移动穿过了谁的视野 → 按难度注入一句检定
     if ((e.data?.type === 'eden-map:th' && typeof e.data.op === 'string') || e.data?.type === 'eden-map:pack-pick') onTh(e.data).catch(x => console.warn('[eden-map] 酒馆助手设置', x));   // 设置「数据与映射」「高级」：注入 / 类宏 / 世界书同步
     if (e.data?.type === 'eden-map:check-update') (updateChannel({ channel: channel(), ref: SCRIPT.ref || AB.refOf() }) === 'follow' && (SCRIPT.ref || AB.refOf()) ? followUpdate() : checkUpdate()).then(r => post({ type: 'eden-map:update-result', ...r }));   // v0.9.6「检查更新」

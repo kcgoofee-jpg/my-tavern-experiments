@@ -108,3 +108,25 @@ export function itemGroups({ store, legacy, world, card, here = null, hereMarker
   out.card = (Array.isArray(card) ? card : []).filter(r => r && r.name).map(r => itemOf(r, nodeOf, 'mvu'));
   return out;
 }
+
+// ---- the Items tab's folds (DRAWER-1) ----
+const floorOf = e => (Number.isInteger(e?.msgIndex) ? e.msgIndex : null);
+const newer = (a, b) => (floorOf(a) === null ? (floorOf(b) === null ? 0 : 1) : floorOf(b) === null ? -1 : floorOf(b) - floorOf(a));   // newest pickup floor first, no floor last
+const cp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+/** Same-name item entities merged into one row each: { name, qty, floor, e } (qty = the sum of the rows' quantities, e = the newest entity, floor = its pickup floor), newest first. */
+export function mergeRows(list) {
+  const by = new Map();
+  for (const e of Array.isArray(list) ? list : []) {
+    const q = Math.max(1, Math.floor(+e.data?.qty) || 1), cur = by.get(e.name);
+    if (!cur) by.set(e.name, { name: e.name, qty: q, floor: floorOf(e), e });
+    else { cur.qty += q; if (newer(e, cur.e) < 0) { cur.e = e; cur.floor = floorOf(e); } }
+  }
+  return [...by.values()].sort((a, b) => newer(a.e, b.e) || cp(a.name, b.name));
+}
+/** Item entities folded by their place (the pickup place of a carried row): [{ place, rows (mergeRows), units, floor }], the group with the newest pickup first, "no place" last. */
+export function foldByPlace(list) {
+  const by = new Map();
+  for (const e of Array.isArray(list) ? list : []) { if (!by.has(e.place || '')) by.set(e.place || '', []); by.get(e.place || '').push(e); }
+  const out = [...by].map(([place, es]) => { const rows = mergeRows(es); return { place, rows, units: rows.reduce((n, r) => n + r.qty, 0), floor: rows.reduce((m, r) => (r.floor !== null && (m === null || r.floor > m) ? r.floor : m), null) }; });
+  return out.sort((a, b) => (a.place === '' ? 1 : b.place === '' ? -1 : 0) || (a.floor === null ? (b.floor === null ? 0 : 1) : b.floor === null ? -1 : b.floor - a.floor) || cp(a.place, b.place));
+}

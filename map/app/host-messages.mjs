@@ -79,6 +79,7 @@ if (window.top !== window) {
     if (e.data?.type === 'eden-map:cardinfo') setCardInfo(e.data.card, e.data.tried);   // 任务四：角色卡信息（版权申明页）由卡内脚本经桥取来，面板不自己摸宿主全局
     if (e.data?.type === 'eden-map:update-result') { setUpdBusy(false); setUpdRes(e.data); renderAbout(); }
     if (e.data?.type === 'eden-map:chars') { plugins.CharactersView.set(e.data); emEmit('characters', { items: e.data.items, floor: e.data.floor }); }   // 人物栏（v0.9.2）
+    if (e.data?.type === 'eden-map:hidden') plugins.EventsView?.setHidden?.(e.data.events);   // DRAWER-1: the events hidden in this chat
     if (e.data?.type === 'eden-map:custom') plugins.CustomNamesView.fromHost(e.data);   // v0.9.3：自定义名称与用途（聊天变量）
     if (e.data?.type === 'eden-map:inv' && typeof plugins.StashView !== 'undefined') plugins.StashView.fromHost(e.data);   // 空间化背包（Part 5-1）：地点卡「存放」行
     if (e.data?.type === 'eden-map:media' && typeof plugins.GalleryView !== 'undefined') plugins.GalleryView.fromHost(e.data);   // K-R106: the pack's media source (a card's picture table + the chat's tags)

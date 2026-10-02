@@ -124,10 +124,10 @@ export function actionsOf(stash) {
 
 /** Fold from an empty store: the actions of no message first, then every message from `since` in order (the scan, then the actions recorded at that message).
  *  An action at a floor that holds no message is applied between the messages around it. */
-export function recompute(msgs, { since = null, actions = [], removed, worldNames, vocab, probe } = {}) {
+export function recompute(msgs, { since = null, actions = [], removed, notItems, worldNames, vocab, probe } = {}) {
   const ctx = { worldNames, vocab, probe };
   let cur = S.empty(since);
-  if (removed) cur = S.norm({ ...cur, removed });
+  if (removed || notItems) cur = S.norm({ ...cur, ...(removed ? { removed } : {}), ...(notItems ? { notItems } : {}) });   // the per-chat not-item list is an input of the fold: same messages + same list = same rows
   const todo = [...(Array.isArray(actions) ? actions : [])].sort((a, b) => keyOf(num(a?.msgIndex), num(b?.msgIndex)));
   const list = (Array.isArray(msgs) ? msgs : []).filter(m => num(m?.msgIndex) !== null).sort((a, b) => a.msgIndex - b.msgIndex);
   let i = 0;
