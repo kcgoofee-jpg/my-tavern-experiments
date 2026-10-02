@@ -1,3 +1,5 @@
+// RETIRED (PROBE-FIX): the data this wrote is hand-maintained now (LEGEND-1 dropped the legend rows, the overlay gained a layers block, the manifest a card url, ...), so a
+// regeneration would silently drop those edits. --write is refused; plain check mode still prints the drift and writes nothing. tests/gen_s43_retired.test.mjs pins both.
 // ONE-OFF (S4-3 T2-T7). Moves the first pack's viewer special cases into pack data, reading the constants that lived in the engine before S4-3 from
 // tests/helpers/s43_frozen.mjs (verbatim copies: the per-view theme CSS, the legend, the CVD palettes, the world-map word table, the tag examples, the picker's
 // tier table) and the legend's words from the i18n dictionaries. Writes:
@@ -12,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import * as F from '../tests/helpers/s43_frozen.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url)), WRITE = process.argv.includes('--write');
+if (WRITE) { console.error('gen_eden_s43_data: retired, the pack data is hand-maintained now; --write would drop later edits (see the header)'); process.exit(2); }
 const rd = p => fs.readFileSync(ROOT + p, 'utf8'), J = p => JSON.parse(rd(p));
 const out = {};   // path -> new text
 

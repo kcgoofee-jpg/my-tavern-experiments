@@ -604,6 +604,7 @@
   "nav.hint": "AI 参谋建议",
   "props.layer": "本机道具",
   "props.layer_title": "你放在地图上的本机道具（只存在这台设备）",
+  "props.shown": "已放置，并打开了「本机道具」图层",
   "loot.pick": "拾取",
   "loot.hidden": "暗格",
   "sb.title": "见闻录",

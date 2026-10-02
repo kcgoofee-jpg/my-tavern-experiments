@@ -36,6 +36,9 @@ let msgs = [];
 globalThis.getChatMessages = () => msgs; globalThis.getCharData = async () => ({ data: { extensions: EXT } });
 const { createGalleryFlow } = await import('../map/tavern/gallery-flow.mjs');
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// The flow is async (timer -> card table promise -> timer): wait for the condition, not for a guessed delay. A negative check settles a few timer rounds first.
+async function until(cond, what) { for (let i = 0; i < 2000 && !cond(); i++) await wait(5); assert.ok(cond(), 'timed out waiting for ' + what); }
+const settle = async () => { for (let i = 0; i < 4; i++) await wait(5); };
 function mk(sw = null) {
   const posts = []; let floorNow = 4;
   const flow = createGalleryFlow({ alive: true, get floorNow() { return floorNow; }, frame: null, life: { dead: false }, lsGet: k => (k === 'edenMapGallery' ? sw : null), post: m => posts.push(m),
@@ -45,22 +48,22 @@ function mk(sw = null) {
 test('flow: the table is read from the card at run time, scenes recomputed from the floors, resent only on change', async () => {
   setProfile(profileOf({ entities: { avatar: AVATAR, gallery: GAL } }));
   msgs = [{ message_id: 2, message: 'a [Aria][calm][2] b <think>[Aria][busy][1]</think>' }, { message_id: 3, message: 'none' }, { message_id: 4, message: '<time>Hall·d·t</time> [Aria][busy][7] [Zed][calm][1]' }];
-  const { flow, posts } = mk(null); flow.force(); await wait(50);
+  const { flow, posts } = mk(null); flow.force(); await until(() => posts.length >= 1, 'first media message');
   assert.equal(posts.length, 1); const m = posts[0];
   assert.equal(m.type, 'eden-map:media'); assert.equal(m.on, true); assert.deepEqual(m.cats, ['calm', 'busy']); assert.equal(m.chars.length, 1);
   assert.deepEqual(m.scenes.map(s => [s.floor, s.place, s.who, s.cat, s.n, s.url]), [[2, 'Yard', 'Aria·Vale', 'calm', 2, U('a', 'calm', 2)], [4, 'Hall', 'Aria·Vale', 'busy', 7, U('a', 'busy', 1)]]);   // the think block is not text; Zed is not in the table; 7 wraps round 1 picture
-  flow.schedule(0); await wait(50); assert.equal(posts.length, 1, 'nothing changed: nothing sent');
-  msgs = [...msgs, { message_id: 5, message: '[Aria][calm][1]' }]; flow.schedule(0); await wait(50);
+  flow.schedule(0); await settle(); assert.equal(posts.length, 1, 'nothing changed: nothing sent');
+  msgs = [...msgs, { message_id: 5, message: '[Aria][calm][1]' }]; flow.schedule(0); await until(() => posts.length >= 2, 'second message');
   assert.equal(posts.length, 2); assert.equal(posts[1].chars, undefined, 'the table is not resent when it did not change'); assert.equal(posts[1].scenes.length, 3);
-  flow.force(); await wait(50); assert.equal(posts.length, 3); assert.ok(posts[2].chars, 'the viewer asked again: everything is sent again');
+  flow.force(); await until(() => posts.length >= 3, 'third message'); assert.equal(posts.length, 3); assert.ok(posts[2].chars, 'the viewer asked again: everything is sent again');
 });
 test('flow: switch off = nothing read or drawn (one clearing message); no storage was written; a pack without a source sends nothing', async () => {
-  const { flow, posts } = mk('1'); flow.force(); await wait(40); assert.equal(posts.length, 1);
-  const off = mk('0'); off.flow.force(); await wait(40); assert.deepEqual(off.posts, []);   // never on: nothing at all
+  const { flow, posts } = mk('1'); flow.force(); await until(() => posts.length >= 1, 'switch-on message'); assert.equal(posts.length, 1);
+  const off = mk('0'); off.flow.force(); await settle(); assert.deepEqual(off.posts, []);   // never on: nothing at all
   const sw = { v: '1' }; const posts2 = []; let fl = 4;
   const f2 = createGalleryFlow({ alive: true, get floorNow() { return fl; }, frame: null, life: { dead: false }, lsGet: () => sw.v, post: m => posts2.push(m), mvuBridge: { chatId: () => 'c', floorPlace: () => ({ place: 'Yard' }), rosterRows: () => [] } });
-  f2.force(); await wait(40); sw.v = '0'; f2.force(); await wait(40);
+  f2.force(); await until(() => posts2.length >= 1, 'on message'); sw.v = '0'; f2.force(); await until(() => posts2.length >= 2, 'clearing message');
   assert.deepEqual(posts2.map(p => p.on), [true, false]);
-  setProfile(profileOf({ entities: { avatar: AVATAR } })); const none = mk(null); none.flow.force(); await wait(40); assert.deepEqual(none.posts, []);
+  setProfile(profileOf({ entities: { avatar: AVATAR } })); const none = mk(null); none.flow.force(); await settle(); assert.deepEqual(none.posts, []);
   assert.deepEqual(writes, [], 'no address or table was persisted'); assert.equal(store.size, 0);
 });

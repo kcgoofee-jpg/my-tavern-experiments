@@ -57,7 +57,7 @@ export function createPresence({ THREE, CSS2DObject, scene, roomOf, visibleOn, t
       for (const p of show) { if (used >= MAX) break; el.append(chip(p, { label: tx('person', { name: p.name, room: r.name }) })); used++; }
       if (rest.length && used < MAX) { el.append(foldBtn(node, ps, rest.length)); used++; }
       el.style.setProperty('--n', String(el.children.length));
-      const o = new CSS2DObject(el); o.position.set(r.cx, r.y + 3.4, r.cz); o.center.set(0.5, 1.6);   // U-FIX-5 E5-02: the avatar group sits above the room's name, not on it group.add(o); rooms.set(node, { o, floor: r.floor });
+      const o = new CSS2DObject(el); o.position.set(r.cx, r.y + 3.4, r.cz); o.center.set(0.5, 1.6); group.add(o); rooms.set(node, { o, floor: r.floor });   // U-FIX-5 E5-02: the avatar group sits above the room's name, not on it
     }
     refresh(); aria(); wake(); return true;
   }

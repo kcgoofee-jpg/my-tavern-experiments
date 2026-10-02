@@ -93,7 +93,12 @@ try {
   await vf.waitForFunction(() => document.querySelector('#estate.on'), null, { timeout: 90000 }).catch(() => {}); await B.wait(3000);
   await B.shot(P.page, OUT, 'estate' + sfx);
   await vf.evaluate(() => SettingsApi.open('home')); await B.wait(500); await B.shot(P.page, OUT, 'estate-set-display' + sfx);
-  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: (SettingsApi.open('update'), document.querySelector('#buildLine')?.offsetParent ? document.querySelector('#buildLine').textContent : '') }));
+  const e3 = await vf.evaluate(() => ({ n: [...document.querySelectorAll('#tiers button')].filter(b => b.offsetParent && b.disabled).length, why: document.querySelector('#tierWhy')?.textContent || '', build: '' }));
+  // the local stub reports no build number (a local / standalone script has none), so give the page one: the line is I-15's "which build is running" and must show in the estate view too
+  await vf.evaluate(async () => { const m = await import('./app/settings.mjs'); m.setAbout({ ...(m.about || {}), build: 293, sha: '961ca100aaaa', at: '2026-10-02T09:05:40Z' }); });
+  await vf.evaluate(() => SettingsApi.open('update'));   // S7-1: the page is built on first open, so read the line after a wait
+  await vf.waitForFunction(() => document.querySelector('#buildLine')?.offsetParent && document.querySelector('#buildLine').textContent.length > 4, null, { timeout: 8000 }).catch(() => {});
+  e3.build = await vf.evaluate(() => document.querySelector('#buildLine')?.offsetParent ? document.querySelector('#buildLine').textContent : '');
   await B.shot(P.page, OUT, 'estate-set-update' + sfx);
   rep.check('estate-tier', e3.n === 4 && /三维/.test(e3.why), JSON.stringify(e3));
   rep.check('estate-build', e3.build.length > 4, e3.build);

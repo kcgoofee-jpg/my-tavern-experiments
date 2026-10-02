@@ -1,6 +1,8 @@
 {
   "schema": 2,
   "_note": "Example pack layers (docs/layers-schema.md section 13): a patrol route and a danger zone, declared with data only.",
+  "ui": { "tabs": ["events", "characters", "items", "places", "legend"] },
+  "_ui_note": "LEGEND-1: the legend tab lists the declared layers, so this example pack opts in (the first pack does not).",
   "layers": [
     {
       "id": "patrol", "type": "flow", "slot": "routes", "source": "inline",

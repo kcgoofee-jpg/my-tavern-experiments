@@ -133,9 +133,9 @@ try {
     const st = await p.evaluate(() => ({ hand: document.documentElement.dataset.hand, pref: localStorage.getItem('edenMapHand') }));
     rep.check('设置记在本机：刷新后仍是右手', st.hand === 'right' && st.pref === 'right', JSON.stringify(st));
     await B.goMap(p, 'eden_estate', 60000); await B.wait(1500);
-    // UI v2：三维页自带控制列与抽屉（ui/chrome3d.js），查看器的控制列让开；「⋯」在顶栏
+    // S7-3：庄园在同一个壳里，控制列、抽屉与「⋯」照常存在（不再让给独立的三维页）
     const row = await p.evaluate(() => ({ dock: getComputedStyle(document.querySelector('#dock')).display, set: !!document.querySelector('#setBtn').offsetParent, sheet: document.querySelector('#evbar').hidden }));
-    rep.check('庄园：查看器控制列与抽屉让给三维页，顶栏有「⋯」', row.dock === 'none' && row.set && row.sheet, JSON.stringify(row));
+    rep.check('庄园：同一个壳里控制列与「⋯」仍在', row.dock !== 'none' && row.set, JSON.stringify(row));
     await jpg(p, 'estate_right');
     await P.close();
   });

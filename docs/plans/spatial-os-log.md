@@ -1838,3 +1838,16 @@ deviations: the 50 mm perspective of upper-setting s9.1 is replaced by an orthog
 open: FOG-1 plans to add top-down var:tc_upper_islands_alpha:* and var:tc_upper_eden:{dawn,dusk,night}; under D41 these are top-down-only and should be skipped as retired once they land (the oblique items cover them).
 cleanup: done
 === END ===
+
+=== RESULT PROBE-FIX ===
+status: PARTIAL
+items: 1 I-32 e7 / fix3 / v097 / v2a repaired probe-side (e7: estate keeps dock and 「⋯」 in the one shell; fix3: wait for the lazily built page + give the stub a build number; v097: close the settings drawer the build leaves open + `edenMapOn:tabledb` since INV-2; v2a: lazy fog switch, status selector, Aa button is the 「地名」 layer on phones, hint / link wording) ✓ · 2 estate3d ✗ (not stale: data. The E-13b `house.glb` has two scenes and `f_B2_med` is in the second, the loader reads the default one, so the B2 medical block is not loaded; screenshot ~/eden-map-review/probe-fix/estate3d-b2-med-missing.png; filed as E-14, not fixed per the prompt) · 3 gallery_flow flake ✓ (the flow is timer -> card-table promise -> timer; fixed 50 ms sleeps replaced by wait-for-condition polling, negative checks settle a few timer rounds) · 4 generator drift ✓ (`gen_eden_s43_data.mjs` retired: `--write` refused, header + ARCHITECTURE en / zh note, `tests/gen_s43_retired.test.mjs` pins refuse + check mode writes nothing) · 5 local props ✓ (placing a prop stores the layer on and shows 「已放置，并打开了「本机道具」图层」 through the notice layer; verified in the browser) · 6 full sweep ✓ (`docs/plans/v098-probes.md`) · 7 accept U18 inverted for D35 ✓ (coordinator item, CI browser-smoke)
+extra: sweep found 3 more reds, all fixed: estate_presence / estate_generic = real bug, U-FIX-5 (22f7cef8) put a `//` comment in the middle of a line in `map/estate/presence.js` and swallowed `group.add(o); rooms.set(...)`, so no 3D presence chip was ever drawn; pack_layers = the town example pack now opts into the legend tab (`ui.tabs` in its overlay) after LEGEND-1
+commits: see git log (probe-fix)
+pushed: yes
+tests: node 1526/1528 (0 fail, 2 skipped; +3 new) | smoke PASS | arch PASS | probes: 65 of 66 PASS, estate3d=FAIL (E-14); ui3d1 red once under parallel load, green on two solo reruns
+deviations: item 2 not fixed (data, per the prompt); items 5 and the presence / town fixes are outside the literal IN list but are one-line bug fixes found by the sweep (no feature added beyond item 5); drafts images that probes overwrite were restored, not committed
+blocker: none
+open: E-14 (house.glb default scene) needs a rebuild decision; then estate3d is green
+cleanup: done
+=== END ===

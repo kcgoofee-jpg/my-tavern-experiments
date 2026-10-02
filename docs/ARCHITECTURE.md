@@ -552,6 +552,8 @@ includes the English card words (`EN_TERMS`, case-sensitive).
 
 **Trust boundary**: a manifest is pure data. The engine never executes pack scripts and never filters user chat.
 
+**Retired generator**: `tools/gen_eden_s43_data.mjs` (the S4-3 one-off that moved the eden viewer special cases into pack data) no longer regenerates anything; the pack files are hand-maintained and `--write` is refused (`tests/gen_s43_retired.test.mjs`).
+
 ## 7. Storage and namespaces
 
 - **Local storage** is one service, `core/storage.mjs`. `KEYS` is the single registry of every key (owner, scope,

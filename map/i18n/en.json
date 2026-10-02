@@ -604,6 +604,7 @@
   "nav.hint": "AI advisor suggestion",
   "props.layer": "Local props",
   "props.layer_title": "Props you placed on the map (kept on this device only)",
+  "props.shown": "Placed; the \"Local props\" layer is now on",
   "loot.pick": "Take",
   "loot.hidden": "concealed in",
   "sb.title": "Scrapbook",

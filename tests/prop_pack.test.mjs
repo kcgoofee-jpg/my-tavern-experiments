@@ -85,3 +85,9 @@ test('privacy (static): the prop modules make no network call and send no messag
     assert.doesNotMatch(src, /\bfetch\(|XMLHttpRequest|sendBeacon|postMessage|\bpost\(|WebSocket|https?:\/\//, f);
   }
 });
+test('placing a prop turns the (default-off) local-props layer on and says so through the notice layer; both strings exist', () => {
+  const src = fs.readFileSync(fileURLToPath(new URL('../map/app/local-props-view.mjs', import.meta.url)), 'utf8');
+  assert.match(src, /registry\.setVisible\(ID, true\)/); assert.match(src, /showNotice\?\.\(\{[^}]*props\.shown/);
+  assert.equal((src.match(/reveal\(\);/g) || []).length, 2, 'both the explicit and the picked placement reveal');
+  for (const l of ['zh', 'en']) assert.ok(JSON.parse(fs.readFileSync(fileURLToPath(new URL(`../map/i18n/${l}.json`, import.meta.url)), 'utf8'))['props.shown'], l);
+});

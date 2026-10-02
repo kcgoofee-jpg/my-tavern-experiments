@@ -29,14 +29,14 @@ async function clean(preset) {
     await btn.click(); await B.wait(200);
     const conf = await btn.textContent(); rep.check(`${preset} 第一次点 = 二次确认文案`, /再点一次确认/.test(conf), conf);
     await btn.click(); await B.wait(1500);
-    const st1 = await vf.evaluate(() => document.querySelector('#storBox [role=status]')?.textContent || '');
+    const st1 = await vf.evaluate(() => document.querySelector('#storBox [role=status]:not(#chatResetMsg)')?.textContent || '');
     rep.check(`${preset} 清理后回报「已清理」`, /已清理 \d+ 个聊天/.test(st1), st1);
     rep.check(`${preset} 确认里的个数 = 实际清掉的个数`, conf.match(/删除 (\d+)/)?.[1] === st1.match(/已清理 (\d+)/)?.[1], conf + ' / ' + st1);
     const left = await P.page.evaluate(() => Object.keys(localStorage).filter(k => /^edenMap:chat:old/.test(k)).length);
     rep.check(`${preset} 只留最近 5 个聊天`, left <= 5, 'left=' + left);
     // 10 秒内再发一次：宿主回 limited，界面说「请 N 秒后再试」
     await vf.evaluate(() => ViewerDebug.post({ type: 'eden-map:storage-clean' })); await B.wait(1200);
-    const st2 = await vf.evaluate(() => document.querySelector('#storBox [role=status]')?.textContent || '');
+    const st2 = await vf.evaluate(() => document.querySelector('#storBox [role=status]:not(#chatResetMsg)')?.textContent || '');
     rep.check(`${preset} 10 秒内再清：明确提示稍后再试`, /秒后再试/.test(st2), st2);
     await B.shot(P.page, OUT, `clean_${preset}`);
   } finally { await P.ctx.close(); }
@@ -63,11 +63,12 @@ async function labels() {
   const P = await B.newPage('phone', { tier: 'save' });
   try {
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(1500); const p = P.page;
-    const vis = await p.evaluate(() => { const b = document.getElementById('lblTog'); return !!b && getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width >= 44; });
-    rep.check('手机控制列有标注开关（≥ 44 px）', vis);
-    if (vis) { await p.locator('#lblTog').click(); await B.wait(200);
-      rep.check('点一下隐藏标注', await p.evaluate(() => document.body.classList.contains('nolabels')));
-      await p.locator('#lblTog').click(); }
+    // U-18: the phone dock no longer carries the Aa button (#lblTog is hidden); the labels switch is the layer row 「地名」 (#tgLabels)
+    const hid = await p.evaluate(() => { const b = document.getElementById('lblTog'); return !b || getComputedStyle(b).display === 'none'; });
+    rep.check('手机控制列不再有标注开关（地名在图层菜单里）', hid);
+    await p.evaluate(() => { const c = document.getElementById('tgLabels'); c.checked = false; c.dispatchEvent(new Event('change')); }); await B.wait(200);
+    rep.check('关掉「地名」图层隐藏标注', await p.evaluate(() => document.body.classList.contains('nolabels')));
+    await p.evaluate(() => { const c = document.getElementById('tgLabels'); c.checked = true; c.dispatchEvent(new Event('change')); });
   } finally { await P.ctx.close(); }
 }
 
@@ -90,7 +91,7 @@ async function hint(preset) {
   try {
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(3500); const p = P.page;
     const t = await p.evaluate(() => document.querySelector('.vw-nt .nt-p1 .nt-item, .nt-p1 .nt-item')?.textContent || '');
-    rep.check(`${preset} 第一次打开：三步提示`, /三步上手/.test(t) && /①/.test(t) && /③/.test(t), t.slice(0, 80));
+    rep.check(`${preset} 第一次打开：三步提示`, /三步上手/.test(t) && /地标/.test(t) && /设置/.test(t), t.slice(0, 80));
     await B.shot(p, OUT, `hint_${preset}`);
     await p.locator('.nt-p1 .nt-item button', { hasText: '知道了' }).click(); await B.wait(300);   // 关掉或点按钮才算看过
     await B.openViewer(P, { map: 'tc_mid' }); await B.wait(3500);
@@ -104,8 +105,10 @@ async function fog(preset) {
     try {
       const H = await openHost(P, { here: '天城·下层·7 号井黑市', chat: 'v2a-fog-' + onFog, ls: { edenMapFog: onFog ? '1' : '0' }, vars: { eden_map: { 探索: { tc_low: ['货运站'] } } } });
       await H.open(); const vf = await H.viewer(); await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(6000);
+      await vf.evaluate(() => SettingsApi.open('map')); await B.wait(300);   // S7-1: the switch lives on a page built on first open
       const st = await vf.evaluate(() => ({ on: document.body.classList.contains('fogon'), cv: !!document.getElementById('fogCv'), fogged: document.querySelectorAll('.mk.fogged').length,
-        all: document.querySelectorAll('.mk').length, hereFog: !!document.querySelector('.mk.here.fogged'), opt: document.getElementById('optFog').checked }));
+        all: document.querySelectorAll('.mk').length, hereFog: !!document.querySelector('.mk.here.fogged'), opt: !!document.getElementById('optFog')?.checked }));
+      await vf.evaluate(() => document.querySelector('#setX')?.click());
       const ex = await P.page.evaluate(() => window.__vars?.eden_map?.探索 || null);
       if (!onFog) { rep.check(`${preset} 迷雾手动关：无遮罩、无变暗、不写变量`, !st.on && !st.cv && !st.fogged && !st.opt && JSON.stringify(ex) === '{"tc_low":["货运站"]}', JSON.stringify({ st, ex })); await B.shot(P.page, OUT, `fog_off_${preset}`); continue; }
       rep.check(`${preset} 迷雾开：遮罩 + 没到过的地点变暗，当前地点不暗`, st.on && st.cv && st.fogged > 0 && st.fogged < st.all && !st.hereFog, JSON.stringify(st));
@@ -151,7 +154,7 @@ async function link3d() {
       const ex = document.querySelector('#card .extra');
       return { id, n: ex ? ex.querySelectorAll('a[data-go]').length : 0, t: ex?.querySelector('a[data-link3d]')?.textContent || '' };
     });
-    rep.check('地点卡：通道 + 三维两个链接', r.skip || (r.n === 2 && /三维/.test(r.t)), JSON.stringify(r));
+    rep.check('地点卡：通道 + 三维两个链接', r.skip || (r.n === 2 && /三维|3D/.test(r.t)), JSON.stringify(r));
   } finally { await P.ctx.close(); }
 }
 try {
