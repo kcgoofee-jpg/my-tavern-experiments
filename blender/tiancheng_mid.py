@@ -953,6 +953,11 @@ def _day_tune():
     # 白天读成一团"明黄自发光物"（裁图实测在画面底部中央）。压到近土黄、加粗糙度。
     cmul('ck_canopy', c=(.17, .13, .08), rough=.7)                     # 井口雨棚：土黄警示色（不再是亮琥珀）
 
+if os.environ.get('TC_OBLIQUE'):                             # 斜视主地图（D41 批 2）：mid_oblique.py 接管时段光照、共用相机、画框与成图
+    import mid_oblique
+    mid_oblique.main(layer, city)
+    sys.exit(0)
+
 if DAY:
     # --day：白天版——太阳走 tc.sun_rot() 白天几何（215° 方位不变，天顶角 35° / 高度角 55°，比夜景 40° 更高：tc_common SUN_ROT_DAY），
     # 高楼与浮岛遮挡板把直射光挡在外面：楼顶亮、街道峡谷暗的强对比；天光用与上层白天一致的天蓝；夜景灯光全拆、发光面改暗色漆面。
