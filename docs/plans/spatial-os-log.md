@@ -1598,3 +1598,16 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT S7-3 ===
+status: DONE
+items: one shell for 2D and 3D (chrome-less estate canvas in the main shell, view segment / floors / toolbar / drawer in the viewer) ✓ · presence in 3D (located characters as avatar tokens in their room, tap → shared character card) ✓ · one card system (hover = label only, click = shared card) ✓ · building and room kinds as pack data (K-R131, K-R132, rooms schema, fixture pack tests/fixtures/pack3d-min) ✓ · N9 ✓ (restricted kind and every 「不描述」 string removed, 4 rooms → card, medical colour, legend tab gone, compact kind key in the section view) · N10 1, 2, 3, 4, 6 ✓ · N11 ✓ · occluded labels hidden fully ✓ · on-demand rendering (no frame while still) ✓ · no-labels allow-list `S7-3 removes` emptied ✓
+commits: 064fd5aa feat(estate): kind restricted removed, uses for the open volumes, node ids in the room data (N9, N10 1) · d1f4a7ba feat(3d): building and room kinds as pack data (K-R131, K-R132); rooms schema; fixture pack; pack checks · 4d238ab6 feat(3d): estate view inside the main shell; one card system; presence chips; on-demand rendering; occluded labels · 70fa59b6 feat(3d): S7-3 closing (arch doc rows, label ledger, floor tags clipped on phones, probes follow the chrome-less page)  (shas before the push rebase)
+pushed: yes
+tests: node 1445 pass + 2 skipped / 1447 (base 1412; +33) | smoke PASS | arch PASS (ledger: map/estate/main.js 1220 → 1213, estate files now scanned as engine) | probes: estate_presence ✓ (a located character renders in its 3D room; floor tags do not overlap; none clipped at 375) · estate_generic ✓ (fixture pack) · estate_kbd ✓ · topo_dairy ✓ · estate3d ✓ · estate_flicker ✓ · webgl_single_ctx ✓ · raf_pause ✓ · s7_hit ✓ · a11y_tree ✓ (after the two probe expectation updates below)
+n9 removed items (each with replacement): the 「图例」 sheet tab → compact kind key inside the section view; kind `restricted` + `tx.restricted` + `KL` → kind `card` and its data note shown like any room; 「不描述 / not described」 strings in main.js, tavern/picker.mjs, unmapped-place-picker.mjs → the room's own note; area suffix 「（卡 30）」 → dropped; 3D-only tabs 房间 / 关于 → sections of the shared place card; KIND_COL / labels in engine code → pack manifest room_kinds (+ generated palette `core/kind-palette.mjs` for undeclared kinds). Room count 123 = 123; kinds: 4 restricted → card; 22 `open` volumes got uses (kinds support / owner), names and notes written in the setting, no placeholder or provenance wording.
+deviations: (1) executor (Sonnet) died on an API error mid-step; the orchestrator finished it: arch-doc rows for the five estate files, ledger 1213, a wording change that matched the label gate, floor tags clipped at the left edge on phones fixed (--dx), two probes updated (estate_presence checks floor tags only, as spec N10 4 says, room labels of stacked floors may share screen area in x-ray; a11y_tree expects the chrome-less 3D page to carry no controls). (2) No persona review (quota). (3) manifest.json merge: kept this step's structure with the other line's model version r24. (4) shots in ~/eden-map-review/overnight/s7/s7-3-r1 (86 s7_shots + presence / x-ray at 1440 and 375).
+blocker: none
+open: key `3` in the 3D view (F1 section assumed in S7-2)
+cleanup: done
+=== END ===
