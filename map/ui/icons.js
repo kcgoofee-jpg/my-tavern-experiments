@@ -32,6 +32,7 @@
     legend: '<path d="M4 6.5h.01M4 12h.01M4 17.5h.01" stroke-width="3"/><path d="M8.5 6.5H20M8.5 12H20M8.5 17.5H20"/>',
     cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
     parts: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+    nudge: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4 4v-4h-.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8.5 8.5h7M8.5 11.5h4"/>',
     flows: '<path d="M3 8h13M13 4.5L16.5 8 13 11.5M21 16H8M11 12.5L7.5 16l3.5 3.5"/>',
   };
   const svg = (k, o = {}) => `<svg class="${o.cls || 'ico'}" viewBox="0 0 24 24" width="${o.size || 20}" height="${o.size || 20}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${P[k] || ''}</svg>`;

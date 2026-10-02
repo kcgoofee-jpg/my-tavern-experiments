@@ -652,10 +652,10 @@ function cullLabels() {
       if (_v.z > 1 || Math.abs(_v.x) > 1.05 || Math.abs(_v.y) > 1.05) ok = false;
       else {
         const x = (_v.x + 1) / 2 * W, y = (1 - _v.y) / 2 * H;
-        if (!it.lw) { it.lw = el.firstChild.offsetWidth || 60; it.lh = el.firstChild.offsetHeight || 18; }
-        if (y - it.lh / 2 - 2 < topGuard) ok = false;   // 顶栏（含剖切楼层二级条）下沿以上不放标签，别被挡住/切字
+        if (!it.lw && el.firstChild.offsetWidth > 0) { it.lw = el.firstChild.offsetWidth; it.lh = el.firstChild.offsetHeight || 18; } const lw = it.lw || el.textContent.length * 14 + 16, lh = it.lh || 22;   // UI-3D-1: a label hidden by the building measures 0: guess from its text, measure again next round, never cache the guess
+        if (y - lh / 2 - 2 < topGuard) ok = false;   // 顶栏（含剖切楼层二级条）下沿以上不放标签，别被挡住/切字
         else {
-          const r = [x - it.lw / 2 - 3, y - it.lh / 2 - 2, x + it.lw / 2 + 3, y + it.lh / 2 + 2];
+          const r = [x - lw / 2 - 3, y - lh / 2 - 2, x + lw / 2 + 3, y + lh / 2 + 2];
           if (!hot) for (const p of placed) if (r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]) { ok = false; break; }
           if (ok) placed.push(r);
         }

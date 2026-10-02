@@ -1757,3 +1757,15 @@ blocker: none
 open: confirm with a real TauriTavern that /api/chats/search lists every chat file (with the orphan sweep this decides whether deleted chats are ever cleaned); the settings 高级 page, credits, replay and llm-gateway were not touched
 cleanup: done
 === END ===
+
+=== RESULT UI-3D-1 ===
+status: DONE
+items: 1 floor strip codes only (3D; 2D strip untouched per coordinator) ✓ · 2 zoom stack icon-only + audit ✓ · 3 rule in ui-refactor.md / .zh.md §2.1 item 5 ✓ · 4 label collision ✓ (see deviations) · 5 tests + probe tools/browser/ui3d1.mjs ✓ · 6a 「提醒 AI」 icon on the map ✓ · 6b SCAN_VER 3 -> 4 pinned ✓
+commits: see git log (ui-3d-1)
+pushed: yes
+tests: node 1509 (+5 new), 0 fail | smoke PASS | arch PASS | probes: ui3d1=PASS (1440 + 375)
+deviations: the 「地图」 label could not be reproduced: no room, zone or UI string in the 3D data is named 「地图」 (only 档案与地图室 on F2); most likely a chat-derived person or a custom name from the user's seeded chat. Fixed the real cause found in the planner: a label hidden by the building measured width 0 and a guessed 60 px was cached forever, so later overlaps went undetected; now never cached. The U-21 priority beyond the existing pinned > hover > kind rank was not extended (the 3D page does not know the current place / events).
+blocker: none
+open: whoever sees 「地图」 again: send the room / chat so the source can be named
+cleanup: done
+=== END ===

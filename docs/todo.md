@@ -80,6 +80,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [x] ~~**FIX-R2** U-FIX-8 (SW2-02…07) + FIX-B6 (advisor provider defaults, Anthropic browser header, request-shape probe)~~ ✅ 2026-10-02 FIX-R2
   - ~~**OOC-1** the map understands OOC (D32): 4 templates + 「提醒 AI」 button on the AI link page (fills, never sends), OOC lines are not action, player correction `（OOC 地图：现在在 X）` / `（OOC 地图：Y 在 X）`~~ ✅ 2026-10-02 (RESULT OOC-1). The player-guide section listing the templates is part of PUB REL-DOCS.
   - [x] ~~**CHAT-ISO** same card, several chats: A/B isolation probe, 「重置本聊天地图数据」 button, orphan cleanup after a chat is deleted (local storage, room gallery / scrapbook images, per-chat custom worldbook), worldbook JIT state carried into the next chat (I-33, I-34)~~ ✅ 2026-10-02 f9124431 (isolation probe chat_iso, reset button, orphan sweep, JIT reset, fog and clock-popup fixes)
+  - ~~**UI-3D-1** 3D floor strip codes only, icon-only zoom stack / 3D view button, 3D label width fix, 「提醒 AI」 icon on the map, SCAN_VER 4~~ ✅ 2026-10-02 (RESULT UI-3D-1)
   - [ ] **INV-2** apply the inventory's 建议 column: 11 rows default off, 6 parked (off and hidden from settings), nothing deleted
   - ~~**DIGEST-1** zh digest of the ~10 most important default-decided items (D28)~~ ✅ 2026-10-02 `docs/decision-digest.md` (12 items, 20 ids; the other 77 kept unless the user says otherwise) → user fills 保留 / 改 · RESULT DIGEST-1
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)

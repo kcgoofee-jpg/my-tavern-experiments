@@ -144,6 +144,10 @@ N9, N10 and N11 overlap on the estate page; each item has exactly one owner:
    hidden map panel; no glow or neon effects on chrome text.
 4. **Every state visible.** On / off / not applicable / not effective / idle each have a distinct, non-colour-only cue
    (shape, icon or text).
+5. **Compact stacks and rails are icon-only** (UI-3D-1). The zoom stack, the control column, the drawer rail and the
+   phone dock carry icons only; the words live in `aria-label` and a tooltip. Visible words appear only in cards,
+   menus and sheets (a menu item may be a word). A level / floor strip shows the short code (F3, B1) and puts the
+   full name in `aria-label` and `title`. A button that needs words to be understood belongs in a menu, not in a stack.
 
 ### 2.2 Colour and glass tokens (Dark Frost Glass)
 

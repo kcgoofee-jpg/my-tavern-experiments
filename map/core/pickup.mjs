@@ -11,7 +11,7 @@
 import { stripOoc } from './ooc.mjs';
 
 /** 扫描规则的版本：规则改了就加一——存着的文字行带旧版本的指纹，下一轮在窗口里按新规则重放一次（误收的行自愈） */
-export const SCAN_VER = 3;
+export const SCAN_VER = 4;   // 4: OOC segments are stripped before the scan (D32), so a line scanned by an older build is replayed once
 export const MAX_FACTS = 6;         // 一条正文最多认几件（超出丢弃：宁可少记，也不把一段描写吸成清单）
 export const MAX_NAME = 20;         // 物品名的长度上限（更长多半是句子而不是名词）
 const NEAR = 24;                    // 已知物品名：动词要出现在它前面这么多字符内才算「这一下拿的是它」

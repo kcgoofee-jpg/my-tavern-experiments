@@ -6,7 +6,7 @@
 //   * sends the people the chat places in the building (estate:people, from core/estate-people.mjs) when the list changes.
 // The card sections are built in estate-cards.mjs. Nothing here writes host state; the viewer only sends intents up (eden-map:* stays in the other modules).
 import { mapRegistry, currentMapId } from './state.mjs';
-import { $ } from './dom-helpers.mjs';
+import { $, iconSvg } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { plugins, register } from './plugins.mjs';
 import { closeCard } from './markers.mjs';
@@ -31,6 +31,7 @@ body.shell3d #dock{display:flex}
 body.shell3d #evbar:not([hidden]){display:flex!important}
 body.shell3d #zHome{display:none}
 #layers button[data-act]{color:var(--accent)}
+#layers button[data-floor]{min-width:0;padding-inline:var(--sp-5)}
 .kc{display:inline-block;width:12px;height:12px;border-radius:var(--r-s);background:var(--kc);margin-right:var(--sp-3);vertical-align:-1px;border:1px solid var(--glass-line)}
 .v3rooms details{border-top:1px solid var(--line)}.v3rooms summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-size:var(--fs-small);font-weight:600;color:var(--ink-2)}
 .v3rooms .v3room{all:unset;box-sizing:border-box;display:flex;align-items:center;width:100%;min-height:40px;padding:0 var(--sp-4);border-radius:var(--r-s);cursor:pointer;font-size:var(--fs-control)}
@@ -74,7 +75,7 @@ function build() {
 function paint() {
   const { seg, menu, btn } = build();
   for (const box of [seg, menu]) for (const b of box.children) { const m = k3(b.dataset.v); b.textContent = T(m[1], m[2]); const on = b.dataset.v === S.mode; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || box === menu ? 0 : -1; }
-  seg.setAttribute('aria-label', T('v3.view', '三维视图')); btn.setAttribute('aria-label', T('v3.view', '三维视图')); btn.title = `${T('v3.view', '三维视图')}: ${T(k3(S.mode)[1], k3(S.mode)[2])}`; btn.textContent = ''; btn.append(T(k3(S.mode)[1], k3(S.mode)[2]));
+  seg.setAttribute('aria-label', T('v3.view', '三维视图')); const cur = `${T('v3.view', '三维视图')}: ${T(k3(S.mode)[1], k3(S.mode)[2])}`; btn.setAttribute('aria-label', cur); btn.title = cur; btn.innerHTML = iconSvg('cube');   // UI-3D-1: icon only, the current view is in aria-label / tooltip
   $('#v3menu').setAttribute('aria-label', T('v3.view', '三维视图'));
 }
 /** what the page may draw over: the right rail and the sheet of the viewer (CSS variables of the stage), sent when they change */
@@ -105,7 +106,7 @@ export function stripFloors(nav) {
   if (!S.on || !S.floors.length || !isScene(currentMapId)) return false;   // U-FIX-5 W-01: leaving the building, the 2D map's strip is drawn before the shell detaches
   nav.hidden = false;
   nav.replaceChildren(...S.floors.map(f => { const b = document.createElement('button'); b.type = 'button'; b.dataset.floor = f.id; const on = S.mode === 'sect' && S.floor === f.id; b.className = on ? 'on' : ''; if (on) b.setAttribute('aria-current', 'true');
-    b.append(f.id); if (f.label && f.label !== f.id) { const s = document.createElement('small'); s.textContent = f.label; b.append(s); b.title = f.label; } return b; }).reverse());
+    b.append(f.id); if (f.label && f.label !== f.id) { b.title = f.label; b.setAttribute('aria-label', `${f.id} ${f.label}`); } return b; }).reverse());   // UI-3D-1: the strip shows the code only; the full name is the tooltip and the accessible name
   return true;
 }
 /** in 2D, when the current place has a 3D page: the same primary action 「3D 查看」 in the level strip (U-31) */
