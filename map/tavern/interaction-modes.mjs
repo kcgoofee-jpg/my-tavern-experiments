@@ -74,9 +74,10 @@ const SEP = /[\s·・.\-—_/／|｜]/g;
 const clean = s => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 /** 一楼原文里明确写的玩家当前地点：⌖地点 X（隐藏 span 或裸写）、或 data-tcmap="地点=…"（不带 人物 / 类型 / 标题）；取最后一个 */
 export function parseHereTag(raw) {
-  if (!raw || (raw.indexOf('⌖地点') < 0 && raw.indexOf('地点=') < 0)) return null;
+  if (!raw || !/⌖\s*地点|地点\s*[=＝]/.test(raw)) return null;
   const text = String(raw).replace(/```[\s\S]*?```/g, ''); let best = null;
-  for (const m of text.matchAll(/⌖地点[\s:：]+([^<\n⌖，。；,;！？!?]{1,60})/g)) { const p = clean(m[1]); if (p && !EX.has(p)) best = [m.index, p]; }
+  // WB-1: a space after ⌖ is accepted
+  for (const m of text.matchAll(/⌖\s*地点[\s:：]+([^<\n⌖，。；,;！？!?]{1,60})/g)) { const p = clean(m[1]); if (p && !EX.has(p)) best = [m.index, p]; }
   for (const m of text.matchAll(/data-tcmap\s*=\s*(["'])(.*?)\1/g)) {
     const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim(); }
     if (!o.地点 || o.人物 || o.类型 || o.标题) continue; const p = clean((o.层 && !o.地点.includes(o.层) ? o.层 + '·' : '') + o.地点);

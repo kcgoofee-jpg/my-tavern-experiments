@@ -8,7 +8,7 @@ import * as W from '../map/tavern/worldbook-sync.mjs';
 
 const rd = p => JSON.parse(readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8'));
 const before = rd('./fixtures/worldbook_addon_before_s44b.json');
-const after = rd('../map/data/worldbook_addon.json');
+const after = rd('./fixtures/worldbook_addon_after_s44b.json');   // WB-1 rewrote entries (D43): the rename is pinned against the last ship before it (head #299)
 
 // 句子表：旧句 → 新句（只这些句子允许变）
 const SENTENCES = [['卡里没写层与位置，写到时只写机构名，不要自行定位。', '没有固定的层与位置，写到时只写机构名，不要自行定位。'],

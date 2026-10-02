@@ -905,11 +905,11 @@
   "ooc.done": "已填入输入框，未发送",
   "ooc.fix": "地图认错了？在消息里写（OOC 地图：现在在 某处）或（OOC 地图：某人 在 某处）即可纠正。",
   "ooc.tpl.place.label": "更新当前地点",
-  "ooc.tpl.place": "（OOC：请在回复末尾用隐藏标签写出当前所在地点：<span style=\"display:none\">⌖地点 层·地点</span>）",
+  "ooc.tpl.place": "（OOC：请在这次回复末尾补一行地图标签【地点】，写玩家此刻在哪：<span style=\"display:none\">⌖地点 层·地点</span>）",
   "ooc.tpl.chars.label": "标出在场人物位置",
-  "ooc.tpl.chars": "（OOC：请在回复末尾为每位在场角色写出所在位置：<span style=\"display:none\">⌖人物 名字 @ 层·地点</span>）",
+  "ooc.tpl.chars": "（OOC：请在这次回复末尾为在场的每个人补一行地图标签【人物】，名字写全名：<span style=\"display:none\">⌖人物 名字 @ 层·地点</span>）",
   "ooc.tpl.event.label": "概括本段事件",
-  "ooc.tpl.event": "（OOC：请在回复末尾用一条标签概括本段事件：<span style=\"display:none\">⌖类别｜地点｜等级｜一句话｜发布方</span>）",
+  "ooc.tpl.event": "（OOC：请在这次回复末尾用一行地图标签【事件】概括本段事件：<span style=\"display:none\">⌖类型｜层·地点｜等级｜一句话｜发布方</span>）",
   "ooc.tpl.items.label": "确认拾取的物品",
-  "ooc.tpl.items": "（OOC：本轮若有人拿到了物品，请在正文里明确写出谁拿起了什么，物品名写具体。）"
+  "ooc.tpl.items": "（OOC：【物品】这一回有人拿到东西时，请在正文里直接写明谁拿起了什么，物品名写具体。）"
 }

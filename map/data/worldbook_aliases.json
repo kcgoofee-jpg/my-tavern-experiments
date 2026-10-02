@@ -1,5 +1,5 @@
 {
- "_note": "世界书附加条目别名表（单一来源）：条目稳定编号改名时在 ids 里加「旧编号: 新编号」，旧聊天 / 旧书里的条目按新编号合并，不会重复建条目。改完跑 python3 tools/build_worldbook_addon.py --ship。旧的带版本号书名由 worldbook-sync.mjs LEGACY_RE 识别。",
+ "_note": "世界书附加条目别名表（单一来源）：条目稳定编号改名时在 ids 里加「旧编号: 新编号」，旧聊天 / 旧书里的条目按新编号合并，不会重复建条目。改完跑 python3 tools/build_worldbook_addon.py --ship。旧的带版本号书名由 worldbook-sync.mjs LEGACY_RE 识别。 WB-1（D43）：「地图人物位置」并入「地图联动规范」，map.character-location → map.link-rules（旧书里那一条按重复条目合并，不再单独注入）。",
  "ids": {
   "地图联动规范": "map.link-rules",
   "地图事件类型": "map.event-types",
@@ -15,6 +15,9 @@
   "天城常识-战力": "tiancheng.lore.power",
   "天城常识-节日与社交季": "tiancheng.lore.festivals",
   "天城常识-媒体": "tiancheng.lore.media",
+  "天城常识-上层": "tiancheng.lore.tier-upper",
+  "天城常识-中层": "tiancheng.lore.tier-mid",
+  "天城常识-下层": "tiancheng.lore.tier-lower",
   "天城常识-其他机构": "tiancheng.lore.unplaced",
   "庄园常识-日程": "estate.lore.schedule",
   "庄园常识-安保与权限": "estate.lore.security",
@@ -59,6 +62,7 @@
   "地点-维克多庄园": "map.place.victor-estate",
   "地点-「Y」的庄园": "map.place.y-estate",
   "地点-魔导军工研发中心": "map.place.arms-rnd",
-  "地点-猎季营地": "map.place.hunting-camp"
+  "地点-猎季营地": "map.place.hunting-camp",
+  "map.character-location": "map.link-rules"
  }
 }

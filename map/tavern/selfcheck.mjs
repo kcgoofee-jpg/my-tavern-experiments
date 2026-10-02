@@ -3,8 +3,8 @@
 // 每一项 → { id, status: 'ok' | 'warn' | 'skip' | 'info', zh, en }；skip = 查不了（接口不存在等），不打扰用户；info = 有新版本（只在自检里显示）。
 // 唯一的额外请求：正式版每天最多一次查 jsDelivr 数据接口的最新标签（UPDATE_API，不带 referrer、不带凭据）。
 
-// 附加世界书（tools/build_worldbook_addon.py）的必需条目：按名字前缀认，版本号可以不同（v0.9.3 加了「地图人物位置」）
-export const WB_ENTRIES = ['地图联动规范', '地图事件类型', '地图当前地点', '地图人物位置'];
+// 附加世界书（tools/build_worldbook_addon.py）的必需条目：按名字前缀认，版本号可以不同（WB-1 起「地图人物位置」并入「地图联动规范」）
+export const WB_ENTRIES = ['地图联动规范', '地图事件类型', '地图当前地点'];
 // 按当前地点注入方位的 EJS 条目（可选；要「提示词模板」扩展才会展开）
 export const LORE_PREFIX = '地图方位';
 

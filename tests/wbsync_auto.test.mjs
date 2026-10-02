@@ -191,13 +191,15 @@ test('别名表单一来源：发布物里的 aliases 与 map/data/worldbook_ali
   // 目标是英文点号编号；「天城常识-其他机构」只在 maps.json 有未定位机构时才发，所以不要求目标都在发布物里
   for (const [a, b] of Object.entries(src.ids)) { assert.ok(!ids.has(a), `${a} 还在发`); assert.match(b, /^[a-z0-9][a-z0-9.-]*$/, b); }
   for (const id of ids) assert.match(id, /^[a-z0-9][a-z0-9.-]*$/, `发布编号 ${id} 不是英文点号编号`);
-  assert.equal(new Set(Object.values(src.ids)).size, Object.keys(src.ids).length, '两个旧编号指到同一个新编号');
+  const names = Object.entries(src.ids).filter(([a]) => !/^[a-z0-9][a-z0-9.-]*$/.test(a));   // 条目名 → 编号：一一对应；英文编号 → 英文编号是并入（WB-1：map.character-location → map.link-rules）
+  assert.equal(new Set(names.map(([, b]) => b)).size, names.length, '两个条目名指到同一个编号');
+  for (const [a, b] of Object.entries(src.ids)) if (/^[a-z0-9][a-z0-9.-]*$/.test(a)) assert.ok(ids.has(b), `${a} 并入的 ${b} 要在发布物里`);
 });
 
 test('英文编号迁移（2026-09-28）：旧中文编号的书（含用户改过的一条）→ 新编号，不重复、保留改动与冲突标记，二次同步无操作', async () => {
   const { readFileSync } = await import('node:fs');
   const real = JSON.parse(readFileSync(new URL('../map/data/worldbook_addon.json', import.meta.url), 'utf8'));
-  const back = Object.fromEntries(Object.entries(real.aliases.ids).map(([a, b]) => [b, a]));
+  const back = Object.fromEntries(Object.entries(real.aliases.ids).filter(([a]) => /[^\x00-\x7f]/.test(a)).map(([a, b]) => [b, a]));   // 条目名 → 编号（英文编号之间的并入不算旧名）
   // 旧书：同样的条目，但编号是旧的中文编号、旧版本标记
   const oldShip = { ...real, ver: '0.9.5+old', aliases: { ids: {} }, entries: real.entries.map(e => ({ ...e, id: back[e.id] })) };
   assert.ok(oldShip.entries.every(e => typeof e.id === 'string' && /[^\x00-\x7f]/.test(e.id)));

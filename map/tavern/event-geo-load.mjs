@@ -3,10 +3,12 @@
 //   loadEventGeo({ fetchJSON(rel) -> Promise<json|null>, packId, manifest?, events? }) -> geo | null     (rel is relative to map/, as the viewer's data paths are)
 import { geoFromV1 } from '../core/event-geo.mjs';
 import { configure as configureModes } from './interaction-modes.mjs';
+import { setExamples as setCharExamples } from './characters-parse.mjs';
+import { setCustomExamples } from './mvu-readers.mjs';
 import { geoFromV2 } from './pack-runtime-v2.mjs';
 
 export async function loadEventGeo({ fetchJSON, packId = 'eden', manifest = null, events = null, lang } = {}) {
-  configureModes({});   // the tag-reconciliation lists belong to the pack that is running: start from none (a card switch restarts the script, S9-2)
+  configureModes({}); setCharExamples([]); setCustomExamples([]);   // the tag-reconciliation lists belong to the pack that is running: start from none (a card switch restarts the script, S9-2)
   const dir = 'packs/' + packId + '/', base = packId === 'eden' ? '' : dir;
   const man = manifest || await fetchJSON(dir + 'manifest.json'), d = man?.data || {};
   if (man?.schema === 2) return geoFromV2(man, { lang });   // schema-2 pack injected by the pack gate (S9-2): blocks inline, no v1 file fetch
@@ -14,7 +16,8 @@ export async function loadEventGeo({ fetchJSON, packId = 'eden', manifest = null
   const [maps, world, plan, tax, overlay, en] = await Promise.all([at('maps'), at('world'), at('rooms'), events ? Promise.resolve(events) : at('events'), at('overlay'), d.names?.en ? fetchJSON(base + d.names.en) : null]);   // 英文地名表：清单 data.names.en（S4-4）
   if (maps) {   // 地点标签对账（interaction-modes.mjs）要的两份数据：世界书写法模板、各组在世界图上的地点名
     const pl = [...(world?.places || []), ...(world?.fiefs || [])];
-    configureModes({ examples: overlay?.llm?.['x-tag-examples'], prefixes: Object.values(maps.groups || {}).map(g => pl.find(p => p.id === g.place)?.name) });
+    const ex = overlay?.llm?.['x-tag-examples'];   // place texts and whole tag lines (WB-1): each parser skips the lines of its own shape
+    configureModes({ examples: ex, prefixes: Object.values(maps.groups || {}).map(g => pl.find(p => p.id === g.place)?.name) }); setCharExamples(ex); setCustomExamples(ex);
   }
   return maps ? geoFromV1({ manifest: man || { id: packId }, maps, world, plan, events: tax, overlay, names: en || null }) : null;
 }

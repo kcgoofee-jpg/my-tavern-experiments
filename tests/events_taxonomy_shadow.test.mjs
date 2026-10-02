@@ -84,8 +84,8 @@ test('the other taxonomy values: life defaults, the glitch preset and the defaul
   assert.deepEqual(NEW.parseMarks('⌖网络攻击｜中层·商业区｜2｜x')[0].fx, { block: 'glitch', 'x-messages': 3 });
   assert.equal(NEW.parseMarks('⌖火灾｜中层·商业区｜2｜x')[0].fx, undefined);
   assert.equal(OLD.CFG.tag, '天城事态'); assert.match(NEW.summarize(NEW.collect([{ floor: 1, text: '⌖火灾｜中层·霓虹街｜2｜x' }], 2), '中层'), /^\[天城事态·/);
-  assert.deepEqual(NEW.examples().filter(x => !OLD.EXAMPLES.has(x)), ['⌖类别｜地点｜等级｜一句话｜发布方']);   // the kernel's own grammar line, added to the pack's 20
-  assert.equal(NEW.examples().length, OLD.EXAMPLES.size + 1);
+  assert.deepEqual(NEW.examples().filter(x => !OLD.EXAMPLES.has(x)), ['⌖类别｜地点｜等级｜一句话｜发布方', '⌖类型｜层·地点｜等级｜一句话｜发布方']);   // the kernel's own grammar line, added to the pack's 20
+  assert.equal(NEW.examples().length, OLD.EXAMPLES.size + 2);   // + the OOC template's line (WB-1)
 });
 
 test('Q-13 (merge key = type + node + the part of the place text the matched word does not cover, K-R54): the stress stream gives the same events as v1', () => {

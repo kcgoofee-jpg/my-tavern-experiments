@@ -8,18 +8,18 @@
 内容从仓库数据生成，改了事件类型或地名后重跑即可保持一致：
   - 事件类型、大类顺序、稀有度、示范原文：首个包的事件块（map/packs/eden/overlay.v2.json 的 events，经 map/tavern/events-parse.mjs 的 taxonomy() 用 node 读取）
   - 地标名、层名、庄园房间 / 区域：map/data/maps.json（与 map/app/place-resolver.mjs 的当前地点解析同一份词表）
-条目（全部常驻，位置「角色定义之后」）：
-  1 地图联动规范 v3：标签两种写法、字段、地点写法、频率、连锁、示范
-  2 地图事件类型 v2：9 大类 66 种 + 稀有度
-  3 地图当前地点 v2：地图认得的地点叫法（房间 / 区域 / 地标）；剧情改名 / 用途标签（⌖改名 / ⌖用途，v0.9.3）
-  4 地图人物位置 v1（v0.9.3）：在场人物换地方时写人物标签。卡的 MVU zod 结构会丢掉在场人物对象里的未知键，
-    所以不要求模型写任何变量，标签才是地图的来源
+条目：
+  1 地图联动规范 v4（WB-1，D43；常驻，聊天深度 2 的 system 消息）：每种标签一块（地点 / 人物 / 事件 / 事实 / 改名与用途；物品写在正文里），各一个填好的示范
+  2 地图事件类型 v2（常驻，角色定义之后）：9 大类 66 种 + 稀有度
+  3 地图当前地点 v3（常驻，角色定义之后）：地图认得的地点叫法（房间 / 区域 / 地标），只是词表
+  （v4 起「地图人物位置」并入规范：别名表把 map.character-location 指到 map.link-rules，旧书里那一条按重复条目合并）
   5–7 地图方位·上层 / 中层 / 下层（v0.9.3，EJS 条件；v0.9.5 起不常驻，聊天里出现该层层名 / 地标名时触发）：「世界.当前地点」落在该层某个地标时，只展开那一处的中性方位
     （名称、层、副标题、邻近地标）。要装「提示词模板」（ST-Prompt-Template）扩展；没装时自检会提示关掉这三条。
-  8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、日程、安保与权限、其他机构）
+  8 天城常识-* / 庄园常识-*（v0.9.6，关键词触发）：卡里已有、地图常用的口径（跨层、治安与机构、身份、经济、战力、节日、媒体、各层的光与视野、日程、安保与权限、其他机构）
   9 地点-*（v0.9.6，关键词触发）：map/data/addon_places.json 里另行描述的地点，每处一条；check_maps.py 保证与地图数据同步
-我们的规则只提到我们自己的东西（人物标签、⌖改名 / ⌖用途、地图.*），不引用卡里的字段名或原文。
-示范标签只用事件块 examples 里的原文（模型照抄时地图不落点）。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
+我们的规则只提到我们自己的东西（⌖ 标签、地图.*），不引用卡里的字段名或原文。
+示范标签只用包的示范表里的原文（事件块 examples、overlay llm["x-tag-examples"]；模型照抄时地图不落点）。
+全部条目默认启用（D43）；关键词条目仍是关键词触发。不写任何关键词过滤规则（地图不过滤内容，见 docs/content-compat.md）。
 
 用法：python3 tools/build_worldbook_addon.py [--version 0.9.1] [--out 路径] [--check 参照世界书.json] [--force]
 默认输出：~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v<版本>.json；只用标准库 + node。
@@ -70,43 +70,27 @@ def build(version):
     layers = [(reg[m]['layer']['name'], reg[m]['layer'].get('sub', ''), m) for m in ('tc_upper', 'tc_mid', 'tc_low')]
     place_rows = '\n'.join(f'  {name}（{sub}）：{marks(mid)}' for name, sub, mid in layers)
 
-    full = pick_example(ex, lambda s: s.startswith('类型=火灾') and '编号=' in s, '火灾 + 编号')
-    cyber = pick_example(ex, lambda s: s.startswith('类型=网络攻击'), '网络攻击')
-    person = pick_example(ex, lambda s: s.startswith('类型=首相出席'), '人物')
-    ether = pick_example(ex, lambda s: s.startswith('类型=以太潮汐'), '以太双轨')
-    compact_tpl = pick_example(ex, lambda s: s.startswith('⌖类别｜'), '紧凑写法模板')
-    compact_off = pick_example(ex, lambda s: s.startswith('⌖火灾') and '｜0｜' in s, '紧凑写法 · 解除')
-    span = lambda s: f'<span style="display:none" data-tcmap="{s}"></span>'
-    cspan = lambda s: f'<span style="display:none">{s}</span>'
+    # ---- 标签规范 v4（WB-1，D43）：每种标签一块、一个填好的示范、解析器收的原样写法；示范都在包的示范表里（照抄不上图）
+    event = pick_example(ex, lambda s: s.startswith('⌖网络攻击｜') and s.count('｜') == 4, '紧凑写法 · 带发布方')
+    tag = lambda s: f'<span style="display:none">{s}</span>'
+    rules = f'''<地图联动规范 v4>
+这一条让地图跟上剧情。每次回复写完正文，在最末尾加隐藏标签：一个标签一行，照下面示范的样子包在隐藏的 span 里。读者看不到，正文里不要提到它。格式照抄，只换内容；示范的内容照抄不会上图。
+【地点】每次回复都写一行：玩家此刻在哪。叫法见「地图当前地点」。
+{tag(RULE_EX['place'])}
+【人物】在场的人里，和玩家不在同一处的，或这一回换了地方的，每人一行，名字写全名。
+{tag(RULE_EX['char'])}
+【事件】正文里出现城里的公开消息（快讯、通报、公告、终端情报）时写一行，没有就不写。字段用｜隔开：类型｜层·地点｜等级｜一句话｜发布方。类型从「地图事件类型」里选；等级 1–3，写 0 表示已解除。
+{tag(event)}
+【事实】剧情坐实了某个地点一件长期有效的事时写一行：地点：事实。
+{tag(RULE_EX['fact'])}
+【改名 / 用途】地点被正式改名，或改作别的用途时写一行，只写一次。
+{tag(RULE_EX['rename'])}
+{tag(RULE_EX['use'])}
+【物品】有人拿到东西时，在正文里直接写明谁拿起了什么，物品名写具体；不需要标签。
+【提醒】玩家用（OOC：…）提醒你补地图标签时，在这次回复末尾补上那一行。
+</地图联动规范 v4>'''
 
-    rules = f'''<地图联动规范 v3>
-【用途】天城地图是一块城市态势看板。正文里的快讯、通报、公告、终端情报写到城里某处的公开事件时，在该载体末尾加一个隐藏标签，地图就在对应位置落一个事件点。标签对读者不可见，正文不要提到它。
-【写法一】一个事件一个标签：
-{span(full)}
-  字段用 ; 分隔，名和值用 = 连接（全角 ；＝ 也认）。
-  类型（必填）：见「地图事件类型」。地点（必填）：见【地点】。标题（必填）：十字左右，写发生了什么。
-  等级：1–3，默认 2，3 = 严重（这种写法不写 0）。
-  状态：发生中 / 进行中 / 预告 / 处置中；写 已解除 / 已扑灭 / 已恢复 / 已控制 = 关闭该事件。
-  时间：剧情内时间（与变量 世界.当前日期 / 当前时刻 一致），只作显示；年份跟剧情当前日期走，不要照抄示范里的年份。
-  来源：发布方，可省；用城里的机构名：天城通讯社、全息新闻网络、天城一台、天城执法局、资产管理委员会、圣光教会、庄园主联盟、天城执政厅、议会骑士团、天城防卫军。
-  编号：同一事件的后续（升级、处置、解除）沿用同一编号；没有编号时按「类型 + 地点」合并。
-  网络攻击另有 范围（全城 / 上层 / 中层 / 下层）与 持续（影响多少楼，默认 3）。
-【写法二·紧凑】{cspan(compact_tpl)}，发布方可省；等级写 0 = 已解除。
-【地点】地点里要含层名或下列地标名，否则地图不知道放哪：
-{place_rows}
-  只知道层时写层名（上层 / 中层 / 下层 / 地基区），或「层 + 街区」（中层 霓虹街）。天城以外写「天城外·地名」；城外威胁（异兽、野兽潮、外围防线、城外清剿）也写天城外。
-  「庄园」「议会」单独写不定层：写具体地标（伊甸庄园、罗斯柴尔德庄园、天城议会）或加层名。
-【人物】只记城市公开知道的事：公开行程（出席、阅兵、晚宴、弥撒、授勋），以及丑闻、违约、继承、罢免被曝光的那一刻（罕见，每人整局最多一次）。标题写头衔与公开事由。
-【频率】多数楼层一个标签都没有。只在出现新的通报、或事件升级 / 解除时加；一楼最多 3 个；同一事件不每楼重复。
-【连锁】一件事引出另一件时，编号沿用同一前缀（LEB-88-0317 → LEB-88-0318），标题点明起因（「酸雨致 7 号井停电」）。
-【示范】照抄示范原文不会上图，写真实事件时换成剧情内容：
-{span(person)}
-{span(ether)}
-{span(cyber)}
-{cspan(compact_off)}
-</地图联动规范 v3>'''
-
-    # ---- 当前地点
+    # ---- 当前地点：只是叫法词表（写标签的规矩都在「地图联动规范」）
     est = reg['eden_estate']
     # 当前地点按包含关系匹配（节点匹配取最长词），含有更短已列词的叫法（主卧室 ⊃ 主卧）不必再列
     lean = lambda ws: [w for w in ws if len(w) >= 2 and not any(o != w and len(o) >= 2 and o in w for o in ws)]
@@ -115,29 +99,15 @@ def build(version):
     restr = [r['name'] for r in plan.get('rooms', []) if r.get('kind') == 'card' and r.get('floor') in ('B1', 'B2') and r['name'] not in est['rooms']]
     rooms, areas = lean(est['rooms'] + restr), lean(est['areas'])
     here = f'''<地图当前地点>
-地图按当前地点落点；下面这些叫法地图都认得，越具体落得越准：
+地图认得下面这些地点叫法，越具体落得越准；标签【地点】【人物】【事件】里的地点照这里写。
   庄园内：伊甸庄园·房间名。房间：{"、".join(rooms)}。室外：{"、".join(areas)}。
-  天城内：天城·层·地标（地标名同「地图联动规范」的【地点】），如「天城·中层·天城执法局总局」。
-  天城以外：写世界地图上的地名。
+  天城内：天城·层·地标，如「天城·中层·天城执法局总局」。各层地标：
+{place_rows}
+  只知道层时写层名（上层 / 中层 / 下层 / 地基区），或「层 + 街区」（中层 霓虹街）。
+  「庄园」「议会」单独写不定层：写具体地标（伊甸庄园、罗斯柴尔德庄园、天城议会）或加层名。
+  天城以外写「天城外·地名」，或世界地图上的地名；城外威胁（异兽、野兽潮、外围防线、城外清剿）也写天城外。
   玩家给地点起的叫法（地图设置里的「自定义」，背景里会列出）照写即可。
-【地点标签】本楼玩家换了地点时，在正文末尾加一个隐藏标签作为补充（变量照常更新，以变量为准）：<span style="display:none">⌖地点 层·地点</span>（写法模板，照抄不生效）。
-【改名 / 用途】剧情里某个地点或人物被正式改了名字、改作别的用途时，在正文末尾加一个隐藏标签，地图会记下来：
-  <span style="display:none">⌖改名 原名 → 新名</span>　<span style="display:none">⌖用途 地点：用途</span>
-  （上面是写法模板，照抄不生效。）只在剧情里真的改名 / 改用途的那一楼写一次，不重复。
 </地图当前地点>'''
-
-    # ---- 人物位置（v0.9.3）：标签是主来源；结构里有位置字段时才同时更新
-    who = f'''<地图人物位置>
-地图的人物栏按下面的隐藏标签标出每个人在哪里。标签写在正文末尾，读者看不到，正文不要提到它：
-  <span style="display:none">⌖人物 名字 @ 层·地点</span>
-  名字：和「在场人物」里的写法一致（全名）。地点：写法同「地图当前地点」，最好是「层·地标」或「伊甸庄园·房间」。
-何时写：
-  - 有人进入场景、而他所在的地方和玩家不同；
-  - 有人从一处去了另一处（包括跟着玩家换地方的同行者：写新地点）；
-  - 有人离开场景、去向已知（写去向）。去向不明就不写。
-  - 只在位置变化的那一楼写；和玩家一直在同一处、没有移动的人不用写；同一个人同一地点不重复。一楼最多 5 条。
-不要为了地图在变量里新增任何字段；人物位置只写标签。
-</地图人物位置>'''
 
     # ---- 方位（v0.9.3）：EJS 条件条目，每层一条；只展开当前地点所在的那一处
     lore = []
@@ -148,7 +118,14 @@ def build(version):
 
 
     common = city_facts(json.load(open(os.path.join(ROOT, 'map/data/maps.json'), encoding='utf-8')).get('unplaced', {}).get('items', []))
-    return [('地图联动规范 v3', rules, 900), ('地图事件类型 v2', types, 901), ('地图当前地点 v2', here, 902), ('地图人物位置 v1', who, 903)] + lore + common + addon_places(), n
+    # 规范放在聊天记录里离末尾两层的位置（at_depth，深度 2，system）：模型写回复时最近读到它；类型表与叫法词表是查阅用的，留在角色定义之后
+    return [('地图联动规范 v4', rules, 900, RULES_AT), ('地图事件类型 v2', types, 901), ('地图当前地点 v3', here, 902)] + lore + common + addon_places(), n
+
+
+# WB-1（D43）规范里的示范：都在包的示范表里（overlay llm["x-tag-examples"] 或解析器内置的示范），照抄不上图；tests/wb1_rules.test.mjs 核对每条的写法能被解析
+RULE_EX = {'place': '⌖地点 天城·中层·辉光大教堂', 'char': '⌖人物 绫濑遥 @ 伊甸庄园·东侧长廊', 'fact': '⌖事实 会客厅：暗门通主人专用通道',
+           'rename': '⌖改名 书房 → 星图室', 'use': '⌖用途 书房：整理旧地图'}
+RULES_AT = {'position': 4, 'depth': 2, 'role': 0}
 
 
 KW = {'constant': False, 'position': 0, 'depth': 4}   # 关键词触发，照卡里设定条目的写法（角色定义之前、深度 4）
@@ -158,7 +135,6 @@ def city_facts(unplaced):
     """v0.9.6 天城常识（docs/card-omissions.md F1–F11 / B5–B9 / B10 / B22 / D3 / D7 / D12 / D14–D16 / D19 / E1 / E7 / A4–A13）：
     卡里写明、地图与模型常写错的口径，按主题拆成关键词触发的条目（不常驻）；只写中性制度与数字，不写玩法"""
     names = '、'.join(u['name'] for u in unplaced)
-    T = lambda tag, body: f'<{tag}>\n{body}\n</{tag}>'
     rows = [
         ('天城常识-跨层', ['跨层', '通行许可', '通行证', '检查点', '入境税', '身份芯片'],
          '上层悬浮岛之间只有私人悬浮载具，没有公共交通。跨层要持天城执政厅签发的通行许可（写明方向、持证人、随行与有效时段，编号 P 加五位数）；中层与下层之间的检查点查验身份芯片与随身铭牌；下层商品进入中层缴 5% 入境税。'),
@@ -177,6 +153,18 @@ def city_facts(unplaced):
          '建城纪念日悬浮轨道免费一日；制度纪念日上层办大型拍卖会与品鉴宴，中层放假一日、商家促销；丰收节已成购物节。庄园主联盟的拍卖在春秋两季，猎季在秋季（野外营地）；品鉴宴的名次影响社交声望。圣光教会每周六晚祷。'),
         ('天城常识-媒体', ['新闻', '通讯社', '天城一台', '全息', '直播', '舆论'],
          '天城通讯社（官方）、全息新闻网络（中层公共区推送）、天城一台（电视）。上层私人终端连未过滤的全球网络，中层部分话题被屏蔽，下层靠加密终端与黑市数据商。'),
+        # WB-1：分层的光与视野、城市向外延伸（docs/tiancheng-maps.md §0.4–§0.5，D41；卡 L32–L34、L214、L363–L364）
+        ('天城常识-上层', ['上层', '天城上层', '悬浮庄园区', '悬浮岛', '浮岛', '云海'],
+         '上层（悬浮庄园区，离地 800–1500 m）是数十座悬浮岛，各岛彼此看得见，空域由议会骑士团巡逻。往下看，夜里是中层的灯火，像铺在脚下的电路板；清晨常是翻涌的云海，云隙里透出城市。\n'
+         '光：晨，太阳低而暖，云顶镀金，云谷灰蓝；昼，直射的日光；昏，橙红的长影，窗灯陆续亮起，停靠平台的信标亮了；夜里只有很弱的冷月光，亮的都是真实的灯：主楼的窗、园灯与路灯、水池灯、停靠信标，岛底以太核心和符文环的冷光最亮。'),
+        ('天城常识-中层', ['中层', '天城中层', '钢铁霓虹区', '霓虹', '全息广告', '悬浮轨道'],
+         '中层（钢铁霓虹区，离地 50–800 m）的日照被浮岛和高楼挡住，大部分区域靠人造光：太阳只照到楼冠、高处立面和少数地段，街面常年在阴影里，浮岛正下方更暗；有些地段会下雨。霓虹和全息广告白天也开着。\n'
+         '夜里整片城市都亮：核心区楼冠一圈暖金，写字楼是白窗；高区是冷白光，辉光大教堂立面泛光；商业区霓虹和全息广告最密，多品红和青色；外围居住区以暖色窗灯为主；环城军营带是探照灯和白色泛光；悬浮轨道是一条条发光的线。只有公园、运河和空地是暗的。\n'
+         '天城人口约 3200 万，地图画的是城市中心一块。城市向四周延伸很远：外围居住区之外是环城军营带，再往外是防卫军守的外围防线。'),
+        ('天城常识-下层', ['下层', '天城下层', '地基区', '7号井', '7 号井', '钠灯'],
+         '下层（地基区，地面及地下，最深约 200 m）几乎没有自然光，见不到太阳和蓝天。抬头是灰暗的天花板和滴水的检修管道，能看到悬在高处的中层。光都是人造的：钠灯的暗黄光，工厂炉口和天窗的橙光。\n'
+         '白班（06:00–18:00）工厂全开，蒸汽被下面的火光照亮；7 号井的竖井口落下全层唯一一道冷白的天光。夜班（18:00–06:00）工厂只开一部分；黑市、酒馆和地下格斗场一带的霓虹更亮，贫民窟里纯黑的角落更多；7 号井竖井口只漏下中层霓虹的一点紫青色。\n'
+         '城市向四周延伸很远：工业带、编组场和货运铁路向外放射，贫民窟连成一片，越往外钠灯越稀。'),
         ('庄园常识-日程', ['晨间报到', '午后茶点', '晚宴', '更衣', '排班', '访客', '体检'],
          '时刻只能向前，跨过 00:00 日期加一，时刻与时段不矛盾。每天三个固定时刻：晨间报到、午后茶点、晚宴更衣；访客抵达前十分钟全员就位；排班表每周更新；女仆按区域分班，女仆长持平板巡视、当场记录失误；体检每年一次，另有每月一次数据记录。'),
         ('庄园常识-安保与权限', ['结界', '监控', '门禁', '权限', '暗门', '专用通道', '隔音'],
@@ -184,14 +172,18 @@ def city_facts(unplaced):
          '门禁由植入的识别芯片控制：主人全域；女仆长除上锁的书房外全域；正式成员进自己的寝室、三楼与一楼公共区，地下一层按当日任务；新进成员只进新进寝区、三楼浴室与一楼大厅；地下二层只限主人与女仆长。女仆长寝室有一扇直通主卧的专用门；会客厅有暗门接主人专用通道。'),
     ] + ([('天城常识-其他机构', [u['name'] for u in unplaced],
          f'{names}：没有固定的层与位置，写到时只写机构名，不要自行定位。')] if unplaced else [])
-    return [(c, T(c, body), 420 + i, {**KW, 'key': keys}) for i, (c, keys, body) in enumerate(rows)]
+    return [kw_entry(c, c, body, keys, 420 + i) for i, (c, keys, body) in enumerate(rows)]
+
+
+def kw_entry(name, tag, body, keys, order):
+    """一条关键词触发条目（角色定义之前、深度 4）：正文用 <tag> 包住。常识、地点（以后的房间条目，PLACE-1a）都走这里"""
+    return (name, f'<{tag}>\n{body}\n</{tag}>', order, {**KW, 'key': list(keys)})
 
 
 def addon_places():
     """地图另行描述的地点（map/data/addon_places.json）：每处一条关键词触发的条目；check_maps.py 保证与地图数据同步"""
     ap = json.load(open(os.path.join(ROOT, 'map/data/addon_places.json'), encoding='utf-8'))['places']
-    return [(f'地点-{p["name"]}', f'<地点·{p["name"]}>\n{p["text"]}\n</地点·{p["name"]}>', 440 + i,
-             {**KW, 'key': [w for w in p['alias'] if len([*w]) >= 2]}) for i, p in enumerate(ap)]
+    return [kw_entry(f'地点-{p["name"]}', f'地点·{p["name"]}', p['text'], [w for w in p['alias'] if len([*w]) >= 2], 440 + i) for i, p in enumerate(ap)]
 
 
 def listed(markers):
@@ -311,7 +303,6 @@ SHIP_CATEGORIES = {            # 精确编号 → 类别
     'map.link-rules': 'rules',
     'map.event-types': 'events',
     'map.current-location': 'places',
-    'map.character-location': 'characters',
 }
 SHIP_CATEGORY_PREFIXES = {     # 编号前缀 → 类别（同一族条目共用一类）
     'map.bearing.': 'places',
@@ -378,7 +369,7 @@ def selftest(items):
     import re
     rules, here = items[0][1], items[2][1]
     spans = re.findall(r'<span style="display:none"[^>]*>[^<]*</span>', rules)
-    places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', rules, re.M) for w in m.group(2).split('、')]
+    places = [(m.group(1), w) for m in re.finditer(r'^  (上层|中层|下层)（[^）]*）：(.+)$', here, re.M) for w in m.group(2).split('、')]   # v4：地标清单在叫法词表里
     probes = {'伊甸庄园·书房': 'eden_estate', '伊甸庄园·玫瑰园': 'eden_estate', '天城·中层·天城执法局总局': 'tc_mid', '天城·下层·7号井黑市': 'tc_low', '中层 霓虹街': 'tc_mid'}
     js = """import * as E from './map/tavern/events-parse.mjs'; import { packGeo } from './tools/eden_geo.mjs'; import { packHere } from './tools/pack_here.mjs'; import fs from 'node:fs';
 const a = JSON.parse(fs.readFileSync(0, 'utf8')); const reg = JSON.parse(fs.readFileSync('map/data/maps.json', 'utf8'));
@@ -391,7 +382,7 @@ console.log(JSON.stringify(out));"""
                                   capture_output=True, text=True, check=True).stdout)
     bad = [s for s, k in zip(spans, r['ex']) if k] + [f'{w}→{got or "无层"}（应为 {L}）' for (L, w), got in zip(places, r['places']) if got != L] \
         + [f'当前地点 {k}→{got or "不动"}（应为 {want}）' for (k, want), got in zip(probes.items(), r['here']) if got != want]
-    if not spans or not places or bad: sys.exit('自检失败：\n  ' + '\n  '.join(bad or ['没找到示范或地点清单']))
+    if len(spans) != 6 or not places or bad: sys.exit('自检失败：\n  ' + '\n  '.join(bad or ['规范里应有 6 条示范，地点清单不能空']))
     print(f'自检通过：{len(spans)} 条示范都不上图，{len(places)} 个地标都能推断层，{len(probes)} 个当前地点示例落点正确')
     return selftest_093(items)
 
@@ -407,17 +398,18 @@ MINI_EJS = r"""const render = (tpl, here) => { let code = 'let __o = "";'; let i
 def selftest_093(items):
     """v0.9.3：人物 / 改名示范不生效；方位条目按当前地点只展开一处，别的层、没写地点时为空；统计渲染后的 tokens"""
     lore = [(c, t) for c, t, *_ in items if c.startswith('地图方位')]
-    who, here = next(t for c, t, *_ in items if c.startswith('地图人物位置')), next(t for c, t, *_ in items if c.startswith('地图当前地点'))
+    who = next(t for c, t, *_ in items if c.startswith('地图联动规范'))   # v4：人物 / 地点 / 事实 / 改名示范都在规范里
     probes = ['天城·中层·天城执法局总局', '中层·霓虹街', '下层·废弃教堂区', '伊甸庄园·书房', '主卧', '天城·上层', ['中层·霓虹街', '[旧格式]'], '世界地图上的某地', '']
     js = MINI_EJS + """
-import * as C from './map/tavern/characters-parse.mjs'; import * as V from './map/tavern/mvu-readers.mjs'; import fs from 'node:fs';
-const a = JSON.parse(fs.readFileSync(0, 'utf8'));
-console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTags(a.here).length,
+import * as C from './map/tavern/characters-parse.mjs'; import * as V from './map/tavern/mvu-readers.mjs'; import * as I from './map/tavern/interaction-modes.mjs'; import fs from 'node:fs';
+const a = JSON.parse(fs.readFileSync(0, 'utf8')), ex = JSON.parse(fs.readFileSync('map/packs/eden/overlay.v2.json', 'utf8')).llm['x-tag-examples'];
+C.setExamples(ex); V.setCustomExamples(ex); I.configure({ examples: ex });   // 宿主经 tavern/event-geo-load.mjs 装同一份示范表
+console.log(JSON.stringify({ tags: C.parseChars(a.who).length + V.parseCustomTags(a.who).length + (I.parseHereTag(a.who) ? 1 : 0),
   out: a.probes.map(h => a.lore.map(([c, t]) => render(t, h).trim())) }));"""
-    r = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], cwd=ROOT, input=json.dumps({'who': who, 'here': here, 'lore': lore, 'probes': probes}),
+    r = json.loads(subprocess.run(['node', '--input-type=module', '-e', js], cwd=ROOT, input=json.dumps({'who': who, 'lore': lore, 'probes': probes}),
                                   capture_output=True, text=True, check=True).stdout)
     bad = []
-    if r['tags']: bad.append(f'人物 / 改名示范原文会生效（{r["tags"]} 条）')
+    if r['tags']: bad.append(f'地点 / 人物 / 事实 / 改名示范原文会生效（{r["tags"]} 条）')
     want = {0: '中层', 1: '中层', 2: '下层', 3: '上层', 4: '上层', 5: '上层'}   # 探针 → 应该展开的层（其余层为空）
     for i, outs in enumerate(r['out']):
         got = [c.split('·')[1] for (c, _), o in zip(lore, outs) if o]

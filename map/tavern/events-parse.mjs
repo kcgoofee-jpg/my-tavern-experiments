@@ -15,7 +15,7 @@ import { typeOf } from '../core/pack-v2-rows.mjs';
 import { withDefaults } from '../core/pack-v2.mjs';
 import { DEFAULT_EVENTS, DEFAULT_CLOSED, DEFAULT_TAG } from '../core/events-default.mjs';
 
-const KERNEL_EXAMPLES = ['⌖类别｜地点｜等级｜一句话｜发布方'];   // 语法示意行（K-R48）：模型原样复述时不上图
+const KERNEL_EXAMPLES = ['⌖类别｜地点｜等级｜一句话｜发布方', '⌖类型｜层·地点｜等级｜一句话｜发布方'];   // the second is the OOC template's line (D32, WB-1)   // 语法示意行（K-R48）：模型原样复述时不上图
 const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 let TAX = null, SRC, SRC_TAG, CLOSED = null, TAG = DEFAULT_TAG, EXAMPLES = new Set(KERNEL_EXAMPLES);
 export const EVENT_AGE_MSGS = { live: 7, after: 20, fade: 40 };        // 楼层差：≤live 活跃、≤after 余波、>after 淡出（只在列表）；已解除 / 被新事件接替的 >fade 丢弃（事件块的 life，K-R54）
@@ -62,6 +62,7 @@ export const getGeo = () => GEO;
 
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'", nbsp: ' ' })[k]);
 const norm = s => s.replace(/\s+/g, '').replace(/[·•・.]/g, '·');
+const tidy = v => String(v).trim().replace(/[。．]+$/, '').trim();   // WB-1: a field value without the trailing 。 a model sometimes adds
 /** the place text without the word the locate algorithm matched (first occurrence) and without separators; '' when the word is all of it */
 const restOf = (place, word) => { const t = normalise(place), w = normalise(word), i = w ? t.indexOf(w) : -1; return (i < 0 ? t : t.slice(0, i) + t.slice(i + w.length)).replace(/[·•・.\-\s]+/g, ''); };
 
@@ -72,7 +73,7 @@ export function marksOf(raw) {
   const found = [];   // [位置, 字段]
   for (const m of text.matchAll(/data-tcmap\s*=\s*(["'])(.*?)\1/g)) {
     if (EXAMPLES.has(m[2].trim())) continue;
-    const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim(); }
+    const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = tidy(kv.slice(k + 1)); }
     if (!o.类型 && !o.标题) continue;
     const lvl = CLOSED.test(o.状态 || '') ? 0 : Math.max(1, Math.min(3, parseInt(o.等级, 10) || 2)), cls = classify(o.类型 || o.标题, { group: !!(o.类型 || '').trim() });
     found.push([m.index, { cat: cls.cat, cls, loc: (o.层 && !(o.地点 || '').includes(o.层) ? o.层 + '·' : '') + (o.地点 || ''), lvl, text: o.标题 || '', src: o.来源 || '',
@@ -80,8 +81,8 @@ export function marksOf(raw) {
   }
   for (const m of text.matchAll(/⌖([^<\n⌖]{3,200})/g)) {
     const line = '⌖' + m[1].trim();
-    if (EXAMPLES.has(line.replace(/\|/g, '｜'))) continue;
-    const f = m[1].split(/[｜|]/).map(x => x.trim());
+    const f = m[1].split(/[｜|]/).map(tidy);
+    if (EXAMPLES.has(line.replace(/\|/g, '｜')) || EXAMPLES.has('⌖' + f.join('｜'))) continue;   // a copied example, also with extra spaces or a trailing 。
     if (f.length < 4) continue;
     const n = parseInt(String(f[2]).replace(/[^\d]/g, ''), 10);
     if (!(n >= 0 && n <= 3)) continue;

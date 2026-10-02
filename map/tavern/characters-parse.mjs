@@ -19,22 +19,26 @@ const decode = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: 
 const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 // 世界书里的示范原文：模型原样复述时不算
 export const EXAMPLES = new Set(['⌖人物 名字 @ 层·地点', '⌖人物 维克多 @ 下层·7号井', '人物=名字;地点=层·地点', '人物=维克多;地点=下层·7号井']);
+let PACK_EX = new Set();
+/** WB-1: the pack's worked examples (overlay llm["x-tag-examples"], loaded by tavern/event-geo-load.mjs); a verbatim copy of one does not count */
+export function setExamples(lines) { PACK_EX = new Set((Array.isArray(lines) ? lines : []).filter(s => typeof s === 'string').map(s => s.trim())); }
+const isEx = s => EXAMPLES.has(s) || PACK_EX.has(s);
 
 /** 一楼原文 → [{name, place}] */
 export function parseChars(raw) {
-  if (!raw || (raw.indexOf('⌖人物') < 0 && raw.indexOf('人物=') < 0)) return [];
+  if (!raw || !/⌖\s*人物|人物\s*[=＝]/.test(raw)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, '');
   const found = [];
   // 地点到句读为止：世界书教的是隐藏 span，但模型常写成裸标签「⌖人物 雷恩 @ 下层·7号井，他推开铁门…」，
   // 以前会把后面的整句吃进地点，再进列表 / 地点卡 / 注入 / 行程（2026-09-27 接手 review P2）。
-  for (const m of text.matchAll(/⌖人物[\s:：]+([^<\n⌖@＠]{1,40}?)\s*[@＠]\s*([^<\n⌖，。；、,;！？!?]{1,60})/g)) {
+  for (const m of text.matchAll(/⌖\s*人物[\s:：]+([^<\n⌖@＠]{1,40}?)\s*[@＠]\s*([^<\n⌖，。；、,;！？!?]{1,60})/g)) {   // WB-1: a space after ⌖ is accepted
     const place = clean(m[2]).replace(/[\s和与及、]+$/, '');   // 两个标签挨着写时尾巴上会挂一个「和」
-    if (EXAMPLES.has(`⌖人物 ${m[1].trim()} @ ${place}`)) continue;
+    if (isEx(`⌖人物 ${m[1].trim()} @ ${place}`)) continue;
     found.push([m.index, clean(m[1]), place]);
   }
   for (const m of text.matchAll(/data-tcmap\s*=\s*(["'])(.*?)\1/g)) {
-    if (EXAMPLES.has(m[2].trim())) continue;
-    const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim(); }
+    if (isEx(m[2].trim())) continue;
+    const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim().replace(/[。．]+$/, ''); }
     if (!o.人物 || o.类型 || o.标题) continue;   // 带类型 / 标题的是事态标签
     found.push([m.index, clean(o.人物), clean((o.层 && !(o.地点 || '').includes(o.层) ? o.层 + '·' : '') + (o.地点 || ''))]);
   }

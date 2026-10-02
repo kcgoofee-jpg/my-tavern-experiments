@@ -57,6 +57,12 @@ export function applyPlan(entries, plan) {
   return mutate;
 }
 
+/** D43 (WB-1): the JIT is switched off -> every entry it had disabled (extra.eden_jit === 1) is enabled again. Returns the same mutation shape as applyPlan. */
+export function restorePlan(entries) {
+  return (Array.isArray(entries) ? entries : []).filter(e => e?.extra?.eden_id && e.extra.eden_jit === 1)
+    .map(e => ({ id: e.extra.eden_id, enabled: true, extra: { eden_jit: 0 } }));
+}
+
 /** 激活集指纹：排序后哈希（确定性）——哈希没变就不写世界书（裁决 10 的写入门）。 */
 export const hashOf = names => seedOf([...(names || [])].map(norm).sort().join('|')).toString(36);
 

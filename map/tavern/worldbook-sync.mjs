@@ -51,17 +51,23 @@ function normalize(cur, S) {
   return { list: out.map(x => x.c), extras, prim };
 }
 const conflictOf = (c, e) => edited(c) && hashText(c.content) !== e.extra.eden_hash && c.extra.eden_hash !== e.extra.eden_hash;
+// D43 (WB-1): every entry we ship is enabled after install / sync / update, whatever an older install left. The one exception: while the
+// worldbook JIT is on (o.jit), an entry the JIT itself switched off (extra.eden_jit === 1) stays off; the JIT re-enables it when the place changes.
+const keepOff = (c, o) => !!o?.jit && c.extra?.eden_jit === 1;
+const onState = (c, o) => (keepOff(c, o) ? { enabled: false } : { enabled: true });
+const dropJit = x => { const { eden_jit, ...rest } = x; return rest; };
 
-/** 差异：installed = 现有条目数组或 null（书不存在） */
-export function plan(installed, ship) {
+/** 差异：installed = 现有条目数组或 null（书不存在）；o = { jit: 世界书 JIT 开着 }。enable = 要重新启用的我们的条目（D43） */
+export function plan(installed, ship, o = {}) {
   const S = shipped(ship); if (!S) return null;
   const cur = installed ? arr(installed) : null, N = normalize(cur || [], S), byId = new Map(N.list.filter(own).map(e => [e.extra.eden_id, e]));
-  const out = { first: !cur, from: cur ? installedVer(cur) : null, to: S.ver, version: S.version, add: [], update: [], keep: [], conflict: [], same: [], retire: [], dup: 0, alias: 0, user: 0 };
+  const out = { first: !cur, from: cur ? installedVer(cur) : null, to: S.ver, version: S.version, add: [], update: [], keep: [], conflict: [], same: [], retire: [], enable: [], dup: 0, alias: 0, user: 0 };
   for (const c of cur || []) if (own(c) && resolveId(c.extra.eden_id, S.aliases.ids) !== c.extra.eden_id) out.alias++;
   out.dup = (cur || []).filter(own).length - N.list.filter(own).length - N.extras.length;   // 丢掉的（没改过的）重复条数
   let flag = 0;
   for (const e of S.entries) {
     const c = byId.get(e.extra.eden_id);
+    if (c && c.enabled === false && !keepOff(c, o)) out.enable.push(c.name || e.name);
     if (!c) out.add.push(e.name);
     else if (edited(c) && hashText(c.content) !== e.extra.eden_hash) { const k = conflictOf(c, e); (k ? out.conflict : out.keep).push(c.name || e.name); if (k ? c.extra.eden_conflict?.hash !== e.extra.eden_hash : !!c.extra.eden_conflict) flag++; }
     else if (c.content === e.content && c.name === e.name && !c.extra.eden_retired && !c.extra.eden_conflict && !c.extra.eden_dup && c.extra.eden_hash === e.extra.eden_hash) out.same.push(e.name);   // 只有版本标记不同：写时顺手更新标记
@@ -70,12 +76,12 @@ export function plan(installed, ship) {
   const ids = new Set(S.entries.map(e => e.extra.eden_id));
   for (const c of cur || []) if (!own(c)) out.user++;
   for (const c of N.list) if (own(c) && !ids.has(c.extra.eden_id) && !c.extra.eden_retired) out.retire.push(c.name);
-  out.changed = out.first || out.add.length + out.update.length + out.retire.length + out.alias + out.dup > 0 || out.from !== S.ver || flag > 0 || N.extras.some(c => !c.extra.eden_dup);
+  out.changed = out.first || out.add.length + out.update.length + out.retire.length + out.enable.length + out.alias + out.dup > 0 || out.from !== S.ver || flag > 0 || N.extras.some(c => !c.extra.eden_dup);
   return out;
 }
 const lowered = (c, ver) => ({ ...c, position: { ...(c.position || {}), order: RETIRED_ORDER }, extra: { ...c.extra, eden_retired: c.extra.eden_retired || ver, eden_order: c.extra.eden_order ?? c.position?.order ?? null } });
-/** 把发布物合进现有条目（updateWorldbookWith 的 updater 用）：保留用户条目、用户改过的条目、用户的启用开关与 uid；幂等（再跑一次结果不变） */
-export function merge(installed, ship) {
+/** 把发布物合进现有条目（updateWorldbookWith 的 updater 用）：保留用户条目、用户改过的条目与 uid；我们发的条目一律启用（D43，JIT 开着时它自己关的除外）；幂等（再跑一次结果不变） */
+export function merge(installed, ship, o = {}) {
   const S = shipped(ship); if (!S) return arr(installed);
   const N = normalize(arr(installed), S), byId = new Map(S.entries.map(e => [e.extra.eden_id, e])), seen = new Set(), out = [];
   for (const c of N.list) {
@@ -85,9 +91,11 @@ export function merge(installed, ship) {
     if (edited(c) && hashText(c.content) !== e.extra.eden_hash) {                     // 用户改过：内容原样保留
       const { eden_conflict, eden_retired, eden_order, ...x } = c.extra;
       const pos = eden_retired ? { ...(c.position || {}), order: eden_order ?? e.position?.order } : c.position;
-      out.push({ ...c, position: pos, extra: conflictOf(c, e) ? { ...x, eden_conflict: { ver: S.ver, hash: e.extra.eden_hash, content: e.content } } : x }); continue; }
+      const on = onState(c, o), xx = on.enabled ? dropJit(x) : x;
+      out.push({ ...c, ...on, position: pos, extra: conflictOf(c, e) ? { ...xx, eden_conflict: { ver: S.ver, hash: e.extra.eden_hash, content: e.content } } : xx }); continue; }
     const { eden_conflict, eden_retired, eden_order, ...x } = c.extra || {};
-    out.push({ ...c, ...e, uid: c.uid, enabled: c.enabled !== false, extra: { ...x, ...e.extra } });   // 用户关掉的条目保持关
+    const on = onState(c, o);
+    out.push({ ...c, ...e, uid: c.uid, ...on, extra: { ...(on.enabled ? dropJit(x) : x), ...e.extra } });   // D43：启用（JIT 开着时它关的保持关）
   }
   for (const c of N.extras) out.push(lowered({ ...c, extra: { ...c.extra, eden_dup: true } }, S.ver));   // 改过的重复副本：留着，降优先级
   for (const e of S.entries) if (!seen.has(e.extra.eden_id)) out.push({ ...e });
@@ -125,13 +133,13 @@ export async function findLegacy(fn) { try { const all = fn('getWorldbookNames')
 const canWrite = fn => !!(fn('getWorldbook') && fn('getWorldbookNames') && (fn('updateWorldbookWith') || fn('replaceWorldbook')) && (fn('createWorldbook') || fn('createOrReplaceWorldbook')));
 
 /** 现状：{ api, exists, entries, plan, binding, legacy } —— 不写任何东西 */
-export async function inspect(fn, ship) {
+export async function inspect(fn, ship, o = {}) {
   if (!canWrite(fn)) return { api: false };
   let names = []; try { names = arr(await fn('getWorldbookNames')()); } catch (e) {}
   const exists = names.includes(BOOK); let entries = null;
   if (exists) { try { entries = arr(await fn('getWorldbook')(BOOK)); } catch (e) { return { api: true, exists, error: 'read' }; } }
   const binding = exists ? await bindingOf(fn, BOOK) : null;
-  return { api: true, exists, entries, plan: ship ? plan(entries, ship) : null, binding, where: binding ? where(binding) : null, legacy: names.filter(n => LEGACY_RE.test(n)) };
+  return { api: true, exists, entries, plan: ship ? plan(entries, ship, o) : null, binding, where: binding ? where(binding) : null, legacy: names.filter(n => LEGACY_RE.test(n)) };
 }
 
 /**
@@ -140,7 +148,7 @@ export async function inspect(fn, ship) {
  */
 export async function sync(fn, ship, o = {}) {
   const S = shipped(ship); if (!S) return { ok: false, reason: 'offline' };
-  const st = await inspect(fn, ship); if (!st.api) return { ok: false, reason: 'noapi' }; if (st.error) return { ok: false, reason: st.error };
+  const st = await inspect(fn, ship, o); if (!st.api) return { ok: false, reason: 'noapi' }; if (st.error) return { ok: false, reason: st.error };
   const p = st.plan;
   if (!o.consent) return { ok: false, reason: 'consent', plan: p };
   if (!st.exists && o.auto && !o.create) return { ok: false, reason: 'missing', plan: p };   // 自动模式要建书必须由 autoRun 判定过（没有墓碑）
@@ -150,13 +158,13 @@ export async function sync(fn, ship, o = {}) {
       if (fn('createWorldbook')) {
         const made = await fn('createWorldbook')(BOOK, ents);
         if (made === false) {                                                   // 别的标签页刚建好：不覆盖，改为合并
-          if (fn('updateWorldbookWith')) await fn('updateWorldbookWith')(BOOK, cur => merge(cur, ship)); else await fn('replaceWorldbook')(BOOK, merge(arr(await fn('getWorldbook')(BOOK)), ship));
+          if (fn('updateWorldbookWith')) await fn('updateWorldbookWith')(BOOK, cur => merge(cur, ship, o)); else await fn('replaceWorldbook')(BOOK, merge(arr(await fn('getWorldbook')(BOOK)), ship, o));
         }
       } else if (o.auto) return { ok: false, reason: 'noapi', plan: p };          // 自动模式永不用 createOrReplace（会冲掉用户改过的条目）
       else await fn('createOrReplaceWorldbook')(BOOK, ents);
     } else if (p.changed) {
-      if (fn('updateWorldbookWith')) await fn('updateWorldbookWith')(BOOK, cur => merge(cur, ship));
-      else await fn('replaceWorldbook')(BOOK, merge(st.entries, ship));
+      if (fn('updateWorldbookWith')) await fn('updateWorldbookWith')(BOOK, cur => merge(cur, ship, o));
+      else await fn('replaceWorldbook')(BOOK, merge(st.entries, ship, o));
     }
     let bound = st.where;
     try {   // 书已写好：绑定失败不算写入失败（下次再试）
@@ -225,14 +233,14 @@ export async function withLock(name, f, nav = globalThis.navigator) {
  * N15：书在但哪儿都没挂 → 每次都挂到当前角色附加世界书（没有角色 → 全局），永不挂单个聊天；boundChars 只读不用。
  */
 export async function autoRun(fn, ship, o = {}) {
-  const st = await inspect(fn, ship);
+  const st = await inspect(fn, ship, o);
   const act = autoDecision({ on: o.on !== false, api: st.api, exists: st.exists, tombstone: !!o.tombstone, legacy: st.legacy, ship: !!shipped(ship) });
   if (!['create', 'migrate', 'sync'].includes(act)) return { action: act, ok: false };
   if (st.error) return { action: act, ok: false, reason: st.error };
   let hasChar = false; try { hasChar = !!(fn('getCharWorldbookNames') && await fn('getCharWorldbookNames')('current')); } catch (e) {}
   let r;
   if (act === 'sync' && !st.plan.changed) r = { ok: true, plan: st.plan, wrote: false, bound: st.where };
-  else r = await sync(fn, ship, { consent: true, auto: true, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'global', migrate: act === 'migrate' ? st.legacy[0] : null });
+  else r = await sync(fn, ship, { consent: true, auto: true, jit: !!o.jit, create: act !== 'sync', where: act === 'sync' ? null : hasChar ? 'char' : 'global', migrate: act === 'migrate' ? st.legacy[0] : null });
   if (!r.ok) return { action: act, ...r };
   // N15：每次都看一眼——书在却哪儿都没挂（含重新导入的卡、附加列表被重置）就挂回去；不再推断「记过的角色 = 用户解绑」
   try {

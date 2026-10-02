@@ -192,14 +192,17 @@ export function wbName(chat) { if (!WB_NAME) return ''; let h = 2166136261; for 
 //   ⌖事实 书房：暗格通向地下室   （W7 事实结晶的输入：不落 custom items——wb_crystallize 从消息窗口重放收集，
 //     「聊天记录是唯一真相」不破；applyTags 对 fact 跳过）
 export const CUSTOM_EXAMPLES = new Set(['⌖改名 原名 → 新名', '⌖用途 地点：用途', '⌖改名 书房 → 星图室', '⌖用途 书房：整理旧地图', '⌖事实 地点：坐实的事实']);
+let PACK_EX = new Set();
+/** WB-1: the pack's worked examples (overlay llm["x-tag-examples"], loaded by tavern/event-geo-load.mjs); a verbatim copy of one does not count */
+export function setCustomExamples(lines) { PACK_EX = new Set((Array.isArray(lines) ? lines : []).filter(s => typeof s === 'string').map(s => s.trim())); }
 const decode = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' })[k]);
 /** 一楼原文 → [{ op: 'name' | 'note' | 'fact', key, value }]（最多 6 条；代码块与示范原文跳过） */
 export function parseCustomTags(raw) {
-  if (!raw || (raw.indexOf('⌖改名') < 0 && raw.indexOf('⌖用途') < 0 && raw.indexOf('⌖事实') < 0)) return [];
+  if (!raw || !/⌖\s*(?:改名|用途|事实)/.test(raw)) return [];
   const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, ''), out = [];
-  for (const m of text.matchAll(/⌖(改名|用途|事实)[\s:：]*([^<\n⌖]{1,260})/g)) {
-    const body = m[2].trim();
-    if (CUSTOM_EXAMPLES.has(`⌖${m[1]} ${body}`)) continue;
+  for (const m of text.matchAll(/⌖\s*(改名|用途|事实)[\s:：]*([^<\n⌖]{1,260})/g)) {   // WB-1: a space after ⌖ and a trailing 。 are accepted
+    const body = m[2].trim().replace(/[。．]+$/, '').trim();
+    if (CUSTOM_EXAMPLES.has(`⌖${m[1]} ${body}`) || PACK_EX.has(`⌖${m[1]} ${body}`)) continue;
     if (m[1] === '改名') { const p = body.split(/\s*(?:→|->|＞|>|=>)\s*/); if (p.length === 2 && clean(p[0]) && clean(p[1])) out.push({ op: 'name', key: clean(p[0]), value: clean(p[1]).slice(0, MAX_NAME) }); }
     else { const i = body.search(/[：:]/); if (i > 0) { const k = clean(body.slice(0, i)), v = body.slice(i + 1).trim(); if (k && v) out.push({ op: m[1] === '事实' ? 'fact' : 'note', key: k, value: [...v].slice(0, MAX_NOTE).join('') }); } }
   }

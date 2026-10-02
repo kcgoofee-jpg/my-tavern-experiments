@@ -1,7 +1,7 @@
 # Todo — the single tracker
 
 状态 2026-10-02（每步结束重写，≤ 5 行）：
-- 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42），SETTING-1 完成：地图设定按效果重写（D41）。
+- 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42）；SETTING-1 完成（D41）；WB-1 完成：附加世界书联动规范重写、全部条目默认启用（D43）。
 - 最近 head：以 `map/data/head.json` 为准。
 - 在跑：FOG-1 / LOOK-1 / ESTATE-MODES-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视。
 - 等你：`docs/decision-digest.md` 逐条填保留 / 改；v0.9.8 前抽查一遍（R1）。
@@ -90,6 +90,7 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - ~~**PLACE-1-design** one record per place, the 地点 tab, worldbook archive = synced entry, one shared editor (D44); `docs/place-record.md`~~ ✅ 2026-10-02 (RESULT PLACE-1-design)
   - [ ] **PLACE-1a** place record data + builder + sync: `core/place-record.mjs`, node fields `facts` / `access`, one keyword entry per room with text (71), ship `index`, JIT same-floor rooms, custom block fields and per-place custom entries, id-based wb-peek (spec: `docs/place-record.md` appendix A) · next
   - [ ] **PLACE-1b** place UI: 地点 tab shows the current place record + parent chain + nearby, no credits / empty floors; archive card with sync state; one editor on place / room / zone / building / person cards; room-card local inputs removed; duplicate 3D label fix (spec: `docs/place-record.md` appendix B) · after PLACE-1a
+  - ~~**WB-1** worldbook add-on after SETTING-1: tag rates measured (6.4 % of floors carry any tag, 0 near-misses), rules v4 at depth 2 (762 chars), 「地图人物位置」 merged, three tier lore entries, parser tolerance, every entry enabled after sync, JIT-off restore (D43)~~ ✅ 2026-10-02 (RESULT WB-1)
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
 - [ ] **EFFECT** effect-first audit (coordinator, 2026-10-02; user: all as recommended; D38–D42). One line per audit item with its owner step; render items live in the ledger (`docs/plans/render-campaign.md`), batches 1–9 in `docs/tiancheng-maps.md` §0.9.
   - ~~**SETTING-1** setting rewrite for effect: per-tier light, oblique 2.5D main view with one orthographic camera, scale and outskirts, camera files, appendix OBLIQUE-CODE, render plan in the ledger (D41)~~ ✅ 2026-10-02 (RESULT SETTING-1)

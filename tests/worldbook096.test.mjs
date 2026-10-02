@@ -40,7 +40,7 @@ await t('原始 ST 形状（dict + disable）与改过名的条目（【地图�
 await t('导入了但没启用：missing + imported，文案说「没有启用」', async () => {
   const w = await collectWorldbook(api({ getGlobalWorldbookNames: () => [], getCharWorldbookNames: () => ({ primary: '卡自带', additional: [] }),
     getWorldbook: n => (n === BOOK ? NEW : [{ name: '别的条目', enabled: true }]), getWorldbookNames: () => ['卡自带', BOOK] }));
-  assert.equal(w.missing.length, 4); assert.equal(w.imported, true);
+  assert.equal(w.missing.length, 3); assert.equal(w.imported, true);
   assert.match(evaluate({ worldbook: w }).find(i => i.id === 'worldbook').zh, /已导入但没有启用/);
 });
 await t('没有列名接口 / 没有取条目接口：null', async () => {

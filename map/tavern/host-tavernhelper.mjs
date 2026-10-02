@@ -96,13 +96,25 @@ export function createWbAuto(deps) {
   }
   async function wbWrite(o = {}) {
     const W = await wbMod(), ship = await wbShip(); if (!W) return { ok: false, reason: 'noapi' };
-    const r = await W.sync(thFn, ship, { consent: true, ...o });
+    const r = await W.sync(thFn, ship, { consent: true, jit: jitOn(), ...o });
     if (r.ok) { wbLast = { at: Date.now(), ver: r.plan?.to || null, add: r.plan?.add?.length || 0, update: r.plan?.update?.length || 0, keep: r.plan?.keep?.length || 0, auto: !!o.auto }; lsSet('edenMapWbSync', JSON.stringify(wbLast)); if (r.bound) lsSet('edenMapWbWhere', r.bound); prefSync(); }
     return r;
   }
   // 全自动（用户 2026-09-28）：总开关 edenMapWbOn（默认开，'0' = 关）。打开地图 / 换聊天时：书没有就建并挂到当前角色附加世界书；版本变了静默合并；每个版本只提示一次；每个聊天换版本时提醒一次。
   // 墓碑（用户撤销过 / 自己删过书）存酒馆助手全局变量 eden_wb_tomb（跨设备）+ 本机 LS；只有在「数据与映射」手动写入才清掉。多标签页：navigator.locks 互斥，锁里重新读书再写；没有锁时靠合并幂等。
   const wbOn = () => lsGet('edenMapWbOn') !== '0';
+  const jitOn = () => lsGet('edenMapWbJit') === '1';   // D43: while the JIT is on, the entries it switched off stay off through a sync
+  /** D43: the JIT was switched off -> enable every entry it had disabled (only our book, only entries marked extra.eden_jit) */
+  async function jitRestore() {
+    const W = await wbMod(), J = await wbJit(), get = thFn('getWorldbook'), upd = thFn('updateWorldbookWith');
+    if (!W || !J || !get || !upd) return 0;
+    const muts = J.restorePlan(await Promise.resolve(get(W.BOOK)).catch(() => null));
+    if (muts.length) await W.withLock('eden-map-wb', () => upd(W.BOOK, list => {
+      for (const mu of muts) for (const e of Array.isArray(list) ? list : []) if (e?.extra?.eden_id === mu.id) { e.enabled = true; e.extra = { ...e.extra, ...mu.extra }; }
+      return list;
+    }));
+    return muts.length;
+  }
   const gvar = k => { try { return thFn('getVariables')?.({ type: 'global' })?.[k]; } catch (e) { return undefined; } };
   const gset = (k, v) => { try { thFn('insertOrAssignVariables')?.({ [k]: v }, { type: 'global' }); } catch (e) {} };
   const wbTomb = () => gvar('eden_wb_tomb') === true || lsGet('edenMapWbTomb') === '1';
@@ -118,7 +130,7 @@ export function createWbAuto(deps) {
     let tomb = wbTomb();
     let r = await W.withLock('eden-map-wb', async () => {
       if (!tomb && wbSaved()) { const st = await W.inspect(thFn, null), v = W.tombVerdict(wbMissAt, { now: Date.now(), exists: st.exists, api: st.api, saved: true }); wbMissAt = v.missAt; if (v.tomb) { setTomb(true); tomb = true; } }   // N15：相隔 ≥ 5 秒两次都没看到才立墓碑，单次没看到就重建
-      return W.autoRun(thFn, ship, { on: wbOn(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
+      return W.autoRun(thFn, ship, { on: wbOn(), jit: jitOn(), tombstone: tomb, charKey: cardKey(), boundChars: boundChars() });
     });
     if (!r || life.dead) return r;
     // 任务二：书在、内容也同步了，但一处都没挂 → 静默挂一档（autoRun 只在「新建 / 迁移」时试绑，sync 这条路不管绑定）
@@ -214,7 +226,7 @@ export function createWbAuto(deps) {
       if ('dice' in P) put('edenMapDice', P.dice ? '1' : '0');   // W2 检定掷骰
       if ('ledgerWrite' in P) put('edenMapLedgerWrite', P.ledgerWrite ? '1' : '0');   // K-R78 结算记录
       if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
-      if ('wbJit' in P) put('edenMapWbJit', P.wbJit ? '1' : '0');   // W6 JIT 水合
+      if ('wbJit' in P) { put('edenMapWbJit', P.wbJit ? '1' : '0'); if (!P.wbJit) jitRestore().catch(e => console.warn('[map] wb: JIT restore failed', e)); }   // W6 JIT 水合；关掉时把它停用的条目全部重新启用（D43）
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
       if ('packLlm' in P) { const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null); if (G && await G.setLlm(!!P.packLlm)) return; }   // K-R103：外来包的模型文字开关（edenMapPackLlm 存哈希，门卫写；成功会重启实例）
       if ('navCadence' in P && CADENCE.includes(+P.navCadence)) put('edenMapNavCadence', +P.navCadence);   // the chosen interval has its own pref: it survives switching the advisor off and on
