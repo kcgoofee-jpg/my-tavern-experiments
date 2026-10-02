@@ -27,6 +27,7 @@ export function createCharsFlow(host) {
   // I-21：场景头里的地点认不认得出节点（K-R105）：节点树定位模块与注册表都到了才算；之前一律「认不出」= 沿用变量值（旧行为），到了再推一次
   let locateM = null;
   const resolves = place => { try { return !!(locateM && host.regNow && locateM.locate(host.regNow, place)); } catch (e) { return false; } };
+  const placeText = place => { try { return locateM && host.regNow ? locateM.chainOf(host.regNow, place) : null; } catch (e) { return null; } };   // U-FIX-5 H2-01：地点栏「楼 · 房间」
   const mvuBridge = new MVUBridge({
     life, pack: PACK_IN, packId: PACK_ID, manifest: MAN, resolves,
     lang: () => (host.uiLang === 'en' ? 'en' : 'zh'), isGenerating: () => GEN.generating,
@@ -96,7 +97,7 @@ export function createCharsFlow(host) {
   // v0.9.5 名册（只读）：在场 / 成员 / 目标三张表 + 主角声望的表对象在这里（发地图用）；
   // 阶段先后序与原作立绘表在桥里（每聊天读一次卡文本，mvuBridge.stageOrder / mvuBridge.portraits）
   return {
-    mvuBridge, gallery, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
+    mvuBridge, gallery, placeText, cardKey, chatId, get clock() { return clock; }, computeTrips, contextPipeline, getHere, get mvuReaders() { return mvuReaders; }, mvuStat, get outfitNow() { return outfitNow; }, pushMvu,
     readVars, refreshVarMap, get routineModule() { return routineModule; }, get rtSched() { return rtSched; }, sendChars, sendRoutine, sendTrips,
     get sentClock() { return sentClock; }, set sentClock(v) { sentClock = v; }, get sentOutfit() { return sentOutfit; }, set sentOutfit(v) { sentOutfit = v; }, resetLayerSent() { sentLayer = null; },
     setVarUser, get tripsParseModule() { return tripsParseModule; }, userName,

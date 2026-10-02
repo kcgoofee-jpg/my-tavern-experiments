@@ -6,7 +6,7 @@ export const SOURCES = [
   { id: 'mvu', label: 'MVU 变量', label_en: 'MVU variables', feeds: ['location', 'time', 'outfit', 'characters'], active: c => !!c.hasMvu && c.mode !== 'tags' },
   { id: 'db', label: '数据库插件表', label_en: 'Table database plugin', feeds: ['location', 'characters'], active: c => !!c.db },
   { id: 'tags', label: '聊天标签', label_en: 'Chat tags', feeds: ['events', 'characters', 'location'], active: () => true },
-  { id: 'vars', label: '聊天变量 eden_map', label_en: 'Chat variable eden_map', feeds: ['custom', 'fog'], active: c => !!c.vars },
+  { id: 'vars', label: '这个聊天的地图变量', label_en: "This chat's map variable", feeds: ['custom', 'fog'], active: c => !!c.vars },
 ];
 export const byId = id => SOURCES.find(s => s.id === id) || null;
 /** EdenMap.sources() 的返回（形状与 v0.9.6 兼容，另加 list） */

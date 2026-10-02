@@ -63,6 +63,7 @@ test('texts are capped at 600 characters; healthSum counts on and not effective 
   const long = 'x'.repeat(2000), t = H({ digest: { text: long, floor: 1 } }).digest.text;
   assert.equal([...t].length, MAX_TEXT + 1); assert.ok(t.endsWith('…'));
   const h = H({ prefs: { ...on('macros', 'nav'), inj: true }, api: { macros: false }, nav: { consent: false }, state: { text: 'a', floor: 1 } });
-  assert.deepEqual(healthSum(h), { n: 4, m: 2 });   // digest + status line + macros + nav are on; macros and nav are not effective
+  assert.deepEqual(healthSum(h), { n: 3, m: 1 });   // digest + status line + macros are on; macros is not effective; nav waits for consent and is not counted (U-FIX-5 S-03)
+  assert.deepEqual(healthSum(H({ prefs: { ...on('nav') }, nav: { consent: true, cfgOk: false } })).m, 1, 'consented but unconfigured: on and not effective');
   assert.deepEqual(createFacts().nav.consent, null);
 });

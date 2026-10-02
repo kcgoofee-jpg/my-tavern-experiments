@@ -126,8 +126,8 @@ export function mount(pdoc, ID, scriptOwner) {
     background: var(--glass-1); border: 1px solid var(--em-accent); box-shadow: var(--elev-panel); font: 12px/1.4 var(--em-font); color: var(--em-ink); box-sizing: border-box; }
   #${ID} .em-tl[hidden] { display: none; }
   #${ID} .em-tl .em-tl-l { flex: none; color: var(--em-accent); font-weight: 700; }
-  #${ID} .em-tl input[type="range"] { flex: 1 1 auto; min-width: 80px; accent-color: var(--em-accent); }
-  #${ID} .em-tl .em-tl-v { flex: 0 1 auto; min-width: 0; color: var(--em-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+  #${ID} .em-tl input[type="range"] { flex: 1 1 80px; min-width: 80px; accent-color: var(--em-accent); }
+  #${ID} .em-tl .em-tl-v { flex: 0 1 auto; min-width: 7.5em; color: var(--em-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }   /* R-01: the floor number never ellipsises away */
   #${ID} .em-tl button { flex: none; width: 28px; height: 28px; border: 0; background: none; color: var(--em-muted); font: 16px/1 var(--em-font); cursor: pointer; padding: 0; }
   #${ID} .em-tl button:hover { color: var(--em-ink); }
   #${ID} .em-bar, #${ID} .em-body { min-width: 0; }   /* 标题栏的长地点 / 线路按钮不再把面板撑出屏幕（E5 r2 P0：关闭按钮曾被推到 404–585 px） */

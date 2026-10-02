@@ -7,6 +7,11 @@ export const EMBED_TITLE = 'spatial_os:pack';   // K-R91: the title of the card'
 const INITVAR = /[[［][^\]］]*initvar[^\]］]*[\]］]/i;   // the variable-initialisation entry (K-R94): its content is the only entry content read besides the embedded pack's
 const OURS = e => !!(e && e.extra && typeof e.extra === 'object' && (e.extra.eden_id || e.extra.spatial_id));   // entries of our add-on book (ownership marker)
 
+// U-FIX-5 S-04: a creator note can carry a tool's file path (`scripts/tune_x.py`); the credits page shows the note without such paths (a bracketed aside holding one goes whole)
+const PATH = String.raw`[\w.\-]+(?:[\/\\][\w.\-]+)+\.(?:py|js|mjs|cjs|ts|sh|bat|ps1|json|ya?ml|txt|md)\b`;
+export const cleanNotes = s => String(s || '').replace(new RegExp(String.raw`[（(\[【][^（）()\[\]【】]*?${PATH}[^（）()\[\]【】]*?[）)\]】]`, 'gi'), ' ')
+  .replace(new RegExp(PATH, 'gi'), ' ').replace(/\s+([，。；,.;])/g, '$1').replace(/[，,；;:：]\s*([。.]|$)/g, '$1').replace(/\s+/g, ' ').trim();
+
 /** One card object (the host's character record, with or without a `data` wrapper) -> { name, creator, version, avatar, tags, notes, src, spatialOs } or null when it names nothing. */
 export function pick(c, src) {
   const d = c?.data && typeof c.data === 'object' ? c.data : (c && typeof c === 'object' ? c : {});
@@ -14,7 +19,7 @@ export function pick(c, src) {
   if (!name && !d.creator && !d.character_version) return null;
   const ext = d.extensions && typeof d.extensions === 'object' ? d.extensions.spatial_os : undefined;
   const out = { name, creator: String(d.creator || '').trim(), version: String(d.character_version || '').trim(), avatar: String(c?.avatar || ''),
-    tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src, spatialOs: ext };
+    tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: cleanNotes(String(d.creator_notes || '').replace(/<[^>]+>/g, ' ')).slice(0, 200), src, spatialOs: ext };
   Object.defineProperty(out, 'first', { value: String(d.first_mes ?? c?.first_mes ?? '').slice(0, 2000), enumerable: false });   // the greeting, for the automatic pack (readCardSource); not enumerable, so the credits page's copy never carries it
   Object.defineProperty(out, 'alts', { value: Array.isArray(d.alternate_greetings) ? d.alternate_greetings.slice(0, 4).map(a => String(a ?? '').slice(0, 800)) : [], enumerable: false });   // I-26: read only when the greeting is a short marker
   return out;

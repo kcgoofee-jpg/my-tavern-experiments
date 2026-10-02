@@ -73,7 +73,7 @@ const TripsView = (() => {
       const a = xy(hereRes(t.from)), b = xy(hereRes(t.to)); if (!a || !b || (a.x === b.x && a.y === b.y)) return;
       const rp = tripRoute(t, render), age = (n - 1 - i) / Math.max(1, n - 1), op = (1 - age * .65).toFixed(2), who = t.who ? dn(t.who) : uiTextOr('tr.you', '你');
       const lab = uiTextOr('tr.trip', '{who}：{a} → {b}', { who, a: short(dn(t.from)), b: short(dn(t.to)) });
-      const open = () => showCard(null, lab, '', '', [uiTextOr('tr.floor', '第 {n} 楼', { n: t.floor }), t.time && esc(t.time), uiTextOr(...MODE_T[t.mode || '']), rp && uiTextOr('tr.along', '沿交通网（估计）')].filter(Boolean).join(' · '));
+      const open = () => showCard(null, lab, '', '', [uiTextOr('tr.floor', '聊天第 {n} 楼', { n: t.floor }), t.time && esc(t.time), uiTextOr(...MODE_T[t.mode || '']), rp && uiTextOr('tr.along', '沿交通网（估计）')].filter(Boolean).join(' · '));
       const col = t.who && typeof plugins.CharactersView !== 'undefined' ? `--tc:${charColor(t.who)}` : '';
       if (t.mode === 'teleport') { for (const p of [a, b]) pin(p, '<i></i>', 'tp' + (t.who ? ' ch' : ''), lab, open); els.slice(-2).forEach(e => { e.style.opacity = op; if (col) e.setAttribute('style', e.getAttribute('style') + ';' + col); }); return; }
       const st = STY[t.mode] || STY[''], cls = `hist m-${t.mode || 'x'}${t.who ? ' ch' : ''}`, { svg, mid } = rp ? poly(rp.pts, { cls }) : arc(a, b, { cls, bend: st.bend, dash: st.dash });

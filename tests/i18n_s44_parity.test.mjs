@@ -33,6 +33,15 @@ const S7 = {
     'cu.night': ['按时段给地图加色调、切换昼夜底图（清晨 / 傍晚 / 夜间）', 'Tint the map and switch day / night base maps by time (dawn / dusk / night)'],
   },
 };
+// U-FIX-5 (TT sweep-1 D1-01, S-02): chat-floor wording (「聊天第 N 楼」, not the building's floors), neutral settings words, the portrait hint without host jargon. Pinned values (zh, en).
+const UFIX = {
+    "ch.stale": ["未知 · 在场表 {n} 条聊天未变", "Unknown · present table stale for {n} msgs"],
+    "ch.infer_stale": ["在场表 {n} 条聊天没变，不再按同处显示；上次明确位置在聊天第 {f} 楼", "Present table unchanged for {n} msgs; no longer shown as with you; last explicit location in msg #{f}"],
+    "ch.port_hint": ["人物没有自己设的头像时，用卡里自带的原作立绘（作者 Yehehua，按需从网络加载）；省流时默认关。只取作者声明的立绘，且不碰卡里受限分类的图；取不到的人显示名字首字（不是故障，可以自己设头像）", "No avatar of your own? Use the card's original portraits (author Yehehua; loaded on demand). Off in data-saver mode. Only portraits the author declares, never the card's restricted categories. If one can't load, an initial shows (not a bug; set your own avatar)."],
+    "tr.floor": ["聊天第 {n} 楼", "message {n}"],
+    "ev.floor": ["聊天第 {n} 楼", "msg #{n}"],
+    "s.src_vars": ["这个聊天的地图变量", "This chat's map variable"],
+};
 const BOOK = '伊甸地图·自定义';   // what the viewer fills {book} with for the first pack (worldbook prefix + 「·自定义」, app/custom.mjs)
 const fill = (s, script) => String(s).split('{book}').join(BOOK).split('{script}').join(script);
 
@@ -44,6 +53,7 @@ for (const lang of ['zh', 'en']) {
       if (k === 'names' || k.startsWith('_')) continue;   // `names` moved to the pack (names_pack.test.mjs); `_…` are notes for the file's readers, not text the viewer shows
       if (S7.removed.includes(k)) { assert.ok(!(k in dict), k + ' is removed by S7-1'); continue; }
       if (!(k in dict)) { miss.push(k); continue; }
+      if (k in UFIX) { assert.equal(dict[k], UFIX[k][lang === 'zh' ? 0 : 1], k + ' has its U-FIX-5 value'); continue; }
       if (k in S7.changed) { assert.equal(dict[k], S7.changed[k][lang === 'zh' ? 0 : 1], k + ' has its S7-1 value'); continue; }
       const now = fill(dict[k], script), was = fill(old, script);   // the old zh text of a key that already took {book} still holds the placeholder
       if (lang === 'en' && k in T6) { assert.notEqual(now, was, `${k} is on the T6 list and must differ`); continue; }

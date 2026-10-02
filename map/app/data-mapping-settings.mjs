@@ -9,12 +9,13 @@ export function renderStorageSettings(d) {
   const kb = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB', s = d?.storage, src = d?.sources;
   if (!d) { box.innerHTML = `<h3>${esc(uiTextOr('s.stor', '存储与数据来源'))}</h3><small>${esc(uiTextOr('s.stor_local', '单独打开时没有聊天数据；嵌在酒馆里才显示'))}</small>`; return; }
   const loc = { mvu: uiTextOr('s.src_mvu', 'MVU 变量'), db: uiTextOr('s.src_db', '数据库插件表'), none: uiTextOr('s.src_none', '聊天标签 / 未读到') }[src?.location] || '—';
-  const ch = src?.characters ? Object.entries(src.characters).map(([k, v]) => `${k} ${v}`).join(' · ') : '—';
+  // U-FIX-5 S-02：来源与读法用人话（不是内部 id）
+  const ch = src?.characters ? Object.entries(src.characters).map(([k, v]) => `${uiTextOr('s.chsrc_' + k, uiTextOr('s.chsrc_other', '其他'))} ${v}`).join(' · ') : '—';
   box.innerHTML = `<h3>${esc(uiTextOr('s.stor', '存储与数据来源'))}</h3>`
     + `<div class="hrow"><span>${esc(uiTextOr('s.stor_used', '地图占用本机存储'))}</span><b>${s ? esc(kb(s.ours)) : '—'}</b></div>`
     + (s ? `<small>${esc(uiTextOr('s.stor_detail', '全站共 {t}；头像 {a}；{n} 个聊天', { t: kb(s.total), a: kb(s.avatars), n: s.chats }))}</small>` : '')
     + `<div class="hrow"><span>${esc(uiTextOr('s.src_loc', '当前地点来自'))}</span><span>${esc(loc)}</span></div>`
-    + `<div class="hrow"><span>${esc(uiTextOr('s.src_mode', '变量读取方式'))}</span><span>${esc(src?.mvu?.mode || '—')}</span></div>`
+    + `<div class="hrow"><span>${esc(uiTextOr('s.src_mode', '变量读取方式'))}</span><span>${esc(src?.mvu?.mode ? uiTextOr('s.mode_' + src.mvu.mode.replace(/-/g, '_'), src.mvu.mode) : '—')}</span></div>`
     + `<div class="hrow"><span>${esc(uiTextOr('s.src_chars', '人物来源'))}</span><span>${esc(ch)}</span></div>`
     + (Array.isArray(src?.list) ? `<div class="hrow"><span>${esc(uiTextOr('s.src_list', '在读的来源'))}</span><span>${esc(src.list.filter(x => x.active).map(x => uiTextOr('s.src_' + x.id, x.id)).join(' · ') || '—')}</span></div>` : '')
     + `<div class="hrow"><span>${esc(uiTextOr('s.stor_clean', '清理旧聊天的地图数据'))}</span><button type="button" class="btn" id="storClean">${esc(uiTextOr('s.stor_clean_btn', '清理'))}</button></div>`

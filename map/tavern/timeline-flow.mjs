@@ -58,7 +58,7 @@ export function createTimelineFlow(host) {
   function tlScrub(f) {
     f = Math.max(0, Math.min(host.floorNow, Math.round(f)));
     const st = tlState(f);
-    tlV.textContent = (st?.here ? `${st.here} · ` : '') + (st?.time ? st.time + ' · ' : '') + `第 ${f} 楼`;
+    tlV.textContent = [`聊天第 ${f} 楼`, st?.time, st?.here].filter(Boolean).join(' · ');   // U-FIX-5 R-01 / D1-01：楼号在最前（窄时截掉的是地点，不是楼号），写明是聊天楼层
     if (!st || !host.alive) return;
     post({ type: 'eden-map:here', value: st.here, replay: true });   // 查看器只重画；探索记录已被 replay 静默
     post({ type: 'eden-map:chars', v: 1, floor: f, items: st.chars, replay: true });

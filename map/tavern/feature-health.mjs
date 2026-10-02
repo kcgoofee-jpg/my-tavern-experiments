@@ -59,5 +59,6 @@ export function healthOf(facts = {}) {
   out.inject = i.mode === 'off' ? off : i.lastOk === false ? bad('no-input', { ...(num(i.floor) !== null ? { floor: num(i.floor) } : {}) }) : i.lastOk === null ? idle() : ok({ ...(num(i.floor) !== null ? { floor: num(i.floor) } : {}) });
   return out;
 }
-/** healthSum(health) -> { n: how many cards are on, m: how many are on and not effective } (the home summary; idle is not counted as not effective, U-32) */
-export function healthSum(h = {}) { let n = 0, m = 0; for (const k of CARD_IDS) { const r = h[k]; if (r?.on) { n++; if (r.state === 'not-effective') m++; } } return { n, m }; }
+/** healthSum(health) -> { n: how many cards are on, m: how many are on and not effective } (the home summary; idle is not counted as not effective, U-32).
+ *  A card switched on but waiting for the user's consent is not counted at all: nothing runs until the consent (U-FIX-5 S-03). */
+export function healthSum(h = {}) { let n = 0, m = 0; for (const k of CARD_IDS) { const r = h[k]; if (r?.on && r.reason !== 'no-consent') { n++; if (r.state === 'not-effective') m++; } } return { n, m }; }

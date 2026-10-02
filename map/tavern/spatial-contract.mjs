@@ -43,6 +43,14 @@ export function locate(reg, here) {
   return { level: r.level, mapId: r.map, markerId: r.marker || null, name: cname(nm), room: r.room || null };
 }
 
+/** 地点栏的写法（U-FIX-5 H2-01）：落在某栋楼里的房间 → 「楼 · 房间」（变量里只写了房间也带上上级）；不是房间 / 认不出 → null（调用方照原文） */
+export function chainOf(reg, here) {
+  const v = String(here || '').trim(), e = v ? engineOf(reg) : null, r = e?.here(v);
+  if (!r?.room || !r.node) return null;
+  const owner = cname(e.tree.get(r.node)?.name || ''), room = cname(String(r.room).split(/\s*[·・‧•]\s*/).filter(Boolean).pop() || '');
+  return !owner || !room ? null : owner === room ? owner : `${owner} · ${room}`;
+}
+
 /** points 数据 → { id: {nx, ny} }（ax/ay 渲染校正位优先；量化 3 位小数，坏行丢弃） */
 export function coordIndex(points) {
   const out = {};

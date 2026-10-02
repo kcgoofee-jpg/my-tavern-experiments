@@ -51,7 +51,7 @@ const GalleryView = (() => {
   const has = () => !!table?.chars?.length;
   const nodeOf = p => hereRes(p)?.node || '';
   function target(place) { const r = place ? hereRes(place) : null; return r ? (r.room ? { room: r.room } : r.marker ? { map: r.map, marker: r.marker } : r.map ? { map: r.map } : null) : null; }
-  const floorText = n => uiTextOr('ev.floor', '第 {n} 楼', { n });
+  const floorText = n => uiTextOr('ev.floor', '聊天第 {n} 楼', { n });
   function sceneLi(s, withPlace, withWho) {
     const li = el('li', 'cg-row');
     li.append(el('b', '', floorText(s.floor)), el('span', 'cg-w', [withWho ? (s.who || s.name) : '', s.cat + ' #' + s.n].filter(Boolean).join(' · ')));

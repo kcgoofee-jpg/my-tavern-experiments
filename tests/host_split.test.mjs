@@ -104,7 +104,7 @@ const FLOWS = {   // 文件 → [工厂名, 返回的接口]
   'llm-flow': ['createLlmFlow', 'addRoutes jitRound navFacts navSchedule opEvents planRoutes resetOps sendOps worldbookJitModule WBSm xtalClear xtalRound'],
   'route-flow': ['createRouteFlow', 'addSuggestions held macroSet macroValue onChat onHere onPlan onReady onRound'],   // S8-4b K-R111: the planned route and the class macros
   'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
-  'chars-flow': ['createCharsFlow', 'mvuBridge gallery cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
+  'chars-flow': ['createCharsFlow', 'mvuBridge gallery placeText cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],
   'timeline-flow': ['createTimelineFlow', 'keyframesModule kfReset kfView tlBtn tlCache tlEl tlExit timelineModule tlOn tlWalk'],
   'host-api': ['createHostApi', 'api cardId emit emitMoved exposed facts inner knowRooms onTh replayLayers scriptInfo sendTh subs tavernhelperApiModule transitMod wbAuto'],
   'root-store': ['createRootStore', 'storageBudget budgetSweep custom customChanged customChat customTags kindOf loadCustom reg regNow saveRoot sendCustom store storeWarn varsOk wbState'],

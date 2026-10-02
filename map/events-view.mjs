@@ -159,7 +159,7 @@ const EventsView = (() => {
       [uiTextOr('ev.k_state', '等级 / 状态'), `<span class="bars" aria-label="${esc(uiTextOr('ev.k_lvl', '等级') + ' ' + lv + '/3')}">${'▮'.repeat(lv)}${'▯'.repeat(3 - lv)}</span>　${esc(st)}`],
       e.time && [uiTextOr('ev.k_time', '时间'), esc(e.time)], e.code && [uiTextOr('ev.k_code', '编号'), esc(e.code)],
       [uiTextOr('ev.k_src', '来源'), esc(e.feed ? e.src || uiTextOr('ev.feed_default', '外部数据源')
-        : (srcNew(e) || !e.src ? uiTextOr('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: srcNew(e) || uiTextOr('ev.unsigned', '未署名'), n: e.first }) : uiTextOr('ev.floor', '第 {n} 楼', { n: e.first })) + (e.count > 1 ? uiTextOr('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
+        : (srcNew(e) || !e.src ? uiTextOr('ev.src_floor', '{src} · 聊天第 {n} 楼', { src: srcNew(e) || uiTextOr('ev.unsigned', '未署名'), n: e.first }) : uiTextOr('ev.floor', '聊天第 {n} 楼', { n: e.first })) + (e.count > 1 ? uiTextOr('ev.updates', '起，更新 {n} 次', { n: e.count - 1 }) : ''))],
     ].filter(Boolean);
     const sv = document.querySelector('#card .src'); delete sv.dataset.note;   // 事态卡的正文不是地点说明，不加「原文（中文）」说明
     sv.innerHTML = `<dl class="fields">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl>`;
@@ -235,7 +235,7 @@ const EventsView = (() => {
     bar.querySelector('.evleg').innerHTML = gs.map(g => `<button type="button" data-g="${esc(g)}" class="${off.has(g) ? 'off' : ''}${cnt[g] ? '' : ' none'}" style="--c:${gcol(g)}" aria-pressed="${off.has(g) ? 'false' : 'true'}"><i class="shp ${shp(g)}" aria-hidden="true"></i>${esc(tn(g))}${cnt[g] ? `<em>${cnt[g]}</em>` : ''}</button>`).join('')
       + (hintOnce() ? `<small>${esc(uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示'))}</small>` : ''); bar.querySelector('.evleg').title = uiTextOr('ev.legend_hint', '点大类可隐藏 / 显示');
     // 列表项：li 里包一个真正的 <button>（原来 li 上的 role=button 让 axe 报 list / aria-allowed-role，E4b R08）
-    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(uiTextOr('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(uiTextOr('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? uiTextOr('ev.feed', '数据源') : uiTextOr('ev.floor', '第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button></li>`).join('');
+    bar.querySelector('ol').innerHTML = list.map(e => `<li class="tier-${e.tier}${e.isNew ? ' isnew' : ''}${e.closed ? ' closed' : ''}" style="--c:${lk(e)[1]}"><button type="button" data-id="${esc(e.id)}"><i class="shp ${shp(grpOf(e))}" aria-hidden="true"></i><b>${esc(tn(e.cat))}${e.closed ? ' · ' + esc(uiTextOr('ev.cleared', '已解除')) : ''}${e.isNew ? `<span class="nb">${esc(uiTextOr('ev.new', '新'))}</span>` : ''} <em>${esc(whereHere(e))}</em></b><em>${esc(e.feed ? uiTextOr('ev.feed', '数据源') : uiTextOr('ev.floor', '聊天第 {n} 楼', { n: e.last }))}</em><small>${esc(e.text || '')}${srcNew(e) ? ' —— ' + esc(srcNew(e)) : ''}</small></button></li>`).join('');
   }
   // 图例提示只在第一次展开时出现一行（之后在 title 里），不常驻占一行（v0.9.2）
   let hintSeen = null;
