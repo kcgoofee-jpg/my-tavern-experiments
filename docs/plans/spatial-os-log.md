@@ -1611,3 +1611,15 @@ blocker: none
 open: key `3` in the 3D view (F1 section assumed in S7-2)
 cleanup: done
 === END ===
+
+=== RESULT AC-5 (E-13) ===
+status: PARTIAL (documented residual, as the task allows)
+items: audit gate ✓ (tools/audit_coplanar.mjs --baseline / --slack / --update; ledger tools/coplanar_baseline.json; in smoke) · 3D probe at a fixed camera pixel-identical ✓ (estate_flicker, estate3d pass on the current tree) · zero pairs within 30 mm ✗ (house.glb 52 470, site.glb 48 023; 46 520 exact/back-to-back, flicker candidates 10 941 + 1 058)
+commits: this commit
+pushed: yes
+tests: node 1445 pass + 2 skipped / 1447 | smoke PASS (new step: coplanar ledger) | arch PASS
+deviations: no geometry rebuild and no polygonOffset: the generator (blender/estate2/house_web.py) is edited by the B1/B2 line and a rebuild goes through the render queue; a uniform polygonOffset cannot order coplanar layers inside one merged mesh. Residual and the builder follow-up are written in todo E-13.
+blocker: none
+open: the builder-side dedupe (drop hidden internal faces, offset duplicated floor layers by >= 1 mm) for a later estate-line step
+cleanup: done
+=== END ===

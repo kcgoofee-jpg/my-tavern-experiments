@@ -1,0 +1,10 @@
+{
+ "map/estate/model/house.glb": {
+  "pairs": 52470,
+  "fights": 10941
+ },
+ "map/estate/model/site.glb": {
+  "pairs": 48023,
+  "fights": 1058
+ }
+}

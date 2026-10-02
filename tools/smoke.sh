@@ -48,6 +48,7 @@ step "中英镜像结构一致（agent-brief / spatial-os 计划 / ARCHITECTURE�
 step "中英镜像门控自测" python3 tools/check_zh_mirror.py --self-test
 step "无来源标签（不得出现「卡里有 / 自己编」式标注，见 docs/agent-brief.md §7 与 tools/check_no_labels.py）" python3 tools/check_no_labels.py
 step "无来源标签门控自测" python3 tools/check_no_labels.py --self-test
+step "庄园模型近共面面账本（会闪的：同朝向 + 顶点色不同 + 间距 ≥ 0.5 mm，余量 5%，见 tools/audit_coplanar.mjs、todo E-13）" node tools/audit_coplanar.mjs map/estate/model/house.glb map/estate/model/site.glb --baseline tools/coplanar_baseline.json --slack 0.05
 step "README 置顶导入链接与路径引用（最新标签 / 预览分支 / 提到的路径都存在）" python3 tools/check_readme.py
 step "README 门控自测（过期标签 / 错仓库名 / 死路径会被拦，--fix 能修回来）" python3 tools/test_readme.py
 step "渲染守卫 lint（渲染脚本必须经 setup_render_device/pick_gpu 配 GPU）" python3 tools/render_preflight.py lint

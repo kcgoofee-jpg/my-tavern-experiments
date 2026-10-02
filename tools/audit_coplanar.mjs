@@ -1,8 +1,11 @@
 // N12：glb 近共面重叠面审计（z-fighting 的几何根源）。
-// 用法：node tools/audit_coplanar.mjs <a.glb> [b.glb …] [--eps 0.03] [--json out.json] [--fail]
+// 用法：node tools/audit_coplanar.mjs <a.glb> [b.glb …] [--eps 0.03] [--json out.json] [--fail] [--baseline tools/coplanar_baseline.json [--update]]
 // 读 glb（含 EXT_meshopt_compression / KHR_mesh_quantization），算世界坐标三角形，找「法线平行 + 平面距离 ≤ eps + 二维投影有面积重叠」的三角形对，
 // 按（mesh 对 + 平面高度）归并后打印。--fail：有任何一对就以 1 退出。纯 node，不依赖 three。
+// --baseline（E-13）：只数「会闪的」——同朝向、顶点色不同、平面距离 ≥ 0.5 mm（`fights`）；超过账本（--slack 0.05 = 留 5% 余量，建模线日常加家具不被卡住）就以 1 退出（--update 写账本，减少时请降账本）。
+// 其余的不在门里：背靠背的隐藏面、完全重合的重复面（深度完全相同，谁赢是确定的，不闪）、24 位深度 + 近远平面按场景收紧（N12，0.06 mm 一档）能分开的 0.5–30 mm 间距。
 import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MeshoptDecoder } from '../map/estate/vendor/jsm/libs/meshopt_decoder.module.js';
 
@@ -160,13 +163,14 @@ export function summarize(tris, pairs) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2), files = [];
-  let eps = 0.03, jout = null, fail = false;
-  for (let i = 0; i < args.length; i++) { if (args[i] === '--eps') eps = +args[++i]; else if (args[i] === '--json') jout = args[++i]; else if (args[i] === '--fail') fail = true; else files.push(args[i]); }
-  let total = 0; const all = {};
+  let eps = 0.03, jout = null, fail = false, base = null, update = false, slack = 0;
+  for (let i = 0; i < args.length; i++) { if (args[i] === '--eps') eps = +args[++i]; else if (args[i] === '--json') jout = args[++i]; else if (args[i] === '--fail') fail = true; else if (args[i] === '--baseline') base = args[++i]; else if (args[i] === '--update') update = true; else if (args[i] === '--slack') slack = +args[++i]; else files.push(args[i]); }
+  let total = 0; const all = {}, counts = {};
   for (const f of files) {
     const { tris } = await worldTris(f);
     const pairs = findCoplanar(tris, { eps });
     const rows = summarize(tris, pairs);
+    counts[f] = { pairs: pairs.length, fights: pairs.filter((p) => p.same && p.dc > 0.03 && p.d >= 0.0005).length };
     total += pairs.length; all[f] = { tris: tris.length, pairs: pairs.length, groups: rows };
     const vis = pairs.filter((p) => p.dc > 0.03).length, same = pairs.filter((p) => p.same).length;
     console.log(`\n${f}: ${tris.length} triangles, ${pairs.length} near-coplanar overlapping pairs (eps ${eps} m; ${same} same-direction, ${vis} with different vertex colour = visible fights), ${rows.length} groups`);
@@ -175,4 +179,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (jout) fs.writeFileSync(jout, JSON.stringify(all, null, 1));
   console.log(`\ntotal pairs: ${total}`);
   if (fail && total) process.exit(1);
+  if (base) {
+    const key = (f) => path.relative(process.cwd(), path.resolve(f));
+    const cur = Object.fromEntries(Object.entries(counts).map(([f, c]) => [key(f), c]));
+    if (update) { fs.writeFileSync(base, JSON.stringify(cur, null, 1) + '\n'); console.log('baseline written: ' + base); }
+    else {
+      const ledger = JSON.parse(fs.readFileSync(base, 'utf8')); let bad = 0;
+      for (const [f, c] of Object.entries(cur)) {
+        const b = ledger[f]; if (!b) { console.log(`✗ ${f}: not in the baseline (run with --update)`); bad++; continue; }
+        const ok = c.fights <= Math.floor(b.fights * (1 + slack)); if (!ok) bad++;
+        console.log(`${ok ? '✓' : '✗'} ${f}: flicker candidates (same direction, different colour, >= 0.5 mm) ${c.fights} (baseline ${b.fights}${slack ? `, headroom ${slack * 100}%` : ''})${c.fights < b.fights ? ' — lower the baseline with --update' : ''}; all near-coplanar pairs ${c.pairs} (baseline ${b.pairs}, informational)`);
+      }
+      if (bad) process.exit(1);
+    }
+  }
 }
