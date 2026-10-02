@@ -26,7 +26,7 @@ try {
       const got = await until(async () => (await chips(ef)).includes(WHO), 5000);
       const st = await ef.evaluate(([node]) => ({ mode: window.__estate.mode(), rect: window.__estate.rect(node), chip: (() => { const b = document.querySelector(`.pc[data-name="${'艾琳'}"]`); const r = b?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, h: r.height } : null; })() }), [NODE]);
       rep.check(`${w}: a chip with the located person's name is in the page within 5 s`, got, JSON.stringify(await chips(ef)));
-      rep.check(`${w}: it is on floor B1 (section mode of B1)`, st.mode === 1, JSON.stringify({ mode: st.mode }));
+      rep.check(`${w}: it is on floor B1 (the floors view on B1, D38)`, st.mode === 1, JSON.stringify({ mode: st.mode }));
       const inRect = st.chip && st.rect && st.chip.x >= st.rect.x0 - 40 && st.chip.x <= st.rect.x1 + 40 && st.chip.y >= st.rect.y0 - 40 && st.chip.y <= st.rect.y1 + 40;
       rep.check(`${w}: the chip is inside the room's screen rect +- 40 px`, !!inRect, JSON.stringify(st));
       const cm = await ef.evaluate(() => { const b = document.querySelector('.pc'); const i = b.querySelector('i').getBoundingClientRect(), r = b.getBoundingClientRect(); return { tag: b.tagName, i: Math.round(i.width), w: r.width, h: r.height, label: b.getAttribute('aria-label') }; });
