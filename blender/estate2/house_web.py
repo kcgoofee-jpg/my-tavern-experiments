@@ -459,6 +459,88 @@ C_FLOOR_GRID = (0.66, 0.68, 0.70)
 C_HAZARD_YEL = (0.85, 0.68, 0.10)
 C_HAZARD_BLK = (0.10, 0.10, 0.10)
 
+# ---------------------------------------------------------------- 室内真实材质色板 (docs/eden-estate.md §6)
+C_MARBLE_STATUARIO   = (0.95, 0.94, 0.92)  # #F2F0EC 卡拉拉白 (大厅、过厅、主浴室地面、壁炉)
+C_MARBLE_NERO        = (0.015, 0.015, 0.016) # #1E1E20 黑金花 (棋盘格、饰带)
+C_MARBLE_GOLD        = (0.88, 0.84, 0.77)  # #F1ECE2 卡拉卡塔金 (浴室墙面、台面、壁炉)
+C_MARBLE_GREEN       = (0.07, 0.12, 0.09)  # #2F4A3C 阿尔卑斯绿 (绿厅壁炉)
+C_MARBLE_SIENA       = (0.69, 0.47, 0.15)  # #D9B66E 西耶纳黄 (家徽镶嵌、餐室壁炉)
+C_MARBLE_LEVANTO     = (0.19, 0.03, 0.03)  # #7A2E2A 勒万托红 (候见室壁炉)
+C_PORPHYRY           = (0.15, 0.03, 0.04)  # #6B2E35 仿斑岩人造大理石 (大厅柱)
+C_PARQUET_VERSAILLES = (0.38, 0.20, 0.07)  # #A57A4B 凡尔赛拼橡木
+C_OAK_HERRINGBONE    = (0.35, 0.18, 0.06)  # 人字拼橡木
+C_WOOD_MAHOGANY      = (0.11, 0.02, 0.01)  # #5E2A1A 桃花心木 (餐桌、衣柜、床架)
+C_WOOD_SATINWOOD     = (0.68, 0.48, 0.18)  # #D8B777 缎木 (写字台、化妆台)
+C_WOOD_EBONY         = (0.02, 0.015, 0.01) # #1C1512 乌木 (琴键、座圈、边饰)
+C_WALL_PLASTER       = (0.80, 0.75, 0.63)  # #E9E1CF 奶油灰泥室内墙
+C_WALL_PANEL         = (0.84, 0.79, 0.68)  # #EDE6D6 油漆护墙板
+C_BRASS_ORMOLU       = (0.58, 0.36, 0.07)  # #C9A24B 鎏金铜 (吊灯、壁灯、爪足、线脚)
+C_BRASS_POLISHED     = (0.46, 0.29, 0.05)  # #B5913F 抛光黄铜 (龙头、扶手、电梯)
+C_FABRIC_DAMASK_RED  = (0.19, 0.015, 0.025)# #7B1E2B 深红丝缎锦 (会客厅、肖像廊、沙发)
+C_FABRIC_SKY_BLUE    = (0.025, 0.05, 0.13) # #2C3E63 天城蓝丝 (餐厅、主人起居室、客房 A)
+C_FABRIC_EMPIRE_GREEN= (0.03, 0.11, 0.07)  # #2F5D4E 帝政绿 (绿厅、客房 C)
+C_FABRIC_ROSE_SILK   = (0.58, 0.32, 0.29)  # #C99A93 玫瑰粉丝 (客房 B)
+C_FABRIC_CHAMPAGNE   = (0.60, 0.46, 0.26)  # #CDB58A 香槟丝绒 (沙发面料)
+C_LINEN_IVORY        = (0.85, 0.80, 0.70)  # #EEE7D8 象牙亚麻 (窗纱、软包)
+C_LINEN_WHITE        = (0.93, 0.90, 0.86)  # #F7F4EE 埃及棉床品
+C_RUG_AUBUSSON       = (0.75, 0.65, 0.48)  # #E3D4B8 奥布松地毯象牙底
+C_RUG_HERIZ          = (0.19, 0.025, 0.015)# #7A2A22 赫里兹地毯深红
+C_PORCELAIN_WHITE    = (0.92, 0.90, 0.86)  # #F6F4EF 卫浴白瓷
+C_SEVRES_BLUE        = (0.015, 0.05, 0.28) # #1F3F8F 塞夫尔蓝瓷
+C_LIGHT_WARM2700     = (1.00, 0.88, 0.65)  # 2,700K 暖光灯芯发光色
+C_LIGHT_WARM3000     = (1.00, 0.92, 0.75)  # 3,000K 服务间灯芯发光色
+
+
+def add_chandelier(F, cx, cy, cz, r=1.0, arms=8, col_arm=C_BRASS_ORMOLU, light_col=C_LIGHT_WARM2700):
+    """天花垂挂枝形吊灯 (实心铜链/吊杆 + 放射状灯臂 + 仿烛发光灯芯)。"""
+    F.cyl(cx, cy, 0.04, cz, cz + 0.8, col_arm, 6)
+    F.cyl(cx, cy, r * 0.25, cz - 0.04, cz + 0.08, col_arm, 8)
+    for j in range(arms):
+        ang = 2 * math.pi * j / arms
+        ax = cx + r * math.cos(ang)
+        ay = cy + r * math.sin(ang)
+        F.box(min(cx, ax) - 0.015, min(cy, ay) - 0.015, cz, max(cx, ax) + 0.015, max(cy, ay) + 0.015, cz + 0.03, col_arm)
+        F.cyl(ax, ay, 0.05, cz + 0.02, cz + 0.06, col_arm, 6)
+        F.cyl(ax, ay, 0.025, cz + 0.06, cz + 0.20, light_col, 6)
+
+
+def add_sconce(F, wx, wy, wz, nx, ny, col=C_BRASS_ORMOLU, light_col=C_LIGHT_WARM2700):
+    """墙壁鎏金烛台式壁灯 (墙面底座 + 弯曲灯臂 + 暖光灯芯)。nx, ny 是朝室内的单位法向。"""
+    F.box(wx - 0.08, wy - 0.08, wz - 0.12, wx + 0.08, wy + 0.08, wz + 0.12, col)
+    ax, ay = wx + nx * 0.25, wy + ny * 0.25
+    F.box(min(wx, ax) - 0.02, min(wy, ay) - 0.02, wz - 0.02, max(wx, ax) + 0.02, max(wy, ay) + 0.02, wz + 0.02, col)
+    F.cyl(ax, ay, 0.05, wz, wz + 0.04, col, 6)
+    F.cyl(ax, ay, 0.025, wz + 0.04, wz + 0.15, light_col, 6)
+
+
+def add_fireplace(F, fx, fy, fz, w=2.2, d=0.6, h=1.4, orient='n', marble_col=C_MARBLE_STATUARIO):
+    """经典雕花大理石壁炉 (炉架台面 + 左右壁柱 + 幽暗内膛)。orient 指炉口朝向。"""
+    hw, hd = w / 2.0, d / 2.0
+    F.box(fx - hw, fy - hd, fz + 0.01, fx + hw, fy + hd, fz + h, marble_col)
+    if orient in ('n', 's'):
+        pw = hw - 0.35
+        y0 = fy if orient == 'n' else fy - hd - 0.01
+        y1 = fy + hd + 0.01 if orient == 'n' else fy
+        F.box(fx - pw, y0, fz + 0.01, fx + pw, y1, fz + h - 0.25, (0.08, 0.08, 0.09))
+        F.box(fx - hw - 0.05, fy - hd - 0.05, fz + h, fx + hw + 0.05, fy + hd + 0.05, fz + h + 0.08, marble_col)
+        dy = 0.5 if orient == 'n' else -0.5
+        F.pad(fx - hw, min(fy, fy + dy), fz + 0.01, fx + hw, max(fy, fy + dy), fz + 0.04, marble_col)
+    else:
+        ph = hd - 0.35
+        x0 = fx if orient == 'e' else fx - hw - 0.01
+        x1 = fx + hw + 0.01 if orient == 'e' else fx
+        F.box(x0, fy - ph, fz + 0.01, x1, fy + ph, fz + h - 0.25, (0.08, 0.08, 0.09))
+        F.box(fx - hw - 0.05, fy - hd - 0.05, fz + h, fx + hw + 0.05, fy + hd + 0.05, fz + h + 0.08, marble_col)
+        dx = 0.5 if orient == 'e' else -0.5
+        F.pad(min(fx, fx + dx), fy - hd, fz + 0.01, max(fx, fx + dx), fy + hd, fz + 0.04, marble_col)
+
+
+def add_table_lamp(F, tx, ty, tz, base_col=C_BRASS_POLISHED, shade_col=C_LIGHT_WARM2700):
+    """书桌 / 床头台灯 (金属/瓷座 + 暖光漫射灯罩)。"""
+    F.cyl(tx, ty, 0.08, tz, tz + 0.05, base_col, 8)
+    F.cyl(tx, ty, 0.02, tz + 0.05, tz + 0.35, base_col, 6)
+    F.cyl(tx, ty, 0.14, tz + 0.30, tz + 0.48, shade_col, 8)
+
 
 def build_b1_furn(F, z):
     # ========================================================================
@@ -2150,18 +2232,303 @@ def build_b2_furn(F, z):
 
 
 
+def build_f1_furn(F, z):
+    # ========================================================================
+    # 1. 大厅 101 (-10..10, -16..-6)
+    # ========================================================================
+    # (a) 卡拉拉白与黑金花大理石 1.2m 斜置棋盘格地面
+    for ix, x in enumerate(np.arange(-9.6, 9.6, 1.2)):
+        for iy, y in enumerate(np.arange(-15.6, -6.0, 1.2)):
+            col = C_MARBLE_NERO if (ix + iy) % 2 == 1 else C_MARBLE_STATUARIO
+            F.pad(x, y, z + 0.01, x + 1.18, y + 1.18, z + 0.02, col)
+    # (b) 中心家族纹章嵌盘 (半径 2.0m，西耶纳黄大理石 + 鎏金铜包边)
+    F.cyl(0.0, -11.0, 2.0, z + 0.02, z + 0.035, C_BRASS_ORMOLU, 24)
+    F.cyl(0.0, -11.0, 1.8, z + 0.035, z + 0.045, C_MARBLE_SIENA, 24)
+    F.cyl(0.0, -11.0, 0.6, z + 0.045, z + 0.055, C_BRASS_ORMOLU, 16)
+    # (c) 仿斑岩人造大理石科林斯柱廊 (x=±8.0, 4对)
+    for cx in (-8.0, 8.0):
+        for cy in (-14.5, -12.2, -9.8, -7.5):
+            F.box(cx - 0.55, cy - 0.55, z + 0.01, cx + 0.55, cy + 0.55, z + 0.30, C_MARBLE_STATUARIO)
+            F.cyl(cx, cy, 0.45, z + 0.30, z + WALL_H - 0.40, C_PORPHYRY, 16)
+            F.box(cx - 0.55, cy - 0.55, z + WALL_H - 0.40, cx + 0.55, cy + 0.55, z + WALL_H, C_BRASS_ORMOLU)
+            add_sconce(F, cx + (0.46 if cx < 0 else -0.46), cy, z + 2.2, 1.0 if cx < 0 else -1.0, 0.0)
+    # (d) 鎏金雕花靠墙长凳与大理石台面边桌
+    for by in (-13.5, -8.5):
+        F.box(-9.8, by - 1.0, z + 0.01, -9.1, by + 1.0, z + 0.48, C_BRASS_ORMOLU)
+        F.box(-9.75, by - 0.95, z + 0.48, -9.15, by + 0.95, z + 0.55, C_FABRIC_DAMASK_RED)
+        F.box(9.1, by - 1.0, z + 0.01, 9.8, by + 1.0, z + 0.48, C_BRASS_ORMOLU)
+        F.box(9.15, by - 0.95, z + 0.48, 9.75, by + 0.95, z + 0.55, C_FABRIC_DAMASK_RED)
+    # (e) 初代奠基人长箱钟 (-7.5, -6.4)
+    F.box(-7.8, -6.6, z + 0.01, -7.2, -6.2, z + 2.60, C_WOOD_WALNUT)
+    F.box(-7.75, -6.55, z + 1.80, -7.25, -6.18, z + 2.50, C_BRASS_ORMOLU)
+    # (f) 奥布松天城蓝迎宾长毯与青花大瓷瓶
+    F.pad(-2.5, -15.8, z + 0.03, 2.5, -7.0, z + 0.045, C_FABRIC_SKY_BLUE)
+    F.cyl(-2.2, -15.4, 0.35, z + 0.01, z + 1.40, C_SEVRES_BLUE, 12)
+    F.cyl(2.2, -15.4, 0.35, z + 0.01, z + 1.40, C_SEVRES_BLUE, 12)
+    # (g) 48臂铅水晶中央大吊灯
+    add_chandelier(F, 0.0, -13.5, z + 3.3, r=1.4, arms=12)
+    add_chandelier(F, 0.0, -8.5, z + 3.3, r=1.4, arms=12)
+
+    # ========================================================================
+    # 2. 会客厅 119 (10..20, -16..-10)
+    # ========================================================================
+    F.pad(11.5, -15.2, z + 0.03, 18.5, -10.8, z + 0.05, C_RUG_AUBUSSON)
+    add_fireplace(F, 19.4, -13.0, z, w=2.4, d=0.6, h=1.4, orient='w', marble_col=C_MARBLE_STATUARIO)
+    F.box(19.45, -14.0, z + 1.50, 19.55, -12.0, z + 3.40, C_BRASS_ORMOLU)
+    F.box(13.2, -14.2, z + 0.05, 14.2, -11.8, z + 0.85, C_BRASS_ORMOLU)
+    F.box(13.3, -14.1, z + 0.40, 14.1, -11.9, z + 0.52, C_FABRIC_DAMASK_RED)
+    F.box(16.0, -14.5, z + 0.05, 17.0, -13.5, z + 0.85, C_BRASS_ORMOLU)
+    F.box(16.1, -14.4, z + 0.40, 16.9, -13.6, z + 0.52, C_FABRIC_DAMASK_RED)
+    F.box(16.0, -12.5, z + 0.05, 17.0, -11.5, z + 0.85, C_BRASS_ORMOLU)
+    F.box(16.1, -12.4, z + 0.40, 16.9, -11.6, z + 0.52, C_FABRIC_DAMASK_RED)
+    F.box(14.8, -13.6, z + 0.05, 15.6, -12.4, z + 0.50, C_WOOD_MAHOGANY)
+    F.box(14.75, -13.65, z + 0.50, 15.65, -12.35, z + 0.54, C_MARBLE_STATUARIO)
+    F.box(10.5, -15.5, z + 0.01, 11.2, -13.0, z + 2.80, C_WOOD_MAHOGANY)
+    F.box(11.18, -15.4, z + 0.40, 11.22, -13.1, z + 2.70, C_GLASS_CYAN)
+    add_chandelier(F, 13.5, -13.0, z + 3.2, r=1.0, arms=8)
+    add_chandelier(F, 17.0, -13.0, z + 3.2, r=1.0, arms=8)
+
+    # ========================================================================
+    # 3. 餐厅 113 (-10..-2, -3..8)
+    # ========================================================================
+    F.pad(-8.5, -1.8, z + 0.03, -3.5, 6.8, z + 0.05, C_CARPET_BURGUNDY)
+    F.box(-6.9, -0.8, z + 0.05, -5.1, 5.8, z + 0.78, C_WOOD_MAHOGANY)
+    for ty in np.linspace(-0.2, 5.2, 7):
+        F.cyl(-6.6, ty, 0.16, z + 0.78, z + 0.81, C_SEVRES_BLUE, 10)
+        F.cyl(-5.4, ty, 0.16, z + 0.78, z + 0.81, C_SEVRES_BLUE, 10)
+        F.box(-7.6, ty - 0.22, z + 0.05, -7.0, ty + 0.22, z + 0.95, C_WOOD_MAHOGANY)
+        F.box(-7.5, ty - 0.20, z + 0.42, -7.0, ty + 0.20, z + 0.48, C_LEATHER_RD)
+        F.box(-5.0, ty - 0.22, z + 0.05, -4.4, ty + 0.22, z + 0.95, C_WOOD_MAHOGANY)
+        F.box(-5.0, ty - 0.20, z + 0.42, -4.5, ty + 0.20, z + 0.48, C_LEATHER_RD)
+    add_fireplace(F, -9.4, 2.5, z, w=2.2, d=0.6, h=1.4, orient='e', marble_col=C_MARBLE_STATUARIO)
+    F.box(-9.6, -2.0, z + 0.01, -9.0, 0.5, z + 1.10, C_WOOD_MAHOGANY)
+    F.box(-9.65, -2.05, z + 1.10, -8.95, 0.55, z + 1.15, C_MARBLE_STATUARIO)
+    add_chandelier(F, -6.0, 0.0, z + 3.2, r=1.0, arms=8)
+    add_chandelier(F, -6.0, 2.5, z + 3.2, r=1.0, arms=8)
+    add_chandelier(F, -6.0, 5.0, z + 3.2, r=1.0, arms=8)
+
+    # ========================================================================
+    # 4. 后勤区、备餐间与北廊楼
+    # ========================================================================
+    F.box(-13.5, -2.0, z + 0.01, -11.5, 0.5, z + 0.90, C_METAL_STEEL)
+    F.box(-13.5, 2.0, z + 0.01, -11.5, 4.5, z + 0.90, C_METAL_STEEL)
+    F.box(-30.0, 2.0, z + 0.01, -26.0, 5.0, z + 0.95, C_METAL_IRON)
+    F.box(-28.0, 7.0, z + 0.01, -24.0, 10.0, z + 0.90, C_METAL_STEEL)
+    F.box(-19.5, -11.5, z + 0.01, -17.5, -6.5, z + 2.80, C_WOOD_MAHOGANY)
+    F.box(-13.5, -11.5, z + 0.01, -11.0, -9.5, z + 0.85, C_WHITE_CAB)
+    F.cyl(-12.0, -7.5, 0.28, z + 0.01, z + 0.45, C_PORCELAIN_WHITE, 12)
+    F.box(-6.5, 11.0, z + 0.01, -4.0, 14.5, z + 1.00, C_WOOD_EBONY)
+    F.pad(2.0, 10.5, z + 0.03, 8.0, 15.5, z + 0.05, C_RUG_AUBUSSON)
+    F.box(3.0, 11.5, z + 0.05, 7.0, 12.5, z + 0.85, C_FABRIC_CHAMPAGNE)
+    add_chandelier(F, 0.0, 12.5, z + 3.2, r=1.1, arms=8)
+
+
+def build_f2_furn(F, z):
+    # ========================================================================
+    # 1. 主人书房 212 (-2..8, -16..-11)
+    # ========================================================================
+    F.pad(-0.5, -15.5, z + 0.03, 6.8, -11.5, z + 0.05, C_RUG_HERIZ)
+    F.box(-1.6, -11.6, z + 0.01, 7.5, -11.1, z + 3.80, C_WOOD_WALNUT)
+    F.box(7.1, -15.5, z + 0.01, 7.6, -11.6, z + 3.80, C_WOOD_WALNUT)
+    F.box(-1.6, -11.2, z + 2.40, 7.5, -11.1, z + 2.45, C_BRASS_POLISHED)
+    F.box(1.5, -14.4, z + 0.05, 4.5, -12.8, z + 0.78, C_WOOD_MAHOGANY)
+    F.box(1.6, -14.3, z + 0.78, 4.4, -12.9, z + 0.79, C_FABRIC_EMPIRE_GREEN)
+    F.box(2.6, -12.4, z + 0.05, 3.4, -11.7, z + 1.25, C_LEATHER_RD)
+    F.box(1.8, -15.2, z + 0.05, 2.6, -14.5, z + 0.90, C_LEATHER_DK)
+    F.box(3.4, -15.2, z + 0.05, 4.2, -14.5, z + 0.90, C_LEATHER_DK)
+    add_fireplace(F, -1.4, -13.5, z, w=2.0, d=0.55, h=1.35, orient='e', marble_col=C_MARBLE_NERO)
+    add_table_lamp(F, 1.8, -13.2, z + 0.79, base_col=C_BRASS_POLISHED, shade_col=C_FABRIC_EMPIRE_GREEN)
+    F.box(4.0, -13.3, z + 0.79, 4.3, -13.0, z + 1.05, C_BRASS_POLISHED)
+    F.cyl(5.8, -14.2, 0.42, z + 0.05, z + 1.20, C_BRASS_POLISHED, 12)
+    add_chandelier(F, 3.0, -13.5, z + 3.2, r=1.0, arms=8, col_arm=C_BRASS_POLISHED)
+
+    # ========================================================================
+    # 2. 主人主卧 (8..20, -16..-6)
+    # ========================================================================
+    F.pad(9.5, -15.5, z + 0.03, 18.5, -7.5, z + 0.05, C_RUG_AUBUSSON)
+    F.box(12.8, -15.4, z + 0.05, 15.2, -13.0, z + 0.55, C_WOOD_MAHOGANY)
+    F.box(12.9, -15.3, z + 0.55, 15.1, -13.1, z + 0.78, C_LINEN_WHITE)
+    F.box(13.1, -15.2, z + 0.78, 13.9, -14.7, z + 0.88, C_LINEN_WHITE)
+    F.box(14.1, -15.2, z + 0.78, 14.9, -14.7, z + 0.88, C_LINEN_WHITE)
+    F.box(12.9, -13.3, z + 0.78, 15.1, -13.0, z + 0.81, C_CARPET_GOLD)
+    for px, py in ((12.8, -15.4), (15.2, -15.4), (12.8, -13.0), (15.2, -13.0)):
+        F.cyl(px, py, 0.06, z + 0.05, z + 2.80, C_BRASS_ORMOLU, 8)
+    F.box(12.7, -15.5, z + 2.75, 15.3, -12.9, z + 2.85, C_BRASS_ORMOLU)
+    F.box(12.75, -15.45, z + 1.20, 15.25, -12.95, z + 2.75, C_LINEN_IVORY)
+    F.box(11.8, -15.4, z + 0.05, 12.6, -14.6, z + 0.68, C_WOOD_MAHOGANY)
+    F.box(15.4, -15.4, z + 0.05, 16.2, -14.6, z + 0.68, C_WOOD_MAHOGANY)
+    add_table_lamp(F, 12.2, -15.0, z + 0.68)
+    add_table_lamp(F, 15.8, -15.0, z + 0.68)
+    add_fireplace(F, 14.0, -6.6, z, w=2.2, d=0.55, h=1.35, orient='s', marble_col=C_MARBLE_STATUARIO)
+    F.box(10.5, -10.5, z + 0.05, 12.0, -8.5, z + 0.75, C_FABRIC_CHAMPAGNE)
+    add_chandelier(F, 14.0, -10.5, z + 3.2, r=1.1, arms=10)
+
+    # ========================================================================
+    # 3. 客房套间与卫浴 (-12..-2, -16..-6)
+    # ========================================================================
+    F.pad(-11.5, -15.5, z + 0.03, -7.5, -10.5, z + 0.05, C_FABRIC_SKY_BLUE)
+    F.box(-11.0, -15.2, z + 0.05, -9.0, -13.0, z + 0.55, C_WOOD_MAHOGANY)
+    F.box(-10.9, -15.1, z + 0.55, -9.1, -13.1, z + 0.75, C_LINEN_WHITE)
+    add_table_lamp(F, -8.6, -15.0, z + 0.65)
+    F.pad(-6.5, -15.5, z + 0.03, -2.5, -10.5, z + 0.05, C_FABRIC_ROSE_SILK)
+    F.box(-6.0, -15.2, z + 0.05, -4.0, -13.0, z + 0.55, C_WOOD_MAHOGANY)
+    F.box(-5.9, -15.1, z + 0.55, -4.1, -13.1, z + 0.75, C_LINEN_WHITE)
+    add_table_lamp(F, -3.6, -15.0, z + 0.65)
+    for bx in (-9.5, -4.5):
+        F.box(bx - 0.9, -8.5, z + 0.05, bx + 0.9, -7.3, z + 0.65, C_PORCELAIN_WHITE)
+        F.cyl(bx, -8.7, 0.04, z + 0.05, z + 0.95, C_BRASS_POLISHED, 6)
+        F.box(bx - 0.5, -9.8, z + 0.01, bx + 0.5, -9.1, z + 0.85, C_WHITE_CAB)
+    F.box(11.0, -2.0, z + 0.01, 13.0, 0.5, z + 0.55, C_WOOD_OAK)
+    F.box(11.1, -1.9, z + 0.55, 12.9, 0.4, z + 0.72, C_LINEN_WHITE)
+    F.box(14.0, -2.5, z + 0.01, 15.5, -0.5, z + 2.40, C_WOOD_WALNUT)
+
+    # ========================================================================
+    # 4. 东侧长廊与艺术陈列 (52.7..64.2, -6.0..20.8)
+    # ========================================================================
+    F.pad(54.0, -4.5, z + 0.03, 63.0, 19.5, z + 0.05, C_RUG_AUBUSSON)
+    for gy in np.linspace(-2.0, 16.0, 4):
+        F.box(53.2, gy - 0.8, z + 0.01, 54.0, gy + 0.8, z + 0.48, C_BRASS_ORMOLU)
+        F.box(53.25, gy - 0.75, z + 0.48, 53.95, gy + 0.75, z + 0.55, C_FABRIC_DAMASK_RED)
+        F.box(62.9, gy - 0.8, z + 0.01, 63.7, gy + 0.8, z + 0.48, C_BRASS_ORMOLU)
+        F.box(62.95, gy - 0.75, z + 0.48, 63.65, gy + 0.75, z + 0.55, C_FABRIC_DAMASK_RED)
+        F.box(52.8, gy - 0.9, z + 1.6, 52.9, gy + 0.9, z + 2.9, C_BRASS_ORMOLU)
+        F.box(52.88, gy - 0.8, z + 1.7, 52.92, gy + 0.8, z + 2.8, C_FABRIC_DAMASK_RED)
+        F.box(52.85, gy - 0.4, z + 2.95, 53.15, gy + 0.4, z + 3.0, C_BRASS_POLISHED)
+        add_chandelier(F, 58.5, gy, z + 3.2, r=1.0, arms=8)
+
+
+def build_f3_furn(F, z):
+    # ========================================================================
+    # 1. 14 间正式母畜个人寝室 (8间南向，6间北向)
+    # ========================================================================
+    south_rooms = [
+        (-12.0, -8.4), (-8.4, -4.8), (-4.8, -1.2), (-1.2, 2.4),
+        (2.4, 6.0), (6.0, 9.6), (9.6, 13.2), (13.2, 16.8)
+    ]
+    for rx0, rx1 in south_rooms:
+        F.pad(rx0 + 0.5, -15.5, z + 0.03, rx1 - 0.5, -11.5, z + 0.045, C_RUG_AUBUSSON)
+        F.box(rx0 + 0.35, -15.4, z + 0.05, rx0 + 1.65, -13.2, z + 0.52, C_WOOD_OAK)
+        F.box(rx0 + 0.40, -15.3, z + 0.52, rx0 + 1.60, -13.3, z + 0.70, C_LINEN_WHITE)
+        F.box(rx0 + 0.55, -15.2, z + 0.70, rx0 + 1.45, -14.7, z + 0.80, C_LINEN_WHITE)
+        F.box(rx0 + 1.80, -15.4, z + 0.05, rx0 + 2.30, -14.8, z + 0.60, C_WOOD_WALNUT)
+        add_table_lamp(F, rx0 + 2.05, -15.1, z + 0.60, base_col=C_BRASS_POLISHED)
+        F.box(rx1 - 0.90, -15.4, z + 0.01, rx1 - 0.25, -13.0, z + 2.20, C_WOOD_WALNUT)
+        F.box(rx0 + 0.40, -12.4, z + 0.01, rx0 + 1.80, -11.4, z + 0.75, C_WOOD_OAK)
+        add_chandelier(F, (rx0 + rx1) / 2, -13.5, z + 3.2, r=0.4, arms=4)
+
+    north_rooms = [
+        (-7.0, -3.4), (-3.4, 0.2), (0.2, 3.8), (3.8, 7.4), (7.4, 11.2), (11.2, 15.0)
+    ]
+    for rx0, rx1 in north_rooms:
+        F.pad(rx0 + 0.5, 3.5, z + 0.03, rx1 - 0.5, 7.5, z + 0.045, C_RUG_AUBUSSON)
+        F.box(rx0 + 0.35, 5.8, z + 0.05, rx0 + 1.65, 7.8, z + 0.52, C_WOOD_OAK)
+        F.box(rx0 + 0.40, 5.9, z + 0.52, rx0 + 1.60, 7.7, z + 0.70, C_LINEN_WHITE)
+        F.box(rx0 + 0.55, 7.2, z + 0.70, rx0 + 1.45, 7.7, z + 0.80, C_LINEN_WHITE)
+        F.box(rx0 + 1.80, 7.2, z + 0.05, rx0 + 2.30, 7.8, z + 0.60, C_WOOD_WALNUT)
+        add_table_lamp(F, rx0 + 2.05, 7.5, z + 0.60, base_col=C_BRASS_POLISHED)
+        F.box(rx1 - 0.90, 5.5, z + 0.01, rx1 - 0.25, 7.8, z + 2.20, C_WOOD_WALNUT)
+        F.box(rx0 + 0.40, 3.4, z + 0.01, rx0 + 1.80, 4.4, z + 0.75, C_WOOD_OAK)
+        add_chandelier(F, (rx0 + rx1) / 2, 5.5, z + 3.2, r=0.4, arms=4)
+
+    # ========================================================================
+    # 2. 新进公共寝区 (-15..-7, 3..8)
+    # ========================================================================
+    for by in (3.5, 5.8):
+        F.box(-14.5, by, z + 0.01, -12.5, by + 1.8, z + 1.90, C_WOOD_OAK)
+        F.box(-14.4, by + 0.1, z + 0.45, -12.6, by + 1.7, z + 0.65, C_LINEN_WHITE)
+        F.box(-14.4, by + 0.1, z + 1.40, -12.6, by + 1.7, z + 1.60, C_LINEN_WHITE)
+        F.box(-11.5, by, z + 0.01, -9.5, by + 1.8, z + 1.90, C_WOOD_OAK)
+        F.box(-11.4, by + 0.1, z + 0.45, -9.6, by + 1.7, z + 0.65, C_LINEN_WHITE)
+        F.box(-11.4, by + 0.1, z + 1.40, -9.6, by + 1.7, z + 1.60, C_LINEN_WHITE)
+
+    # ========================================================================
+    # 3. 三楼公共浴室 (-14..-8, -9..-1)
+    # ========================================================================
+    F.pad(-13.5, -8.0, z + 0.03, -10.0, -4.0, z + 0.05, C_MARBLE_STATUARIO)
+    F.box(-13.2, -7.8, z + 0.01, -10.3, -4.2, z + 0.45, C_MARBLE_STATUARIO)
+    F.pad(-13.0, -7.6, z + 0.35, -10.5, -4.4, z + 0.40, C_GLASS_CYAN)
+    for sy in (-3.5, -2.2):
+        F.box(-13.5, sy, z + 0.01, -12.0, sy + 0.9, z + 2.40, C_GLASS_CYAN)
+        F.box(-12.8, sy + 0.35, z + 2.25, -12.5, sy + 0.55, z + 2.35, C_METAL_STEEL)
+
+    # ========================================================================
+    # 4. 杂鱼女仆集体间 (15..20, -11..5)
+    # ========================================================================
+    for my in np.linspace(-10.0, 3.5, 6):
+        F.box(15.5, my, z + 0.01, 18.2, my + 1.2, z + 0.55, C_WOOD_OAK)
+        F.box(15.6, my + 0.08, z + 0.55, 18.1, my + 1.12, z + 0.70, C_LINEN_WHITE)
+
+    # ========================================================================
+    # 5. 前廊、后廊通道长毯与照明
+    # ========================================================================
+    F.pad(-12.0, -10.5, z + 0.03, 15.0, -9.5, z + 0.045, C_CARPET_BURGUNDY)
+    F.pad(-14.0, 1.5, z + 0.03, 15.0, 2.5, z + 0.045, C_CARPET_BURGUNDY)
+    for lx in np.linspace(-10.0, 14.0, 5):
+        add_chandelier(F, lx, -10.0, z + 3.2, r=0.4, arms=4)
+        add_chandelier(F, lx, 2.0, z + 3.2, r=0.4, arms=4)
+
+
 ROOM_FLOOR_COL = {
+    # B1 训导与功能区
     ('B1', '主调教室'): C_WOOD_WALNUT,
     ('B1', '私人调教室'): C_WOOD_WALNUT,
     ('B1', '性技巧训练室'): C_FLOOR_TATAMI,
     ('B1', '体能训练室'): C_FLOOR_RUBBER,
     ('B1', '恒温酒窖'): (0.30, 0.24, 0.18),
     ('B1', '更衣 / 淋浴'): (0.85, 0.84, 0.82),
+    # B2 惩戒与医护区
     ('B2', '惩罚室'): (0.18, 0.19, 0.20),
     ('B2', '医疗与改造室'): C_FLOOR_EPOXY,
     ('B2', '档案室'): C_FLOOR_GRID,
     ('B2', '储藏室'): (0.24, 0.26, 0.28),
     ('B2', '机电设备间'): (0.20, 0.22, 0.24),
+    # F1 礼仪层 (docs/eden-estate.md §4 & §6)
+    ('F1', '大厅'): C_MARBLE_STATUARIO,          # 卡拉拉白与黑金花大理石 1.2m 棋盘格地面
+    ('F1', '会客厅'): C_PARQUET_VERSAILLES,       # 凡尔赛拼橡木 + 萨伏纳里地毯
+    ('F1', '餐厅'): C_PARQUET_VERSAILLES,         # 凡尔赛拼橡木 + 绛红奥布松地毯
+    ('F1', '独立食物准备间'): (0.72, 0.70, 0.67),   # 防滑石砖地面
+    ('F1', '厨房与后勤区'): (0.68, 0.66, 0.63),     # 后勤耐磨石砖地面
+    ('F1', '衣物清洗与维护间'): (0.85, 0.85, 0.84), # 卫浴白瓷砖地面
+    ('F1', '道具清洗消毒间'): (0.82, 0.84, 0.85),   # 消毒白瓷砖地面
+    ('F1', '物资仓库'): (0.65, 0.64, 0.62),       # 仓储地坪
+    ('F1', '衣帽间 / 访客卫生间'): C_OAK_HERRINGBONE, # 人字拼橡木 + 卫生间大理石
+    ('F1', '门廊（正门）'): (0.80, 0.78, 0.73),    # 波特兰粗面白石柱廊地面
+    ('F1', '主廊'): C_MARBLE_STATUARIO,          # Statuario 大理石带黑金花饰边
+    ('F1', '服务过道'): (0.75, 0.73, 0.70),       # 石材地面
+    ('F1', '北过厅'): C_MARBLE_STATUARIO,        # Statuario 大理石地面
+    ('F1', '服务走廊'): (0.75, 0.73, 0.70),       # 石材地面
+    ('F1', '服务连廊'): (0.75, 0.73, 0.70),       # 石材地面
+    ('F1', '北廊楼（通后庭）'): C_PARQUET_VERSAILLES,# 花园起居厅凡尔赛拼花
+    ('F1', '东连廊'): C_MARBLE_STATUARIO,        # 柱廊大理石地面
+    ('F1', '主人通道前室'): C_MARBLE_STATUARIO,    # 大理石前室地面
+    ('F1', '塔楼前厅'): C_MARBLE_STATUARIO,       # 大理石前厅地面
+    # F2 日常层
+    ('F2', '主人主卧'): C_PARQUET_VERSAILLES,     # 凡尔赛拼橡木 + 奥布松满铺地毯
+    ('F2', '主人书房'): C_OAK_HERRINGBONE,        # 人字拼橡木 + 赫里兹地毯
+    ('F2', '书房前等候廊'): C_OAK_HERRINGBONE,     # 人字拼橡木
+    ('F2', '客房'): C_PARQUET_VERSAILLES,         # 橡木地板 + 羊毛地毯
+    ('F2', '客房卫浴 ×2'): C_MARBLE_GOLD,         # 卡拉卡塔金大理石
+    ('F2', '布草 / 服务间'): (0.78, 0.76, 0.72),   # 仿橡木油毡
+    ('F2', '女仆长寝室'): C_PARQUET_VERSAILLES,    # 橡木地板
+    ('F2', '女仆长卫浴'): (0.84, 0.84, 0.82),     # 卫浴白瓷砖
+    ('F2', '仆役前室'): (0.76, 0.75, 0.72),       # 瓷砖地面
+    ('F2', '主廊'): C_PARQUET_VERSAILLES,         # 凡尔赛拼橡木
+    ('F2', '东侧长廊'): C_PARQUET_VERSAILLES,     # 肖像画廊橡木地板
+    ('F2', '东翼走廊'): C_PARQUET_VERSAILLES,     # 橡木地板
+    ('F2', '连廊'): C_PARQUET_VERSAILLES,         # 橡木地板
+    # F3 私人层
+    ('F3', '正式母畜个人寝室'): C_PARQUET_VERSAILLES, # 橡木地板
+    ('F3', '新进公共寝区'): C_PARQUET_VERSAILLES, # 橡木地板
+    ('F3', '三楼公共浴室'): C_MARBLE_STATUARIO,   # Statuario 大理石 + 淋浴瓷砖
+    ('F3', '杂鱼女仆集体间'): C_PARQUET_VERSAILLES, # 橡木地板
+    ('F3', '公共清洁间'): (0.82, 0.82, 0.80),     # 防滑瓷砖
+    ('F3', '集体间储物'): C_PARQUET_VERSAILLES,   # 储物地板
+    ('F3', '三楼公共区'): C_OAK_HERRINGBONE,      # 人字拼橡木
+    ('F3', '前廊'): C_OAK_HERRINGBONE,           # 人字拼橡木走廊
+    ('F3', '后廊'): C_OAK_HERRINGBONE,           # 人字拼橡木走廊
+    ('F3', '仆役前室 / 布草'): (0.78, 0.76, 0.72), # 瓷砖
+    ('F3', '走廊'): C_OAK_HERRINGBONE,           # 人字拼橡木
+    ('F3', '布草间'): (0.78, 0.76, 0.72),         # 瓷砖
 }
 
 
@@ -2196,6 +2563,12 @@ def build_floor(fl):
         build_b1_furn(F, z)
     elif fl == 'B2':
         build_b2_furn(F, z)
+    elif fl == 'F1':
+        build_f1_furn(F, z)
+    elif fl == 'F2':
+        build_f2_furn(F, z)
+    elif fl == 'F3':
+        build_f3_furn(F, z)
     else:
         for r in rooms:
             if r['kind'] in ('restricted', 'medical'):

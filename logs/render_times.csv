@@ -781,3 +781,6 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-03,world_borders,final,8000,1,0.0,0,darwin,ok,0,0
 2026-10-03,world_night,final,8000,128,7.6,0,darwin,ok,0,0
 2026-10-03,world_night,final,8000,128,8.0,0,darwin,ok,0,0
+2026-10-03,dairy_blend,draft,64,1,0.1,0,darwin,ok,0,0
+2026-10-03,web_scene,draft,64,1,0.8,0,darwin,ok,0,0
+2026-10-03,site_glb,draft,2048,64,11.6,0,darwin,ok,0,0

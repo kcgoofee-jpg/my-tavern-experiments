@@ -44,8 +44,11 @@ TX0, TX1, TY0, TY1 = -352.0, 352.0, -264.0, 264.0
 HOUSE = ('hall', 'porch', 'tower', 'w_wing_a', 'w_wing_b', 'w_pav', 'e_wing_a', 'e_wing_b', 'e_pav', 'belvedere', 'n_link', 'w_low', 'e_low')
 HOUSE_RX = re.compile(r'^(' + '|'.join(HOUSE) + r')_|^(portico|dome_|arc_)')
 FLAT_RX = re.compile(r'(_water$|_koi$|^koi_fish|_marks$|^tennis|_in$|_line$|^kerb|^canal_|_guide$|parterre_box|_spray$|^fountain_jet|^grotto_fall|_cascade_white|_sky$|_steel$|^awn_|^helipad_marks|_court$)')
+# Window / glass material names (Blender side) — separated so night-look.mjs can glow them
+GLASS_MATS = {'e2_glass', 'e2_window_glass', 'e2_glasshouse', 'e2_clear_glass'}
 GROUPS = [  # 名 → (三角形预算, 贴图边长)
     ('house_shell', 60000, 2048),
+    ('house_shell_glass', 15000, 512),
     ('site_c', 30000, 2048),
     ('site_w', 40000, 2048),
     ('site_e', 35000, 2048),
@@ -122,8 +125,23 @@ for o in bpy.data.objects:
 log('3D candidates', len(cand))
 
 
+def is_glass(o):
+    n = o.name
+    if n.endswith('_glass') or n == 'portico_door':
+        return True
+    if '_Glass_' in n:
+        return True
+    if o.type == 'MESH' and o.data and getattr(o.data, 'materials', None):
+        for m in o.data.materials:
+            if m and (m.name in GLASS_MATS or 'glass' in m.name.lower()):
+                return True
+    return False
+
+
 def group_of(o):
     if HOUSE_RX.search(o.name):
+        if is_glass(o):
+            return 'house_shell_glass'
         return 'house_shell'
     lo, hi = world_bb(o)
     cx = (lo[0] + hi[0]) / 2
@@ -232,7 +250,10 @@ TEX_MAX = 600   # 三角形不多的部件（墙体、屋面、山墙…着色�
 for c in work:
     if c.name in vl.objects and c.type == 'MESH' and len(c.data.polygons):
         n = sum(len(p.vertices) - 2 for p in c.data.polygons)
-        byg.setdefault(c['grp'] + ('' if n <= TEX_MAX else '_vc'), []).append(c.name)
+        if c['grp'] == 'house_shell_glass':
+            byg.setdefault('house_shell_glass', []).append(c.name)
+        else:
+            byg.setdefault(c['grp'] + ('' if n <= TEX_MAX else '_vc'), []).append(c.name)
 
 
 def tris(o):
@@ -357,7 +378,8 @@ manifest['groups']['ground'] = dict(tris=tris(ground), tex=TOPW)
 
 def bake_mat(gid, path):
     im = bpy.data.images.load(path)
-    m = bpy.data.materials.new(f'm_{gid}'); m.use_nodes = True
+    mat_name = 'm_win_glass' if 'glass' in gid else f'm_{gid}'
+    m = bpy.data.materials.new(mat_name); m.use_nodes = True
     nt = m.node_tree; nt.nodes.clear()
     p = nt.nodes.new('ShaderNodeBsdfPrincipled'); o = nt.nodes.new('ShaderNodeOutputMaterial'); o.is_active_output = True
     nt.links.new(p.outputs[0], o.inputs['Surface'])
@@ -400,7 +422,8 @@ if VC:
         d = np.interp(np.log2(np.maximum(c[:, :3], 2 ** -12)), lv, disp)
         out = np.concatenate([d, np.ones((len(d), 1), np.float32)], 1)
         ca.data.foreach_set('color_srgb', out.ravel())
-        m = bpy.data.materials.new(f'm_{J.name}'); m.use_nodes = True
+        mat_name = 'm_win_glass' if 'glass' in J.name else f'm_{J.name}'
+        m = bpy.data.materials.new(mat_name); m.use_nodes = True
         nt = m.node_tree; nt.nodes.clear()
         pr = nt.nodes.new('ShaderNodeBsdfPrincipled'); o = nt.nodes.new('ShaderNodeOutputMaterial'); o.is_active_output = True
         nt.links.new(pr.outputs[0], o.inputs['Surface'])

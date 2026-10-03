@@ -653,3 +653,14 @@ ts,id,stage,event,agent,gate,note
 2026-10-03T05:36:17Z,var:world:night,render,done,render-b5,,"world_night_full.png 8000x4923 at 128 spp, 8.0 min; dark terrain and sea under a 0.12 cool moon, the three capitals the only light sources (warm core, one arterial each, dim halo; 1.0 / 0.62 / 0.45); two earlier night renders were discarded, the second for the emission-map coordinates (6 / 37 / 23 px off) - the shipped one has the lights on the intended pixels (centroids 3594,2309 / 1615,2309 / 5523,2157)"
 2026-10-03T05:36:25Z,var:world:night,tiles,done,render-b5,,"map/art/world_night.dzi + world_night_files, 14 levels, 226 tiles (jpg); 153d5aae. Self-check with tools/oblique_emitcheck.py: 3 bright regions of 619 px in the whole frame, 0 sourceless px at pad 8 and pad 16, clip 0.001 % with 0.0 % off source, mean luminance 0.0078 - s0.8 items 2 and 7 pass"
 2026-10-03T05:36:30Z,var:world:night,register,wait,render-b5,,"periods.night on the world map is a maps.json edit and belongs to the OBLIQUE-CODE step (the existing period switch then picks it up, and FOG-1's city ring takes this image at night); no maps.json change in this batch"
+2026-10-03T05:54:34Z,obl:tc_upper:day,ship,claim,b6-1,,
+2026-10-03T05:56:46Z,obl:tc_upper:day,ship,claim,b6-1,,
+2026-10-03T05:56:50Z,obl:tc_upper:day,ship,wait,b6-1,,waiting for OBLIQUE-CODE; B6 session does estate items per prompt
+2026-10-03T05:56:55Z,obl:tc_upper:day,ship,claim,b6-1,,
+2026-10-03T06:08:35Z,obl:tc_upper:day,ship,release,b6-1,,release unneeded claim
+2026-10-03T06:47:11Z,glb:estate:night-glow,final,done,render-b6,pass,re-exported estate exterior with separable m_win_glass listed in manifest x-night-glow
+2026-10-03T06:47:14Z,glb:estate:night-glow,verify,done,render-b6,pass,verified in estate3d probe and WebKit sweep
+2026-10-03T06:47:17Z,glb:estate:night-glow,ship,done,render-b6,pass,shipped site.glb and site_low.glb with x-night-glow in manifest
+2026-10-03T06:47:21Z,estate:cutaway,final,done,render-b6,pass,"F1-F3 interior materials, AO bake, realistic lighting fixtures (chandeliers, sconces, fireplaces)"
+2026-10-03T06:47:24Z,estate:cutaway,verify,done,render-b6,pass,verified in estate3d probe and e13b 6-view sweep with zero flicker across B2-F3
+2026-10-03T06:47:29Z,estate:cutaway,ship,done,render-b6,pass,shipped house.glb with F1-F3 interiors and merged B2 medical center

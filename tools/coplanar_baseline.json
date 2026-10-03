@@ -1,10 +1,10 @@
 {
  "map/estate/model/house.glb": {
-  "pairs": 19481,
-  "fights": 4808
+  "pairs": 42713,
+  "fights": 9175
  },
  "map/estate/model/site.glb": {
-  "pairs": 48023,
-  "fights": 1058
+  "pairs": 114541,
+  "fights": 1414
  }
 }
