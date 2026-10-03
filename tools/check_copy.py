@@ -36,20 +36,27 @@ ALLOW_HEAD = ('about.build_line', 'about.build_mismatch', 'about.follow_build', 
               'about.follow_latest', 's.update_sub', 'about.build_loaded')
 # 用户必须照抄的 id
 ALLOW_LITERAL = ('spatial_os:pack',)
+# 存储键与开关名是照抄进 localStorage 的标识符，不是上屏的文案（键里带内部术语属正常）
+KEY_LIKE = re.compile(r'^edenMap[A-Za-z0-9:]*$')
+# 同理：宿主模块里照抄的内部字段名（宿主与查看器之间的偏好 / 事实键），显式登记，改一个添一个
+ALLOW_IDENT = ('ledger', 'ledgerWrite', 'wbJit', 'wbXtal', 'spatial', 'dice', 'digest', 'macros', 'state', 'nav', 'inject')
 # 明列的用户文案发射文件（引擎代码里其余 console.warn / 注释不在此列——不是用户面）
 FILES = [
     'map/tavern/host-checks.mjs', 'map/tavern/selfcheck.mjs', 'map/tavern/splash.mjs',
     'map/tavern/worldbook-readme.mjs', 'map/tavern/host-tavernhelper.mjs',
-    'map/ui/notice.mjs', 'map/app/notice-layer.mjs',
+    'map/ui/notice.mjs', 'map/app/notice-layer.mjs', 'map/app/feature-card.mjs',
+    'map/estate/main.js',   # FIX-3：三维页自己一张文案表（COPY-1 只抽查过它），现在进机器门控
 ]
 
 STR_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+# FIX-3: 发射文件里的文案大多是单引号字面量（三维页整张表都是），双引号正则一条都捞不到
+SQ_RE = re.compile(r"'((?:[^'\\\n]|\\.)*)'")
 ZH_ONLY = re.compile('[\u4e00-\u9fff]')
 
 
 def check_value(text, where, errs):
     """一条用户字符串的三个检查；where = 出处（文件:行 或 键）。"""
-    if any(lit in text for lit in ALLOW_LITERAL):
+    if any(lit in text for lit in ALLOW_LITERAL) or KEY_LIKE.match(text.strip()) or text.strip() in ALLOW_IDENT:
         terms = []
     else:
         terms = [t for t in TERMS if t in text]
@@ -78,11 +85,14 @@ def scan_file(path, errs):
     rel = os.path.relpath(path, ROOT)
     for i, line in enumerate(open(path, encoding='utf-8'), 1):
         s = line.strip()
-        if s.startswith('//') or s.startswith('*') or s.startswith('/*'):
-            continue
+        if s.startswith('//') or s.startswith('*') or s.startswith('/*') or 'console.' in s:
+            continue   # 注释与诊断输出（console）不是上屏文案
         if 'ICONS' in line or 'MARK' in line:   # 图标表：字形是 aria-labelled 图标，不是文案（feature-card 同理，见 docs/copy-style.md）
             continue
-        for m in STR_RE.finditer(line):
+        cut = s.find('  //')   # 行尾注释：注释里的字面量不是文案
+        if cut > 0:
+            s = s[:cut]
+        for m in list(STR_RE.finditer(s)) + list(SQ_RE.finditer(s)):
             lit = m.group(1)
             if not lit or not ZH_ONLY.search(lit) and not any(p in lit for p in PHRASES + TERMS):
                 continue   # 只看中文文案 / 命中词表的字面量，HTML 模板与选择器不陪跑
@@ -126,6 +136,17 @@ def self_test():
     for text, tag in [('辉光教堂 → 执法局（途中）', 'ok-arrow'), ('× 关闭', 'ok-x'), ('还有 3 条：…', 'ok-ell'),
                       ('地图有新版 v0.9.7', 'ok-plain'), ('新增 3 条、更新 1 条。', 'ok-zh')]:
         if not one(text, False, tag): ok = False; errs.append(f'好例被拦：{tag} {text}')
+    # FIX-3: 单引号字面量也扫（三维页整张文案表都是单引号，双引号正则一条都捞不到）
+    import tempfile
+    with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+        f.write("const T = { a: '⚠ 数据链路受扰', b: '外观', c: 'ledger' };\n// '注释里的 ⚠ 不算'\n")
+        tmp = f.name
+    got = []
+    scan_file(tmp, got)
+    os.unlink(tmp)
+    if len(got) != 1:   # 只该有那条 ⚠；'外观' 与 'ledger'（内部字段名）放行
+        ok = False
+        errs.append(f'单引号扫描不对：{got}')
     return ok, errs
 
 

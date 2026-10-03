@@ -1,9 +1,11 @@
 // The feature card (S7-1 T2, docs/settings-ia.md §4.1): one component for every AI-link feature. Header = health icon (a shape, never colour alone) + name + purpose + master switch;
 // body = sub-options, "what it does now" (the exact text sent and its token estimate), one health line, learn-more. All text goes in through textContent. The pure `cardModel` decides every
 // word and icon (tests/feature_card.test.mjs); `featureCard` only draws it and keeps the nodes so a new state patches them in place (focus, open state and typed values survive).
+// FIX-3 (COPY-1): the four states draw glyphs from the one icon set (ui/icons.js check / alert / wait / off) instead of the text characters they used to be. The names are unchanged; the label still rides on aria-label.
 import { uiTextOr } from './text-lookup.mjs';
+import { iconSvg } from './dom-helpers.mjs';
 
-export const ICONS = Object.freeze({ working: '✓', 'not-effective': '!', idle: '◷', off: '–' });
+export const ICONS = Object.freeze({ working: 'check', 'not-effective': 'alert', idle: 'wait', off: 'off' });
 const tr = (k, zh, v) => uiTextOr(k, zh, v);
 const REASON_ZH = { off: '已关闭', 'no-host-api': '这个酒馆助手版本没有所需接口（{name}）', skipped: '卡的提示词里已有这些字段，本轮跳过', empty: '还没有可注入的状态', 'no-place': '当前地点不在任何地图上', 'no-book': '附加世界书未安装或未绑定', 'no-tags': '最近的回复里没有事实标签', 'no-checks': '还没有发生检定', 'no-config': '端点配置不完整', 'no-consent': '还没有同意', endpoint: '上次请求失败（HTTP {status}）', waiting: '地图开着或正在生成时不运行', 'no-input': '没有找到聊天输入框' };
 
@@ -17,7 +19,7 @@ export function cardModel(def, st, ctx = {}) {
   const text = typeof s.text === 'string' && s.reason !== 'no-host-api' ? s.text : '';
   return {
     id: def.id, name: tr('fc.' + def.id + '.name', def.id), purpose: tr('fc.' + def.id + '.purpose', ''), more: tr('fc.' + def.id + '.more', ''), cost: def.cost ? tr('fc.' + def.id + '.cost', '') : '',
-    on: !!s.on, canSwitch: !def.noSwitch, state: st2, icon: ICONS[st2] || '–', iconLabel: tr('fc.st.' + st2, st2), line, text, tokens: Number.isFinite(s.tokens) ? s.tokens : null,
+    on: !!s.on, canSwitch: !def.noSwitch, state: st2, icon: ICONS[st2] || 'off', iconLabel: tr('fc.st.' + st2, st2), line, text, tokens: Number.isFinite(s.tokens) ? s.tokens : null,
     now: text ? '' : (st2 === 'off' ? '' : tr('fc.none', '目前没有发送内容')), tokensText: Number.isFinite(s.tokens) ? tr('fc.tokens', '≈ {n} token', { n: s.tokens }) : '',
     tpl: def.tpl ? tr('fc.tpl', '模板：{s}', { s: tr(ctx.tplPack ? 'fc.tpl_pack' : 'fc.tpl_core', ctx.tplPack ? '本设定包' : '内核') }) : '', saved: !!ctx.saved ? tr('fc.saved', '已保存') : '',
     needsConsent, stats: s.stats || null,
@@ -27,7 +29,7 @@ export function cardModel(def, st, ctx = {}) {
 export const testVerdict = (t, asked) => { const take = !!(t && asked && asked.nonce && t.nonce === asked.nonce); return { take, pass: take && !!t.ok }; };
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
 const CSS = `.fcard{border:1px solid var(--line);border-radius:var(--r-l);margin:0 0 var(--sp-4);background:var(--surface)}.fcard>summary{display:flex;align-items:center;gap:var(--sp-4);min-height:var(--hit,44px);padding:var(--sp-3) var(--sp-5);cursor:pointer;list-style:none}.fcard>summary::-webkit-details-marker{display:none}
-.fcard .fci{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:1px solid currentColor;font-weight:700;color:var(--muted)}.fcard.st-working .fci{color:var(--ok)}.fcard.st-not-effective .fci{color:var(--alert)}
+.fcard .fci{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;border:1px solid currentColor;font-weight:700;color:var(--muted)}.fcard .fci>svg{width:14px;height:14px;display:block}.fcard.st-working .fci{color:var(--ok)}.fcard.st-not-effective .fci{color:var(--alert)}
 .fcard .fcn{flex:1;min-width:0;display:flex;flex-direction:column}.fcard .fcn b{font-weight:600}.fcard .fcn small,.fcard .fcbody small{display:block;margin:0;color:var(--muted);font-size:var(--fs-micro);line-height:1.45}
 .fcard .fcsw{flex:none;min-width:var(--hit,44px);min-height:var(--hit,44px);display:flex;align-items:center;justify-content:flex-end}.fcard .fcbody{padding:0 var(--sp-5) var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-3)}
 .fcard .fcnow{margin:0;padding:var(--sp-3) var(--sp-4);border:1px dashed var(--line-strong);border-radius:var(--r-m);font:var(--fs-micro)/1.5 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:9em;overflow:auto}
@@ -51,7 +53,7 @@ export function featureCard(def, hooks = {}) {
     const m = cardModel(def, st, ctx), key = JSON.stringify([m, ctx.lang]);
     card.className = 'fcard st-' + m.state; if (sc && document.activeElement !== sc) sc.checked = m.on;
     if (key === prev) return m; prev = key;
-    ic.textContent = m.icon; ic.setAttribute('aria-label', m.iconLabel); nb.textContent = m.name; pu.textContent = m.purpose; co.textContent = m.cost; co.hidden = !m.cost;
+    ic.innerHTML = iconSvg(m.icon); ic.setAttribute('aria-label', m.iconLabel); nb.textContent = m.name; pu.textContent = m.purpose; co.textContent = m.cost; co.hidden = !m.cost;
     if (sc) sc.setAttribute('aria-label', m.name);
     subs.hidden = !(m.on || !m.canSwitch) && !m.needsConsent; tpl.textContent = m.tpl; tpl.hidden = !m.tpl;
     now.textContent = m.text; now.hidden = !m.text; tk.textContent = m.tokensText; tk.hidden = !m.text; none.textContent = m.now; none.hidden = !m.now;

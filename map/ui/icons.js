@@ -35,6 +35,14 @@
     nudge: '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4 4v-4h-.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8.5 8.5h7M8.5 11.5h4"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
     flows: '<path d="M3 8h13M13 4.5L16.5 8 13 11.5M21 16H8M11 12.5L7.5 16l3.5 3.5"/>',
+    // 功能卡的四种状态（COPY-1：状态不再用文字字形画在徽圈里，改用这一套；徽圈的名字由 aria-label 给）。
+    // 正常 = 对勾；未生效 = 三角警示（与「关闭」的圆杠、时钟的按钮都不是同一个形状）
+    check: '<path d="M5 12.8l4.4 4.4L19 7.4"/>',
+    alert: '<path d="M12 4.4 21.2 19.6H2.8z"/><path d="M12 10.2v4.1M12 16.7h.01"/>',
+    // 等待 = 虚线钟面（与实线钟面 clock 区分开：那个是时钟按钮）
+    wait: '<circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3.2"/><path d="M12 7.4V12l2.7 1.9"/>',
+    // 关闭 = 圆里一道横（minus 是工具栏的减号）
+    off: '<circle cx="12" cy="12" r="8.5"/><path d="M8.2 12h7.6"/>',
   };
   const svg = (k, o = {}) => `<svg class="${o.cls || 'ico'}" viewBox="0 0 24 24" width="${o.size || 20}" height="${o.size || 20}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${P[k] || ''}</svg>`;
   window.UIIcon = { svg, names: Object.keys(P), P };

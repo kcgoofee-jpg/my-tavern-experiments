@@ -1,11 +1,22 @@
 // S7-1 T2: the pure card model (map/app/feature-card.mjs cardModel): icons per state, idle, the template line, consent, saved, text and token lines.
+// FIX-3 (COPY-1): the four state icons are names in the one icon set (map/ui/icons.js), not text glyphs; the glyphs are gone from the source.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 globalThis.window = {};
 const { cardModel, ICONS, testVerdict } = await import('../map/app/feature-card.mjs');
 const D = { id: 'state', sw: 'thInjOn', cost: true, tpl: true };
-test('icons are shapes: working check, not effective bang, idle clock, off dash; each has a label', () => {
-  assert.deepEqual(ICONS, { working: '✓', 'not-effective': '!', idle: '◷', off: '–' });
+test('icons are shapes: working check, not effective alert, idle waiting clock, off barred circle; each has a label', () => {
+  assert.deepEqual(ICONS, { working: 'check', 'not-effective': 'alert', idle: 'wait', off: 'off' });
+  const src = readFileSync(fileURLToPath(new URL('../map/app/feature-card.mjs', import.meta.url)), 'utf8');
+  assert.doesNotMatch(src, /[✓◷–]/, 'no text glyphs left in the feature card');
+  // every name must exist in the one icon set, and the four must be four different shapes
+  const icons = readFileSync(fileURLToPath(new URL('../map/ui/icons.js', import.meta.url)), 'utf8');
+  const paths = Object.fromEntries([...icons.matchAll(/^\s{4}(\w+):\s*'([^']+)'/gm)].map(m => [m[1], m[2]]));
+  const shapes = Object.values(ICONS).map(n => paths[n]);
+  for (const n of Object.values(ICONS)) assert.ok(shapes.includes(paths[n]) && paths[n], `icons.js has no glyph for ${n}`);
+  assert.equal(new Set(shapes).size, 4, 'the four states are four different shapes');
   for (const s of ['working', 'not-effective', 'idle', 'off']) { const m = cardModel(D, { on: s !== 'off', state: s }); assert.equal(m.icon, ICONS[s]); assert.ok(m.iconLabel); assert.equal(m.state, s); }
 });
 test('the health line: ok with floor, not effective with the fixed reason, idle waits, off', () => {

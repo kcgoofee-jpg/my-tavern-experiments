@@ -51,7 +51,7 @@ const roomEl = document.createElement('div'); roomEl.id = 'roomPane'; if (!SHELL
 /** 壳模式的外壳替身：没有任何 DOM；查看器经 estate:inset 告诉本页它的右栏 / 抽屉盖住了多少 */
 const shellChrome = () => { const ins = { right: 0, bottom: 0 }, subs = new Set(), no = () => {}; return { root: document.body, insets: () => ({ ...ins }), onInsets: (f) => subs.add(f), setInsets: (m) => { Object.assign(ins, m); subs.forEach((f) => f()); },
   sheet: { tab: '', open: false, state: 'peek', mode: 'sheet', setTab: no, set: no, label: no, down: () => false }, setView: no, setViews: no, showSub: no, setText: no, setTitle: no, setAuto: no, dragStart: no, dragEnd: no }; };
-const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: '外观' }, { id: 'sect', label: '楼层' }], view: 'ext', sub: document.getElementById('floors'),
+const C3 = SHELL ? shellChrome() : window.UI3D.create({ embed: EMBED, views: [{ id: 'ext', label: LANG === 'en' ? 'Exterior' : '外观' }, { id: 'sect', label: LANG === 'en' ? 'Floors' : '楼层' }], view: 'ext', sub: document.getElementById('floors'),
   onView: (v) => setMode(v === 'sect' ? (isFloor(mode) ? mode : lastFloor) : v, { fly: true, user: true }),
   controls: [{ id: 'lblBtn', icon: 'labels', pressed: true }, { id: 'zin', icon: 'in' }, { id: 'zout', icon: 'out' }, { id: 'zreset', icon: 'reset' }],
   tabs: [{ id: 'room', btnClass: 'roomTab', panel: roomEl }, { id: 'about', btnClass: 'aboutTab', panel: aboutEl }],
@@ -149,10 +149,10 @@ const polyBox = (rooms) => {   // 房间多边形的外包（layout 米）；没
 };
 const HOUSE_BOX = polyBox(CARD.rooms || []);
 
-/* ---------------- UI 文案 ---------------- */
+/* ---------------- UI 文案（COPY-1 定词：docs/copy-style.md。本页自己一张表，zh 为准、en 镜像；表外不留硬编码） ---------------- */
 const TXT = {
-  zh: { ext: '外观', sect: '楼层', hint: '拖动旋转 · 右键 / 双指平移 · 滚轮 / 捏合 / + − 缩放 · 双击房间或区域拉近，双击空白或按 0 复位', zin: '放大', zout: '缩小', zreset: '复位视野', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', schedule: '按日程', more: '还有 {n} 人', person: '{name}，{room}', estate: '室外', alias: '别名', where: '位置', orig: '原名', loading: '加载中…', loadingP: '加载模型 {p}', houseLoading: '载入室内…', enter3d: '进入三维' },
-  en: { ext: 'Exterior', sect: 'Floors', hint: 'Drag to orbit · right-drag / two fingers to pan · wheel / pinch / + − to zoom · double-click a room or area to zoom in, empty space or 0 to reset', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', schedule: 'By schedule', more: '{n} more', person: '{name}, {room}', estate: 'Grounds', alias: 'Aliases', where: 'Where', orig: 'Original name', loading: 'Loading…', loadingP: 'Loading model {p}', houseLoading: 'Loading interior…', enter3d: 'Enter 3D' },
+  zh: { ext: '外观', sect: '楼层', hint: '拖动旋转 · 右键拖动或双指平移 · 滚轮平移，捏合或按住 Ctrl 缩放 · 双击房间或区域拉近 · 按 0 复位视野', zin: '放大', zout: '缩小', zreset: '复位视野', labels: '显示标注（L）', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', estate: '室外', alias: '叫法', where: '位置', orig: '原名', loadingP: '加载模型 {p}', enter3d: '进入三维', expand: '展开', collapse: '收起', region: '房间与关于', rooms: '房间', roomsShort: '房', about: '关于', aboutShort: '关', empty: '点模型上的房间或区域，这里显示它的说明', top: '俯视', iso: '斜视 45°', front: '正面', free: '自由', pick: '拾取', hidden: '暗格：{v}' },
+  en: { ext: 'Exterior', sect: 'Floors', hint: 'Drag to orbit · right-drag or two fingers to pan · wheel pans, pinch or Ctrl-drag zooms · double-click a room or area to zoom in · 0 resets the view', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', labels: 'Show labels (L)', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', estate: 'Grounds', alias: 'Called', where: 'Where', orig: 'Original name', loadingP: 'Loading model {p}', enter3d: 'Enter 3D', expand: 'Expand', collapse: 'Collapse', region: 'Room and about', rooms: 'Room', roomsShort: 'R', about: 'About', aboutShort: 'A', empty: 'Tap a room or area on the model to read about it here', top: 'Top', iso: 'Iso 45°', front: 'Front', free: 'Free', pick: 'Pick up', hidden: 'hidden: {v}' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const FL = () => Estate3D.floorList(MAN, LANG);   // K-R132: id + label (the id when the manifest gives none)
@@ -415,8 +415,7 @@ function takeProp(p) {
   post({ type: 'estate:loot', id: p.id, name: p.name, place: p.place || '', hidden: !!p.hidden, floor: p.floor ?? null });
 }
 function showPropTip(p, x, y) {
-  const zh = LANG === 'zh';
-  if (tipFor !== p) { tip.innerHTML = `<div class="row"><em>${zh ? '拾取' : 'Pick up'}</em>${esc(p.name)}${p.hidden ? `（${zh ? '暗格' : 'hidden'}：${esc(p.hidden)}）` : ''}</div>`; tipFor = p; }
+  if (tipFor !== p) { tip.innerHTML = `<div class="row"><em>${tx('pick')}</em>${esc(p.name)}${p.hidden ? `（${tx('hidden', { v: esc(p.hidden) })}）` : ''}</div>`; tipFor = p; }
   cardAt = [x, y]; placeCard(); tip.classList.add('on');
 }
 
@@ -507,14 +506,13 @@ function buildNav() {
   C3.setViews([{ id: 'ext', label: tx('ext') }, { id: 'sect', label: tx('sect') }]);
   for (let i = 0; i < FLOORS.length && !SHELL; i++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = FLOORS[i].id; b.title = floorLabel(i);
     b.onclick = () => setMode(i, { fly: true, user: true }); floorsEl.appendChild(b); BTN[i] = b; }
-  const zh = LANG === 'zh';
-  C3.setText({ expand: zh ? '展开' : 'Expand', collapse: zh ? '收起' : 'Collapse', region: zh ? '房间与关于' : 'Room and about' });
-  C3.sheet.label('room', zh ? '房间' : 'Room', zh ? '房' : 'R'); C3.sheet.label('about', zh ? '关于' : 'About', zh ? '关' : 'A');
-  roomEl.querySelector('#cardEmpty').textContent = zh ? '点模型上的房间或区域，这里显示说明' : 'Tap a room or area on the model to see it here';
+  C3.setText({ expand: tx('expand'), collapse: tx('collapse'), region: tx('region') });
+  C3.sheet.label('room', tx('rooms'), tx('roomsShort')); C3.sheet.label('about', tx('about'), tx('aboutShort'));
+  roomEl.querySelector('#cardEmpty').textContent = tx('empty');
   const bd = BLD(); aboutEl.replaceChildren(...[['h2', bd.title], ['div', bd.subtitle, 'motto'], ['p', bd.summary], ['p', tx('hint')]].filter(([, t]) => t).map(([tag, t, c]) => { const e = document.createElement(tag); e.textContent = t; if (c) e.className = c; return e; }));
   C3.setTitle(bd.title);
   syncNav();
-  if (!SHELL) { $('#lblBtn').title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; $('#lblBtn').setAttribute('aria-label', $('#lblBtn').title);
+  if (!SHELL) { $('#lblBtn').title = tx('labels'); $('#lblBtn').setAttribute('aria-label', tx('labels'));
     for (const k of ['zin', 'zout', 'zreset']) { $('#' + k).title = tx(k); $('#' + k).setAttribute('aria-label', tx(k)); } }
   document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN'; aria();
 }
@@ -672,7 +670,7 @@ function info(it) {
   }
   if (it.kind === 'area') {
     if (d.alias?.length && zh) rows.push([tx('alias'), d.alias.filter((a) => /[\u4e00-\u9fff]/.test(a)).slice(0, 4).join('、')]);
-    for (const c of childrenOf(it) || []) acts.push({ id: 'enter', label: tx('enter3d') + ' ›', node: c.node, title: c.title });
+    for (const c of childrenOf(it) || []) acts.push({ id: 'enter', label: tx('enter3d'), node: c.node, title: c.title });
     return { title: nameOf(it), sub: tx('estate') + (zh && d.en ? ' · ' + d.en : ''), rows: rows.filter((r) => r[1]), acts };
   }
   const k = KIND(d.kind), out = { title: nameOf(it), sub: floorName(it.floor) + (d.id ? ' · ' + d.id : ''), kind: { id: k.id, label: k.label, color: k.color }, rows, acts };
@@ -880,7 +878,7 @@ const resetView = () => { unpin(); flyTo(viewFor(mode)); };
 let labelsOn = LS('edenEstateLabels') !== '0';
 function setLabels(on) {
   labelsOn = on; document.body.classList.toggle('nolabels', !on);
-  const b = $('#lblBtn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = (LANG === 'en' ? 'Show labels' : '显示标注') + ' (L)'; }
+  const b = $('#lblBtn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = tx('labels'); }
   try { localStorage.setItem('edenEstateLabels', on ? '1' : '0'); } catch (e) { }
   wake();
 }
@@ -1146,22 +1144,20 @@ setMode(m0);
 /* ---------------- 视角预设 + 指北针 · 空闲自动旋转（默认关） · 首次操作提示卡 ---------------- */
 let presets = null, compass = null, idleTimer = null;
 if (!EMBED) {   // 嵌入到查看器里时用查看器自己的控制列 / 提示，这几件只在独立打开时加
-  presets = makePresetCluster({ presets: [
-    { id: 'top', label: LANG === 'en' ? 'Top' : '俯视' }, { id: 'iso', label: LANG === 'en' ? 'Iso 45°' : '斜视 45°' },
-    { id: 'front', label: LANG === 'en' ? 'Front' : '正面' }, { id: 'free', label: LANG === 'en' ? 'Free' : '自由' },
-  ], style: { bottom: '92px', right: '12px' } });
-  presets.el.querySelectorAll('button').forEach((b, i) => { b.onclick = () => applyPreset(['top', 'iso', 'front', 'free'][i]); });
+  const V4 = ['top', 'iso', 'front', 'free'];
+  presets = makePresetCluster({ presets: V4.map(id => ({ id, label: tx(id) })), style: { bottom: '92px', right: '12px' } });
+  presets.el.querySelectorAll('button').forEach((b, i) => { b.onclick = () => applyPreset(V4[i]); });
   presets.setActive('free');
   compass = makeCompass({ style: { bottom: '52px', right: '12px' }, onReset: () => applyPreset('front') });
   controls.addEventListener('change', () => { sph.setFromVector3(camera.position.clone().sub(controls.target)); compass.setHeading(sph.theta); });
   makeHintCard({ storageKey: 'edenEstateHintSeen', lines: LANG === 'en' ? [
-    '<b>Drag</b> orbits around the point you press on', '<b>Wheel</b>: plain scroll pans · ⌃/pinch zooms to cursor · ⌥+scroll rotates',
-    '<b>Right-drag / Shift-drag / two-finger drag</b> pans', '<b>Double-click</b> a room or area flies to it, empty space or <b>0</b> resets',
-    '<b>WASD/arrows</b> pan · <b>Q/E</b> rotate · <b>R/F</b> tilt · <b>+/−</b> zoom',
+    '<b>Drag</b> orbits around the point you press on', '<b>Wheel</b>: scroll to pan, hold Ctrl to zoom to the cursor, hold Alt to rotate',
+    '<b>Right-drag / Shift-drag / two-finger drag</b> pans', '<b>Double-click</b> a room or area to fly to it, empty space or <b>0</b> resets the view',
+    '<b>WASD / arrows</b> pan · <b>Q / E</b> rotate · <b>R / F</b> tilt · the zoom keys or the wheel zoom',
   ] : [
-    '<b>拖动</b>：绕按下的那一点旋转', '<b>滚轮</b>：直接划动＝平移 · ⌃ / 触控板捏合＝缩放到光标 · ⌥ + 划动＝旋转',
-    '<b>右键拖 / Shift+拖 / 双指拖</b> 平移', '<b>双击</b> 房间或区域拉近，双击空白或 <b>0</b> 复位',
-    '<b>WASD/方向键</b> 平移 · <b>Q/E</b> 旋转 · <b>R/F</b> 俯仰 · <b>+/−</b> 缩放',
+    '<b>拖动</b>：绕按下的那一点旋转', '<b>滚轮</b>：直接划动是平移，按住 Ctrl 缩放到光标，按住 Alt 划动是旋转',
+    '<b>右键拖 / Shift 拖 / 双指拖</b> 平移', '<b>双击</b> 房间或区域拉近，双击空白或按 <b>0</b> 复位视野',
+    '<b>WASD / 方向键</b> 平移 · <b>Q / E</b> 旋转 · <b>R / F</b> 俯仰 · 缩放键或滚轮缩放',
   ] });
 }
 function applyPreset(id) {
