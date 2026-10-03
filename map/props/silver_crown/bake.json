@@ -1,0 +1,74 @@
+{
+ "groups": {
+  "props_craft": {
+   "tris_src": 6192,
+   "tris": 6192,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_curtain": {
+   "tris_src": 14714,
+   "tris": 14714,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_dock": {
+   "tris_src": 2004,
+   "tris": 2004,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_gate": {
+   "tris_src": 3164,
+   "tris": 3164,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_hangars": {
+   "tris_src": 2480,
+   "tris": 2480,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_pad": {
+   "tris_src": 1456,
+   "tris": 1456,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_ranges": {
+   "tris_src": 1320,
+   "tris": 1320,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_underside": {
+   "tris_src": 11928,
+   "tris": 11928,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_yard": {
+   "tris_src": 420,
+   "tris": 420,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_island": {
+   "tris_src": 16714,
+   "tris": 16714,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 11312,
+   "tris": 11312,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 71704,
+ "std_mb": 4.34,
+ "low_mb": 1.96,
+ "pass": "render-b7"
+}

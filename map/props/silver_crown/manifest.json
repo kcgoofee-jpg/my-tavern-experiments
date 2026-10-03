@@ -251,5 +251,51 @@
         -0.75
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_craft": [
+      6192,
+      1024
+    ],
+    "props_curtain": [
+      14714,
+      1024
+    ],
+    "props_dock": [
+      2004,
+      1024
+    ],
+    "props_gate": [
+      3164,
+      1024
+    ],
+    "props_hangars": [
+      2480,
+      1024
+    ],
+    "props_pad": [
+      1456,
+      1024
+    ],
+    "props_ranges": [
+      1320,
+      1024
+    ],
+    "props_underside": [
+      11928,
+      1024
+    ],
+    "props_yard": [
+      420,
+      1024
+    ],
+    "site_island": [
+      16714,
+      1024
+    ],
+    "walls_ext": [
+      11312,
+      1024
+    ]
+  }
 }

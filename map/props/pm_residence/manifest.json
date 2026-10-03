@@ -1,210 +1,256 @@
 {
- "_说明": "viewer3d.html?model=pm_residence 的清单（标准档 pm_residence.glb + 低档 pm_residence_low.glb）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/pm_residence/build.py + blender/landmarks/export_glb.py 生成。",
- "id": "pm_residence",
- "title": {
-  "zh": "首相府",
-  "en": "Prime Minister's Residence"
- },
- "glb": "pm_residence.glb",
- "glb_low": "pm_residence_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof",
-   "props_chimneys"
-  ],
-  "walls": [
-   "walls_ext"
-  ],
-  "interior": [],
-  "floors": [
-   {
-    "id": "floor_0",
-    "name": {
-     "zh": "街面",
-     "en": "Street level"
+  "_说明": "viewer3d.html?model=pm_residence 的清单（标准档 pm_residence.glb + 低档 pm_residence_low.glb）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/pm_residence/build.py + blender/landmarks/export_glb.py 生成。",
+  "id": "pm_residence",
+  "title": {
+    "zh": "首相府",
+    "en": "Prime Minister's Residence"
+  },
+  "glb": "pm_residence.glb",
+  "glb_low": "pm_residence_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [
+      "roof",
+      "props_chimneys"
+    ],
+    "walls": [
+      "walls_ext"
+    ],
+    "interior": [],
+    "floors": [
+      {
+        "id": "floor_0",
+        "name": {
+          "zh": "街面",
+          "en": "Street level"
+        },
+        "y0": -2.6,
+        "y1": 14.5
+      }
+    ],
+    "site": [
+      "site_ground",
+      "site_garden",
+      "site_dock",
+      "props_hovercar"
+    ],
+    "building": {
+      "min": [
+        -19.9,
+        -2.6,
+        -1.9
+      ],
+      "max": [
+        19.9,
+        19,
+        19.3
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 18,
+    "default": 6
+  },
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_colonnade"
+    ],
+    "dir": [
+      -0.55,
+      0.4,
+      -0.75
+    ],
+    "min": 3,
+    "max": 200,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "terrace",
+      "mesh": "walls_ext",
+      "name": {
+        "zh": "乔治时代联排",
+        "en": "Georgian terrace"
+      },
+      "desc": {
+        "zh": "三栋深色伦敦砖联排，每栋各有自己的门，檐口与女儿墙高低错开 0.3–0.6 m，分户墙处砖墩凸出；四层窗按层递减（首层主厅层最高、顶层近方形），白框六格推拉窗退进墙面约 0.1 m，配石窗台和砖平拱；石压顶女儿墙挡住后面的矮坡板岩屋顶，只露出少数退后的老虎窗。",
+        "en": "Three dark London-stock brick houses, each with its own door; cornice and parapet heights step by 0.3–0.6 m with brick piers proud at the party walls. Four window rows diminish upward (tallest on the piano nobile, near-square at the top), white six-over-six sashes set back about 0.1 m with stone sills and flat brick arches; a stone-coped parapet hides a low slate roof with a few set-back dormers."
+      },
+      "view": [
+        -0.4,
+        0.3,
+        -0.85
+      ]
     },
-    "y0": -2.6,
-    "y1": 14.5
-   }
+    {
+      "id": "door",
+      "mesh": "props_door",
+      "name": {
+        "zh": "正门",
+        "en": "Front door"
+      },
+      "desc": {
+        "zh": "黑漆六镶板门，白色门套（壁柱 + 檐部）、半圆扇形气窗、门环，门上方弯臂架挑出一盏铸铁灯笼。门前三级石阶跨过采光井。",
+        "en": "A black six-panel door in a white doorcase (pilasters and entablature) with a semicircular fanlight and knocker; a cast-iron lantern hangs from a bracket above. Three stone steps bridge the basement area."
+      },
+      "view": [
+        -0.2,
+        0.2,
+        -0.95
+      ]
+    },
+    {
+      "id": "railings",
+      "mesh": "props_railings",
+      "name": {
+        "zh": "采光井栏杆",
+        "en": "Area railings"
+      },
+      "desc": {
+        "zh": "人行道和地下室采光井之间的铸铁矛头栏杆，门前台阶两侧另有短栏杆。",
+        "en": "Cast-iron spear-headed railings between the pavement and the basement lightwell, with short returns beside the front steps."
+      },
+      "view": [
+        -0.3,
+        0.35,
+        -0.9
+      ]
+    },
+    {
+      "id": "chimneys",
+      "mesh": "props_chimneys",
+      "name": {
+        "zh": "烟囱排",
+        "en": "Chimney stacks"
+      },
+      "desc": {
+        "zh": "分户墙上的砖烟囱，石压顶上各立三只陶土烟囱帽。",
+        "en": "Brick stacks on the party walls, each with a stone cap and three clay pots."
+      },
+      "view": [
+        -0.3,
+        0.6,
+        -0.7
+      ]
+    },
+    {
+      "id": "gate",
+      "mesh": "props_gate",
+      "name": {
+        "zh": "街口铁门与岗亭",
+        "en": "Street gates & sentry box"
+      },
+      "desc": {
+        "zh": "街口的高铸铁门横跨人行道和车道，门外有路障桩；旁边一座黑漆木岗亭，板岩四坡顶。沿街是铸铁街灯。",
+        "en": "Tall cast-iron gates close the street end across both pavement and roadway, with bollards in front; beside them stands a black-painted timber sentry box under a slate hipped roof. Cast-iron lamp posts line the street."
+      },
+      "view": [
+        -0.7,
+        0.35,
+        -0.6
+      ]
+    },
+    {
+      "id": "colonnade",
+      "mesh": "props_colonnade",
+      "name": {
+        "zh": "花园柱廊",
+        "en": "Garden colonnade"
+      },
+      "desc": {
+        "zh": "花园一侧的白色灰泥柱廊：台基上 14 根柱承托檐部，上面是宝瓶栏杆阳台，后面是落地窗。",
+        "en": "On the garden side, a white stucco colonnade: 14 columns on a podium carry an entablature and a balustraded balcony, with French windows behind."
+      },
+      "view": [
+        -0.3,
+        0.35,
+        0.9
+      ]
+    },
+    {
+      "id": "garden",
+      "mesh": "site_garden",
+      "name": {
+        "zh": "花园",
+        "en": "Garden"
+      },
+      "desc": {
+        "zh": "砖墙围起的草坪花园，中间一条砾石路，有树和修剪的矮树篱。",
+        "en": "A walled lawn garden with a gravel walk, trees and clipped low hedges."
+      },
+      "view": [
+        0,
+        0.7,
+        0.7
+      ]
+    },
+    {
+      "id": "dock",
+      "mesh": "site_dock",
+      "name": {
+        "zh": "公务停靠平台",
+        "en": "Official docking platform"
+      },
+      "desc": {
+        "zh": "岛缘西侧伸出的钢结构停靠平台，只供悬浮载具起降：斜撑回接岩体、四周栏杆和引导灯柱、漆绘着陆圈（无文字）；一条短短的专用车道经铁门通到正门。岛外没有公共交通。",
+        "en": "A steel docking platform cantilevered off the island rim for hover vehicles only: braced back to the rock, with railings, guide-light posts and a painted landing ring (no lettering); a short private drive leads through the gate to the front doors. There is no public transport off the island."
+      },
+      "view": [
+        -0.4,
+        0.3,
+        -0.85
+      ]
+    }
   ],
-  "site": [
-   "site_ground",
-   "site_garden",
-   "site_dock",
-   "props_hovercar"
-  ],
-  "building": {
-   "min": [
-    -19.9,
-    -2.6,
-    -1.9
-   ],
-   "max": [
-    19.9,
-    19,
-    19.3
-   ]
+  "budgets": {
+    "props_chimneys": [
+      3744,
+      1024
+    ],
+    "props_colonnade": [
+      7344,
+      1024
+    ],
+    "props_door": [
+      2410,
+      1024
+    ],
+    "props_gate": [
+      3210,
+      1024
+    ],
+    "props_hovercar": [
+      1386,
+      1024
+    ],
+    "props_railings": [
+      8238,
+      1024
+    ],
+    "roof": [
+      176,
+      1024
+    ],
+    "site_dock": [
+      8590,
+      1024
+    ],
+    "site_garden": [
+      5676,
+      1024
+    ],
+    "site_ground": [
+      1496,
+      1024
+    ],
+    "walls_ext": [
+      17272,
+      1024
+    ]
   }
- },
- "section": {
-  "min": 0.5,
-  "max": 18,
-  "default": 6
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_colonnade"
-  ],
-  "dir": [
-   -0.55,
-   0.4,
-   -0.75
-  ],
-  "min": 3,
-  "max": 200,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "terrace",
-   "mesh": "walls_ext",
-   "name": {
-    "zh": "乔治时代联排",
-    "en": "Georgian terrace"
-   },
-   "desc": {
-    "zh": "三栋深色伦敦砖联排，每栋各有自己的门，檐口与女儿墙高低错开 0.3–0.6 m，分户墙处砖墩凸出；四层窗按层递减（首层主厅层最高、顶层近方形），白框六格推拉窗退进墙面约 0.1 m，配石窗台和砖平拱；石压顶女儿墙挡住后面的矮坡板岩屋顶，只露出少数退后的老虎窗。",
-    "en": "Three dark London-stock brick houses, each with its own door; cornice and parapet heights step by 0.3–0.6 m with brick piers proud at the party walls. Four window rows diminish upward (tallest on the piano nobile, near-square at the top), white six-over-six sashes set back about 0.1 m with stone sills and flat brick arches; a stone-coped parapet hides a low slate roof with a few set-back dormers."
-   },
-   "view": [
-    -0.4,
-    0.3,
-    -0.85
-   ]
-  },
-  {
-   "id": "door",
-   "mesh": "props_door",
-   "name": {
-    "zh": "正门",
-    "en": "Front door"
-   },
-   "desc": {
-    "zh": "黑漆六镶板门，白色门套（壁柱 + 檐部）、半圆扇形气窗、门环，门上方弯臂架挑出一盏铸铁灯笼。门前三级石阶跨过采光井。",
-    "en": "A black six-panel door in a white doorcase (pilasters and entablature) with a semicircular fanlight and knocker; a cast-iron lantern hangs from a bracket above. Three stone steps bridge the basement area."
-   },
-   "view": [
-    -0.2,
-    0.2,
-    -0.95
-   ]
-  },
-  {
-   "id": "railings",
-   "mesh": "props_railings",
-   "name": {
-    "zh": "采光井栏杆",
-    "en": "Area railings"
-   },
-   "desc": {
-    "zh": "人行道和地下室采光井之间的铸铁矛头栏杆，门前台阶两侧另有短栏杆。",
-    "en": "Cast-iron spear-headed railings between the pavement and the basement lightwell, with short returns beside the front steps."
-   },
-   "view": [
-    -0.3,
-    0.35,
-    -0.9
-   ]
-  },
-  {
-   "id": "chimneys",
-   "mesh": "props_chimneys",
-   "name": {
-    "zh": "烟囱排",
-    "en": "Chimney stacks"
-   },
-   "desc": {
-    "zh": "分户墙上的砖烟囱，石压顶上各立三只陶土烟囱帽。",
-    "en": "Brick stacks on the party walls, each with a stone cap and three clay pots."
-   },
-   "view": [
-    -0.3,
-    0.6,
-    -0.7
-   ]
-  },
-  {
-   "id": "gate",
-   "mesh": "props_gate",
-   "name": {
-    "zh": "街口铁门与岗亭",
-    "en": "Street gates & sentry box"
-   },
-   "desc": {
-    "zh": "街口的高铸铁门横跨人行道和车道，门外有路障桩；旁边一座黑漆木岗亭，板岩四坡顶。沿街是铸铁街灯。",
-    "en": "Tall cast-iron gates close the street end across both pavement and roadway, with bollards in front; beside them stands a black-painted timber sentry box under a slate hipped roof. Cast-iron lamp posts line the street."
-   },
-   "view": [
-    -0.7,
-    0.35,
-    -0.6
-   ]
-  },
-  {
-   "id": "colonnade",
-   "mesh": "props_colonnade",
-   "name": {
-    "zh": "花园柱廊",
-    "en": "Garden colonnade"
-   },
-   "desc": {
-    "zh": "花园一侧的白色灰泥柱廊：台基上 14 根柱承托檐部，上面是宝瓶栏杆阳台，后面是落地窗。",
-    "en": "On the garden side, a white stucco colonnade: 14 columns on a podium carry an entablature and a balustraded balcony, with French windows behind."
-   },
-   "view": [
-    -0.3,
-    0.35,
-    0.9
-   ]
-  },
-  {
-   "id": "garden",
-   "mesh": "site_garden",
-   "name": {
-    "zh": "花园",
-    "en": "Garden"
-   },
-   "desc": {
-    "zh": "砖墙围起的草坪花园，中间一条砾石路，有树和修剪的矮树篱。",
-    "en": "A walled lawn garden with a gravel walk, trees and clipped low hedges."
-   },
-   "view": [
-    0,
-    0.7,
-    0.7
-   ]
-  },
-  {
-   "id": "dock",
-   "mesh": "site_dock",
-   "name": {
-    "zh": "公务停靠平台",
-    "en": "Official docking platform"
-   },
-   "desc": {
-    "zh": "岛缘西侧伸出的钢结构停靠平台，只供悬浮载具起降：斜撑回接岩体、四周栏杆和引导灯柱、漆绘着陆圈（无文字）；一条短短的专用车道经铁门通到正门。岛外没有公共交通。",
-    "en": "A steel docking platform cantilevered off the island rim for hover vehicles only: braced back to the rock, with railings, guide-light posts and a painted landing ring (no lettering); a short private drive leads through the gate to the front doors. There is no public transport off the island."
-   },
-   "view": [
-    -0.4,
-    0.3,
-    -0.85
-   ]
-  }
- ]
 }

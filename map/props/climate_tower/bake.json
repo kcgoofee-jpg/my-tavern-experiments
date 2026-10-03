@@ -1,0 +1,56 @@
+{
+ "groups": {
+  "props_crown": {
+   "tris_src": 4360,
+   "tris": 4360,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_crystals": {
+   "tris_src": 444,
+   "tris": 444,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_docks": {
+   "tris_src": 4356,
+   "tris": 4356,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lights": {
+   "tris_src": 3196,
+   "tris": 3196,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_rings": {
+   "tris_src": 20436,
+   "tris": 20436,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_services": {
+   "tris_src": 18780,
+   "tris": 18780,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_vanes": {
+   "tris_src": 18432,
+   "tris": 18432,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 9868,
+   "tris": 9868,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 79872,
+ "std_mb": 2.75,
+ "low_mb": 1.92,
+ "pass": "render-b7"
+}

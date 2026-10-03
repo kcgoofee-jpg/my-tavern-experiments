@@ -1,0 +1,74 @@
+{
+ "groups": {
+  "props_chimneys": {
+   "tris_src": 3744,
+   "tris": 3744,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_colonnade": {
+   "tris_src": 7344,
+   "tris": 7344,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_door": {
+   "tris_src": 2410,
+   "tris": 2410,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_gate": {
+   "tris_src": 3210,
+   "tris": 3210,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_hovercar": {
+   "tris_src": 1386,
+   "tris": 1386,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_railings": {
+   "tris_src": 8238,
+   "tris": 8238,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "roof": {
+   "tris_src": 176,
+   "tris": 176,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_dock": {
+   "tris_src": 8590,
+   "tris": 8590,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_garden": {
+   "tris_src": 5676,
+   "tris": 5676,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 1496,
+   "tris": 1496,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 17272,
+   "tris": 17272,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 59542,
+ "std_mb": 4.48,
+ "low_mb": 1.78,
+ "pass": "render-b7"
+}
