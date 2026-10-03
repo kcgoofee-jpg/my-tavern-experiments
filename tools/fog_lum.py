@@ -99,6 +99,44 @@ def ring_extrema(im, rect, b0, b1):
     return float(p99), float(mx), total
 
 
+def bright_regions(im, rect, level=120, step=2):
+    """Connected bright regions inside the rect: ``{n, top, area, px}`` or None.
+
+    A bright *blob* — the defect this exists for — is one region holding much of
+    the bright area; a city lit at night is many small ones. ``top`` is the
+    largest region's share of all bright pixels, ``area`` its share of the frame.
+    The grid is sampled every ``step`` pixels: a one-pixel window row reads as the
+    scattered lights it is, and a blob stays a blob, which is the whole point.
+    """
+    x0, y0, x1, y1 = clamp(rect, im.size)
+    px = im.crop((x0, y0, x1, y1)).tobytes()
+    w, h = x1 - x0, y1 - y0
+    if w < step or h < step:
+        return None
+    cols, rows = w // step, h // step
+    lit = [[px[r * step * w + c * step] > level for c in range(cols)] for r in range(rows)]
+    total = sum(sum(r) for r in lit)
+    if not total:
+        return None
+    seen, best, n = [[False] * cols for _ in range(rows)], 0, 0
+    for r0 in range(rows):
+        for c0 in range(cols):
+            if not lit[r0][c0] or seen[r0][c0]:
+                continue
+            n += 1
+            size, stack = 0, [(r0, c0)]
+            seen[r0][c0] = True
+            while stack:
+                y, x = stack.pop()
+                size += 1
+                for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= ny < rows and 0 <= nx < cols and lit[ny][nx] and not seen[ny][nx]:
+                        seen[ny][nx] = True
+                        stack.append((ny, nx))
+            best = max(best, size)
+    return {'n': n, 'top': round(best / total, 3), 'area': round(best * step * step / (w * h), 4), 'px': best * step * step}
+
+
 def border_grad(im, rect, band):
     """Per-pixel luminance step when crossing the rect border, per scanline.
 
@@ -179,6 +217,7 @@ def main():
         out['mist'][name] = None if not mm else {'mean': round(mm[0], 2), 'sd': round(mm[1], 2), 'p99': p99, 'max': mx, 'px': n}
     gmax, gmean, gmed, n = border_grad(im, rect, max(2, int(.05 * s)))
     out['grad_max'], out['grad_mean'], out['grad_p50'], out['grad_n'] = gmax, gmean, gmed, n
+    out['bright'] = bright_regions(im, rect)
     print(json.dumps(out))
 
 

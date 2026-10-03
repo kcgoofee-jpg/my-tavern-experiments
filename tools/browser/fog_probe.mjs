@@ -21,7 +21,15 @@ const TIERS = ['tc_upper', 'tc_mid', 'tc_low'];
 const BANDS = [{ id: 'dawn' }, { id: 'day' }, { id: 'dusk' }, { id: 'night', dark: true }];
 const MIN = { dawn: 390, day: 750, dusk: 1095, night: 90 };
 // 阈值（亮度 0..255 / 比例）：夜里雾的上限、白天雾的下限、跨边界单像素台阶上限（用各扫描线最大值的中位数）、雾与城区边缘带的落差上限、城区占视口宽下限
-const NIGHT_MAX = 55, DAY_MIN = 150, GRAD_MAX = 22, HALO_MAX = 30, CITY_MIN = .5;
+// FIX-3：NIGHT_MAX 55 → 80。55 是在「探索薄纱」还蒙着整张底图时定的（LOOK-1 A2 把薄纱默认关掉，底图亮回来
+// 约 21 级：tc_upper 夜 near 44.5 → 65.7）。实测六处夜景 near 最高 65.7、375 那处 52.1，80 留两成余量。
+const NIGHT_MAX = 80, DAY_MIN = 150, GRAD_MAX = 22, HALO_MAX = 30, CITY_MIN = .5;
+// 夜里岛南端的「亮斑」判据（FIX-3 重新校准）。原来只看「亮于 120 的像素占比 < 0.5 %」，那是给
+// 「白天底图透过夜色调」这一种缺陷写的；薄纱关掉以后夜岛本来就该有窗、灯、霓虹（实测 0.84 %，画面上
+// 是一堆散点，没有成片亮面——见 ~/eden-map-review/fog-1/probe/map-composite-island-night.png）。
+// 改用两个与「散点 vs 成片」有关的量：p99（大片中调，缺陷态 21、现在 9）与最大亮区占全部亮像素的比例
+// （散点 0.046，成片亮面会趋近 1）。同一张用户截图 12.webp 就是缺陷态：p99 21。
+const P99_MAX = 15, BLOB_TOP_MAX = .35;
 
 B.quietWait();
 await B.ensureServer();
@@ -154,9 +162,12 @@ try {
     await archive(`fog-composite-upper-${b}-island`, D.page);
     const isl = (await measure(`composite-island-${b}`, vf))?.m;
     rep.metric(`island ${b}`, isl);
-    // 夜里南端不许有亮斑：亮像素占比压得住（用户截图 12.webp 是 1.11 %，那是 ~190 的一大团）
-    rep.check(`上层 ${b} 岛南端：${b === 'night' ? '夜里没有亮斑（亮于 120 的像素 < 0.5 %）' : '白天只记数'}`,
-      !isl || b === 'night' ? isl?.hi_frac < .005 : true, isl ? `>120 占 ${(isl.hi_frac * 100).toFixed(2)} % / p99 ${isl.p99} / max ${isl.max}` : '没量到');
+    // 夜里南端不许有亮斑：判据是「大片中调 + 亮区不成片」（FIX-3，见上面两个常量的来历）
+    rep.check(`上层 ${b} 岛南端：${b === 'night' ? `夜里没有成片亮面（p99 < ${P99_MAX}）` : '白天只记数'}`,
+      !isl || b === 'night' ? isl?.p99 < P99_MAX : true, isl ? `p99 ${isl.p99} / max ${isl.max} / >120 占 ${(isl.hi_frac * 100).toFixed(2)} %` : '没量到');
+    rep.check(`上层 ${b} 岛南端：${b === 'night' ? `亮的是散点不是一整片（最大亮区占亮像素 < ${BLOB_TOP_MAX}）` : '白天只记数'}`,
+      !isl || b === 'night' ? (isl?.bright?.top ?? 0) < BLOB_TOP_MAX : true,
+      isl?.bright ? `${isl.bright.n} 片，最大一片占 ${(isl.bright.top * 100).toFixed(1)} % / 占画面 ${(isl.bright.area * 100).toFixed(3)} %` : '没量到');
     await altBox(false); await B.wait(1400);
     const off = await vf.evaluate(() => window.__tierFogProbe.state());
     rep.check(`上层 ${b}：关掉开关回到本层底图（合成三层全摘）`, off.comp === null && !off.veil, JSON.stringify(off));
