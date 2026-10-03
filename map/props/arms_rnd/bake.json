@@ -1,0 +1,26 @@
+{
+ "groups": {
+  "props_lab": {
+   "tris_src": 2288,
+   "tris": 2288,
+   "tex": 2048,
+   "tex_norm": 1024
+  },
+  "props_yard": {
+   "tris_src": 2492,
+   "tris": 2492,
+   "tex": 2048,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 492,
+   "tris": 492,
+   "tex": 2048,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 5272,
+ "std_mb": 3.71,
+ "low_mb": 0.35,
+ "pass": "render-b7"
+}

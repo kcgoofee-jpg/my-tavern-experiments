@@ -1,119 +1,119 @@
 {
- "_note": "viewer3d.html?model=arms_rnd 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/arms_rnd.md。",
- "id": "arms_rnd",
- "title": {
-  "zh": "魔导军工研发中心",
-  "en": "Magitech Arms R&D Centre"
- },
- "glb": "arms_rnd.glb",
- "glb_low": "arms_rnd_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_lab",
-   "props_yard"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground"
+  "_note": "viewer3d.html?model=arms_rnd 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/arms_rnd.md。",
+  "id": "arms_rnd",
+  "title": {
+    "zh": "魔导军工研发中心",
+    "en": "Magitech Arms R&D Centre"
+  },
+  "glb": "arms_rnd.glb",
+  "glb_low": "arms_rnd_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_lab",
+      "props_yard"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -50.0,
+        -0.3,
+        -50.0
+      ],
+      "max": [
+        50.0,
+        30.0,
+        50.0
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 17,
+    "default": 17
+  },
+  "camera": {
+    "frame": [
+      "props_lab",
+      "props_yard"
+    ],
+    "dir": [
+      0.3,
+      0.55,
+      -0.78
+    ],
+    "min": 5,
+    "max": 280,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_lab": [
+      2288,
+      2048
+    ],
+    "props_yard": [
+      2492,
+      2048
+    ],
+    "site_ground": [
+      492,
+      2048
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "lab",
+      "mesh": "props_lab",
+      "name": {
+        "zh": "三层实验主楼（混凝土板 + 金属带窗）+ 入口六边锁纹 + 屋顶以太聚能环",
+        "en": ""
+      },
+      "desc": {
+        "zh": "三层实验主楼（混凝土板 + 金属带窗）+ 入口六边锁纹 + 屋顶以太聚能环",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "圆形约束场 + 立式试架与装甲挂板 + 架空导束管 + 设备柜 / 灯杆",
+        "en": ""
+      },
+      "desc": {
+        "zh": "圆形约束场 + 立式试架与装甲挂板 + 架空导束管 + 设备柜 / 灯杆",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ],
   "building": {
-   "min": [
-    -50.0,
-    -0.3,
-    -50.0
-   ],
-   "max": [
-    50.0,
-    30.0,
-    50.0
-   ]
+    "min": [
+      -29.0,
+      -0.3,
+      -27.0
+    ],
+    "max": [
+      29.0,
+      17.5,
+      27.0
+    ]
   }
- },
- "section": {
-  "min": 0.5,
-  "max": 17,
-  "default": 17
- },
- "camera": {
-  "frame": [
-   "props_lab",
-   "props_yard"
-  ],
-  "dir": [
-   0.3,
-   0.55,
-   -0.78
-  ],
-  "min": 5,
-  "max": 280,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_lab": [
-   26000,
-   512
-  ],
-  "props_yard": [
-   20000,
-   512
-  ],
-  "site_ground": [
-   9000,
-   512
-  ]
- },
- "hotspots": [
-  {
-   "id": "lab",
-   "mesh": "props_lab",
-   "name": {
-    "zh": "三层实验主楼（混凝土板 + 金属带窗）+ 入口六边锁纹 + 屋顶以太聚能环",
-    "en": ""
-   },
-   "desc": {
-    "zh": "三层实验主楼（混凝土板 + 金属带窗）+ 入口六边锁纹 + 屋顶以太聚能环",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "圆形约束场 + 立式试架与装甲挂板 + 架空导束管 + 设备柜 / 灯杆",
-    "en": ""
-   },
-   "desc": {
-    "zh": "圆形约束场 + 立式试架与装甲挂板 + 架空导束管 + 设备柜 / 灯杆",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ],
- "building": {
-  "min": [
-   -29.0,
-   -0.3,
-   -27.0
-  ],
-  "max": [
-   29.0,
-   17.5,
-   27.0
-  ]
- }
 }
