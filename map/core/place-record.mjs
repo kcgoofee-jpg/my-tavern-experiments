@@ -7,7 +7,7 @@
 // `pack` (the sources, all optional):
 //   nodes     the pack's node list (K-R10..), fields id name type parent alias sub desc facts access media
 //   plan      the 3D room table { floors: [{ id, name, z }], rooms: [{ node, floor, name, note, access, area, words, synonyms, poly }], units }
-//   addon     [{ id, name, alias, text, estate? }]  places described in their own world-book entry (the text becomes the record's description)
+//   addon     [{ id, name, alias, text, use?, estate? }]  places described in their own world-book entry (the text becomes the record's description, `use` its one-line note)
 //   building  { title, subtitle, summary }  the building's words (K-R132)
 //   zones     [{ id, name, alias, en }] outdoor hotspots;   extras  { room_alias, sub_rooms, vehicle_card }
 //   points    { <map id>: { markers: [{ id, nx, ny, ax?, ay? }] } }  flat-map coordinates (nearby places on a flat map)
@@ -26,7 +26,7 @@ const idOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^
 function build(pack) {
   const list = [], by = new Map(), floors = arr(pack.plan?.floors);
   const add = r => { if (!by.has(r.id)) { by.set(r.id, r); list.push(r); } return by.get(r.id); };
-  const blank = (id, name, kind, o = {}) => ({ id, name: clean(name), kind, type: '', parent: null, anchor: '', sub: '', desc: '', facts: [], access: '', rows: [], media: [], alias: [], floors: [], where: '', wb: arr(pack.index?.[id]), ...o });
+  const blank = (id, name, kind, o = {}) => ({ id, name: clean(name), kind, type: '', parent: null, anchor: '', sub: '', use: '', desc: '', facts: [], access: '', rows: [], media: [], alias: [], floors: [], where: '', wb: arr(pack.index?.[id]), ...o });
   const fname = id => floors.find(f => f.id === id)?.name || id, forder = id => { const i = floors.findIndex(f => f.id === id); return i < 0 ? 999 : i; };
   for (const n of arr(pack.nodes)) {
     if (!isObj(n) || typeof n.id !== 'string' || n.type === 'group') continue;
@@ -55,9 +55,9 @@ function build(pack) {
     const rec = add(blank('sub_' + idOf(s.id), s.name, 'room', { type: 'room', parent: home || main?.id || null, desc: text(s.note), alias: arr(s.alias).map(clean).filter(a => a !== clean(s.name)) }));
     const par = by.get(home); rec.floors = [{ id: s.floor, name: fname(s.floor) }]; rec.where = [par?.name || main?.name, fname(s.floor)].filter(Boolean).join(' '); rec.sub = [rec.floors[0].name, clean(s.where)].filter(Boolean).join(' · ');
   }
-  for (const p of arr(pack.addon)) {   // a place with its own world-book text: the text is the description
+  for (const p of arr(pack.addon)) {   // a place with its own world-book text: the text is the description, `use` the one-line 说明 (PLACE-1b)
     const rec = by.get(p.id) || add(blank(p.id, p.name, 'place', { parent: p.estate && main ? main.id : null }));
-    rec.desc = text(p.text); rec.addon = true; rec.alias = uniq([...rec.alias, ...arr(p.alias).map(clean)]).filter(a => a !== rec.name);
+    rec.desc = text(p.text); rec.use = text(p.use); rec.addon = true; rec.alias = uniq([...rec.alias, ...arr(p.alias).map(clean)]).filter(a => a !== rec.name);
   }
   for (const z of arr(pack.zones)) {   // outdoor hotspots: a node of the same id is enriched, otherwise a zone record under the building
     const rec = by.get(z.id) || add(blank('zone_' + idOf(z.id), z.name, 'zone', { type: 'zone', parent: main?.id || null }));

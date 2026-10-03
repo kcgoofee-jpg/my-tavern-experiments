@@ -43,10 +43,12 @@ test('a landmark, a building and a place with its own world-book text', () => {
   assert.equal(l.kind, 'place'); assert.equal(l.type, 'landmark'); assert.equal(l.parent, 'tc_upper'); assert.equal(l.sub, '议会骑士团总部'); assert.ok(l.alias.includes('骑士团总部'));
   const b = rec('eden_estate');
   assert.equal(b.kind, 'building'); assert.equal(b.parent, 'tc_upper'); assert.equal(b.desc, '浮岛庄园 · 主楼地上三层 + 地下两层'); assert.equal(b.sub, '{{user}} 的庄园', 'the node\'s own subtitle wins over the building words'); assert.ok(b.alias.includes('伊甸家族府邸'));
-  const g = rec('greystone'), text = rd('map/data/addon_places.json').places.find(p => p.id === 'greystone').text;
-  assert.equal(g.desc, text); assert.equal(g.kind, 'place'); assert.equal(g.parent, 'eden_estate');
-  assert.equal(P.entryText(g), `<地点·灰石旧宅>\n${text}\n</地点·灰石旧宅>`, 'the place entries read exactly as before');
-  assert.equal(entryOf('map.place.greystone').content, P.entryText(g));
+  const g = rec('greystone'), row = rd('map/data/addon_places.json').places.find(p => p.id === 'greystone');
+  assert.equal(g.desc, row.text); assert.equal(g.kind, 'place'); assert.equal(g.parent, 'eden_estate');
+  // FIX-3: the record grew a one-line note, so entryText carries it. The shipped add-on entry does NOT: the builder
+  // writes these 42 from `text` alone, so nothing new reaches the model until the player edits that place in their chat.
+  assert.equal(P.entryText(g), `<地点·灰石旧宅>\n${row.text}\n用途：${row.use}\n</地点·灰石旧宅>`, 'the one source of an entry body shows the note');
+  assert.equal(entryOf('map.place.greystone').content, `<地点·灰石旧宅>\n${row.text}\n</地点·灰石旧宅>`, 'the shipped entry text is unchanged');
   const v = rec('zone_vehicle'); assert.equal(v.kind, 'zone'); assert.ok(v.desc.includes('悬浮'));
   assert.ok(P.records(PACK).some(r => r.kind === 'zone' && r.id.startsWith('zone_')), 'outdoor hotspots are records');
 });
@@ -140,6 +142,25 @@ test('FIX-3: the shipped book really does have an entry at the player\'s place (
     assert.deepEqual(b.plan.disable, [], `${bare}: nothing switched off`);
     assert.deepEqual(b.plan.enable, [], `${bare}: nothing switched on`);
   }
+});
+
+test('FIX-3: every place with its own world-book text has a record-level note, written only with words that text already has', () => {
+  const places = rd('map/data/addon_places.json').places;
+  assert.equal(places.length, 42, 'the add-on place table');
+  for (const p of places) {
+    assert.ok(p.use && p.use.length >= 8, `${p.id}: no record note`);
+    assert.ok(p.use.length <= 90, `${p.id}: the note is a sentence, not a paragraph (${p.use.length})`);
+    assert.ok(p.text.length > p.use.length, `${p.id}: the note is a condensation, not a copy of the text`);
+    // 不发明：说明里的每个字都在这一处自己的 text 里出现过（改写顺序可以，不许生词）
+    for (const c of new Set([...p.use].filter(x => /[一-鿿]/.test(x)))) assert.ok(p.text.includes(c), `${p.id}: 「${c}」 is not in its own text`);
+    const rec = P.placeRecord(PACK, p.id);
+    assert.equal(rec.use, p.use, `${p.id}: the record does not carry the note`);
+    assert.equal(rec.desc, p.text, `${p.id}: the text is still the description`);
+    assert.ok(P.hasText(rec), `${p.id}: hasText`);
+  }
+  // 世界书条目正文仍然只有 text：说明是记录上的字段，不是注进模型的东西
+  const e = entryOf(`map.place.${places[0].id}`);
+  assert.ok(e && e.content === `<地点·${places[0].name}>\n${places[0].text}\n</地点·${places[0].name}>`, 'the shipped place entry is still the text alone');
 });
 
 test('sync: keys_secondary travels with a shipped entry; a changed list is an update; an unchanged book needs no write', () => {
