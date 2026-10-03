@@ -14,6 +14,10 @@ import numpy as np
 from mathutils import Matrix
 from mathutils.kdtree import KDTree
 
+if '--outskirts' in sys.argv:                                # 外圈环图（D41 批 4）：outskirts.py 自己建场景
+    import outskirts                                        # 柱内不生成任何东西（§0.5），所以不进本脚本的城市生成
+    sys.exit(outskirts.main('low'))
+
 if tc.blend_cache_open():   # --cache-blend 命中：场景在缓存里（同参重渲），跳过城市生成与本文件全部搭建，直接渲染退出
     tc.cache_render()
     sys.exit(0)

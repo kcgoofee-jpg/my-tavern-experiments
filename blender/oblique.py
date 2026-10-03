@@ -173,12 +173,15 @@ def append_model(col, blend, origin, X, Y, Z, s, skip=('bg_', 'cam', 'sun', 'whi
     return root
 
 
-def ortho_camera(sc, cam, res_x=None, unit=1.0, z0=0.0, name='obl_cam'):
+def ortho_camera(sc, cam, res_x=None, unit=1.0, z0=0.0, name='obl_cam', standoff=6000.0):
     """D41：按相机文件摆正交相机。cam = project.cam_file(...)（米制世界）；场景单位 unit 米、海拔 z0 米处为场景 z = 0
-    （上层 assembler 用米制：unit 1、z0 0；层脚本用 100 m 单位时传 unit=100、z0=700）。res_x 小于定稿像素时出同框草图。"""
+    （上层 assembler 用米制：unit 1、z0 0；层脚本用 100 m 单位时传 unit=100、z0=700）。res_x 小于定稿像素时出同框草图。
+    standoff：相机沿视线往后退多少米（默认 6000）。正交投影下画面内容与它无关（每条像素光线方向与偏移不变），
+    它只决定近处有没有东西被近裁剪掉——画框越高（大画幅的外圈图半高 4400 m），相机就必须退得够远，
+    否则画框下缘的光线起点会落到地面以下，那一条窄带会直接看到世界背景。"""
     f = cam['frame']; W, H = f['px']; k = (res_x or W) / W
     R, Up, F = Vector(cam['right']), Vector(cam['up']), Vector(cam['fwd'])
-    c = Vector(f['centre_m']); pos = c - F * 6000.0
+    c = Vector(f['centre_m']); pos = c - F * standoff
     cd = bpy.data.cameras.new(name); cd.type = 'ORTHO'; cd.sensor_fit = 'HORIZONTAL'; cd.ortho_scale = f['w_m'] / unit
     cd.clip_start = 1.0 / unit; cd.clip_end = 20000.0 / unit
     co = bpy.data.objects.new(name, cd); sc.collection.objects.link(co); sc.camera = co
