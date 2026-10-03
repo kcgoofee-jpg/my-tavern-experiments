@@ -224,5 +224,51 @@
         0.6
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "floor_0": [
+      108,
+      1024
+    ],
+    "props_aether": [
+      3856,
+      1024
+    ],
+    "props_chapel": [
+      1002,
+      1024
+    ],
+    "props_churchyard": [
+      2504,
+      1024
+    ],
+    "props_rubble": [
+      4132,
+      1024
+    ],
+    "props_tower": [
+      994,
+      1024
+    ],
+    "props_tracery": [
+      2444,
+      1024
+    ],
+    "roof": [
+      800,
+      2048
+    ],
+    "site_ground": [
+      72,
+      2048
+    ],
+    "site_vegetation": [
+      17674,
+      1024
+    ],
+    "walls_ext": [
+      5634,
+      2048
+    ]
+  }
 }

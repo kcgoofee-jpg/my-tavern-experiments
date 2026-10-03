@@ -1,174 +1,174 @@
 {
- "_note": "viewer3d.html?model=freight_yard 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/freight_yard.md。",
- "id": "freight_yard",
- "title": {
-  "zh": "货运站",
-  "en": "Freight Yard"
- },
- "glb": "freight_yard.glb",
- "glb_low": "freight_yard_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_shed",
-   "props_signal"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_rail",
-   "props_stock",
-   "props_yard",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -64,
-    -0.3,
-    -38
-   ],
-   "max": [
-    64,
-    14,
-    30
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 14,
-  "default": 14
- },
- "camera": {
-  "frame": [
-   "props_shed",
-   "props_rail",
-   "props_signal"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_shed": [
-   6000,
-   1024
-  ],
-  "props_rail": [
-   30000,
-   512
-  ],
-  "props_signal": [
-   9000,
-   512
-  ],
-  "props_stock": [
-   12000,
-   512
-  ],
-  "props_yard": [
-   16000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
+  "_note": "viewer3d.html?model=freight_yard 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/freight_yard.md。",
+  "id": "freight_yard",
+  "title": {
+    "zh": "货运站",
+    "en": "Freight Yard"
+  },
+  "glb": "freight_yard.glb",
+  "glb_low": "freight_yard_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_shed",
+      "props_signal"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_rail",
+      "props_stock",
+      "props_yard",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -64,
+        -0.3,
+        -38
+      ],
+      "max": [
+        64,
+        14,
+        30
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 14,
+    "default": 14
+  },
+  "camera": {
+    "frame": [
+      "props_shed",
+      "props_rail",
+      "props_signal"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_rail": [
+      5448,
+      512
+    ],
+    "props_shed": [
+      630,
+      1024
+    ],
+    "props_signal": [
+      1328,
+      512
+    ],
+    "props_stock": [
+      3228,
+      512
+    ],
+    "props_yard": [
+      2148,
+      512
+    ],
+    "site_ground": [
+      36,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "shed",
+      "mesh": "props_shed",
+      "name": {
+        "zh": "砖砌货棚（铁皮顶 + 推拉门 + 高窗）+ 货运站台 + 钢柱披檐",
+        "en": ""
+      },
+      "desc": {
+        "zh": "砖砌货棚（铁皮顶 + 推拉门 + 高窗）+ 货运站台 + 钢柱披檐",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "rail",
+      "mesh": "props_rail",
+      "name": {
+        "zh": "三条主线 + 岔线（枕木 / 钢轨 / 碴石）+ 车挡",
+        "en": ""
+      },
+      "desc": {
+        "zh": "三条主线 + 岔线（枕木 / 钢轨 / 碴石）+ 车挡",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "signal",
+      "mesh": "props_signal",
+      "name": {
+        "zh": "桁架信号门架 + 两层扳道房 + 外挂钢梯",
+        "en": ""
+      },
+      "desc": {
+        "zh": "桁架信号门架 + 两层扳道房 + 外挂钢梯",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "stock",
+      "mesh": "props_stock",
+      "name": {
+        "zh": "停着的旧货车（棚车 / 油罐车 / 敞车）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "停着的旧货车（棚车 / 油罐车 / 敞车）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "集装箱堆场 + 托盘 / 油桶 / 废料堆 + 灯杆 + 围栏",
+        "en": ""
+      },
+      "desc": {
+        "zh": "集装箱堆场 + 托盘 / 油桶 / 废料堆 + 灯杆 + 围栏",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ]
- },
- "hotspots": [
-  {
-   "id": "shed",
-   "mesh": "props_shed",
-   "name": {
-    "zh": "砖砌货棚（铁皮顶 + 推拉门 + 高窗）+ 货运站台 + 钢柱披檐",
-    "en": ""
-   },
-   "desc": {
-    "zh": "砖砌货棚（铁皮顶 + 推拉门 + 高窗）+ 货运站台 + 钢柱披檐",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "rail",
-   "mesh": "props_rail",
-   "name": {
-    "zh": "三条主线 + 岔线（枕木 / 钢轨 / 碴石）+ 车挡",
-    "en": ""
-   },
-   "desc": {
-    "zh": "三条主线 + 岔线（枕木 / 钢轨 / 碴石）+ 车挡",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "signal",
-   "mesh": "props_signal",
-   "name": {
-    "zh": "桁架信号门架 + 两层扳道房 + 外挂钢梯",
-    "en": ""
-   },
-   "desc": {
-    "zh": "桁架信号门架 + 两层扳道房 + 外挂钢梯",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "stock",
-   "mesh": "props_stock",
-   "name": {
-    "zh": "停着的旧货车（棚车 / 油罐车 / 敞车）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "停着的旧货车（棚车 / 油罐车 / 敞车）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "集装箱堆场 + 托盘 / 油桶 / 废料堆 + 灯杆 + 围栏",
-    "en": ""
-   },
-   "desc": {
-    "zh": "集装箱堆场 + 托盘 / 油桶 / 废料堆 + 灯杆 + 围栏",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ]
 }

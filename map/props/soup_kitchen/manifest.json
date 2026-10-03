@@ -253,5 +253,55 @@
         -0.65
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_canopy": [
+      3648,
+      1024
+    ],
+    "props_clinic": [
+      642,
+      1024
+    ],
+    "props_lights": [
+      5620,
+      512
+    ],
+    "props_queue": [
+      8248,
+      512
+    ],
+    "props_serving": [
+      11268,
+      1024
+    ],
+    "props_shelter": [
+      1680,
+      1024
+    ],
+    "props_tables": [
+      1272,
+      1024
+    ],
+    "props_utility": [
+      1002,
+      1024
+    ],
+    "props_yard": [
+      2654,
+      1024
+    ],
+    "roof": [
+      30,
+      2048
+    ],
+    "site_ground": [
+      860,
+      2048
+    ],
+    "walls_ext": [
+      3564,
+      2048
+    ]
+  }
 }

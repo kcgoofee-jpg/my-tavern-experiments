@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_alley": {
+   "tris_src": 1000,
+   "tris": 1000,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_bar": {
+   "tris_src": 838,
+   "tris": 838,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_street": {
+   "tris_src": 1072,
+   "tris": 1072,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 192,
+   "tris": 192,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 3102,
+ "std_mb": 4.46,
+ "low_mb": 0.19,
+ "pass": "render-b7"
+}

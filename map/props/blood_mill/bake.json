@@ -1,0 +1,38 @@
+{
+ "groups": {
+  "props_cage": {
+   "tris_src": 4432,
+   "tris": 4432,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_entry": {
+   "tris_src": 1686,
+   "tris": 1686,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_main": {
+   "tris_src": 2032,
+   "tris": 2032,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_yard": {
+   "tris_src": 4332,
+   "tris": 4332,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 96,
+   "tris": 96,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 12578,
+ "std_mb": 3.21,
+ "low_mb": 0.34,
+ "pass": "render-b7"
+}

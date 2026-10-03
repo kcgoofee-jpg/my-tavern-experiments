@@ -1,0 +1,56 @@
+{
+ "groups": {
+  "props_counter": {
+   "tris_src": 852,
+   "tris": 852,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_gate": {
+   "tris_src": 1442,
+   "tris": 1442,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 2236,
+   "tris": 2236,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_motorpool": {
+   "tris_src": 11202,
+   "tris": 11202,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_security": {
+   "tris_src": 13344,
+   "tris": 13344,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_vehicles": {
+   "tris_src": 6160,
+   "tris": 6160,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 1251,
+   "tris": 1251,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 20688,
+   "tris": 20688,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 57175,
+ "std_mb": 4.78,
+ "low_mb": 1.3,
+ "pass": "render-b7"
+}

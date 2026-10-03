@@ -232,5 +232,47 @@
         -0.65
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_barricade": [
+      25312,
+      2048
+    ],
+    "props_breach": [
+      14884,
+      2048
+    ],
+    "props_gate": [
+      2020,
+      1024
+    ],
+    "props_lights": [
+      1220,
+      512
+    ],
+    "props_perimeter": [
+      50856,
+      2048
+    ],
+    "props_tower": [
+      3940,
+      1024
+    ],
+    "props_utility": [
+      4664,
+      1024
+    ],
+    "props_vehicles": [
+      5362,
+      1024
+    ],
+    "site_ground": [
+      748,
+      2048
+    ],
+    "walls_ext": [
+      5592,
+      2048
+    ]
+  }
 }

@@ -1,0 +1,62 @@
+{
+ "groups": {
+  "props_alleys": {
+   "tris_src": 17356,
+   "tris": 17356,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_goods": {
+   "tris_src": 22884,
+   "tris": 22884,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lights": {
+   "tris_src": 7524,
+   "tris": 7524,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_market": {
+   "tris_src": 3348,
+   "tris": 3348,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_pipes": {
+   "tris_src": 14860,
+   "tris": 14860,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_shacks_a": {
+   "tris_src": 32662,
+   "tris": 32662,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_shacks_b": {
+   "tris_src": 37424,
+   "tris": 37424,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_stalls": {
+   "tris_src": 2560,
+   "tris": 2560,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 36,
+   "tris": 36,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 138654,
+ "std_mb": 4.49,
+ "low_mb": 1.15,
+ "pass": "render-b7"
+}

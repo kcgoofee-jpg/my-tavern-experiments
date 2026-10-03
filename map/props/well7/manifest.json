@@ -265,5 +265,59 @@
         -0.75
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_checkpoint": [
+      3272,
+      2048
+    ],
+    "props_gates": [
+      3780,
+      1024
+    ],
+    "props_goods": [
+      5468,
+      1024
+    ],
+    "props_lift": [
+      856,
+      1024
+    ],
+    "props_lights": [
+      5404,
+      512
+    ],
+    "props_market": [
+      2512,
+      1024
+    ],
+    "props_shaft": [
+      12988,
+      2048
+    ],
+    "props_shop": [
+      4006,
+      1024
+    ],
+    "props_taxpoint": [
+      988,
+      1024
+    ],
+    "props_terminal": [
+      812,
+      512
+    ],
+    "props_walls": [
+      3248,
+      2048
+    ],
+    "site_deck": [
+      2148,
+      2048
+    ],
+    "site_ground": [
+      684,
+      2048
+    ]
+  }
 }

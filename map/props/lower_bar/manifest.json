@@ -1,129 +1,129 @@
 {
- "_note": "viewer3d.html?model=lower_bar 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/lower_bar.md。",
- "id": "lower_bar",
- "title": {
-  "zh": "下层区酒吧",
-  "en": "Lower-tier Bar"
- },
- "glb": "lower_bar.glb",
- "glb_low": "lower_bar_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_bar",
-   "props_alley"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_street",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -30,
-    -0.3,
-    -34
-   ],
-   "max": [
-    32,
-    10,
-    14
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 10,
-  "default": 10
- },
- "camera": {
-  "frame": [
-   "props_bar",
-   "props_alley"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_bar": [
-   9000,
-   1024
-  ],
-  "props_alley": [
-   9000,
-   512
-  ],
-  "props_street": [
-   5000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
+  "_note": "viewer3d.html?model=lower_bar 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/lower_bar.md。",
+  "id": "lower_bar",
+  "title": {
+    "zh": "下层区酒吧",
+    "en": "Lower-tier Bar"
+  },
+  "glb": "lower_bar.glb",
+  "glb_low": "lower_bar_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_bar",
+      "props_alley"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_street",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -30,
+        -0.3,
+        -34
+      ],
+      "max": [
+        32,
+        10,
+        14
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 10,
+    "default": 10
+  },
+  "camera": {
+    "frame": [
+      "props_bar",
+      "props_alley"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_alley": [
+      1000,
+      512
+    ],
+    "props_bar": [
+      838,
+      1024
+    ],
+    "props_street": [
+      1072,
+      512
+    ],
+    "site_ground": [
+      192,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "bar",
+      "mesh": "props_bar",
+      "name": {
+        "zh": "街角酒吧主楼（红砖一层 + 灰泥暖光窗二层 + 平屋顶排烟管 / 水箱）+ 扇形遮阳篷 + 无字琥珀灯牌",
+        "en": ""
+      },
+      "desc": {
+        "zh": "街角酒吧主楼（红砖一层 + 灰泥暖光窗二层 + 平屋顶排烟管 / 水箱）+ 扇形遮阳篷 + 无字琥珀灯牌",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "alley",
+      "mesh": "props_alley",
+      "name": {
+        "zh": "东侧后巷：邻楼山墙 + 后门 + 酒桶 / 木箱 / 垃圾箱 + 之字形消防梯",
+        "en": ""
+      },
+      "desc": {
+        "zh": "东侧后巷：邻楼山墙 + 后门 + 酒桶 / 木箱 / 垃圾箱 + 之字形消防梯",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "street",
+      "mesh": "props_street",
+      "name": {
+        "zh": "露天小圆桌与凳 + 暖光路灯",
+        "en": ""
+      },
+      "desc": {
+        "zh": "露天小圆桌与凳 + 暖光路灯",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ]
- },
- "hotspots": [
-  {
-   "id": "bar",
-   "mesh": "props_bar",
-   "name": {
-    "zh": "街角酒吧主楼（红砖一层 + 灰泥暖光窗二层 + 平屋顶排烟管 / 水箱）+ 扇形遮阳篷 + 无字琥珀灯牌",
-    "en": ""
-   },
-   "desc": {
-    "zh": "街角酒吧主楼（红砖一层 + 灰泥暖光窗二层 + 平屋顶排烟管 / 水箱）+ 扇形遮阳篷 + 无字琥珀灯牌",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "alley",
-   "mesh": "props_alley",
-   "name": {
-    "zh": "东侧后巷：邻楼山墙 + 后门 + 酒桶 / 木箱 / 垃圾箱 + 之字形消防梯",
-    "en": ""
-   },
-   "desc": {
-    "zh": "东侧后巷：邻楼山墙 + 后门 + 酒桶 / 木箱 / 垃圾箱 + 之字形消防梯",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "street",
-   "mesh": "props_street",
-   "name": {
-    "zh": "露天小圆桌与凳 + 暖光路灯",
-    "en": ""
-   },
-   "desc": {
-    "zh": "露天小圆桌与凳 + 暖光路灯",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ]
 }

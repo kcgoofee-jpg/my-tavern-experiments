@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_rail": {
+   "tris_src": 5448,
+   "tris": 5448,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_shed": {
+   "tris_src": 630,
+   "tris": 630,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_signal": {
+   "tris_src": 1328,
+   "tris": 1328,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_stock": {
+   "tris_src": 3228,
+   "tris": 3228,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_yard": {
+   "tris_src": 2148,
+   "tris": 2148,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 36,
+   "tris": 36,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 12818,
+ "std_mb": 4.46,
+ "low_mb": 0.38,
+ "pass": "render-b7"
+}

@@ -1,0 +1,86 @@
+{
+ "groups": {
+  "props_checkpoint": {
+   "tris_src": 3272,
+   "tris": 3272,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_gates": {
+   "tris_src": 3780,
+   "tris": 3780,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_goods": {
+   "tris_src": 5468,
+   "tris": 5468,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lift": {
+   "tris_src": 856,
+   "tris": 856,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lights": {
+   "tris_src": 5404,
+   "tris": 5404,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_market": {
+   "tris_src": 2512,
+   "tris": 2512,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_shaft": {
+   "tris_src": 12988,
+   "tris": 12988,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_shop": {
+   "tris_src": 4006,
+   "tris": 4006,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_taxpoint": {
+   "tris_src": 988,
+   "tris": 988,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_terminal": {
+   "tris_src": 812,
+   "tris": 812,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_walls": {
+   "tris_src": 3248,
+   "tris": 3248,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_deck": {
+   "tris_src": 2148,
+   "tris": 2148,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 684,
+   "tris": 684,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 46166,
+ "std_mb": 5.34,
+ "low_mb": 1.5,
+ "pass": "render-b7"
+}

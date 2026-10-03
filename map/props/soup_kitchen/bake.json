@@ -1,0 +1,80 @@
+{
+ "groups": {
+  "props_canopy": {
+   "tris_src": 3648,
+   "tris": 3648,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_clinic": {
+   "tris_src": 642,
+   "tris": 642,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lights": {
+   "tris_src": 5620,
+   "tris": 5620,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_queue": {
+   "tris_src": 8248,
+   "tris": 8248,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_serving": {
+   "tris_src": 11268,
+   "tris": 11268,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_shelter": {
+   "tris_src": 1680,
+   "tris": 1680,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_tables": {
+   "tris_src": 1272,
+   "tris": 1272,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_utility": {
+   "tris_src": 1002,
+   "tris": 1002,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_yard": {
+   "tris_src": 2654,
+   "tris": 2654,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "roof": {
+   "tris_src": 30,
+   "tris": 30,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 860,
+   "tris": 860,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 3564,
+   "tris": 3564,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 40488,
+ "std_mb": 5.33,
+ "low_mb": 1.21,
+ "pass": "render-b7"
+}

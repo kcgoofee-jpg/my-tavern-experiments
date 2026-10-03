@@ -199,5 +199,43 @@
         -0.7
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_gate": [
+      1796,
+      1024
+    ],
+    "props_lights": [
+      5932,
+      512
+    ],
+    "props_post": [
+      856,
+      1024
+    ],
+    "props_roof": [
+      1476,
+      512
+    ],
+    "props_vehicles": [
+      13232,
+      1024
+    ],
+    "props_wall": [
+      7860,
+      2048
+    ],
+    "props_works": [
+      12744,
+      2048
+    ],
+    "site_ground": [
+      2220,
+      2048
+    ],
+    "walls_ext": [
+      1272,
+      2048
+    ]
+  }
 }

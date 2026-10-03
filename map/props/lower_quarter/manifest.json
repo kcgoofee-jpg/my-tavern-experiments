@@ -222,5 +222,43 @@
         -0.5
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_alleys": [
+      17356,
+      1024
+    ],
+    "props_goods": [
+      22884,
+      1024
+    ],
+    "props_lights": [
+      7524,
+      512
+    ],
+    "props_market": [
+      3348,
+      1024
+    ],
+    "props_pipes": [
+      14860,
+      1024
+    ],
+    "props_shacks_a": [
+      32662,
+      2048
+    ],
+    "props_shacks_b": [
+      37424,
+      2048
+    ],
+    "props_stalls": [
+      2560,
+      1024
+    ],
+    "site_ground": [
+      36,
+      2048
+    ]
+  }
 }

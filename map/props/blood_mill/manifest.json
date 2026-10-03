@@ -1,151 +1,151 @@
 {
- "_note": "viewer3d.html?model=blood_mill 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/blood_mill.md。",
- "id": "blood_mill",
- "title": {
-  "zh": "血肉磨坊",
-  "en": "The Bloodmill"
- },
- "glb": "blood_mill.glb",
- "glb_low": "blood_mill_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_main",
-   "props_cage"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_entry",
-   "props_yard",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -46,
-    -0.3,
-    -36
-   ],
-   "max": [
-    48,
-    28,
-    36
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 28,
-  "default": 28
- },
- "camera": {
-  "frame": [
-   "props_main",
-   "props_cage"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_main": [
-   16000,
-   1024
-  ],
-  "props_cage": [
-   22000,
-   512
-  ],
-  "props_entry": [
-   6000,
-   512
-  ],
-  "props_yard": [
-   20000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
+  "_note": "viewer3d.html?model=blood_mill 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/blood_mill.md。",
+  "id": "blood_mill",
+  "title": {
+    "zh": "血肉磨坊",
+    "en": "The Bloodmill"
+  },
+  "glb": "blood_mill.glb",
+  "glb_low": "blood_mill_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_main",
+      "props_cage"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_entry",
+      "props_yard",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -46,
+        -0.3,
+        -36
+      ],
+      "max": [
+        48,
+        28,
+        36
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 28,
+    "default": 28
+  },
+  "camera": {
+    "frame": [
+      "props_main",
+      "props_cage"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_cage": [
+      4432,
+      512
+    ],
+    "props_entry": [
+      1686,
+      512
+    ],
+    "props_main": [
+      2032,
+      1024
+    ],
+    "props_yard": [
+      4332,
+      512
+    ],
+    "site_ground": [
+      96,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "main",
+      "mesh": "props_main",
+      "name": {
+        "zh": "旧磨坊主厂房（砖墙铁皮顶 + 高窗 + 山墙锈蚀磨盘与大铁门）+ 熏黑烟囱",
+        "en": ""
+      },
+      "desc": {
+        "zh": "旧磨坊主厂房（砖墙铁皮顶 + 高窗 + 山墙锈蚀磨盘与大铁门）+ 熏黑烟囱",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "cage",
+      "mesh": "props_cage",
+      "name": {
+        "zh": "拳笼圆场（半地下砖鼓座 + 铁条网格穹笼 + 四支泛光灯）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "拳笼圆场（半地下砖鼓座 + 铁条网格穹笼 + 四支泛光灯）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "entry",
+      "mesh": "props_entry",
+      "name": {
+        "zh": "红灯入口 + 防水布雨棚 + 铁链排队栏杆",
+        "en": ""
+      },
+      "desc": {
+        "zh": "红灯入口 + 防水布雨棚 + 铁链排队栏杆",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "yard",
+      "mesh": "props_yard",
+      "name": {
+        "zh": "铁丝网围栏后院 + 托盘 / 油桶 / 旧轮胎 / 货箱",
+        "en": ""
+      },
+      "desc": {
+        "zh": "铁丝网围栏后院 + 托盘 / 油桶 / 旧轮胎 / 货箱",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ]
- },
- "hotspots": [
-  {
-   "id": "main",
-   "mesh": "props_main",
-   "name": {
-    "zh": "旧磨坊主厂房（砖墙铁皮顶 + 高窗 + 山墙锈蚀磨盘与大铁门）+ 熏黑烟囱",
-    "en": ""
-   },
-   "desc": {
-    "zh": "旧磨坊主厂房（砖墙铁皮顶 + 高窗 + 山墙锈蚀磨盘与大铁门）+ 熏黑烟囱",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "cage",
-   "mesh": "props_cage",
-   "name": {
-    "zh": "拳笼圆场（半地下砖鼓座 + 铁条网格穹笼 + 四支泛光灯）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "拳笼圆场（半地下砖鼓座 + 铁条网格穹笼 + 四支泛光灯）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "entry",
-   "mesh": "props_entry",
-   "name": {
-    "zh": "红灯入口 + 防水布雨棚 + 铁链排队栏杆",
-    "en": ""
-   },
-   "desc": {
-    "zh": "红灯入口 + 防水布雨棚 + 铁链排队栏杆",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "yard",
-   "mesh": "props_yard",
-   "name": {
-    "zh": "铁丝网围栏后院 + 托盘 / 油桶 / 旧轮胎 / 货箱",
-    "en": ""
-   },
-   "desc": {
-    "zh": "铁丝网围栏后院 + 托盘 / 油桶 / 旧轮胎 / 货箱",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ]
 }
