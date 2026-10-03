@@ -8,11 +8,14 @@
 //   OP_ROUTE   {to, from?, why?}                 → 建议路线（K-R130，S7-1）：交给宿主的 routeOp；每条响应最多一个，多的丢弃并计数
 // 校验纪律：**throw-not-coerce**（core/layer-registry.mjs normChain 同一口径）——字段类型不对该 op 直接丢弃并计数，
 // 绝不猜测转换；每条响应最多 MAX_OPS 个 op；文本命中 events 的示范原文（isExample）（模型复读世界书）→ 丢弃。
+// FIX-3：op 块的解析走 core/model-json.mjs 那条梯子（直接解 → 剥围栏 → 补括号 → 安静放弃），所以生成被截断的
+// 参谋回复也能出 op；修不出来的那一条照旧丢弃并计数。
 // 纯模块：不碰全局 / DOM / 存储 / 网络；不执行任何副作用（apply 只产出描述，送达由宿主做）。
 // 前置条件：宿主必须先过 sanitize 链（stripBlocks + msgtext 剥 <think> / <UpdateVariable>）再喂进来——
 // CoT 回声不得起草 op（G1 同款风险）。node 单测 tests/operation-dsl.test.mjs。
 import { classify, getGeo, isExample } from './events-parse.mjs';
 import { seedOf } from '../core/rng.mjs';
+import { parseLoose } from '../core/model-json.mjs';
 
 export const PLANNER_OPS = ['OP_EVENT', 'OP_CLUE', 'OP_MARKER', 'OP_SUGGEST', 'OP_ROUTE'];
 export const MAX_OPS = 3;
@@ -69,6 +72,7 @@ export function parse(text) {
   const ops = [];
   let dropped = 0;
   const re = /OP_(EVENT|CLUE|MARKER|SUGGEST|ROUTE)\s*\{/g; routeSeen = 0;
+  let truncated = false;
   for (let m; (m = re.exec(s)) && ops.length <= MAX_OPS;) {
     const start = m.index + m[0].length - 1;   // 指向 {
     let depth = 0, end = -1, inStr = false, esc = false;
@@ -79,14 +83,16 @@ export function parse(text) {
       else if (c === '{') depth++;
       else if (c === '}') { depth--; if (!depth) { end = i; break; } }
     }
-    if (end < 0) { dropped++; break; }   // JSON 没闭合：整条响应的 op 段到此为止（防拖尾噪声连坐）
-    re.lastIndex = end + 1;
+    if (end < 0) truncated = true;   // 没闭合：先试把截断的尾巴收好（FIX-3），收不好才整条响应到此为止
     const name = 'OP_' + m[1];
-    let obj = null;
-    try { obj = JSON.parse(s.slice(start, end + 1)); } catch (e) { dropped++; continue; }
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { dropped++; continue; }
-    if ([obj.text, obj.why].some(t => typeof t === 'string' && isExample(t))) { dropped++; continue; }   // 回声黑名单：复读世界书示范原文
+    // FIX-3: a reply cut off mid-object (or one whose tail has a dangling comma) still parses; what stays broken is
+    // dropped and counted, never thrown. core/model-json.mjs is the one ladder (parse -> strip fence -> balance).
+    const obj = parseLoose(end < 0 ? s.slice(start, start + 2000) : s.slice(start, end + 1), { limit: 2000 });
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { dropped++; if (truncated) break; continue; }
+    if (end >= 0) re.lastIndex = end + 1;
+    if ([obj.text, obj.why].some(t => typeof t === 'string' && isExample(t))) { dropped++; if (truncated) break; continue; }   // 回声黑名单：复读世界书示范原文
     try { ops.push(VALIDATE[name](obj)); } catch (e) { dropped++; }
+    if (truncated) break;
   }
   return { ops: ops.slice(0, MAX_OPS), dropped: dropped + Math.max(0, ops.length - MAX_OPS), hash: s ? seedOf(s).toString(36) : '' };
 }

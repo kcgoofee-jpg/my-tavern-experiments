@@ -44,13 +44,22 @@ test('校验 throw-not-coerce：错类型 / 越界 / 白名单外的 op 丢弃�
   assert.equal(r.dropped, bads.length);
 });
 
-test('每响应 ≤3 op：多的丢弃计入 dropped；JSON 没闭合断尾（不连坐后面的噪声）', () => {
+test('每响应 ≤3 op：多的丢弃计入 dropped；JSON 没闭合时补上括号（FIX-3），修不好才断尾，且不连坐后面的噪声', () => {
   const four = [1, 2, 3, 4].map(i => OP('OP_SUGGEST', { text: `建议${i}` })).join('\n');
   const r = O.parse(four);
   assert.equal(r.ops.length, 3);
   assert.equal(r.dropped, 1);
-  assert.equal(O.parse('OP_SUGGEST {"text":"没闭合').ops.length, 0);
-  assert.equal(O.parse('OP_SUGGEST {"text":"没闭合').dropped, 1);
+  // 生成在对象中间停下：补上缺的引号与括号，这条 op 算数
+  const cut = O.parse('OP_SUGGEST {"text":"没闭合');
+  assert.equal(cut.ops.length, 1, 'a reply cut off mid-object still yields the op');
+  assert.equal(cut.dropped, 0);
+  // 补不上（尾巴不是 JSON）：丢弃并计数，不抛
+  const junk = O.parse('OP_SUGGEST { 这里不是 JSON');
+  assert.equal(junk.ops.length, 0); assert.equal(junk.dropped, 1);
+  // 断尾之后不连坐：后面的噪声不会被当成另一条 op
+  const noisy = O.parse('OP_SUGGEST {"text":"没闭合\nOP_SUGGEST {"text":"拖尾噪声"}');
+  assert.equal(noisy.ops.length, 0, 'nothing repairable in a block with noise after it');
+  assert.equal(noisy.dropped, 1);
 });
 
 test('回声黑名单：text 恰为世界书示范原文的 op 丢弃（模型复读不落点）', () => {

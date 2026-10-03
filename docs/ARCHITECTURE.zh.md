@@ -91,6 +91,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `locked-strings.mjs` | 包不能改的文字（AI 参谋同意说明、健康原因、费用行、免责声明）：`isLocked`、`ignoredKeys` 与查看器用的字典查找 `lookup`。纯函数。 |
 | `lod.mjs` | 图形 LOD 策略：一个模型该处在哪一档、滞回、哪些异步加载仍然有效。 |
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
+| `model-json.mjs` | 模型回复的 JSON 容错（FIX-3）：凡读模型结构化回复的都走这一条梯子——照原样解 → 剥代码围栏 → 取第一个对象 / 数组并补上被截断的尾巴 → 安静放弃（`null`，不抛）。另带 `stripFence`（剥出围栏里的内容）与 `unfenced`（连围栏一起删），这条规则全仓只有这一份。纯函数，不猜值。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
 | `ooc.mjs` | 玩家消息里的 OOC 行（D32）：`stripOoc`（剥掉 OOC 段）、`floorCorrections`（一楼里写下的改口：改当前地点、把某人放到某处）、`activePlace`（还生效的那条改口）。纯函数；改口住在聊天楼层里，所以和别的楼层一样能重算。 |
 | `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |

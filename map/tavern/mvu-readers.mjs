@@ -8,7 +8,7 @@ import { bandOf } from '../core/periods.mjs';
 import { slotDef, SLOTS, portraitOk as avatarOk } from '../core/profile.mjs';
 import { fieldValue } from '../core/pack-v2-rows.mjs';
 import * as VOC from '../core/vocab.mjs';
-import * as CR from '../core/custom-record.mjs';
+import * as CR from '../core/custom-record.mjs'; import { unfenced } from '../core/model-json.mjs';   // 本文件已到体量上限，导入合并成一行
 import * as CB from '../core/custom-book.mjs';
 
 // ---------------- 通用 ----------------
@@ -218,7 +218,7 @@ const decode = s => s.replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: 
 /** 一楼原文 → [{ op: 'name' | 'note' | 'fact', key, value }]（最多 6 条；代码块与示范原文跳过） */
 export function parseCustomTags(raw) {
   if (!raw || !/⌖\s*(?:改名|用途|事实)/.test(raw)) return [];
-  const text = decode(String(raw)).replace(/```[\s\S]*?```/g, '').replace(/<code>[\s\S]*?<\/code>/gi, ''), out = [];
+  const text = unfenced(decode(String(raw))), out = [];   // FIX-3: 剥围栏这一件事只有一份（core/model-json.mjs unfenced）
   for (const m of text.matchAll(/⌖\s*(改名|用途|事实)[\s:：]*([^<\n⌖]{1,260})/g)) {   // WB-1: a space after ⌖ and a trailing 。 are accepted
     const body = m[2].trim().replace(/[。．]+$/, '').trim();
     if (CUSTOM_EXAMPLES.has(`⌖${m[1]} ${body}`) || PACK_EX.has(`⌖${m[1]} ${body}`)) continue;

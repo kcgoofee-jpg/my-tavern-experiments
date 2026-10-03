@@ -110,6 +110,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `locked-strings.mjs` | The texts a pack may not override (AI advisor consent, health reasons, cost lines, disclaimer): `isLocked`, `ignoredKeys` and the dictionary `lookup` the viewer uses. Pure. |
 | `lod.mjs` | Graphics LOD policy: which detail state a model should be in, hysteresis, and which async loads are still valid. |
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
+| `model-json.mjs` | Model-reply JSON tolerance (FIX-3): one ladder for everything that reads a model's structured reply - parse as it stands, unwrap a code fence, take the first object or array and close a truncated tail, give up quietly (`null`, never a throw). Also `stripFence` (unwrap) and `unfenced` (delete), the one copy of that rule. Pure; no guessing a value. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
 | `ooc.mjs` | Out-of-character lines in player messages (D32): `stripOoc`, `floorCorrections` (a written correction of the current place or of where someone is), `activePlace` (the correction that still holds). Pure; the correction lives in the chat floor, so it recomputes like any other. |
 | `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
