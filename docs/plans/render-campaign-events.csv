@@ -626,3 +626,18 @@ ts,id,stage,event,agent,gate,note
 2026-10-02T21:43:31Z,obl:tc_low:nightshift,tiles,done,glm-b3,,"map/art/tc_low_obl_nightshift.dzi 226 tiles, 14 levels, verified"
 2026-10-02T21:43:48Z,obl:tc_low:nightshift,register,wait,glm-b3,,register / ship wait for OBLIQUE-CODE
 2026-10-02T21:43:56Z,obl:tc_low:nightshift,register,wait,glm-b3,,"dark pass (s0.8 item 5) recorded on this item: 512 px, all lights and emissives off, world zero, no column kept on this shift, mean luminance 0.00038 against the 0.01 limit, brightest pixel 0.21 at the shaft mouth"
+2026-10-03T03:59:28Z,out:tc_mid:day,render,done,render-b4,,"4313e554 final 4000x2500 64spp 0.6 min; camera file map/data/cam/tc_mid_out.json hash 10b89e8509113973 (same for the three periods); border fog dev <=0.6/255, texture 0.058->0.001 outward, clip 0.072 %"
+2026-10-03T03:59:33Z,out:tc_mid:day,tiles,done,render-b4,,"map/art/tc_mid_out_day.dzi 66 tiles, 13 levels, verified"
+2026-10-03T03:59:37Z,out:tc_mid:day,register,wait,render-b4,,register / ship wait for the OBLIQUE-CODE step (maps.json views); no maps.json edit in this batch
+2026-10-03T03:59:42Z,out:tc_mid:dusk,render,done,render-b4,,"4313e554 final 4000x2500 64spp 0.7 min; same camera hash; border fog dev <=0.1/255, texture 0.062->0.001 outward, clip 0.341 %"
+2026-10-03T03:59:47Z,out:tc_mid:dusk,tiles,done,render-b4,,"map/art/tc_mid_out_dusk.dzi 66 tiles, 13 levels, verified"
+2026-10-03T03:59:54Z,out:tc_mid:dusk,register,wait,render-b4,,register / ship wait for the OBLIQUE-CODE step
+2026-10-03T04:00:03Z,out:tc_mid:night,render,done,render-b4,,"4313e554 final 4000x2500 64spp 0.8 min; same camera hash; border fog dev <=0.1/255, texture 0.088->0.001 outward; s0.8 item 2 sourceless 0 regions / 0 px of 173333 bright px (pad 10); clip off source 0.0 %"
+2026-10-03T04:00:11Z,out:tc_mid:night,tiles,done,render-b4,,"map/art/tc_mid_out_night.dzi 66 tiles, 13 levels, verified"
+2026-10-03T04:00:15Z,out:tc_mid:night,register,wait,render-b4,,register / ship wait for the OBLIQUE-CODE step
+2026-10-03T04:00:20Z,out:tc_low:dayshift,render,done,render-b4,,"65c54ad1 final 4000x2500 64spp 0.7 min; camera file map/data/cam/tc_low_out.json hash f6e434baf1a7851d (same for both shifts); border fog dev <=0.5/255, texture 0.029->0.001 outward; item 2 sourceless 0 regions; clip off source 0.0 %"
+2026-10-03T04:00:25Z,out:tc_low:dayshift,tiles,done,render-b4,,"map/art/tc_low_out_dayshift.dzi 66 tiles, 13 levels, verified"
+2026-10-03T04:00:30Z,out:tc_low:dayshift,register,wait,render-b4,,register / ship wait for the OBLIQUE-CODE step (maps.json views)
+2026-10-03T04:00:35Z,out:tc_low:nightshift,render,done,render-b4,,"65c54ad1 final 4000x2500 64spp 0.7 min; same camera hash; border fog dev 0.0/255, texture 0.030->0.001 outward; item 2 sourceless 0 regions of 1044; item 5 dark pass PASS mean luminance 0.00033 (limit 0.01), nothing above 0.01"
+2026-10-03T04:00:39Z,out:tc_low:nightshift,tiles,done,render-b4,,"map/art/tc_low_out_nightshift.dzi 66 tiles, 13 levels, verified"
+2026-10-03T04:00:48Z,out:tc_low:nightshift,register,wait,render-b4,,register / ship wait for the OBLIQUE-CODE step

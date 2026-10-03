@@ -2,11 +2,11 @@
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-02T14:07:39Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-03T04:00:48Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 55 | 0 | 0 | 0 | 27 | 0 | 82 |
+| standard | 55 | 0 | 0 | 10 | 17 | 0 | 82 |
 | hero | 22 | 0 | 1 | 8 | 4 | 0 | 35 |
 
 Below-gate (user spot-check): none
@@ -70,16 +70,16 @@ Below-gate (user spot-check): none
 | 53 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
 | 54 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
 | 55 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
-| 56 | `obl:tc_mid:day` | basemap | blocked | audit |  |  | Mid oblique base, day: canyon light, neon on (D41) |
-| 57 | `obl:tc_mid:dusk` | variant | blocked | render |  |  | Mid oblique, dusk (D41) |
-| 58 | `obl:tc_mid:night` | variant | blocked | render |  |  | Mid oblique, night (D41) |
-| 59 | `obl:tc_low:dayshift` | basemap | blocked | audit |  |  | Low oblique base, day shift: artificial light only (D41) |
-| 60 | `obl:tc_low:nightshift` | variant | blocked | render |  |  | Low oblique, night shift (D41) |
-| 61 | `out:tc_mid:day` | variant | blocked | render |  |  | Outskirts ring tc_mid / day, low-res (D41 scale) |
-| 62 | `out:tc_mid:dusk` | variant | blocked | render |  |  | Outskirts ring tc_mid / dusk, low-res (D41 scale) |
-| 63 | `out:tc_mid:night` | variant | blocked | render |  |  | Outskirts ring tc_mid / night, low-res (D41 scale) |
-| 64 | `out:tc_low:dayshift` | variant | blocked | render |  |  | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
-| 65 | `out:tc_low:nightshift` | variant | blocked | render |  |  | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
+| 56 | `obl:tc_mid:day` | basemap | waiting | ship |  | waiting-on-freeze | Mid oblique base, day: canyon light, neon on (D41) |
+| 57 | `obl:tc_mid:dusk` | variant | waiting | register |  | waiting-on-freeze | Mid oblique, dusk (D41) |
+| 58 | `obl:tc_mid:night` | variant | waiting | register |  | waiting-on-freeze | Mid oblique, night (D41) |
+| 59 | `obl:tc_low:dayshift` | basemap | waiting | ship |  | waiting-on-freeze | Low oblique base, day shift: artificial light only (D41) |
+| 60 | `obl:tc_low:nightshift` | variant | waiting | register |  | waiting-on-freeze | Low oblique, night shift (D41) |
+| 61 | `out:tc_mid:day` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / day, low-res (D41 scale) |
+| 62 | `out:tc_mid:dusk` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / dusk, low-res (D41 scale) |
+| 63 | `out:tc_mid:night` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / night, low-res (D41 scale) |
+| 64 | `out:tc_low:dayshift` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
+| 65 | `out:tc_low:nightshift` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
 | 66 | `glb:budget:upper` | estate | blocked | final |  |  | Landmark models, upper group: budget re-export (D41 B3) |
 | 67 | `glb:budget:mid` | estate | blocked | final |  |  | Landmark models, mid group: budget re-export (D41 B3) |
 | 68 | `glb:budget:low` | estate | blocked | final |  |  | Landmark models, low group: budget re-export (D41 B3) |
