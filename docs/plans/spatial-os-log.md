@@ -2237,3 +2237,15 @@ blocker: none
 open: (1) `ViewerDebug is not defined` (topo_dairy, since #336) is still unfiled and still red — needs whoever owns that step; it is the same class as today's REPO break (a global the viewer no longer defines), so it may be the same root cause. (2) `tools/build_preview_script.py`'s follow loader still falls back only on a rejected `import()`, never on a hung one — with npm lines now in play a stalled import on the entry would hang forever; that file is the import route's (DIST-2's), unchanged here. (3) The one self-check warning on build #335/#338 is still unfiled (no way to read which item without driving the settings page).
 cleanup: done (no server, browser or sink process of mine left running; TT quit; the temporary TH observer script stays disabled; the ext-study extension folder untouched and not re-enabled)
 === END ===
+
+=== RESULT F-TT (note) ===
+status: DONE
+items: CI correction for the block above
+commits: see head #340
+pushed: yes (head #340)
+tests: node 1653/1655 | smoke PASS | arch PASS | probes: boot_watchdog=PASS 6/6 (CI run 37107902423 on head #339, browser-smoke green, 4m36s)
+deviations: none
+blocker: none
+open: the `ViewerDebug is not defined` item listed as open above is already fixed — DIST-2's #338 turned `browser-smoke` green (run 37105858206) and #339 keeps it green with the F-TT probe step included. The entry import fallback in `tools/build_preview_script.py` (falls back only on a rejected import, never on a hung one) and the one unfiled self-check warning are still open.
+cleanup: done
+=== END ===
