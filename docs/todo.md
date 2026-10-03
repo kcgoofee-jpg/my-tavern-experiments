@@ -120,10 +120,10 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - ~~**A9** per-tier UI skins removed · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: `ui.theme.views` dropped from the eden overlay; the kernel ability K-R70 stays, pinned by a fixture in the tests)
   - ~~**A10** transit lines thin and glowing (lite) · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: default line width 4 → 2.5, the halo is a colour bloom plus a soft drop-shadow glow, district fills untinted) · snapping lines to the rendered rails · [ ] **TRANSIT-LOOK** (later data step)
   - ~~**A11** one marker per spot (2D), no overlapping labels (3D) · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: the people stack replaces the pin at a landmark, the current-location pin stays; 3D labels merge duplicates by name on top of the UI-3D-1 cull)
-  - ~~**X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38)~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1; the lit-windows look itself is the open half: `glb:estate:night-glow`)
+  - ~~**X-RAY** 3D x-ray mode removed, 外观 night look, 剖切 → 「楼层」 (D38)~~ ✅ 2026-10-02 (RESULT ESTATE-MODES-1; `glb:estate:night-glow` shipped ✅ 2026-10-03 381f419b)
   - [ ] **B3** landmark model budgets 4–8 MB, 1–2K textures, meshopt + KTX2, phone tier ≤ 2 MB · renders `glb:budget:*` (batch 7)
   - [ ] **B4** landmark night bakes · renders `bake:night:*` (batch 8)
-  - [ ] **B5** estate cutaway materials + AO + practical lamps · renders `estate:cutaway` (batch 6; window glow material names from ESTATE-MODES-1)
+  - ~~**B5** estate cutaway materials + AO + practical lamps · renders `estate:cutaway` (batch 6; window glow material names from ESTATE-MODES-1)~~ ✅ 2026-10-03 381f419b
   - [ ] **B6** per-period Eden insets (oblique) and site maps at 8000 px · renders `obl:tc_upper_eden:*` (batch 1), `site8k:*` (batch 9)
   - [ ] **B7** world map full-res thin borders, city-light patches, night variant · renders `base:world_cities`, `var:world:borders`, `var:world:night` (batch 5)
 - [ ] **PUB** public-release prep (parked until the user decides to share; D15, D21–D27, D29): S10a renames + migration, DIST-1 npm + npmmirror line + stable channel, SLIM-1 history rewrite after DIST-1 and before going public (user 2026-10-02), BUNDLE-1, SEC-1, REL-DOCS

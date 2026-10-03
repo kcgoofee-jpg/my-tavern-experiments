@@ -2186,4 +2186,20 @@ deviations: (1) item 7's four named features: only the AI advisor parses model J
 blocker: none
 open: (1) the 3D page's own numeric stat overlay (?stats=1) shows tier codes and glb file names - docs/copy-style.md §4 exempts the feedback report, the developer page and the version code, but not a stats overlay; it was left alone because a copy pass is the wrong place to remove a renderer's diagnostics. Decide whether ?stats=1 counts as a diagnostic surface. (2) A failed interior model load is still silent on the 3D page (console.warn only, houseState -1 is only read by probes) - rule 8 wants a next step on screen, and it needs a place to put it, which is a design call. (3) core/ooc.mjs reads （OOC 地图：现在在 ） as "character 现 is at 在" rather than nothing: an empty place after the verb falls through to the character pattern. Pre-existing, not touched. (4) The gg tag-rate A/B from WB-2-rest still needs a Mac TT window the player is not typing in. (5) The first release after COPY-1 still needs 1-3 short lines in map/data/build.json notes, otherwise the update notice shows only the how-to line.
 cleanup: done (the probe's own preview server on port 5415, pid 56112, killed; the read-only base worktrees removed; no browser or Blender process left; /tmp scratch files only)
+
+=== RESULT RENDER-B6 ===
+status: DONE
+items: 1 (estate:cutaway: F1-F3 authoritative interior materials, AO, lamps, fireplaces, furnishings per docs/eden-estate.md) ✓ · 2 (glb:estate:night-glow: separable m_win_glass in site.glb/site_low.glb, x-night-glow in manifest) ✓ · 3 (probes & tests: estate3d 16/16 checks pass, e13b 6-view sweep zero flicker pass across B2, B1, F1, F2, F3, exterior) ✓ · 4 (contact sheet to ~/eden-map-review/render-b6/) ✓ · 5 (ledger items done with commit shas) ✓
+commits: 381f419b feat(estate): materials, AO, lamps for cutaway view and separable night glow (RENDER-B6)
+         (this commit) docs(log): RESULT RENDER-B6
+pushed: yes
+tests: node 1622/1623 pass (1 skipped) | smoke PASS | arch PASS | probes: estate3d=PASS (16/16), e13b_sweep=PASS (6/6 modes 100% identical, zero flicker)
+render minutes per image: site_raw bake 11.6 min (2048 res, 64 spp); web_scene export 0.8 min; house_web + medical_web + meshopt export < 0.1 min. Total Mac time: ~13 min.
+self-check per image:
+  exterior night-glow: separable m_win_glass correctly identified and manipulated by night-look engine (glowOn: 1, uNight: 1, uGlow: 1, flat: 16); ground & sky darkened under night look (ground 21, sky 42 vs day ground 86, sky 164).
+  cutaway floors (F1-F3): authoritative PBR material colors per room (chessboard marble, Versailles parquet, herringbone oak, porphyry colonnade, damask red, Sèvres blue porcelain, Heriz/Aubusson rugs); realistic practical lamp fixtures with warm emissive candle flame cores, sconces, banker lamps, fireplaces with burning embers; zero z-fighting/flicker across all floors (E6 6-mode visual sweep 100% pixel match across 2s still frames).
+deviations: none
+blocker: none
+open: none
+cleanup: done (all temporary .blend files cleaned up, disk space 85 GiB free >= 30 GB rule, no running blender processes)
 === END ===
