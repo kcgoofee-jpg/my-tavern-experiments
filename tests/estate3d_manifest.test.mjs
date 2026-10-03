@@ -2,7 +2,7 @@
 // Schema 校验 / 未知字段容错 / 路径解析与档位兜底、庄园与 55 个地标清单的账实对拍、运行时解耦机检。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { Estate3D } from '../map/core/scene3d-manifest.mjs';
 
 const root = new URL('../map/', import.meta.url);
@@ -92,6 +92,23 @@ test('Part 3：三维页用共享运行时（map/three/*），自己不再 new W
     assert.match(v3d, new RegExp(m.replace(/\//g, '\\/')), `缺共享运行时模块 ${m}`);
   assert.match(v3d, /"engine3d\/":\s*"\.\.\/three\/"/, 'importmap 要能解析 engine3d/');
   assert.match(v3d, /frustumCulled/, '显式打开视锥体裁剪（共享运行时里做）');
+});
+
+test('FIX-3：三维页 importmap 指到的 vendored three 与 jsm 都在库里（新工作树直接能跑三维探针，不用从别处拷）', () => {
+  for (const page of ['estate/index.html', 'props/viewer3d.html']) {
+    const html = readFileSync(new URL(page, root), 'utf8');
+    const im = JSON.parse(html.match(/<script type="importmap">\s*([\s\S]*?)<\/script>/)[1]);
+    const targets = [...Object.values(im.imports), ...[...html.matchAll(/(?:href|from)="(\.\/[^"]+)"/g)].map(m => m[1])];
+    for (const t of targets) {
+      if (!t.startsWith('./') || t.endsWith('/')) continue;   // a prefix mapping ("three/addons/") is a directory, not a file
+      const p = new URL(t, new URL(page, root));
+      assert.ok(existsSync(p), `${page} → ${t} 不在库里`);
+      assert.ok(statSync(p).size > 1024, `${page} → ${t} 是空壳`);
+    }
+  }
+  const three = readFileSync(new URL('estate/vendor/three.module.min.js', root), 'utf8');
+  assert.match(three, / as REVISION\b/, 'vendored three 要是 min 版 ES 模块（导出表里有 REVISION）');
+  assert.match(three, /"160"/, 'vendored three 0.160：jsm 与 importmap 按这个版本取');
 });
 
 test('Part 3：KTX2 / Basis 转码器随仓库（与 vendored three 同版本），LICENSE 里写明来源', () => {
