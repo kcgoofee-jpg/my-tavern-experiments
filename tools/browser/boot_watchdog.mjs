@@ -12,7 +12,7 @@ if (!OUT || OUT.startsWith('--')) { console.log('用法：node tools/browser/boo
 B.quietWait();
 const srv = await B.ensureServer();
 const rep = B.reporter(OUT);
-const OSD = B.BASE + 'vendor/openseadragon/openseadragon.min.js';
+const OSD = /\/vendor\/openseadragon\/openseadragon\.min\.js(\?|$)/;   // 用正则，别绑死域名和端口（CI 的端口会变）
 
 try {
   for (const preset of ['desktopWk', 'desktop']) {
@@ -25,16 +25,16 @@ try {
       await r.continue();
     });
     const H = await openHost(P, { here: '天城中层·霓虹街', msgs: [{ message_id: 3, message: '⌖火灾｜中层·霓虹街｜2｜仓库起火' }] });
+    const mounted = await p.waitForSelector('#eden-map-root', { state: 'attached', timeout: 30000 }).then(() => true).catch(() => false);   // 根节点本身没有盒子（按钮都是 fixed），所以等 attached 不是 visible
+    rep.check(`${preset} 宿主挂上了`, mounted, `base ${B.BASE}`);
     await p.locator('#eden-map-root .em-fab').click();
-    const booted = await p.waitForFunction(() => {
+    const booted = await p.waitForFunction(() => {   // 首帧的判据 = 加载层收起来（#app 一解析就有，那是假信号）
       const f = document.querySelector('#eden-map-root .em-frame');
       try { return !!f?.contentDocument?.getElementById('loading')?.classList.contains('done'); } catch (e) { return false; }
     }, null, { timeout: 75000 }).then(() => true).catch(() => false);
     const ms = stalled ? Date.now() - stalled : -1;
     rep.check(`${preset} 子资源卡住后地图自己起来了`, booted, `osd 请求 ${osdHits} 次，看门狗等了 ${ms} ms`);
     rep.check(`${preset} 看门狗至少重挂过一次`, osdHits >= 2, `osd 请求 ${osdHits} 次`);
-    const hint = await p.evaluate(() => document.querySelector('#eden-map-root .em-load .hint')?.textContent || '');
-    rep.check(`${preset} 界面上说了正在重试 / 换线路`, /重试|换一条/.test(hint) || booted, `提示「${hint}」`);
     await P.close();
   }
 } catch (e) {

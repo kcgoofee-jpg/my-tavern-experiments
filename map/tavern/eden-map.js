@@ -10,7 +10,7 @@
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
 import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; import './pack-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
-import { createRoutes, scoreText } from './host-routes.mjs';
+import { createRoutes, scoreText } from './host-routes.mjs';   // REPO（源码仓库，给「关于」与更新检查）由 createRoutes 按包清单给，见下面那行解构
 import { createLife, takeOver, mount, install, watchVisible, chainText } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
 import { createLlmFlow } from './llm-flow.mjs';
@@ -22,7 +22,7 @@ import { createHostApi } from './host-api.mjs';
 import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
-import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs'; import { createBootWatchdog } from './viewer-boot.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）；viewer-boot：查看器起不来时的重挂（见 mountFrame）
+import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs'; import { createBootWatchdog, rotateKeys } from './viewer-boot.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）；viewer-boot：查看器起不来时的重挂（见 mountFrame）
 (() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
@@ -100,7 +100,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     pickEl.hidden = false; loadEl.hidden = true;
   }
   function chooseLine(key, auto) {   // auto：查看器报告瓦片全部失败后自动换线（N13）——不记「手动」，下次照常测速
-    const changed = key !== line; line = key; try { (LS || localStorage).setItem(LINE_KEY, key); if (!auto) (LS || localStorage).setItem(LINE_KEY + 'Manual', '1'); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } prefSync();
+    const changed = key !== line; line = key; lsSet(LINE_KEY, key); if (!auto) lsSet(LINE_KEY + 'Manual', '1'); prefSync();
     showLine(); pickEl.hidden = true;
     if (changed) { BASE = baseFor(key); html = null; unloadViewer(); }
     loadViewer();
@@ -225,7 +225,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
   const post = msg => { if (!life.dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, v: PROTO, t: HOST_TOKEN }, '*'); } }; const resendVisible = watchVisible(panel, frame, on => post({ type: 'eden-map:visible', on }));   // srcdoc 换页后属性会丢，每次发消息前补一次；S7-2：面板开关 / 滚出视口告诉查看器
-  const BW = createBootWatchdog({ base: () => BASE, onStall: (n, next) => { if (n) { hintEl.textContent = next ? U('hop') : U('stall'); actsEl.hidden = false; } }, onMount: b => { if (b && b !== BASE) { BASE = b; html = null; } unloadViewer(); loadViewer(); } }); life.add(BW.stop);   // F-TT（tavern/viewer-boot.mjs）：查看器挂上之后一直没有启动消息 = 有子资源永远没取回 → 同一个域名重挂，再逐个换镜像域名重挂
+  const BW = createBootWatchdog({ base: () => BASE, alts: () => rotateKeys(swappable && lsGet(LINE_KEY + 'Manual') !== '1' ? LINES.map(l => l.key) : [], line).map(k => baseFor(k)), onStall: (n, next) => { if (n) { hintEl.textContent = next ? U('hop') : U('stall'); actsEl.hidden = false; } }, onMount: b => { if (b && b !== BASE) { const l = LINES.find(x => baseFor(x.key) === b); if (l) line = l.key; BASE = b; html = null; lsSet(LINE_KEY, line); prefSync(); } unloadViewer(); loadViewer(); } }); life.add(BW.stop);   // F-TT（tavern/viewer-boot.mjs）：查看器挂上之后一直没有启动消息 = 有子资源永远没取回 → 同一个地址重挂，再依次换自己的线路重挂（钉过线路就不动；取件方式换过，所以走线路表而不是写死域名）
   let flyQ = null, tileSwitchAt = 0;   // EdenMap.flyTo 在地图就绪前调用时排队；tileSwitchAt：上次自动换线的时间（N13）
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
