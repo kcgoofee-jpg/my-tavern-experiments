@@ -228,5 +228,63 @@
         -0.6
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "floor_0": [
+      56,
+      1024
+    ],
+    "props_bow": [
+      4528,
+      1024
+    ],
+    "props_chimneys": [
+      1008,
+      512
+    ],
+    "props_fountain": [
+      8064,
+      1024
+    ],
+    "props_hovercar": [
+      1386,
+      1024
+    ],
+    "props_portico": [
+      15896,
+      1024
+    ],
+    "props_verandah": [
+      3266,
+      1024
+    ],
+    "props_wing": [
+      2984,
+      1024
+    ],
+    "roof": [
+      108,
+      2048
+    ],
+    "site_dock": [
+      3028,
+      2048
+    ],
+    "site_garden": [
+      69438,
+      1024
+    ],
+    "site_ground": [
+      1540,
+      2048
+    ],
+    "site_trees": [
+      81240,
+      1024
+    ],
+    "walls_ext": [
+      14392,
+      2048
+    ]
+  }
 }
