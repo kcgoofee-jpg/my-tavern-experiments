@@ -137,6 +137,34 @@
 
 **这条要怎么处理**：它是一个缺陷，不管以后用哪种形态都得修。修的时候按「脚本形态下的地图在 TT 里出不来」这个现象去查，不要先假设成扩展形态的问题。修法上，三种可能对应的改法不同（挂 iframe 时机、宿主令牌、或者干脆把查看器从宿主上下文里挪出去），所以先查清楚再动手。
 
+### 5.1 F-TT 的结论（2026-10-03，I-36 已结）
+
+**根因不是 TT，是镜像**。用户那份跟随脚本的 `HOSTS` 第一个是 `cdn.statically.io`（手改过），而 `map/tavern/host-routes.mjs` 的 `swappable` 只认 jsdelivr / jsdmirror / npmmirror，于是入口模块一旦从 statically.io 加载，整棵资源树（`viewer.html`、模块图、设定包数据、OpenSeadragon）就被钉死在那一个域名上，没有退路。那个域名当时的状态是：**回响应头不回响应体**（大文件一律空 / 截断到 4096 字节）。查看器文档因此停在 `readyState interactive`，`DOMContentLoaded` 不触发，`app/boot.mjs` 不跑，`eden-map:boot` 自然一条都没有——和「宿主挂上了、查看器不动」的现象完全吻合。同一现象在 Playwright 的 WebKit 与 Chromium 上都能复现（把那个请求挂住即可），所以不是 WKWebView 特有的问题。
+
+**两处改动**（`map/tavern/host-routes.mjs`、`map/tavern/eden-map.js` + 新文件 `map/tavern/viewer-boot.mjs`）：
+
+1. `swappable` 也认 gh 镜像域名（`cdn.jsdelivr.net` / `fastly.jsdelivr.net` / `testingcf.jsdelivr.net` / `gcore.jsdelivr.net` / `jsd.onmicrosoft.cn` / `cdn.jsdmirror.com` / `cdn.statically.io`）。这样「手改过 HOSTS 的脚本」也会走线路机制：钉了线路就用钉的，没钉就量一遍三条线路谁快用谁——卡住的域名自然输掉竞速。
+2. 启动看门狗 `map/tavern/viewer-boot.mjs`：查看器文档挂上之后 15 秒还没有第一条消息，就是有子资源永远没取回 → 先在原域名重挂一次，再依次换 gh 镜像域名重挂，并在加载层上说明正在重试 / 换线路；域名换完只通报，出路留给界面上的「重试 / 换一条线路」。Chromium 从不触发（正常几十毫秒就有消息）。
+
+**真机验证**（Mac TauriTavern 2.3.0，出厂跟随脚本 + head #333）：伊甸卡首帧 4.9 秒 / 2.6 秒 / 3.0 秒（三次），空白卡与切换聊天后都重新启动（`boot → ready → loaded` 齐全），全程无手工干预。
+
+### 5.2 下次排查「地图在 TT 里出不来」的顺序（照这个层次查，别跳）
+
+按层从下往上，任何一层断了下面都不用查。每层都有「怎么看」和「看到的现象」：
+
+| 层 | 查什么 | 怎么看 | 断了会是什么样 |
+|---|---|---|---|
+| 1 入口 | 跟随脚本 import 的那个入口模块，**响应体是否完整** | `curl -o /dev/null -w '%{http_code} %{size_download} %{time_total}'` 同一个 URL，对每个 HOSTS 各来一次 | 200 但 `size_download` 为 0 或明显偏小：CDN 在只发响应头。地图连根都不会挂 |
+| 2 查看器文档 | `viewer.html` 的响应体是否完整、`</html>` 是否收尾 | 同上，字节数应和本地文件一致 | 文档半截 → `DOMContentLoaded` 不触发 → 没有 `eden-map:boot`，面板停在「加载中…」 |
+| 3 启动脚本 | 文档完整时，`app/boot.mjs` 有没有跑 | 看有没有 `eden-map:boot`；有则这层没问题 | 文档完整但没有 boot 消息，才轮到怀疑 iframe 被挂起 / `<base>` 时序 / 运行时换掉脚本上下文 |
+| 4 子资源 | 文档里的模块、`vendor/openseadragon`、设定包数据，每个的响应体 | 抓包或逐个 curl；重点看大文件 | 文档起来了、DOM 也在，但画面不出来 / 一直「加载中」：某个子资源永远没落地（本次就是这一层） |
+| 5 线路 | 以上都完整却极慢或时好时坏 | 同一 URL 在 3 条线路上各量 3 次 | 换线路就好 = 线路问题；`swappable` 现在会自己选 |
+
+**两条硬规矩**（都是这次踩到的）：
+
+- **不要用页内探针去读 3D 画布。** 在前台窗口里，地图正渲染 WebGL 场景时每 2–4 秒 `getImageData` 读一次画布，会把 WKWebView 的合成器拖死——本次把用户的 TT 卡住了（`~/eden-map-review/f-tt/th-probe.js` 的教训）。截图就用系统截屏（`/usr/sbin/screencapture`），不要从页内往外抠像素。
+- **地图脚本不是驱动 TT 的工具。** 切卡、点悬浮按钮这类操作用 TT 自己的方式（`/go 卡名`，或真人点），别在探针里循环读主页面文档。
+
 ## 6. 分发和更新
 
 | | TH 脚本（现在） | 扩展 |
