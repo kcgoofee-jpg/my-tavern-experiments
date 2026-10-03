@@ -116,6 +116,32 @@ test('JIT: with the player in the punishment room the B2 room entries are on and
   assert.deepEqual([...S.activationOf(REG, '伊甸庄园·惩罚室', {})], ['伊甸庄园·惩罚室'], 'without a room table the set is what it was');
 });
 
+test('FIX-3: the shipped book really does have an entry at the player\'s place (the activation set is not empty), and a coarse place word switches nothing', () => {
+  const place = P.floorIndex(rd('map/data/eden_estate_rooms.json'));
+  const entries = SHIP.entries.map(e => ({ ...e, extra: { eden_id: e.id }, enabled: true }));
+  const run = (here, extra = {}) => {
+    const act = S.activationSet(REG, here, {}, { place });
+    return { act, plan: J.planActivation(entries, act.names, { pinned: act.pinned }) };
+  };
+  // 庄园里的一个房间：钉住了，玩家自己那间与同层的条目开着，别的楼层关掉
+  const room = run('伊甸庄园·大厅');
+  assert.equal(room.act.pinned, true);
+  assert.ok(room.act.names.has('大厅'));
+  assert.ok(!room.plan.disable.includes('map.room.room-f1-34'), 'the room the player is in stays on');
+  assert.ok(room.plan.on > 0, 'the round leaves entries on');
+  // 城里一个标记点：钉住了，那一处与近邻的条目开着
+  const city = run('天城·中层·7号井黑市');
+  assert.equal(city.act.pinned, true);
+  assert.ok(city.plan.on > 0 && city.plan.enable.length >= 0);
+  // 只写出场地名 / 层名：没钉住，一个条目都不动（不再一次把整本书关掉）
+  for (const bare of ['伊甸庄园', '天城上层']) {
+    const b = run(bare);
+    assert.equal(b.act.pinned, false, bare);
+    assert.deepEqual(b.plan.disable, [], `${bare}: nothing switched off`);
+    assert.deepEqual(b.plan.enable, [], `${bare}: nothing switched on`);
+  }
+});
+
 test('sync: keys_secondary travels with a shipped entry; a changed list is an update; an unchanged book needs no write', () => {
   const ship = { ver: '1+a', entries: [{ id: 'map.room.x', name: '地点-x', content: 'c', strategy: { type: 'selective', keys: ['x'], keys_secondary: { logic: 'and_any', keys: ['b1'] } }, position: { type: 'before_character_definition', order: 5 }, enabled: true }] };
   const book = W.merge(null, ship); assert.deepEqual(book[0].strategy.keys_secondary, { logic: 'and_any', keys: ['b1'] });

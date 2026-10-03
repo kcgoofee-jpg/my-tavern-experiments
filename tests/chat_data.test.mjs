@@ -97,7 +97,7 @@ test('JIT: a chat switch voids the watermark, and a round that was in flight acr
   try {
     const host = Object.fromEntries(LLM_DEPS.map(k => [k, null]));
     Object.assign(host, { scriptBase, life: { dead: false }, panel: { hidden: true }, uiLang: 'zh', lsGet: k => (k === 'edenMapWbJit' ? '1' : null), lsSet: () => {}, here: 'x', floorNow: 3, regNow: {}, facts: { jit: {} },
-      SpatialM: { locate: () => ({ mapId: 'm' }), activationOf: () => new Set(['B']) }, pointsFor: async () => [], hostToast: () => {}, sendEvents: () => {}, post: () => {}, alive: false });
+      SpatialM: { locate: () => ({ mapId: 'm' }), activationSet: () => ({ names: new Set(['B']), pinned: true, where: 'B' }) }, pointsFor: async () => [], hostToast: () => {}, sendEvents: () => {}, post: () => {}, alive: false });
     const L = createLlmFlow(host);
     await new Promise(r => setTimeout(r, 150));   // the dynamic imports
     await L.jitRound(); assert.equal(writes, 1, 'first round disables e1 (active set is B)');

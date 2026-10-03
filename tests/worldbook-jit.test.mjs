@@ -73,6 +73,28 @@ test('哈希水位：同一激活集不重写；集合变化才写；与 spatial
   assert.deepEqual(p.disable, []);                     // hq 自己也活跃
 });
 
+test('FIX-3：计划报的是这一轮之后书里的状态（on / off），不是增删量；增删量只在 enable / disable 的长度里', () => {
+  const entries = [ent('map.a', ['霓虹市场']), ent('map.b', ['铁锈外环']), ent('map.c', ['夜市'], { enabled: false, jit: 1 })];
+  const p = J.planActivation(entries, NAMES);   // 夜市不在集合里 → 该关；铁锈外环该关
+  assert.equal(p.on, 1, '只有霓虹市场开着');
+  assert.equal(p.off, 2, '铁锈外环与夜市关着');
+  assert.deepEqual(p.disable, ['map.b']);
+  // 用户手动关的条目记 ignore，仍然算在 off 里
+  const p2 = J.planActivation([...entries, ent('map.d', ['玫瑰园'], { enabled: false })], NAMES);
+  assert.equal(p2.off, 3); assert.deepEqual(p2.markIgnore, ['map.d']); assert.equal(p2.on, 1);
+});
+
+test('FIX-3：没钉在具体地点（pinned=false）时一个条目都不开关，但用户手动关的照旧记 ignore', () => {
+  const entries = [ent('map.a', ['霓虹市场']), ent('map.b', ['夜市'], { enabled: false, jit: 1 }), ent('map.c', ['玫瑰园'], { enabled: false })];
+  const bare = J.planActivation(entries, new Set(['伊甸庄园']), { pinned: false });
+  assert.deepEqual(bare.enable, []); assert.deepEqual(bare.disable, [], '场地名不是「整本书都没人要」');
+  assert.deepEqual(bare.markIgnore, ['map.c']);
+  assert.equal(bare.on, 1); assert.equal(bare.off, 2);
+  // 同一个集合，钉住了就照常开关（默认 pinned=true，旧调用方不变）
+  const pinned = J.planActivation(entries, new Set(['伊甸庄园']), { pinned: true });
+  assert.deepEqual(pinned.disable, ['map.a']);
+});
+
 test('模块纯度：不碰 DOM / 全局 / 存储 / 网络（剥注释后扫，与看门狗同口径）', () => {
   const raw = readFileSync(fileURLToPath(new URL('../map/tavern/worldbook-jit.mjs', import.meta.url)), 'utf8');
   const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');

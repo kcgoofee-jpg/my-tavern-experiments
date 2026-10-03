@@ -84,6 +84,22 @@ test('activationOf（W6 底座）：自身 + 出口目标层 + 同层最近 near
   assert.equal(S.activationOf(null, 'x').size, 0);
 });
 
+test('activationSet（FIX-3）：钉在标记点 / 认得的房间 → pinned；只写出场地名或认不出 → 不钉（names 同 activationOf）', () => {
+  const at = S.activationSet(REG, '霓虹市场', { tc_mid: PTS }, { near: 1 });
+  assert.equal(at.pinned, true); assert.equal(at.where, '霓虹市场');
+  assert.deepEqual([...at.names].sort(), [...S.activationOf(REG, '霓虹市场', { tc_mid: PTS }, { near: 1 })].sort(), 'names 与 activationOf 同口径');
+  const place = { matesOf: n => (n === '书房' ? ['书房', '门厅'] : []) };
+  const room = S.activationSet(REG, '书房', {}, { place });
+  assert.equal(room.pinned, true, '房间表里认得的房间算钉住');
+  assert.ok(room.names.has('门厅'), '同层房间照旧进集合');
+  for (const bare of ['庄园', '下层']) {   // 只有场地名 / 层名
+    const s = S.activationSet(REG, bare, { tc_mid: PTS }, { place });
+    assert.equal(s.pinned, false, `${bare}：不足以开关任何条目`);
+  }
+  const lost = S.activationSet(REG, '不存在', {});
+  assert.equal(lost.pinned, false); assert.equal(lost.names.size, 0); assert.equal(lost.where, '');
+});
+
 test('applySpatial：先撤同 id 再注入；空内容只撤；没有 injectPrompts 接口 → false', () => {
   const calls = [];
   const fn = name => name === 'uninjectPrompts' ? (ids => calls.push(['un', ids])) : (items => calls.push(['in', items]));

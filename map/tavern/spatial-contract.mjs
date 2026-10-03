@@ -123,26 +123,41 @@ export function coordView(o = {}) {
  * JIT 激活集（W6 wb_jit 的底座，先在这里立纯函数）：当前地点 + 显式出口目标（层名）+ 同层最近 near 个地标名。
  * 返回 Set<string>（名字已去空格，与条目关键词同口径）；认不出的地点返回空集（JIT 对空集不动任何条目）。
  * place = { matesOf(房间名) -> 同层房间名[] }（PLACE-1a，core/place-record.mjs floorIndex）：玩家在房间里时再加同层房间与所在建筑名。
+ * 只要 names；需要知道「钉没钉住」就用 activationSet。
  */
-export function activationOf(reg, here, pointsByMap = {}, { near = DEFAULTS.near, place = null } = {}) {
+export function activationOf(reg, here, pointsByMap = {}, o = {}) {
+  return activationSet(reg, here, pointsByMap, o).names;
+}
+
+/**
+ * 激活集 + 钉住判据（FIX-3）：{ names:Set, pinned:boolean, where:string, loc }。
+ * pinned = 玩家被钉在一个**具体地点**上——地图标记点，或房间表里认得的房间。只有场地名 / 层名
+ * （「某某宅邸」「某某城上层」这类）或认不出的写法 → pinned=false：这种集合里没有一个是书里的地点，
+ * 拿它去开关条目等于宣称「整本书都没人要」（FIX-3 的 0 开 / 75 关就是这么来的）。宿主据此传
+ * planActivation({ pinned })，并把这行写进日志，下一次不用再猜。
+ */
+export function activationSet(reg, here, pointsByMap = {}, { near = DEFAULTS.near, place = null } = {}) {
   const loc = reg ? locate(reg, here) : null;
-  const set = new Set();
-  if (!loc) return set;
-  set.add(loc.name);
+  const names = new Set();
+  if (!loc) return { names, pinned: false, where: '', loc: null };
+  names.add(loc.name);
+  let mates = 0;
   if (loc.room && place?.matesOf) {   // PLACE-1a: in a room -> the rooms of its floor(s) (core/place-record.mjs floorIndex) and the building's name; in the city no room entry is switched on
-    for (const n of place.matesOf(String(loc.room).split(/\s*[·・‧•]\s*/).filter(Boolean).pop() || '')) set.add(cname(n));   // the room is written "<building>·<room>"
-    const e = engineOf(reg), r = e?.here(String(here || '').trim()), b = r?.node && e.tree.get(r.node)?.name; if (b) set.add(cname(b));
+    const self = String(loc.room).split(/\s*[·・‧•]\s*/).filter(Boolean).pop() || '';
+    mates = (place.matesOf(self) || []).length;
+    for (const n of place.matesOf(self) || []) names.add(cname(n));   // the room is written "<building>·<room>"
+    const e = engineOf(reg), r = e?.here(String(here || '').trim()), b = r?.node && e.tree.get(r.node)?.name; if (b) names.add(cname(b));
   }
   const maps = reg.maps || reg;
   const pts = loc.mapId ? pointsByMap[loc.mapId] : null, ci = pts ? coordIndex(pts) : null;
-  for (const x of exitsOf(reg, loc.mapId, ci)) { if (x.name) set.add(x.name); if (x.to) set.add(cname(x.to)); }
+  for (const x of exitsOf(reg, loc.mapId, ci)) { if (x.name) names.add(x.name); if (x.to) names.add(cname(x.to)); }
   if (loc.markerId && ci?.[loc.markerId]) {
     const nearIds = Object.entries(ci).filter(([id]) => id !== loc.markerId)
       .map(([id, c]) => [d2(c, ci[loc.markerId]), id]).sort((a, b) => a[0] - b[0] || (a[1] < b[1] ? -1 : 1))
       .slice(0, Math.max(0, Math.round(+near) || 0));
-    for (const [, id] of nearIds) { const nm = maps[loc.mapId]?.markers?.[id]?.name; if (nm) set.add(cname(nm)); }
+    for (const [, id] of nearIds) { const nm = maps[loc.mapId]?.markers?.[id]?.name; if (nm) names.add(cname(nm)); }
   }
-  return set;
+  return { names, pinned: !!(loc.markerId || mates), where: cname(loc.name), loc };
 }
 
 /** 注入对象：固定 id（重生 / swipe / 重载都覆盖同一条，不叠）；与 modes.statePrompt 同一形状 */

@@ -4,7 +4,8 @@
 // link 只有 2 处，其余 56 个 link 是 lm_* 三维详情页——见任务书 §8.2）；条目范围**数据驱动**：条目自身的
 // strategy.keys（或 ST 的 key）∩ 激活集即活跃判定，不发明任何 place 元数据（裁决 9/10）。
 // 主权纪律：只动我们的条目；用户手动关过的（disabled 且无 JIT 关闭标记）→ 进 markIgnore，宿主记
-// extra.eden_jit_ignore=1，从此永不碰；constant 条目永不 JIT。写入成本（裁决 10）：激活集哈希没变就不写，
+// extra.eden_jit_ignore=1，从此永不碰；constant 条目永不 JIT。没钉在具体地点（pinned=false）时一个都不
+// 开关——认不出的地点不等于「整本书都没人要」（FIX-3）。写入成本（裁决 10）：激活集哈希没变就不写，
 // 幂等由调用方的 {floor, hash} 水位保证。纯模块：不碰酒馆全局 / DOM / 存储 / 网络。tests/worldbook-jit.test.mjs。
 import { seedOf } from '../core/rng.mjs';
 
@@ -22,14 +23,20 @@ export function keysOf(e) {
 
 /**
  * 激活计划：entries = 附加书条目数组（TH / ST 形状都收），activeNames = Set<string>（已去空格的名字）。
- * 返回 { enable:[id], disable:[id], markIgnore:[id], ignored:n, untouched:n }：
+ * o.pinned = 玩家是否被钉在一个具体地点（spatial-contract.activationState.pinned：标记点或房间表里的房间）。
+ *   false（只写到「某某宅邸」「上层」这类场地名，或干脆认不出）→ **一个条目都不开关**：认不出的地点不能当
+ *   「整本书都没人要」来用，否则一次粗粒度写法就把附加书清空（FIX-3；用户手动关过的条目照旧记 ignore）。
+ * 返回 { enable:[id], disable:[id], markIgnore:[id], ignored:n, untouched:n, on:n, off:n }：
  *   enable/disable = 要改 enabled 的条目（disable 同时要求宿主记 extra.eden_jit=1，enable 时清 0）；
  *   markIgnore     = 「关着且不是 JIT 关的」＝用户手动关的 → 宿主记 extra.eden_jit_ignore=1，从此永不碰（裁决 9）；
- *   ignored        = 已带 ignore 标记、本轮跳过的条数；untouched = 与激活无关（constant / 无 eden_id）条数。
+ *   ignored        = 已带 ignore 标记、本轮跳过的条数；untouched = 与激活无关（constant / 无 eden_id）条数；
+ *   on / off       = **本轮之后**这本书里被本计划管辖的关键词条目各有多少开着 / 关着（不是增删量——日志与
+ *                    健康面板报的是这个，增删量只算在 enable / disable 的长度里，FIX-3）。
  */
-export function planActivation(entries, activeNames) {
+export function planActivation(entries, activeNames, o = {}) {
   const active = activeNames instanceof Set ? activeNames : new Set(activeNames || []);
-  const out = { enable: [], disable: [], markIgnore: [], ignored: 0, untouched: 0 };
+  const pinned = o.pinned !== false;
+  const out = { enable: [], disable: [], markIgnore: [], ignored: 0, untouched: 0, on: 0, off: 0 };
   for (const e of Array.isArray(entries) ? entries : []) {
     const id = e?.extra?.eden_id;
     if (!id) { out.untouched++; continue; }
@@ -39,10 +46,11 @@ export function planActivation(entries, activeNames) {
     const want = keys.some(k => active.has(k));
     const isOn = e?.enabled !== false;
     const jitOff = e?.extra?.eden_jit === 1;
-    if (!isOn && !jitOff) { out.markIgnore.push(id); continue; }   // 用户手动关的：立刻标记，JIT 从此永不碰（裁决 9）
-    if (want && !isOn) out.enable.push(id);                        // JIT 自己关的、现在该开
-    else if (!want && isOn) out.disable.push(id);                  // 该关的
-    else out.untouched++;
+    if (!isOn && !jitOff) { out.markIgnore.push(id); out.off++; continue; }   // 用户手动关的：立刻标记，JIT 从此永不碰（裁决 9）
+    const endOn = pinned ? want : isOn;   // 没钉住就地现状：所有开关都是空操作
+    if (endOn) out.on++; else out.off++;
+    if (endOn === isOn) { out.untouched++; continue; }
+    if (endOn) out.enable.push(id); else out.disable.push(id);
   }
   return out;
 }

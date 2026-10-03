@@ -119,16 +119,23 @@ export function createLlmFlow(host) {
       host.facts.jit.book = Array.isArray(entries) && entries.length > 0;   // health: is the add-on book there
       if (!Array.isArray(entries) || !entries.length) return;
       const loc = host.SpatialM.locate(host.regNow, host.here);
-      if (!loc?.mapId) return;
+      if (!loc?.mapId) { host.facts.jit.floor = host.floorNow; return; }
       const pts = await pointsFor(loc.mapId);
-      const active = host.SpatialM.activationOf(host.regNow, host.here, { [loc.mapId]: pts }, { place: await placeFor() });
+      const act = host.SpatialM.activationSet(host.regNow, host.here, { [loc.mapId]: pts }, { place: await placeFor() });
+      const active = act.names, pinned = act.pinned !== false;
       const hash = worldbookJitModule.hashOf(active);
       if (!worldbookJitModule.shouldWrite(jitWatermark, hash)) { host.facts.jit.floor = host.floorNow; return; }
       if (epoch !== jitEpoch) return;
       jitWatermark = { floor: host.floorNow, hash };
-      const plan = worldbookJitModule.planActivation(entries, active);
-      Object.assign(host.facts.jit, { enabled: plan.enable.length, disabled: plan.disable.length, floor: host.floorNow });
-      if (!plan.enable.length && !plan.disable.length && !plan.markIgnore.length) return;
+      const plan = worldbookJitModule.planActivation(entries, active, { pinned });
+      Object.assign(host.facts.jit, { enabled: plan.on, disabled: plan.off, floor: host.floorNow });
+      // FIX-3: the two numbers are the book's state after this round, not what changed; the delta is in brackets.
+      // 没钉在具体地点就一句话说明白——这种写法下不动任何条目，别再让人猜是不是世界书空了。
+      const delta = `（本次 +${plan.enable.length} / -${plan.disable.length}）`;
+      if (!plan.enable.length && !plan.disable.length && !plan.markIgnore.length) {
+        console.info('[eden-map] 世界书 JIT：', plan.on, '开 /', plan.off, '关', delta, pinned ? '' : `· 未钉在具体地点（${act.where || '认不出'}），本轮不挂载`);
+        return;
+      }
       const muts = worldbookJitModule.applyPlan(entries, plan);
       await WBSm.withLock('eden-map-wb', async () => {
         await updBook(WBSm.BOOK, list => {
@@ -139,7 +146,7 @@ export function createLlmFlow(host) {
           return list;
         });
       });
-      console.info('[eden-map] 世界书 JIT：', plan.enable.length, '开 /', plan.disable.length, '关 /', plan.markIgnore.length, '记 ignore');
+      console.info('[eden-map] 世界书 JIT：', plan.on, '开 /', plan.off, '关', delta, pinned ? '' : `· 未钉在具体地点（${act.where || '认不出'}）`);
     } catch (e) { console.warn('[eden-map] 世界书 JIT 写失败（下轮激活集变化时重试）', e); }
     finally { jitBusy = false; }
   }
