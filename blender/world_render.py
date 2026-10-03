@@ -363,9 +363,10 @@ for _i, (_pid, _u, _v) in enumerate(CAPS):
     print('city %-12s centre %.0f,%.0f px  radius %.1f px (%.0f km)' % (_pid, _cx, _cy, _rp, _rp * KM_PX))
     city_day(colF, _cx, _cy, _rp, CAP_ROT[_i], 3.1 + _i * 5.7)
     if TOD == 'night':
-        # 底图是按相机裁切预先放大好的，自发光贴图却铺满整个 UV 0…1：画灯的坐标要按裁切倒算回去，
-        # 否则天城会偏 6 px、圣都偏 37 px（实测互相关 0.99 但位移不等）
-        city_night(emitF, _cx / (UX1 - UX0), _cy / (UY1 - UY0), _rp / (UX1 - UX0), CAP_ROT[_i], 3.1 + _i * 5.7, CAP_E[_i])
+        # 底图 colF 已经按相机裁切放大过（渲染第 x 像素取colF 第 x 列），自发光贴图却是按 UV 0…1 铺满的，
+        # 所以画灯前要把坐标正向补回裁切：贴图第 (UX0*RES+(UX1-UX0)*x) 列才落在渲染第 x 像素上
+        city_night(emitF, UX0 * RES + (UX1 - UX0) * _cx, UY0 * RES_Y + (UY1 - UY0) * _cy,
+                   _rp * ((UX1 - UX0) + (UY1 - UY0)) * .5, CAP_ROT[_i], 3.1 + _i * 5.7, CAP_E[_i])
         lights.append([_cx / RES, _cy / RES_Y])
 if TOD == 'night':                                                      # 夜：地面与海只剩很暗的冷灰（月光）
     colF *= np.array((.30, .36, .50), np.float32)
