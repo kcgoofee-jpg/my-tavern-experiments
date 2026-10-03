@@ -251,5 +251,51 @@
         -0.8
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_academy_blocks": [
+      33084,
+      2048
+    ],
+    "props_academy_main": [
+      14046,
+      2048
+    ],
+    "props_academy_sports": [
+      3868,
+      1024
+    ],
+    "props_barracks": [
+      69624,
+      2048
+    ],
+    "props_edge": [
+      17576,
+      1024
+    ],
+    "props_lights": [
+      3796,
+      512
+    ],
+    "props_motorpool": [
+      2630,
+      1024
+    ],
+    "props_parade": [
+      2992,
+      1024
+    ],
+    "props_trees": [
+      29872,
+      1024
+    ],
+    "props_vehicles": [
+      29334,
+      1024
+    ],
+    "site_ground": [
+      6368,
+      2048
+    ]
+  }
 }

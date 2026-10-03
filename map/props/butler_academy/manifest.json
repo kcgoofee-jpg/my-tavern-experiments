@@ -126,5 +126,31 @@
         -0.72
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_forecourt": [
+      2712,
+      1024
+    ],
+    "props_garden": [
+      1156,
+      1024
+    ],
+    "props_lights": [
+      624,
+      512
+    ],
+    "props_wing": [
+      188,
+      1024
+    ],
+    "site_ground": [
+      12,
+      2048
+    ],
+    "walls_ext": [
+      1008,
+      2048
+    ]
+  }
 }

@@ -11,6 +11,7 @@
 环境：B7_WORK（工作目录，默认 logs/campaign/b7）、KTX_BIN（toktx 所在目录）、B7_FORCE=1 重跑已完成的。
 """
 import ast
+import glob
 import json
 import os
 import re
@@ -37,7 +38,7 @@ PARENTS = {
 SPECIAL = {'dairy': ('blender/props/dairy_parlour/build.py', 'blend'),
            'holy_mountain': ('blender/world/yuanyu_holy_mount.py', 'save')}
 STEPS = (2048, 1024, 512, 256)
-STD_MB, LOW_MB = (4.0, 8.0), (0.9, 2.0)
+STD_MB, LOW_MB = (4.0, 8.0), (0.0, 2.0)   # 验收口径 = D41 B3：桌面 ≤8，手机 ≤2
 # 体积估算常数收口在 export_budget.py（真实源三角数在那里才知道）
 
 
@@ -123,7 +124,7 @@ def plan(lid, lane):
     return floors_std, floors_low
 
 
-def submit(lid, std_band, low_band):
+def submit(lid, std_hi, low_target, lock_tex='0'):
     build, blend_flag = SPECIAL.get(lid, ('blender/landmarks/%s/build.py' % lid, 'blend'))
     w = os.path.join(WORK, lid)
     rel = lambda p: os.path.relpath(p, ROOT)   # 队列 / 云端只认仓库相对路径（render_preflight abs_out）
@@ -131,8 +132,9 @@ def submit(lid, std_band, low_band):
     bl = ['-b', '--factory-startup', '--python-expr', expr, '--',
           '--id', lid, '--build', build, '--work', rel(w), '--blend-flag', blend_flag,
           '--budget-std', rel(os.path.join(w, 'budget_std.json')), '--budget-low', rel(os.path.join(w, 'budget_low.json')),
-          '--fit-std-lo', str(std_band[0]), '--fit-std-hi', str(std_band[1]),
-          '--fit-low-lo', str(low_band[0]), '--fit-low-hi', str(low_band[1]),
+          '--fit-std-hi', str(std_hi),
+          '--fit-low-hi', str(low_target),   # 脚本目标 1.9：给 ≤2.0 的验收留余量
+          '--lock-tex', lock_tex,
           '--probe', rel(os.path.join(w, 'probe.png')),
           '--out-std', rel(os.path.join(w, lid + '_std_raw.glb')), '--out-low', rel(os.path.join(w, lid + '_low_raw.glb')),
           '--out', rel(os.path.join(w, lid + '_std_raw.glb')), '--out', rel(os.path.join(w, lid + '_low_raw.glb')),
@@ -195,6 +197,32 @@ def install(lid, std_raw, low_raw, std_mb, low_mb):
     open(os.path.join(WORK, lid + '.done'), 'w').write(json.dumps(bake))
 
 
+def tris_floors_from_measure(w, lid, tier, target_mb):
+    """重试轮的精确三角预算：从上一轮产物分解出几何字节，按 (目标 - 贴图) 反推每组三角缩放比。贴图计划冻结不动。"""
+    raw_json = os.path.join(w, '%s_%s_raw.json' % (lid, tier))
+    raw_glb = os.path.join(w, '%s_%s_raw.glb' % (lid, tier))
+    texdir = os.path.join(w, '%s_%s_raw_tex' % (lid, tier))
+    fin = os.path.join(w, lid + ('.glb' if tier == 'std' else '_low.glb'))
+    if not (os.path.exists(raw_json) and os.path.exists(raw_glb) and os.path.exists(fin)):
+        return None
+    info = json.load(open(raw_json))
+    measured = os.path.getsize(fin)
+    tris = max(1, info['tris'])
+    # 最终 glb ≈ 贴图(KTX2，随三角数不变) + 几何(meshopt，随三角数近似线性)：final = A + B × tris
+    if tier == 'std':   # 基色 ETC1S ~0.035 B/px；法线 UASTC+zstd + ORM ~0.9 B/px（都在 tex_norm 档）
+        A = sum(v['tex'] ** 2 * 0.035 + v.get('tex_norm', v['tex'] // 2) ** 2 * 0.9
+                for v in info['groups'].values()) / 1048576.0
+    else:   # 低档只有基色，etc1s q96 ~0.15 B/px
+        A = sum(v['tex'] * v['tex'] for v in info['groups'].values()) * 0.15 / 1048576.0
+    B = max(1e-6, (measured - A * 1048576.0) / tris)
+    want = max(0.25, target_mb * 0.92) * 1048576.0
+    tris_new = int((want - A * 1048576.0) / B)
+    if tris_new <= 0:
+        return None
+    r = max(0.05, min(1.0, tris_new / tris))
+    return {k: [max(int(v['tris'] * r), 500), v['tex']] for k, v in info['groups'].items()}
+
+
 def cmd_auto(lid):
     lane = maps_ids().get(lid)
     if not lane:
@@ -203,12 +231,12 @@ def cmd_auto(lid):
         print('SKIP %s (done: %s)' % (lid, open(os.path.join(WORK, lid + '.done')).read()[:120]))
         return 0
     hero = hero_of(lid)
-    std_band = (6.0, 8.0) if hero else (4.0, 6.5)
-    low_band = LOW_MB
+    std_hi = 8.0   # 验收口径（D41 B3）：桌面 ≤ 8 MB；带下限不卡（贴图 2K 顶就是质量上限，低多少如实记录）
+    low_target = 1.9   # 脚本目标：给 ≤ 2.0 的验收留余量
     plan(lid, lane)
     for attempt in (1, 2, 3):
-        print('plan %s: hero=%s std band %.1f-%.1f MB (attempt %d)' % (lid, hero, *std_band, attempt), flush=True)
-        job = submit(lid, std_band, low_band)
+        print('plan %s: hero=%s std ceiling %.1f MB, low target %.2f MB (attempt %d)' % (lid, hero, std_hi, low_target, attempt), flush=True)
+        job = submit(lid, std_hi, low_target, '1' if attempt > 1 else '0')
         rc = wait_done(job)
         if rc:
             print('QUEUE JOB FAILED rc=%s — see %s/%s.log' % (rc, WORK, lid))
@@ -217,27 +245,32 @@ def cmd_auto(lid):
         s_mb = compress(os.path.join(w, lid + '_std_raw.glb'), os.path.join(w, lid + '.glb'), 'std') / 1048576.0
         l_mb = compress(os.path.join(w, lid + '_low_raw.glb'), os.path.join(w, lid + '_low.glb'), 'low') / 1048576.0
         print('measured: std %.2f MB, low %.2f MB' % (s_mb, l_mb), flush=True)
-        raw = json.load(open(os.path.join(w, lid + '_std_raw.json')))
-        capped = all(v['tex'] >= 2048 for v in raw['groups'].values())
-        ok_s = std_band[0] <= s_mb <= std_band[1] or (s_mb < std_band[0] and capped)   # 贴图到顶仍缺带：如实收货
-        ok_l = l_mb <= low_band[1]
+        ok_s, ok_l = s_mb <= 8.0, l_mb <= LOW_MB[1]
         if ok_s and ok_l:
             install(lid, os.path.join(w, lid + '.glb'), os.path.join(w, lid + '_low.glb'), s_mb, l_mb)
-            print('OK %s lane=%s std=%.2f MB low=%.2f MB%s' % (lid, lane, s_mb, l_mb, ' (under band, textures capped)' if s_mb < std_band[0] else ''))
+            print('OK %s lane=%s std=%.2f MB low=%.2f MB%s' % (lid, lane, s_mb, l_mb, ' (below 4 MB floor; texture cap)' if s_mb < 4.0 else ''))
             return 0
         if attempt == 3:
             break
-        # 带外重试：估算常数偏差按实测/估算比例收放体积带；贴图到顶的缺带模型不重跑
-        if s_mb < std_band[0] and not capped:
-            std_band = (min(8.0, std_band[0] * std_band[0] / s_mb), std_band[1])
-            print('retrying with raised std floor...', flush=True)
-        elif s_mb > std_band[1]:
-            std_band = (std_band[0], max(4.5, std_band[1] * std_band[1] / s_mb))
-            print('retrying with tightened std ceiling...', flush=True)
-        if l_mb > low_band[1]:
-            low_band = (0.0, max(1.0, low_band[1] * low_band[1] / l_mb))
-            print('retrying with tightened low ceiling...', flush=True)
-    print('FAIL %s: size band not met after 3 attempts' % lid)
+        # 重试：贴图计划冻结，三角预算按上一轮实测体积精确反推（实测反馈，不再盲调）
+        moved = False
+        if s_mb > 8.0:
+            bf = tris_floors_from_measure(w, lid, 'std', std_hi)
+            if bf:
+                json.dump(bf, open(os.path.join(w, 'budget_std.json'), 'w'))
+            std_hi = max(5.5, min(8.0, 8.0 * 7.5 / s_mb))
+            moved = True
+            print('retrying std with measured geometry budget...', flush=True)
+        if l_mb > LOW_MB[1]:
+            bf = tris_floors_from_measure(w, lid, 'low', low_target)
+            if bf:
+                json.dump(bf, open(os.path.join(w, 'budget_low.json'), 'w'))
+            low_target = max(0.9, min(1.9, 1.9 * 1.85 / l_mb))
+            moved = True
+            print('retrying low with measured geometry budget...', flush=True)
+        if not moved:
+            break
+    print('FAIL %s: size ceiling not met after 3 attempts' % lid)
     return 1
 
 

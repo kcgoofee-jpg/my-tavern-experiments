@@ -1,0 +1,80 @@
+{
+ "groups": {
+  "floor_0": {
+   "tris_src": 180,
+   "tris": 180,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_apse": {
+   "tris_src": 18516,
+   "tris": 3126,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_buttress": {
+   "tris_src": 13904,
+   "tris": 3576,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_cloister": {
+   "tris_src": 149784,
+   "tris": 23383,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_dome": {
+   "tris_src": 22032,
+   "tris": 3439,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_piazza": {
+   "tris_src": 24168,
+   "tris": 9382,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_residence": {
+   "tris_src": 4520,
+   "tris": 1246,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_transept": {
+   "tris_src": 23828,
+   "tris": 4238,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_westfront": {
+   "tris_src": 32452,
+   "tris": 6346,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "roof": {
+   "tris_src": 312,
+   "tris": 312,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 72,
+   "tris": 72,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 30396,
+   "tris": 4778,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 60078,
+ "std_mb": 6.19,
+ "low_mb": 1.68,
+ "pass": "render-b7"
+}

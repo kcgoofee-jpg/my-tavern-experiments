@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_forecourt": {
+   "tris_src": 2712,
+   "tris": 2712,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_garden": {
+   "tris_src": 1156,
+   "tris": 1156,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 624,
+   "tris": 624,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_wing": {
+   "tris_src": 188,
+   "tris": 188,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 12,
+   "tris": 12,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 1008,
+   "tris": 1008,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 5700,
+ "std_mb": 3.5,
+ "low_mb": 0.34,
+ "pass": "render-b7"
+}

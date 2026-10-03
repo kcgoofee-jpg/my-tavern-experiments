@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_clinic": {
+   "tris_src": 1720,
+   "tris": 1720,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_front": {
+   "tris_src": 2572,
+   "tris": 2572,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_wing": {
+   "tris_src": 1788,
+   "tris": 1788,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 84,
+   "tris": 84,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 6164,
+ "std_mb": 3.03,
+ "low_mb": 0.23,
+ "pass": "render-b7"
+}

@@ -180,5 +180,35 @@
         -0.7
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_board": [
+      888,
+      1024
+    ],
+    "props_depot": [
+      228,
+      1024
+    ],
+    "props_lights": [
+      1480,
+      512
+    ],
+    "props_pad": [
+      348,
+      1024
+    ],
+    "props_yard": [
+      596,
+      1024
+    ],
+    "site_ground": [
+      216,
+      2048
+    ],
+    "walls_ext": [
+      216,
+      2048
+    ]
+  }
 }

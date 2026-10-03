@@ -15,7 +15,8 @@ import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 A = dict(id='', build='', work='', budget_std='', budget_low='', probe='', out_std='', out_low='',
-         out='', log='', blend_flag='blend', fit_std_lo='4', fit_std_hi='8', fit_low_lo='0', fit_low_hi='2')
+         out='', log='', blend_flag='blend', fit_std_lo='4', fit_std_hi='8', fit_low_lo='0', fit_low_hi='2',
+         lock_tex='0')
 for k, v in zip(argv[::2], argv[1::2]):
     A[k.lstrip('-').replace('-', '_')] = v
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,12 +43,12 @@ def main():
     # 2) 标准档：就在刚建好的场景上导（材质还是原始值，export_budget 自己压平）
     phase(os.path.join(HERE, 'export_budget.py'),
           [('--tier', 'std'), ('--out', A['out_std']), ('--budget-json', A['budget_std']), ('--samples', '32'),
-           ('--fit-lo', A['fit_std_lo']), ('--fit-hi', A['fit_std_hi'])])
+           ('--fit-lo', A['fit_std_lo']), ('--fit-hi', A['fit_std_hi']), ('--lock-tex', A['lock_tex'])])
     # 3) 低档：从盘上的 .blend 重开（几何 / 材质复原），独立减面与烘焙
     bpy.ops.wm.open_mainfile(filepath=BLEND)
     phase(os.path.join(HERE, 'export_budget.py'),
           [('--tier', 'low'), ('--out', A['out_low']), ('--budget-json', A['budget_low']), ('--samples', '32'),
-           ('--fit-lo', A['fit_low_lo']), ('--fit-hi', A['fit_low_hi'])])
+           ('--fit-lo', A['fit_low_lo']), ('--fit-hi', A['fit_low_hi']), ('--lock-tex', A['lock_tex'])])
     print('[budget_job] DONE', A['id'], flush=True)
 
 

@@ -1,0 +1,50 @@
+{
+ "groups": {
+  "props_barracks": {
+   "tris_src": 1848,
+   "tris": 1848,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_hangar": {
+   "tris_src": 176,
+   "tris": 176,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 1480,
+   "tris": 1480,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_wall_gate": {
+   "tris_src": 900,
+   "tris": 900,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_yard": {
+   "tris_src": 216,
+   "tris": 216,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 252,
+   "tris": 252,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 140,
+   "tris": 140,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 5012,
+ "std_mb": 2.03,
+ "low_mb": 0.31,
+ "pass": "render-b7"
+}

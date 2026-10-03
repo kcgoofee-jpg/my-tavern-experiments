@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_care_home": {
+   "tris_src": 2200,
+   "tris": 2200,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_hospital": {
+   "tris_src": 548,
+   "tris": 548,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 888,
+   "tris": 888,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_monastery": {
+   "tris_src": 728,
+   "tris": 728,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_street": {
+   "tris_src": 2524,
+   "tris": 2524,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 12,
+   "tris": 12,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 6900,
+ "std_mb": 3.37,
+ "low_mb": 0.35,
+ "pass": "render-b7"
+}

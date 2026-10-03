@@ -1,0 +1,38 @@
+{
+ "groups": {
+  "props_lights": {
+   "tris_src": 888,
+   "tris": 888,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_podium": {
+   "tris_src": 96,
+   "tris": 96,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_terrace": {
+   "tris_src": 144,
+   "tris": 144,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 48,
+   "tris": 48,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "walls_tower": {
+   "tris_src": 4344,
+   "tris": 4344,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 5520,
+ "std_mb": 2.74,
+ "low_mb": 0.27,
+ "pass": "render-b7"
+}

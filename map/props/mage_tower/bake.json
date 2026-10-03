@@ -1,0 +1,56 @@
+{
+ "groups": {
+  "props_crown": {
+   "tris_src": 1472,
+   "tris": 1472,
+   "tex": 2048,
+   "tex_norm": 1024
+  },
+  "props_garden": {
+   "tris_src": 2368,
+   "tris": 2368,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 3080,
+   "tris": 3080,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_podium": {
+   "tris_src": 832,
+   "tris": 832,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_security": {
+   "tris_src": 48,
+   "tris": 48,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_wall_gate": {
+   "tris_src": 780,
+   "tris": 780,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 1272,
+   "tris": 1272,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 976,
+   "tris": 976,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 10828,
+ "std_mb": 3.25,
+ "low_mb": 0.81,
+ "pass": "render-b7"
+}

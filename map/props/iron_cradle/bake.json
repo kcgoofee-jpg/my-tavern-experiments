@@ -1,0 +1,62 @@
+{
+ "groups": {
+  "props_cloister": {
+   "tris_src": 17156,
+   "tris": 17156,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_garden": {
+   "tris_src": 56100,
+   "tris": 56100,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_hall": {
+   "tris_src": 10120,
+   "tris": 10120,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_hangar": {
+   "tris_src": 6012,
+   "tris": 6012,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_ranges": {
+   "tris_src": 9568,
+   "tris": 9568,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_wall_gate": {
+   "tris_src": 4996,
+   "tris": 4996,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_yard": {
+   "tris_src": 2508,
+   "tris": 2508,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 1044,
+   "tris": 1044,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 8750,
+   "tris": 8750,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 116254,
+ "std_mb": 6.16,
+ "low_mb": 1.87,
+ "pass": "render-b7"
+}

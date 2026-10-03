@@ -1,134 +1,134 @@
 {
- "_说明": "viewer3d.html?model=victoria_apartment 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/victoria_apartment.md。",
- "id": "victoria_apartment",
- "title": {
-  "zh": "维多利亚的公寓",
-  "en": "Victoria's Apartment"
- },
- "glb": "victoria_apartment.glb",
- "glb_low": "victoria_apartment_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "walls_tower",
-   "props_podium"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_terrace",
-   "props_lights"
-  ],
-  "building": {
-   "min": [
-    -18.0,
-    -0.3,
-    -23.9
-   ],
-   "max": [
-    18.0,
-    58.0,
-    22.0
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 58,
-  "default": 58
- },
- "camera": {
-  "frame": [
-   "walls_tower",
-   "props_podium"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 8,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "walls_tower": [
-   7000,
-   512
-  ],
-  "props_podium": [
-   4000,
-   512
-  ],
-  "props_terrace": [
-   1500,
-   256
-  ],
-  "site_ground": [
-   1000,
-   256
-  ],
-  "props_lights": [
-   800,
-   256
+  "_说明": "viewer3d.html?model=victoria_apartment 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/victoria_apartment.md。",
+  "id": "victoria_apartment",
+  "title": {
+    "zh": "维多利亚的公寓",
+    "en": "Victoria's Apartment"
+  },
+  "glb": "victoria_apartment.glb",
+  "glb_low": "victoria_apartment_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "walls_tower",
+      "props_podium"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_terrace",
+      "props_lights"
+    ],
+    "building": {
+      "min": [
+        -18.0,
+        -0.3,
+        -23.9
+      ],
+      "max": [
+        18.0,
+        58.0,
+        22.0
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 58,
+    "default": 58
+  },
+  "camera": {
+    "frame": [
+      "walls_tower",
+      "props_podium"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 8,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_lights": [
+      888,
+      512
+    ],
+    "props_podium": [
+      96,
+      512
+    ],
+    "props_terrace": [
+      144,
+      512
+    ],
+    "site_ground": [
+      48,
+      512
+    ],
+    "walls_tower": [
+      4344,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "podium",
+      "mesh": "props_podium",
+      "name": {
+        "zh": "裙房（石构大堂入口 + 门廊立柱）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "裙房（石构大堂入口 + 门廊立柱）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "terrace",
+      "mesh": "props_terrace",
+      "name": {
+        "zh": "屋顶露台（女儿墙 + 遮阳格栅）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "屋顶露台（女儿墙 + 遮阳格栅）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "lights",
+      "mesh": "props_lights",
+      "name": {
+        "zh": "庭院灯柱",
+        "en": ""
+      },
+      "desc": {
+        "zh": "庭院灯柱",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ]
- },
- "hotspots": [
-  {
-   "id": "podium",
-   "mesh": "props_podium",
-   "name": {
-    "zh": "裙房（石构大堂入口 + 门廊立柱）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "裙房（石构大堂入口 + 门廊立柱）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "terrace",
-   "mesh": "props_terrace",
-   "name": {
-    "zh": "屋顶露台（女儿墙 + 遮阳格栅）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "屋顶露台（女儿墙 + 遮阳格栅）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "lights",
-   "mesh": "props_lights",
-   "name": {
-    "zh": "庭院灯柱",
-    "en": ""
-   },
-   "desc": {
-    "zh": "庭院灯柱",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ]
 }

@@ -1,156 +1,156 @@
 {
- "_note": "viewer3d.html?model=rebirth_workshop 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/rebirth_workshop.md。 体量上限按「园区」放宽到 std 0.9 / low 0.4 MB（单栋默认 0.6/0.3）：一个模型含主楼、玻璃穹厅、两座病房翼、后勤塔与整片前庭；实测 std 0.73 MB。",
- "id": "rebirth_workshop",
- "title": {
-  "zh": "新生工坊",
-  "en": "Rebirth Workshop"
- },
- "glb": "rebirth_workshop.glb",
- "glb_low": "rebirth_workshop_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_main",
-   "props_dome",
-   "props_wings"
+  "_note": "viewer3d.html?model=rebirth_workshop 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/rebirth_workshop.md。 体量上限按「园区」放宽到 std 0.9 / low 0.4 MB（单栋默认 0.6/0.3）：一个模型含主楼、玻璃穹厅、两座病房翼、后勤塔与整片前庭；实测 std 0.73 MB。",
+  "id": "rebirth_workshop",
+  "title": {
+    "zh": "新生工坊",
+    "en": "Rebirth Workshop"
+  },
+  "glb": "rebirth_workshop.glb",
+  "glb_low": "rebirth_workshop_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_main",
+      "props_dome",
+      "props_wings"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_court",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -52,
+        -0.3,
+        -44
+      ],
+      "max": [
+        52,
+        24,
+        44
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 24,
+    "default": 24
+  },
+  "camera": {
+    "frame": [
+      "props_main",
+      "props_dome",
+      "props_wings"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_court": [
+      6878,
+      512
+    ],
+    "props_dome": [
+      5028,
+      512
+    ],
+    "props_main": [
+      1704,
+      1024
+    ],
+    "props_wings": [
+      1156,
+      512
+    ],
+    "site_ground": [
+      72,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "main",
+      "mesh": "props_main",
+      "name": {
+        "zh": "三层白板墙主楼（深蓝玻璃幕墙 + 竖向遮阳肋 + 屋顶机组 + 门厅雨篷）+ 后勤塔",
+        "en": ""
+      },
+      "desc": {
+        "zh": "三层白板墙主楼（深蓝玻璃幕墙 + 竖向遮阳肋 + 屋顶机组 + 门厅雨篷）+ 后勤塔",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "dome",
+      "mesh": "props_dome",
+      "name": {
+        "zh": "半球玻璃穹厅（金属肋 + 半透明壳 + 暖白光）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "半球玻璃穹厅（金属肋 + 半透明壳 + 暖白光）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "wings",
+      "mesh": "props_wings",
+      "name": {
+        "zh": "东西恢复病房翼（阳台带 + 种植槽 + 屋顶停机坪）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "东西恢复病房翼（阳台带 + 种植槽 + 屋顶停机坪）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "court",
+      "mesh": "props_court",
+      "name": {
+        "zh": "前庭水景 + 行道树 + 路灯 + 三个悬浮车位",
+        "en": ""
+      },
+      "desc": {
+        "zh": "前庭水景 + 行道树 + 路灯 + 三个悬浮车位",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_court",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -52,
-    -0.3,
-    -44
-   ],
-   "max": [
-    52,
-    24,
-    44
-   ]
+  "max_mb": {
+    "std": 0.9,
+    "low": 0.4
   }
- },
- "section": {
-  "min": 0.5,
-  "max": 24,
-  "default": 24
- },
- "camera": {
-  "frame": [
-   "props_main",
-   "props_dome",
-   "props_wings"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_main": [
-   9000,
-   1024
-  ],
-  "props_dome": [
-   9000,
-   512
-  ],
-  "props_wings": [
-   8000,
-   512
-  ],
-  "props_court": [
-   16000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
-  ]
- },
- "hotspots": [
-  {
-   "id": "main",
-   "mesh": "props_main",
-   "name": {
-    "zh": "三层白板墙主楼（深蓝玻璃幕墙 + 竖向遮阳肋 + 屋顶机组 + 门厅雨篷）+ 后勤塔",
-    "en": ""
-   },
-   "desc": {
-    "zh": "三层白板墙主楼（深蓝玻璃幕墙 + 竖向遮阳肋 + 屋顶机组 + 门厅雨篷）+ 后勤塔",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "dome",
-   "mesh": "props_dome",
-   "name": {
-    "zh": "半球玻璃穹厅（金属肋 + 半透明壳 + 暖白光）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "半球玻璃穹厅（金属肋 + 半透明壳 + 暖白光）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "wings",
-   "mesh": "props_wings",
-   "name": {
-    "zh": "东西恢复病房翼（阳台带 + 种植槽 + 屋顶停机坪）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "东西恢复病房翼（阳台带 + 种植槽 + 屋顶停机坪）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "court",
-   "mesh": "props_court",
-   "name": {
-    "zh": "前庭水景 + 行道树 + 路灯 + 三个悬浮车位",
-    "en": ""
-   },
-   "desc": {
-    "zh": "前庭水景 + 行道树 + 路灯 + 三个悬浮车位",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ],
- "max_mb": {
-  "std": 0.9,
-  "low": 0.4
- }
 }

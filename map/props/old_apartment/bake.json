@@ -1,0 +1,86 @@
+{
+ "groups": {
+  "props_balconies": {
+   "tris_src": 6716,
+   "tris": 6716,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_breakfast": {
+   "tris_src": 5388,
+   "tris": 5388,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_car": {
+   "tris_src": 1650,
+   "tris": 1650,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_metro": {
+   "tris_src": 830,
+   "tris": 830,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_people": {
+   "tris_src": 13326,
+   "tris": 13326,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_room": {
+   "tris_src": 578,
+   "tris": 578,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_shops": {
+   "tris_src": 594,
+   "tris": 594,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_signs": {
+   "tris_src": 544,
+   "tris": 544,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "roof": {
+   "tris_src": 216,
+   "tris": 216,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 2072,
+   "tris": 2072,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "site_trees": {
+   "tris_src": 12364,
+   "tris": 12364,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "walls_ext": {
+   "tris_src": 1344,
+   "tris": 1344,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "windows": {
+   "tris_src": 3264,
+   "tris": 3264,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 48886,
+ "std_mb": 4.59,
+ "low_mb": 1.53,
+ "pass": "render-b7"
+}

@@ -23,58 +23,72 @@ import bpy
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 ARGS = dict(tier='std', out='/tmp/lm_budget_raw.glb', budget_json='', samples='32', log='', skip_data='0')
 for k, v in zip(argv[::2], argv[1::2]):
-    ARGS[k.lstrip('-')] = v
+    ARGS[k.lstrip('-').replace('-', '_')] = v   # 统一下划线：--budget-json / --fit-lo 都要能读到
 TIER = ARGS['tier']
 OUT = os.path.abspath(ARGS['out'])
 TEXDIR = os.path.splitext(OUT)[0] + '_tex'
 os.makedirs(TEXDIR, exist_ok=True)
 SAMPLES = int(ARGS['samples'])
-NORM_CAP = 1024          # 法线 / ORM 贴图边长上限（基色的一半左右，够用且省预算）
-MIN_TEX = 256
-# 体积估算常数（arms_rnd 2026-10-03 实测校准）：ETC1S 烘焙基色 ≈0.30 B/px、ORM ≈0.13、UASTC+zstd 法线 ≈0.80；
-# 几何 meshopt（基色+法线+UV，i16/u8 量化）≈ 32 B/三形（标准档）/ 20（低档，无法线）。
-B_BASE, B_NORM, B_ORM = 0.08, 0.80, 0.13
-B_TRI = 32.0 if TIER == 'std' else 20.0
-# 体积带（MB）：标准档 4–8（主力取上限由驱动经 --fit-lo/--fit-hi 给出），低档 ≤ 2
-LO_MB = float(ARGS.get('fit-lo', 4.0 if TIER == 'std' else 0.0))
-HI_MB = float(ARGS.get('fit-hi', 8.0 if TIER == 'std' else 2.0))
+# 体积带（MB）：标准档主力 5–8、其余 4–6.5（驱动经 --fit-lo/--fit-hi 给出），低档 ≤ 2
+LO_MB = float(ARGS.get('fit_lo', 4.0 if TIER == 'std' else 0.0))
+HI_MB = float(ARGS.get('fit_hi', 8.0 if TIER == 'std' else 2.0))
+# 体积估算常数（arms_rnd / silver_crown 2026-10-03 实测分解）：ETC1S 烘焙基色极省 (~0.01 B/px)、
+# UASTC+zstd 法线 ~0.79、ETC1S ORM ~0.114、几何 meshopt（基色+法线+UV 量化）~19 B/三形（低档 ~13）
+# 低档贴图是 etc1s q96（比标准档 q128 大）且无法线 / ORM、无法线属性：常数按档分开（silver_crown 低档实测反推）
+B_BASE, B_NORM, B_ORM = (0.010, 0.79, 0.114) if TIER == 'std' else (0.15, 0.0, 0.0)
+B_TRI = 19.0 if TIER == 'std' else 9.0
+STEPS = (512, 1024, 2048)
+NORM_STEPS = (256, 512, 1024)
 
 
 def fit_tex_sizes(groups, floors):
-    """groups: 组名 → [tris_src]，floors: 组名 → 基色边长下限。按体积带选每组基色档位（法线 / ORM 取其半）与三角预算。
-    先都从下限档起估；超带逐组降档（最大组优先，不低于下限），贴图到底还超就按比例压三角（不低于源的 30%）；
-    缺带逐组升档（最小组优先，不超过 2048）。返回 (sizes, tris_budget, 估算 MB)。"""
-    sizes = dict(floors)
-    tris = {k: v for k, v in groups.items()}
+    """groups: 组名 → [tris_src]，floors: 组名 → [三角预算下限(0=按源), 基色边长下限]。
+    按体积带选每组 (基色, 法线) 档位与三角预算：基色几乎不占体积，尽量大；法线是大头，超带先降法线再降基色；
+    三角从预算下限起步（重试轮由驱动按实测体积反推，首轮 = 源三角数），跌破下限前先降贴图。返回 (sizes, tris, 估算 MB)。"""
+    sizes = {k: (max((s for s in STEPS if s <= (floors.get(k) or [0, 1024])[1]), default=512), 512) for k in groups}
+    tris = {k: ((floors[k][0] or v) if floors.get(k) else v) for k, v in groups.items()}
+    floor_tris = {k: (floors[k][0] if floors.get(k) and floors[k][0] > 0 else max(int(v * 0.4), 1000)) for k, v in groups.items()}
 
     def est():
-        px = sum(s * s for s in sizes.values())
-        half = sum((s // 2) * (s // 2) for s in sizes.values())
-        tex = (px * B_BASE + half * (B_NORM + B_ORM)) / 1048576.0
-        geo = sum(tris.values()) * B_TRI / 1048576.0
-        return tex + geo
-    steps = [256, 512, 1024, 2048]
-    cap = steps[-1] if TIER == 'std' else 1024   # 低档贴图 512–1K（D41 B3）
+        tex = sum(b * b * B_BASE + n * n * (B_NORM + B_ORM) for b, n in sizes.values()) / 1048576.0
+        return tex + sum(tris.values()) * B_TRI / 1048576.0
+    # （低档 B_NORM/B_ORM = 0：法线项自然归零，不用分档写两条公式）
+    if ARGS.get('lock_tex') == '1':   # 重试轮：贴图计划冻结（驱动按实测反推了精确三角预算），不再升降贴图
+        return sizes, tris, est()
     e = est()
     while e > HI_MB:
-        if any(sizes[k] > steps[0] for k in sizes):
-            k = max(sizes, key=lambda k: sizes[k])
-            sizes[k] = max(steps[0], next(s for s in steps if s < sizes[k]))
-        elif sum(tris.values()) > 0.3 * sum(groups.values()):
-            r = max(0.3, min(1.0, (HI_MB - (e - sum(tris.values()) * B_TRI / 1048576.0)) * 1048576.0 / (sum(tris.values()) * B_TRI)))
-            tris = {k: max(int(v * r), 1000) for k, v in tris.items()}
+        if any(n > NORM_STEPS[0] for _, n in sizes.values()):
+            k = max(sizes, key=lambda k: sizes[k][1])
+            b, n = sizes[k]
+            sizes[k] = (b, max(NORM_STEPS[0], next(s for s in NORM_STEPS if s < n)))
+        elif any(b > STEPS[0] for b, _ in sizes.values()):
+            k = max(sizes, key=lambda k: sizes[k][0])
+            b, n = sizes[k]
+            sizes[k] = (max(STEPS[0], next(s for s in STEPS if s < b)), n)
+        elif any(tris[k] > floor_tris[k] for k in tris):
+            r = max(0.4, min(1.0, (HI_MB - (e - sum(tris.values()) * B_TRI / 1048576.0)) * 1048576.0 / (sum(tris.values()) * B_TRI)))
+            tris = {k: max(int(v * r), floor_tris[k]) for k, v in tris.items()}
         else:
-            break   # 贴图与三角都到底线：如实落在带外，由驱动上报
+            break   # 都到下限：如实落在带外，由驱动上报
         e = est()
     while e < LO_MB:
         grown = False
-        for k in sorted(sizes, key=lambda k: sizes[k]):
-            if sizes[k] < cap:
-                sizes[k] = next(s for s in steps if s > sizes[k])
-                grown = True
-                break
+        if TIER == 'std':   # 低档没有法线贴图，缺带时升基色（上限 1024）
+            for k in sorted(sizes, key=lambda k: sizes[k][1]):
+                if sizes[k][1] < NORM_STEPS[-1]:
+                    b, n = sizes[k]
+                    sizes[k] = (b, next(s for s in NORM_STEPS if s > n))
+                    grown = True
+                    break
+        else:
+            for k in sorted(sizes, key=lambda k: sizes[k][0]):
+                if sizes[k][0] < 1024:
+                    b, n = sizes[k]
+                    sizes[k] = (next(s for s in STEPS if s > b and s <= 1024), n)
+                    grown = True
+                    break
         if not grown:
-            break   # 贴图到顶（2048）：源几何就这么大，宁可低于带也不虚增
+            break   # 基色与法线都到顶：源几何就这么大，宁可低于带也不虚增
         e = est()
     return sizes, tris, e
 
@@ -90,7 +104,7 @@ def budget_table():
         with open(ARGS['budget_json']) as f:
             for name, b in json.load(f).items():
                 tris, tex = int(b[0]), int(b[1])
-                nrm = int(b[2]) if len(b) > 2 else min(NORM_CAP, max(MIN_TEX, tex // 2))
+                nrm = int(b[2]) if len(b) > 2 else 512   # 法线档位由 fit_tex_sizes 定，这里只是占位兼容旧三段式预算
                 tab[name] = (tris, tex, nrm)
     return tab
 
@@ -320,13 +334,14 @@ def main():
     for o in list(bpy.data.objects):
         if o.type == 'CAMERA' or o.name.startswith('bg_'):
             bpy.data.objects.remove(o, do_unlink=True)
-    meshes = [o for o in bpy.data.objects if o.type == 'MESH' and len(o.data.polygons)]
+    meshes = [o for o in bpy.data.objects if o.type == 'MESH' and len(o.data.polygons)
+              and not o.name.startswith('mist')]   # yuanyu_holy_mount 的体积雾体不导出（同旧 --glb 口径）
     ctx = v3d_context()
     src = {}
     for J in meshes:   # 阶段一：量源三角数（预算与贴图档位都按真实源几何定）
         select_only(J)
         src[J.name] = tris_of(J)
-    floors = {k: int(BUDGET.get(k, (0, 512, 0))[1]) for k in src}
+    floors = {k: [int(BUDGET.get(k, (0, 0))[0]), int(BUDGET.get(k, (0, 1024, 0))[1])] for k in src}
     tex, trib, est_mb = fit_tex_sizes(src, floors)
     info = {}
     for J in meshes:   # 阶段二：按预算减面 + 展 UV
@@ -338,12 +353,14 @@ def main():
             d.use_collapse_triangulate = True
             bpy.ops.object.modifier_apply(modifier='dec')
         smart_uv(J, ctx)
-        info[J.name] = [before, tris_of(J), tex[J.name], max(256, min(NORM_CAP, tex[J.name] // 2))]
-        log('UV %s %d -> %d (tex %d)' % (J.name, before, tris_of(J), tex[J.name]))
-    log('fit: est %.2f MB (band %.1f-%.1f), tex %s' % (est_mb, LO_MB, HI_MB, tex))
+        info[J.name] = [before, tris_of(J), tex[J.name][0], tex[J.name][1]]
+        log('UV %s %d -> %d (tex %d norm %d)' % (J.name, before, tris_of(J), tex[J.name][0], tex[J.name][1]))
+    log('fit: est %.2f MB (band %.1f-%.1f)' % (est_mb, LO_MB, HI_MB))
     if TIER == 'std' and ARGS.get('skip_data') != '1':   # 阶段三（材质压平前）：法线 / 粗糙 / 金属，拿真实值
         for J in meshes:
             n_size = info[J.name][3]
+            if n_size < 256:
+                n_size = 256
             bake_group(J, n_size, 'normal', 1)
             pairs = material_pairs()
             patches = emit_swap(pairs, 'rough')
@@ -354,7 +371,7 @@ def main():
             emit_restore(patches)
     flatten_materials()   # 阶段四：压平（同旧口径），只做一次
     for J in meshes:   # 阶段五：AO + 基色 + ORM 合成 + 显示材质
-        n_size = info[J.name][3]
+        n_size = max(256, int(info[J.name][3]))
         base_path = bake_group(J, info[J.name][2], 'combined', SAMPLES)
         norm_path = orm_path = None
         if TIER == 'std' and ARGS.get('skip_data') != '1':

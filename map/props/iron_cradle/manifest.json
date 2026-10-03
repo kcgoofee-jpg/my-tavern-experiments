@@ -215,5 +215,43 @@
         -0.65
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_cloister": [
+      17156,
+      2048
+    ],
+    "props_garden": [
+      56100,
+      1024
+    ],
+    "props_hall": [
+      10120,
+      2048
+    ],
+    "props_hangar": [
+      6012,
+      1024
+    ],
+    "props_ranges": [
+      9568,
+      2048
+    ],
+    "props_wall_gate": [
+      4996,
+      2048
+    ],
+    "props_yard": [
+      2508,
+      1024
+    ],
+    "site_ground": [
+      1044,
+      2048
+    ],
+    "walls_ext": [
+      8750,
+      2048
+    ]
+  }
 }

@@ -127,5 +127,31 @@
         -0.7
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_care_home": [
+      2200,
+      1024
+    ],
+    "props_hospital": [
+      548,
+      1024
+    ],
+    "props_lights": [
+      888,
+      512
+    ],
+    "props_monastery": [
+      728,
+      1024
+    ],
+    "props_street": [
+      2524,
+      1024
+    ],
+    "site_ground": [
+      12,
+      2048
+    ]
+  }
 }

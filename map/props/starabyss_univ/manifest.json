@@ -128,5 +128,35 @@
         -0.72
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_library": [
+      96,
+      1024
+    ],
+    "props_lights": [
+      780,
+      512
+    ],
+    "props_link": [
+      24,
+      1024
+    ],
+    "props_main": [
+      840,
+      1024
+    ],
+    "props_medical": [
+      348,
+      1024
+    ],
+    "props_plaza": [
+      2072,
+      1024
+    ],
+    "site_ground": [
+      12,
+      2048
+    ]
+  }
 }

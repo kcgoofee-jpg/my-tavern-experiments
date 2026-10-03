@@ -110,25 +110,25 @@
     }
   ],
   "budgets": {
-    "props_univ": [
-      9000,
-      1024
-    ],
     "props_court": [
-      14000,
+      3102,
       1024
-    ],
-    "props_plaza": [
-      5000,
-      512
-    ],
-    "site_ground": [
-      300,
-      512
     ],
     "props_lights": [
-      2500,
-      256
+      780,
+      512
+    ],
+    "props_plaza": [
+      1800,
+      512
+    ],
+    "props_univ": [
+      682,
+      1024
+    ],
+    "site_ground": [
+      12,
+      512
     ]
   },
   "max_mb": {

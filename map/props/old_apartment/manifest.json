@@ -290,5 +290,59 @@
         -0.75
       ]
     }
-  ]
+  ],
+  "budgets": {
+    "props_balconies": [
+      6716,
+      1024
+    ],
+    "props_breakfast": [
+      5388,
+      1024
+    ],
+    "props_car": [
+      1650,
+      512
+    ],
+    "props_metro": [
+      830,
+      1024
+    ],
+    "props_people": [
+      13326,
+      512
+    ],
+    "props_room": [
+      578,
+      1024
+    ],
+    "props_shops": [
+      594,
+      1024
+    ],
+    "props_signs": [
+      544,
+      1024
+    ],
+    "roof": [
+      216,
+      2048
+    ],
+    "site_ground": [
+      2072,
+      2048
+    ],
+    "site_trees": [
+      12364,
+      1024
+    ],
+    "walls_ext": [
+      1344,
+      2048
+    ],
+    "windows": [
+      3264,
+      1024
+    ]
+  }
 }

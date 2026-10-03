@@ -1,192 +1,242 @@
 {
- "_说明": "viewer3d.html?model=cathedral 的清单（标准档 cathedral.glb + 低档 cathedral_low.glb）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/cathedral/build.py + blender/landmarks/export_glb.py 生成；周边中层街区（bg_*）只在成图里，不导出。",
- "id": "cathedral",
- "title": {
-  "zh": "辉光大教堂",
-  "en": "Radiance Cathedral"
- },
- "glb": "cathedral.glb",
- "glb_low": "cathedral_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "roof"
-  ],
-  "walls": [
-   "walls_ext"
-  ],
-  "interior": [],
-  "floors": [
-   {
-    "id": "floor_0",
-    "name": {
-     "zh": "地坪",
-     "en": "Ground"
+  "_说明": "viewer3d.html?model=cathedral 的清单（标准档 cathedral.glb + 低档 cathedral_low.glb）。坐标 = glTF（Y 朝上，米；Blender (x, y, z) → (x, z, -y)）。由 blender/landmarks/cathedral/build.py + blender/landmarks/export_glb.py 生成；周边中层街区（bg_*）只在成图里，不导出。",
+  "id": "cathedral",
+  "title": {
+    "zh": "辉光大教堂",
+    "en": "Radiance Cathedral"
+  },
+  "glb": "cathedral.glb",
+  "glb_low": "cathedral_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [
+      "roof"
+    ],
+    "walls": [
+      "walls_ext"
+    ],
+    "interior": [],
+    "floors": [
+      {
+        "id": "floor_0",
+        "name": {
+          "zh": "地坪",
+          "en": "Ground"
+        },
+        "y0": -0.5,
+        "y1": 30
+      }
+    ],
+    "site": [
+      "site_ground",
+      "props_piazza"
+    ],
+    "building": {
+      "min": [
+        -93.5,
+        -0.5,
+        -36.6
+      ],
+      "max": [
+        59.6,
+        118,
+        79.5
+      ]
+    }
+  },
+  "section": {
+    "min": 1,
+    "max": 120,
+    "default": 20
+  },
+  "camera": {
+    "frame": [
+      "walls_ext",
+      "props_westfront",
+      "props_cloister",
+      "props_apse"
+    ],
+    "dir": [
+      -0.6,
+      0.45,
+      0.65
+    ],
+    "min": 3,
+    "max": 600,
+    "maxPolar": 1.48
+  },
+  "hotspots": [
+    {
+      "id": "westfront",
+      "mesh": "props_westfront",
+      "name": {
+        "zh": "西立面双塔",
+        "en": "West front & twin towers"
+      },
+      "desc": {
+        "zh": "哥特式西立面：两座方塔的外角各有三段收分的角扶壁（每段带披水与滴水线），上接八角钟楼层和实心石尖塔（棱上卷叶饰、塔脚四个山墙老虎窗，塔尖约 118 m）。双塔之间是主门、方框里的玫瑰窗和尖山墙；三个门洞层层内收（中门六重、侧门五重拱券），门上有尖山花。",
+        "en": "Gothic west front: each tower has setback angle buttresses stepping back three times (with weatherings and drip courses), rising to an octagonal belfry and a solid stone spire with crockets and four gabled lucarnes (tip about 118 m). Between the towers: the main portal, a rose window in a square frame and a pointed gable; the three portals are deeply splayed (six orders at the centre, five at the sides) under gables."
+      },
+      "view": [
+        -0.8,
+        0.3,
+        0.5
+      ]
     },
-    "y0": -0.5,
-    "y1": 30
-   }
+    {
+      "id": "buttress",
+      "mesh": "props_buttress",
+      "name": {
+        "zh": "飞扶壁",
+        "en": "Flying buttresses"
+      },
+      "desc": {
+        "zh": "中殿、唱诗堂和后殿外侧的独立扶壁墩（离侧廊墙约 2 m，顶上有小尖塔压重），各用一道约 45° 的四分之一拱飞扶壁把高墙拱顶的侧推力越过侧廊屋顶传到墩上，落点在高墙檐口下方。",
+        "en": "Free-standing piers (about 2 m clear of the aisle walls, weighted by pinnacles) along the nave, choir and apse; each carries one quadrant-arch flying buttress at about 45°, landing just below the clerestory cornice, taking the vault thrust over the aisle roofs."
+      },
+      "view": [
+        0.1,
+        0.5,
+        -0.85
+      ]
+    },
+    {
+      "id": "dome",
+      "mesh": "props_dome",
+      "name": {
+        "zh": "交叉处穹顶",
+        "en": "Crossing dome"
+      },
+      "desc": {
+        "zh": "交叉处先是一座带角扶壁和成对尖窗的方塔（约 44 m），再上一层带角尖塔的八角层，最上是鼓座：外围 28 根柱的柱廊、圆拱窗，上承氧化铜绿穹顶、细镀金肋和镀金采光亭。",
+        "en": "Over the crossing: a square tower with angle buttresses and paired lancets (about 44 m), an octagonal stage with corner pinnacles, then the drum ringed by 28 columns, carrying an oxidised-copper dome with slim gilded ribs and a gilded lantern."
+      },
+      "view": [
+        0.4,
+        0.6,
+        -0.7
+      ]
+    },
+    {
+      "id": "transept",
+      "mesh": "props_transept",
+      "name": {
+        "zh": "耳堂与玫瑰窗",
+        "en": "Transept & rose windows"
+      },
+      "desc": {
+        "zh": "南北耳堂端墙各有一扇玫瑰窗（放射窗棂 + 圆形窗花）、一个内收尖拱门和角部扶壁尖塔。",
+        "en": "Each transept end has a rose window (radiating tracery with foiled circles), a receding pointed portal and pinnacled corner buttresses."
+      },
+      "view": [
+        0.3,
+        0.4,
+        0.85
+      ]
+    },
+    {
+      "id": "apse",
+      "mesh": "props_apse",
+      "name": {
+        "zh": "后殿与放射状礼拜堂",
+        "en": "Apse & radiating chapels"
+      },
+      "desc": {
+        "zh": "东端半圆后殿，外绕一圈较低的回廊，三个多边形小礼拜堂向外放射，各有锥形屋顶和尖拱窗。",
+        "en": "The semicircular east apse is wrapped by a lower ambulatory with three polygonal chapels radiating from it, each with a conical roof and lancet windows."
+      },
+      "view": [
+        0.8,
+        0.45,
+        -0.4
+      ]
+    },
+    {
+      "id": "cloister",
+      "mesh": "props_cloister",
+      "name": {
+        "zh": "回廊庭院",
+        "en": "Cloister"
+      },
+      "desc": {
+        "zh": "教堂南侧的方形回廊：四面走廊是扇形拱顶（等曲率肋从束柱展开），朝庭院一侧是带窗花的尖拱廊。庭院中央有八角井台，墙上有壁灯；大主教常在深夜沿回廊散步。",
+        "en": "A square cloister south of the church: the four walks have fan vaults (ribs of equal curvature spreading from wall shafts) and open onto the garth through traceried pointed arcades. An octagonal well-head stands in the centre and lanterns hang on the walls; the archbishop often walks here late at night."
+      },
+      "view": [
+        -0.3,
+        0.7,
+        0.6
+      ]
+    },
+    {
+      "id": "residence",
+      "mesh": "props_residence",
+      "name": {
+        "zh": "大主教府邸",
+        "en": "Archbishop's residence"
+      },
+      "desc": {
+        "zh": "回廊南侧的三层石砌府邸：石竖棂窗、滴水罩、板岩坡顶和成排烟囱，经南回廊与教堂相连。",
+        "en": "A three-storey stone residence on the south side of the cloister, with stone-mullioned windows, hood moulds, a slate roof and chimney stacks, linked to the church through the south walk."
+      },
+      "view": [
+        -0.2,
+        0.45,
+        0.85
+      ]
+    }
   ],
-  "site": [
-   "site_ground",
-   "props_piazza"
-  ],
-  "building": {
-   "min": [
-    -93.5,
-    -0.5,
-    -36.6
-   ],
-   "max": [
-    59.6,
-    118,
-    79.5
-   ]
+  "budgets": {
+    "floor_0": [
+      180,
+      1024
+    ],
+    "props_apse": [
+      3126,
+      1024
+    ],
+    "props_buttress": [
+      3576,
+      1024
+    ],
+    "props_cloister": [
+      23383,
+      1024
+    ],
+    "props_dome": [
+      3439,
+      1024
+    ],
+    "props_piazza": [
+      9382,
+      1024
+    ],
+    "props_residence": [
+      1246,
+      1024
+    ],
+    "props_transept": [
+      4238,
+      1024
+    ],
+    "props_westfront": [
+      6346,
+      1024
+    ],
+    "roof": [
+      312,
+      1024
+    ],
+    "site_ground": [
+      72,
+      1024
+    ],
+    "walls_ext": [
+      4778,
+      1024
+    ]
   }
- },
- "section": {
-  "min": 1,
-  "max": 120,
-  "default": 20
- },
- "camera": {
-  "frame": [
-   "walls_ext",
-   "props_westfront",
-   "props_cloister",
-   "props_apse"
-  ],
-  "dir": [
-   -0.6,
-   0.45,
-   0.65
-  ],
-  "min": 3,
-  "max": 600,
-  "maxPolar": 1.48
- },
- "hotspots": [
-  {
-   "id": "westfront",
-   "mesh": "props_westfront",
-   "name": {
-    "zh": "西立面双塔",
-    "en": "West front & twin towers"
-   },
-   "desc": {
-    "zh": "哥特式西立面：两座方塔的外角各有三段收分的角扶壁（每段带披水与滴水线），上接八角钟楼层和实心石尖塔（棱上卷叶饰、塔脚四个山墙老虎窗，塔尖约 118 m）。双塔之间是主门、方框里的玫瑰窗和尖山墙；三个门洞层层内收（中门六重、侧门五重拱券），门上有尖山花。",
-    "en": "Gothic west front: each tower has setback angle buttresses stepping back three times (with weatherings and drip courses), rising to an octagonal belfry and a solid stone spire with crockets and four gabled lucarnes (tip about 118 m). Between the towers: the main portal, a rose window in a square frame and a pointed gable; the three portals are deeply splayed (six orders at the centre, five at the sides) under gables."
-   },
-   "view": [
-    -0.8,
-    0.3,
-    0.5
-   ]
-  },
-  {
-   "id": "buttress",
-   "mesh": "props_buttress",
-   "name": {
-    "zh": "飞扶壁",
-    "en": "Flying buttresses"
-   },
-   "desc": {
-    "zh": "中殿、唱诗堂和后殿外侧的独立扶壁墩（离侧廊墙约 2 m，顶上有小尖塔压重），各用一道约 45° 的四分之一拱飞扶壁把高墙拱顶的侧推力越过侧廊屋顶传到墩上，落点在高墙檐口下方。",
-    "en": "Free-standing piers (about 2 m clear of the aisle walls, weighted by pinnacles) along the nave, choir and apse; each carries one quadrant-arch flying buttress at about 45°, landing just below the clerestory cornice, taking the vault thrust over the aisle roofs."
-   },
-   "view": [
-    0.1,
-    0.5,
-    -0.85
-   ]
-  },
-  {
-   "id": "dome",
-   "mesh": "props_dome",
-   "name": {
-    "zh": "交叉处穹顶",
-    "en": "Crossing dome"
-   },
-   "desc": {
-    "zh": "交叉处先是一座带角扶壁和成对尖窗的方塔（约 44 m），再上一层带角尖塔的八角层，最上是鼓座：外围 28 根柱的柱廊、圆拱窗，上承氧化铜绿穹顶、细镀金肋和镀金采光亭。",
-    "en": "Over the crossing: a square tower with angle buttresses and paired lancets (about 44 m), an octagonal stage with corner pinnacles, then the drum ringed by 28 columns, carrying an oxidised-copper dome with slim gilded ribs and a gilded lantern."
-   },
-   "view": [
-    0.4,
-    0.6,
-    -0.7
-   ]
-  },
-  {
-   "id": "transept",
-   "mesh": "props_transept",
-   "name": {
-    "zh": "耳堂与玫瑰窗",
-    "en": "Transept & rose windows"
-   },
-   "desc": {
-    "zh": "南北耳堂端墙各有一扇玫瑰窗（放射窗棂 + 圆形窗花）、一个内收尖拱门和角部扶壁尖塔。",
-    "en": "Each transept end has a rose window (radiating tracery with foiled circles), a receding pointed portal and pinnacled corner buttresses."
-   },
-   "view": [
-    0.3,
-    0.4,
-    0.85
-   ]
-  },
-  {
-   "id": "apse",
-   "mesh": "props_apse",
-   "name": {
-    "zh": "后殿与放射状礼拜堂",
-    "en": "Apse & radiating chapels"
-   },
-   "desc": {
-    "zh": "东端半圆后殿，外绕一圈较低的回廊，三个多边形小礼拜堂向外放射，各有锥形屋顶和尖拱窗。",
-    "en": "The semicircular east apse is wrapped by a lower ambulatory with three polygonal chapels radiating from it, each with a conical roof and lancet windows."
-   },
-   "view": [
-    0.8,
-    0.45,
-    -0.4
-   ]
-  },
-  {
-   "id": "cloister",
-   "mesh": "props_cloister",
-   "name": {
-    "zh": "回廊庭院",
-    "en": "Cloister"
-   },
-   "desc": {
-    "zh": "教堂南侧的方形回廊：四面走廊是扇形拱顶（等曲率肋从束柱展开），朝庭院一侧是带窗花的尖拱廊。庭院中央有八角井台，墙上有壁灯；大主教常在深夜沿回廊散步。",
-    "en": "A square cloister south of the church: the four walks have fan vaults (ribs of equal curvature spreading from wall shafts) and open onto the garth through traceried pointed arcades. An octagonal well-head stands in the centre and lanterns hang on the walls; the archbishop often walks here late at night."
-   },
-   "view": [
-    -0.3,
-    0.7,
-    0.6
-   ]
-  },
-  {
-   "id": "residence",
-   "mesh": "props_residence",
-   "name": {
-    "zh": "大主教府邸",
-    "en": "Archbishop's residence"
-   },
-   "desc": {
-    "zh": "回廊南侧的三层石砌府邸：石竖棂窗、滴水罩、板岩坡顶和成排烟囱，经南回廊与教堂相连。",
-    "en": "A three-storey stone residence on the south side of the cloister, with stone-mullioned windows, hood moulds, a slate roof and chimney stacks, linked to the church through the south walk."
-   },
-   "view": [
-    -0.2,
-    0.45,
-    0.85
-   ]
-  }
- ]
 }

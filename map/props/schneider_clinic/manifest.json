@@ -1,133 +1,133 @@
 {
- "_note": "viewer3d.html?model=schneider_clinic 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/schneider_clinic.md。 体量上限放宽到 std 0.8 / low 0.35 MB（单栋默认 0.6/0.3）：一个模型含主楼、车库、玻璃温室与整个前院；实测 std 0.67 MB。",
- "id": "schneider_clinic",
- "title": {
-  "zh": "施奈德精密改造诊所",
-  "en": "Schneider Precision Clinic"
- },
- "glb": "schneider_clinic.glb",
- "glb_low": "schneider_clinic_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_clinic",
-   "props_wing"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_front",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -40,
-    -0.3,
-    -40
-   ],
-   "max": [
-    40,
-    17,
-    26
-   ]
-  }
- },
- "section": {
-  "min": 0.5,
-  "max": 17,
-  "default": 17
- },
- "camera": {
-  "frame": [
-   "props_clinic",
-   "props_wing"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_clinic": [
-   14000,
-   1024
-  ],
-  "props_wing": [
-   9000,
-   512
-  ],
-  "props_front": [
-   9000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
-  ]
- },
- "hotspots": [
-  {
-   "id": "clinic",
-   "mesh": "props_clinic",
-   "name": {
-    "zh": "三层石灰石对称立面 + 双柱门廊 + 板石四坡顶带老虎窗（联排宅邸式）",
-    "en": ""
-   },
-   "desc": {
-    "zh": "三层石灰石对称立面 + 双柱门廊 + 板石四坡顶带老虎窗（联排宅邸式）",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
+  "_note": "viewer3d.html?model=schneider_clinic 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/schneider_clinic.md。 体量上限放宽到 std 0.8 / low 0.35 MB（单栋默认 0.6/0.3）：一个模型含主楼、车库、玻璃温室与整个前院；实测 std 0.67 MB。",
+  "id": "schneider_clinic",
+  "title": {
+    "zh": "施奈德精密改造诊所",
+    "en": "Schneider Precision Clinic"
   },
-  {
-   "id": "wing",
-   "mesh": "props_wing",
-   "name": {
-    "zh": "东侧车库与悬浮车 + 西后玻璃温室",
-    "en": ""
-   },
-   "desc": {
-    "zh": "东侧车库与悬浮车 + 西后玻璃温室",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
+  "glb": "schneider_clinic.glb",
+  "glb_low": "schneider_clinic_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
   },
-  {
-   "id": "front",
-   "mesh": "props_front",
-   "name": {
-    "zh": "铁艺栅栏 + 双开门 + 门柱灯 + 黄杨球 / 整形树 + 石水盆",
-    "en": ""
-   },
-   "desc": {
-    "zh": "铁艺栅栏 + 双开门 + 门柱灯 + 黄杨球 / 整形树 + 石水盆",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_clinic",
+      "props_wing"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_front",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -40,
+        -0.3,
+        -40
+      ],
+      "max": [
+        40,
+        17,
+        26
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 17,
+    "default": 17
+  },
+  "camera": {
+    "frame": [
+      "props_clinic",
+      "props_wing"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_clinic": [
+      1720,
+      1024
+    ],
+    "props_front": [
+      2572,
+      512
+    ],
+    "props_wing": [
+      1788,
+      512
+    ],
+    "site_ground": [
+      84,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "clinic",
+      "mesh": "props_clinic",
+      "name": {
+        "zh": "三层石灰石对称立面 + 双柱门廊 + 板石四坡顶带老虎窗（联排宅邸式）",
+        "en": ""
+      },
+      "desc": {
+        "zh": "三层石灰石对称立面 + 双柱门廊 + 板石四坡顶带老虎窗（联排宅邸式）",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "wing",
+      "mesh": "props_wing",
+      "name": {
+        "zh": "东侧车库与悬浮车 + 西后玻璃温室",
+        "en": ""
+      },
+      "desc": {
+        "zh": "东侧车库与悬浮车 + 西后玻璃温室",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "front",
+      "mesh": "props_front",
+      "name": {
+        "zh": "铁艺栅栏 + 双开门 + 门柱灯 + 黄杨球 / 整形树 + 石水盆",
+        "en": ""
+      },
+      "desc": {
+        "zh": "铁艺栅栏 + 双开门 + 门柱灯 + 黄杨球 / 整形树 + 石水盆",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
+  ],
+  "max_mb": {
+    "std": 0.8,
+    "low": 0.35
   }
- ],
- "max_mb": {
-  "std": 0.8,
-  "low": 0.35
- }
 }

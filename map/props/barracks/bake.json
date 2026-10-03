@@ -1,0 +1,74 @@
+{
+ "groups": {
+  "props_academy_blocks": {
+   "tris_src": 33084,
+   "tris": 33084,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_academy_main": {
+   "tris_src": 14046,
+   "tris": 14046,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_academy_sports": {
+   "tris_src": 3868,
+   "tris": 3868,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_barracks": {
+   "tris_src": 69624,
+   "tris": 69624,
+   "tex": 2048,
+   "tex_norm": 512
+  },
+  "props_edge": {
+   "tris_src": 17576,
+   "tris": 17576,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_lights": {
+   "tris_src": 3796,
+   "tris": 3796,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_motorpool": {
+   "tris_src": 2630,
+   "tris": 2630,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_parade": {
+   "tris_src": 2992,
+   "tris": 2992,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_trees": {
+   "tris_src": 29872,
+   "tris": 29872,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_vehicles": {
+   "tris_src": 29334,
+   "tris": 29334,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 6368,
+   "tris": 6368,
+   "tex": 2048,
+   "tex_norm": 512
+  }
+ },
+ "tris": 213190,
+ "std_mb": 7.46,
+ "low_mb": 0.91,
+ "pass": "render-b7"
+}
