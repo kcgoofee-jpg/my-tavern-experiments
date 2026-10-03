@@ -92,6 +92,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `lod.mjs` | 图形 LOD 策略：一个模型该处在哪一档、滞回、哪些异步加载仍然有效。 |
 | `logbuf.mjs` | 反馈报告用的控制台环形缓冲，按会话分开；模块首次求值时自装钩子。 |
 | `nodes.mjs` | 节点树（内核契约 v2）：建树、读树、`vocabulary`、`locate`、视图、位置、范围、层级。 |
+| `ooc.mjs` | 玩家消息里的 OOC 行（D32）：`stripOoc`（剥掉 OOC 段）、`floorCorrections`（一楼里写下的改口：改当前地点、把某人放到某处）、`activePlace`（还生效的那条改口）。纯函数；改口住在聊天楼层里，所以和别的楼层一样能重算。 |
 | `overlay-v2.mjs` | schema 1 包的 v2 叠加层（`overlay.v2.json`）：在 `compat-v1` 之后按节点 id 合并；宽容（坏条目跳过并记入 `problems`）。 |
 | `pack-draft.mjs` | 编辑草稿（K-R100）：形状、用 K-R67 叠加层的合并规则套到包上、随包发布的包的草稿叠加层文本（K-R98）。纯函数。 |
 | `pack-export.mjs` | 导出为包（K-R98）：并入长出来的节点、用户的叫法与卡署名，固定键序，大小上限。纯函数。 |
@@ -203,6 +204,10 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-settings.mjs` | 设置 → 高级 →「地图包」：当前包、选择列表、网址 / 文件导入、外来包模型文字的生效开关、导出为包（K-R98、K-R99、K-R103）。 |
 | `period-now.mjs` | 世界当前生效的时段（时段系统关掉时为 `''`）：底图换档、插图、羽化边缘与城外环共用的那一个读法。刻意做成无副作用——自装模块（顶层 `setInterval`）不能被 app 核心 import，否则 `node --test` 永不退出。 |
 | `place-resolver.mjs` | 当前地点：在节点树上跑 `nodes.locate`，再还原成使用方读的结果形状（`level`、`map`、`marker`、`room`、`node`、`transit`）；`tavern/spatial-contract.mjs` 与构建工具也用它。 |
+| `place-card.mjs` | PLACE-1b：一个地点一条记录，界面只画记录。`recordCard()`（正文 + 事实 + 出入 + 包里其余的行 + 「编辑」「世界书档案」两个动作）与「地点」页（当前地点的记录卡 + 上级链一行 + 附近一行 + 全部房间）。房间卡、区域卡、建筑卡、二维地点卡都走它，所以同一个地点在哪儿打开都一样。 |
+| `place-card-bridge.mjs` | 地图标记开卡时与记录卡互相递的那对函数（`place-card.mjs` 装、`markers.mjs` 调）。单独一个小模块是为了躲开成环：两边本来就互相需要，放在这里就没有求值顺序问题。纯数据，不碰 DOM。 |
+| `place-editor.mjs` | PLACE-1b：一个地点一个编辑器，地点 / 房间 / 区域 / 建筑 / 人物卡共用。每个字段下面浅色显示包里的原文，每个字段都能单独「恢复成包里的」；保存与撤销都是发给宿主的意图。 |
+| `place-sources.mjs` | PLACE-1b：查看器这一侧的「地点来源」，也就是 `core/place-record.mjs` 读的那份 pack——把节点树、卡设定的分层房间表、当前层的点位摆成那个形状；包自己声明的附加书地点表、三维清单里的建筑词与室外区域在后台补上，补齐后通知一次、界面重画。路径都读包清单。 |
 | `plugins.mjs` | 外挂注册表 `plugins`：app 模块与根目录外挂之间唯一的通道。 |
 | `profile-live.mjs` | 方案应用后不重载即生效：每个偏好键一个效果、宿主偏好、再刷新打开着的设置页。 |
 | `profile-section.mjs` | 设置首页顶部的方案栏：当前方案名、「已修改」标记、选择、保存 / 重命名 / 删除 / 恢复推荐 / 导出 / 导入。 |
@@ -252,6 +257,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `background-scan-scheduler.mjs` | 后台静默推演调度器：只读的增量扫描，面板开着或正在生成时让路。 |
 | `branch-follow.mjs` | 跟随分支解析：跨 CDN 镜像从 `head.json` 取分支的最新构建。 |
 | `card-source.mjs` | 为门卫读当前卡与它自己的世界书（K-R90、K-R91），并为自动包造出朴素的卡来源（`readCardSource`，K-R94）；宿主接口经 `mvu-bridge.mjs hostAccess` 传入。 |
+| `chat-data.mjs` | 一张卡多个聊天时每个聊天自己的地图数据，外加删掉的聊天留下的孤儿清理（CHAT-ISO、I-33）。只碰四处：聊天变量、本机按聊天 id 分行的存储、房间图集 / 见闻录的 IndexedDB 作用域、每聊天的自定义书——不碰卡的 `stat_data`，不碰用户自己的世界书。判定是纯函数并有 node 单测，副作用走 `createChatData(host, io)`。 |
 | `characters-parse.mjs` | 人物栏：从聊天标签和 MVU 变量找出人物及其最新位置。 |
 | `chars-flow.mjs` | 宿主的人物与世界时间流：ContextPipeline 与 MVUBridge 装配、世界时间与着装、名册 / 立绘 / 行程 / 日程漫游转发给查看器。`createCharsFlow(host)`。 |
 | `check-failure-report.mjs` | 检定失败报告环：结构化报告在下一轮注入，让剧情顺着客观事实走。 |
@@ -316,6 +322,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `trips-parse.mjs` | 行程推导：从每楼地点与人物标签得出「A → B」，按交通方式分样式。 |
 | `worldbook-crystallize.mjs` | 剧情事实结晶：把坐实的事实沉淀成附加书里按关键词触发的条目。 |
 | `worldbook-jit.mjs` | 世界书即时水合：只启用与当前地点相关的条目。 |
+| `worldbook-readme.mjs` | WB-2：附加书的说明条目——一本会自己交代自己的书：它是什么、哪个版本、什么时候由哪个地图构建写的、开着几条关着几条为什么关、报问题时该带什么。一条，永远关闭（永不注入、不耗 token），每次真正写入这本书的同步都重写一遍。纯文本，事实由同步模块传进来。 |
 | `worldbook-sync.mjs` | 世界书附加条目的写入与自动同步：只动我们自己的书和带我们标记的条目。 |
 
 ### 3.4 map/ui
@@ -359,6 +366,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | 模块 | 职责 |
 |---|---|
 | `characters-view.mjs` | 人物页与地图头像：落点、同处叠组、逐人开关、飞过去。 |
+| `hide-ui.mjs` | 抽屉各列表共用的安静「藏起来」控件：悬停 / 聚焦才出现的图标叉（触屏常显）、一个安静的「已藏 N」开关，以及它揭示出来的灰行，每行带一个恢复图标。藏行是发给宿主的意图（`eden-map:hide`），宿主写进本聊天自己的地图变量；这里不写本机偏好。 |
 | `compose-view.mjs` | 地点 / 事件 / 人物卡上把模板句发给宿主输入框的按钮（仅嵌入时）。 |
 | `custom-dialog-view.mjs` | 「名称与用途」对话框的 HTML 构件（列表、选择器、结果、编辑表单）；纯函数，状态逐次传入。 |
 | `custom-hints.mjs` | 剧情改名的一次性提示（经通知层）。 |
@@ -367,6 +375,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `custom-tint.mjs` | 按世界时间的夜色与时段底图开关。 |
 | `events-fx.mjs` | 按类型声明的屏幕花屏特效，与世界图城市标记上的事态数角标。 |
 | `events-view.mjs` | 事态层：落点、图标、事态列表、飞过去；屏幕特效与世界图角标在 `events-fx.mjs`。 |
+| `ooc-view.mjs` | 「提醒 AI」（D32）：AI 联动页上的一组现成 OOC 句子。点一下把句子经既有的 compose 通道填进宿主输入框，从不代发。文案在词典里（`ooc.tpl.<id>`），包可以用自己的 strings 覆盖；只在地图嵌在聊天里时出现。 |
 | `gallery-view.mjs` | 媒体来源的查看器侧（K-R106）：人物卡的图鉴一节（打开某个类别才请求缩略图）、地点卡的「此处的场景」、一个人的场景时间线；每个地址再查一遍，文字走 `textContent`，一个开关。 |
 | `scrapbook-view.mjs` | 地标见闻录的查看器侧：地点卡上的钉图与手记。 |
 | `security.mjs` | 可选的安保叠加层：地点上的盾牌签与卡片里的规则行。 |

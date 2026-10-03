@@ -1,7 +1,7 @@
 {
   "_note": "Ratchet ledger for tools/check_architecture.py: counts may only go down; regenerate with --update-baseline (never hand-edit, never add a file).",
   "lines": {
-    "map/estate/main.js": 1186,
+    "map/estate/main.js": 1182,
     "map/props/viewer3d.html": 916,
     "map/tavern/eden-map.js": 664,
     "map/viewer.html": 585
@@ -67,7 +67,6 @@
     "map/app/prop-store.mjs": 4,
     "map/app/quests-view.mjs": 1,
     "map/app/route-plan-view.mjs": 3,
-    "map/app/scale-handoff.mjs": 1,
     "map/app/settings-wire.mjs": 2,
     "map/app/settings.mjs": 9,
     "map/app/sharpness-tiers.mjs": 2,

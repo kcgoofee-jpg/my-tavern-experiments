@@ -111,6 +111,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `lod.mjs` | Graphics LOD policy: which detail state a model should be in, hysteresis, and which async loads are still valid. |
 | `logbuf.mjs` | Console ring buffer for feedback reports, split into sessions; installs its hooks on first evaluation. |
 | `nodes.mjs` | The node tree (kernel contract v2): build, read, `vocabulary`, `locate`, views, positions, scope, levels. |
+| `ooc.mjs` | Out-of-character lines in player messages (D32): `stripOoc`, `floorCorrections` (a written correction of the current place or of where someone is), `activePlace` (the correction that still holds). Pure; the correction lives in the chat floor, so it recomputes like any other. |
 | `overlay-v2.mjs` | The v2 overlay of a schema-1 pack (`overlay.v2.json`): merged by node id after `compat-v1`; lenient (a bad entry is skipped and listed in `problems`). |
 | `pack-draft.mjs` | The edit draft (K-R100): its shape, applying it over a pack with the K-R67 overlay merge, and the overlay text of a shipped pack's draft (K-R98). Pure. |
 | `pack-export.mjs` | Export as pack (K-R98): grown nodes, the user's names and card credits folded in, canonical order, size limits. Pure. |
@@ -223,6 +224,10 @@ mutable state is written only by its declaring module through `set*()`.
 | `pack-settings.mjs` | Settings → Advanced "Map pack": the running pack, the choice list, URL / file import, the go-live switch of a foreign pack's model text, export as pack (K-R98, K-R99, K-R103). |
 | `period-now.mjs` | The world's effective period (`''` when the period system is off) — the one reader shared by the base-image switch, the insets, the feathered edge and the outskirts ring. Side-effect free on purpose: a self-installing module (top-level `setInterval`) may not be imported from app core, or `node --test` never exits. |
 | `place-resolver.mjs` | The current location: `nodes.locate` over the node tree, mapped to the result shape the consumers read (`level`, `map`, `marker`, `room`, `node`, `transit`); also used by `tavern/spatial-contract.mjs` and the builder tools. |
+| `place-card.mjs` | PLACE-1b: one record per place, the interface only draws records. `recordCard()` (body, facts, access, the pack's remaining rows, the two actions) and the "places" tab (the current place's record, the ancestor chain, what is next door, all rooms). Room, area, building and 2D place cards all go through it, so the same place reads the same wherever it is opened. |
+| `place-card-bridge.mjs` | The one pair of functions the marker card and the record card hand each other (set by `place-card.mjs`, called by `markers.mjs`). Its own module so the two do not have to import each other; plain data, no DOM. |
+| `place-editor.mjs` | PLACE-1b: one editor per place, shared by the place, room, area, building and person cards. Each field shows the pack's own wording underneath and can be reset to it on its own; saving and undoing are intents to the host. |
+| `place-sources.mjs` | PLACE-1b: the viewer-side place sources `core/place-record.mjs` reads — the node tree, the card's layered room table and the current layer's points, shaped into one pack; the add-on place table, the 3D manifest's building words and outside areas are added in the background and the interface redraws once. Paths come from the pack manifest. |
 | `plugins.mjs` | Plugin registry `plugins`: the only channel between app modules and root plugins. |
 | `profile-live.mjs` | Makes an applied profile take effect without a reload: one effect per preference key, host prefs, then refreshes the open settings page. |
 | `profile-section.mjs` | The settings-profile section at the top of Settings home: current name, modified marker, picker, save / rename / delete / restore / export / import. |
@@ -272,6 +277,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `background-scan-scheduler.mjs` | Background quiet-derivation scheduler: read-only incremental scans that yield to a live panel or generation. |
 | `branch-follow.mjs` | Follow-branch resolution: newest build of a branch from `head.json` across CDN mirrors. |
 | `card-source.mjs` | Reads the current card and its own worldbooks for the pack gate (K-R90, K-R91) and builds the plain card source for the automatic pack (`readCardSource`, K-R94); host interfaces come in through `mvu-bridge.mjs hostAccess`. |
+| `chat-data.mjs` | One card, many chats: each chat's own map data, and the reset / orphan sweep for chats that were deleted (CHAT-ISO, I-33). Four places only — the chat variable, this machine's per-chat storage rows, the gallery databases scoped by chat id, and the per-chat custom book. Never the card's `stat_data`, never a worldbook of the user's own. The decisions are pure and node-tested; the effects go through `createChatData(host, io)`. |
 | `characters-parse.mjs` | Character bar: finds characters and their latest place from chat tags and MVU variables. |
 | `chars-flow.mjs` | Character and world-time flow of the host: ContextPipeline and MVUBridge assembly, world time and outfit, roster / portrait / trips / routine forwarding to the viewer. `createCharsFlow(host)`. |
 | `check-failure-report.mjs` | Failed-check report ring: structured reports injected next turn so the story follows objective facts. |
@@ -336,6 +342,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `trips-parse.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |
 | `worldbook-crystallize.mjs` | Story-fact crystallization into the add-on worldbook as keyword-triggered entries. |
 | `worldbook-jit.mjs` | Worldbook just-in-time hydration: only entries relevant to the current place are enabled. |
+| `worldbook-readme.mjs` | WB-2: the readme entry of an add-on book — a book that explains itself: what it is, which version, when and by which map build it was written, how many entries are on or off and why, and what to send with a bug report. One entry, always disabled (never injected, costs no tokens), rewritten by every sync that writes the book. Pure text; the sync module hands in the facts. |
 | `worldbook-sync.mjs` | Worldbook add-on write and auto-sync: touches only our own book and our own marked entries. |
 
 ### 3.4 map/ui
@@ -381,6 +388,7 @@ They import core state from `app/*` and reach each other only through `app/plugi
 | Module | Role |
 |---|---|
 | `characters-view.mjs` | Character tab and map avatars: placement, grouped stacks, per-person toggles, fly-to. |
+| `hide-ui.mjs` | The quiet "hide this row" control the drawer's lists share: an icon-only close that shows on hover or focus (always on touch), a quiet "hidden N" toggle, and the greyed rows it reveals, each with a restore icon. A hide is an intent to the host, never a local preference. |
 | `compose-view.mjs` | Place / event / character card buttons that send template sentences to the host input box (embedded only). |
 | `custom-dialog-view.mjs` | HTML builders of the names-and-uses dialog (list, picker, results, edit form); pure, state passed in per call. |
 | `custom-hints.mjs` | One-time rename hints (toast through the notice layer). |
@@ -389,6 +397,7 @@ They import core state from `app/*` and reach each other only through `app/plugi
 | `custom-tint.mjs` | Night tint and period base-map switch from world time. |
 | `events-fx.mjs` | Screen glitch effect declared by event types and the event count badge on the world-map city marker. |
 | `events-view.mjs` | Event layer: placement, icons, event list, fly-to; the screen effects and world-map badges are in `events-fx.mjs`. |
+| `ooc-view.mjs` | "Nudge the AI" (D32): the list of ready out-of-character sentences on the AI link page. A click puts the sentence into the host chat input through the existing compose path and never sends. Wording lives in the dictionaries and a pack may override it; only shown while the map is embedded in the chat. |
 | `gallery-view.mjs` | The media source in the viewer (K-R106): the person card's gallery section (thumbnails requested only when a category is opened), "scenes here" on the place card, a person's scene timeline; rechecks every address, text via `textContent`, one switch. |
 | `scrapbook-view.mjs` | Viewer side of the landmark scrapbook: pinned images and notes on place cards. |
 | `security.mjs` | Optional security overlay: shield chips on places and a rules row on cards. |
