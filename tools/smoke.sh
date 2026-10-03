@@ -126,7 +126,7 @@ print(' '.join(out))")
   for u in $idx; do
     c=$(curl -sIL -o /dev/null -m 30 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c npm/$pkg@$ver/$u"; bad=1; }
   done
-  echo "npm $pkg@$ver（$base）"; return $bad
+  echo "npm ${pkg}@${ver} (${base})"; return $bad
 }
 cdn_check() {
   local base="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
