@@ -1,5 +1,5 @@
 # 世界全景 · Blender 写实渲染
-# 用法：Blender -b -P world_render.py -- [--res 3200] [--samples 128] [--out path.png]
+# 用法：Blender -b -P world_render.py -- [--res 3200] [--samples 128] [--tod day|night] [--out path.png]
 # 输入：data/ 下由 map/world.html?export 导出的高度场与势力归属（与代码地图同一份地理）
 import bpy, json, math, os, sys
 import os as _os, sys as _sys
@@ -10,7 +10,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'data')
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-opt = {'--crop': '', '--clouds': '0', '--tex': '1.5', '--mesh': '2400', '--res': '3200', '--samples': '128', '--out': os.path.join(HERE, '..', 'map', 'art', 'world_preview.png'), '--tilt': '0'}
+opt = {'--crop': '', '--clouds': '0', '--tex': '1.5', '--mesh': '2400', '--res': '3200', '--samples': '128', '--out': os.path.join(HERE, '..', 'map', 'art', 'world_preview.png'), '--tilt': '0', '--tod': 'day'}
 for i in range(0, len(args) - 1, 2): opt[args[i]] = args[i + 1]
 RES, SAMPLES, OUT, TILT = int(opt['--res']), int(opt['--samples']), os.path.abspath(opt['--out']), float(opt['--tilt'])
 
@@ -244,28 +244,6 @@ farmk = np.isin(kind_arr, ['fed-knight', 'oren-prov', 'minor']) & land
 farm = box((farmk & (slope < .25) & (elev < .2)).astype(np.float32), 3) * (n3 > .35)
 fcol = np.stack([.20 + .16 * fields, .21 + .10 * fields, .10 + .06 * fields], -1)
 col = col * (1 - farm[..., None] * .35) + fcol * farm[..., None] * .35
-# 城市建成区（三座首都，坐标来自代码地图）
-for (cxp, cyp, r0, rot) in [(720, 470, 34, .3), (330, 470, 28, -.2), (1100, 440, 20, .6)]:
-    ux, uy = cxp / 1600 * GW, cyp / 1000 * GH; rr = r0 / 1600 * GW
-    y0c, y1c = int(max(0, uy - rr * 1.8)), int(min(GH, uy + rr * 1.8)); x0c, x1c = int(max(0, ux - rr * 1.8)), int(min(GW, ux + rr * 1.8))
-    hh_, ww_ = y1c - y0c, x1c - x0c
-    yy_, xx_ = np.mgrid[y0c:y1c, x0c:x1c].astype(np.float32)
-    dx_, dy_ = xx_ - ux, yy_ - uy; rad = np.hypot(dx_, dy_); th = np.arctan2(dy_, dx_)
-    nz = noise2((hh_, ww_), 14 * TS, 4)
-    urb = np.clip((1.25 - rad / rr - (nz - .5) * 1.1) * 2.2, 0, 1)
-    grain = box(rng.random((hh_, ww_)).astype(np.float32), 1)
-    wxs = fbm(xx_ / (60 * TS), yy_ / (60 * TS), 2) * 6 * TS; wys = fbm(xx_ / (60 * TS) + 3, yy_ / (60 * TS), 2) * 6 * TS
-    rx_ = (dx_ + wxs) * np.cos(rot) + (dy_ + wys) * np.sin(rot); ry_ = -(dx_ + wxs) * np.sin(rot) + (dy_ + wys) * np.cos(rot)
-    bw = 5 * TS
-    dist = noise2((hh_, ww_), 5 * TS, 3)
-    street = (dist < .28).astype(np.float32) * .6
-    avenue = np.clip(1 - np.abs(np.sin(th * 6 + (nz - .5) * .6)) * rad / 1.6, 0, 1) * (rad > rr * .1)
-    c = np.stack([.25 + .10 * grain, .24 + .09 * grain, .225 + .08 * grain], -1) * (0.9 + .2 * nz[..., None])
-    c = c * (1 - street[..., None] * .22)
-    c = c + avenue[..., None] * .07
-    a_ = urb[..., None] * .92
-    col[y0c:y1c, x0c:x1c] = col[y0c:y1c, x0c:x1c] * (1 - a_) + c * a_
-# 斑驳积雪：沿岩脊，受坡度与噪声控制
 snow = (np.clip(((elev + (n2 - .5) * .12 + (det - .5) * .10) - .47) * 25, 0, 1) * np.clip(mt * 2 - .5, 0, 1) * np.clip(1.25 - slope * .8, 0, 1))
 col = col * (1 - snow[..., None]) + np.array((.80, .82, .86), np.float32) * snow[..., None]
 riverU2 = np.clip(riverU * 1.4, 0, 1)
@@ -299,11 +277,109 @@ sc = bpy.context.scene
 MW, MH = 16.0, 10.0
 S_LAND = 1.0                                                             # 垂直夸张
 
+# ---------------- 城市光斑（D41 §0.5 / B7）：三座首都。昼是灰色肌理，夜是图上唯一的灯 ----------------
+# 数据网格 1600×1000 格对应 maps.json 的 extent_m 12000×7500 km，即 1 格 = 7.5 km；成图全宽 = 1.48 km/px。
+# 天城都会半径约 40 km（8000 px 下 ≈27 px），另两座首府更小；夜里三片光同一半径，没有城市的地方不亮。
+_p = json.load(open(os.path.join(HERE, '..', 'map', 'data', 'world_markers.json')))
+_f = json.load(open(os.path.join(HERE, '..', 'map', 'data', 'maps.json')))['maps']['world'].get('view', {}).get('focus')
+CAPS = sorted([(c['id'], float(c['x']), float(c['y'])) for c in _p['places']
+               if c.get('type') == 'capital' and c.get('x') is not None], key=lambda c: c[0] != _f)
+CAP_R = [5.3, 3.8, 2.9]                                                 # 都会半径（数据网格格数；1 格 = 7.5 km）
+CAP_E = [1.0, .62, .45]                                                 # 夜里的相对亮度：天城最亮
+CAP_ROT = [.3, -.2, .6]                                                 # 街网走向
+TOD = opt['--tod']
+RES_Y = int(RES * (MH * math.cos(math.radians(TILT)) * .97) / (MW * .985))
+UX0, UX1 = (1 - .985) / 2, (1 + .985) / 2                              # 成图裁切：横向 98.5%
+_vy = MH * math.cos(math.radians(TILT)) * .97 / MH
+UY0, UY1 = (1 - _vy) / 2, (1 + _vy) / 2                                # 纵向 cos(pitch)×97%（overlays.py 同一取样）
+KM_PX = (UX1 - UX0) * 12000. / RES
+
+def upsample_render(a, wf=None, hf=None):
+    """按相机裁切把地形贴图双线性放大到成图尺寸（成图与贴图同一米/像素，标记与比例尺才对得上）。"""
+    wf = wf or RES; hf = hf or RES_Y
+    xs = (UX0 + (np.arange(wf) + .5) / wf * (UX1 - UX0)) * (a.shape[1] - 1)   # 与 map/app/util.mjs toImg() 同一取样
+    ys = (UY0 + (np.arange(hf) + .5) / hf * (UY1 - UY0)) * (a.shape[0] - 1)
+    x0 = np.floor(xs).astype(int); x1 = np.minimum(x0 + 1, a.shape[1] - 1); fx = (xs - x0).astype(np.float32)[None, :, None]
+    y0 = np.floor(ys).astype(int); y1 = np.minimum(y0 + 1, a.shape[0] - 1); fy = (ys - y0).astype(np.float32)[:, None, None]
+    out = np.empty((hf, wf, 3), np.float32)
+    for i in range(0, hf, 256):                                          # 分块，免得同时开四个全图临时数组
+        j = min(i + 256, hf)
+        row = a[y0[i:j]] * (1 - fy[i:j]) + a[y1[i:j]] * fy[i:j]
+        out[i:j] = row[:, x0] * (1 - fx) + row[:, x1] * fx
+    return out
+
+def city_win(cx, cy, rp, k=1.25):
+    half = int(rp * k) + 2
+    x0, x1 = max(0, int(cx) - half), min(RES, int(cx) + half + 1)
+    y0, y1 = max(0, int(cy) - half), min(RES_Y, int(cy) + half + 1)
+    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    return (slice(y0, y1), slice(x0, x1)), xx - cx, yy - cy
+
+def city_streets(dx, dy, rp, rot):
+    rx = dx * math.cos(rot) + dy * math.sin(rot); ry = -dx * math.sin(rot) + dy * math.cos(rot)
+    bw = max(2.2, rp / 3.0)
+    su = np.abs((rx / bw + .5) % 1. - .5) * bw
+    sv = np.abs((ry / (bw * 1.4) + .5) % 1. - .5) * bw * 1.4
+    return rx, ry, np.clip(1.2 - np.minimum(su, sv), 0, 1), bw
+
+def city_day(colf, cx, cy, rp, rot, seed):
+    """昼：灰色城市肌理（街区色调 + 街网 + 一片工业用地 + 轮廓起伏），和地形同一层大气罩。"""
+    sl, dx, dy = city_win(cx, cy, rp)
+    rad = np.hypot(dx, dy) / rp
+    nz = fbm(dx / (rp * .5) + seed, dy / (rp * .5), 4) * .5 + .5
+    urb = np.clip(1.2 - rad - (nz - .5) * .9, 0, 1) * .95
+    rx, ry, street, bw = city_streets(dx, dy, rp, rot)
+    blk = (np.floor(rx / bw) * 7. + np.floor(ry / (bw * 1.4)) * 3. + seed) % 1.
+    c = np.stack([.168 + .042 * blk, .165 + .040 * blk, .158 + .038 * blk], -1)   # 城比周围的旱地暗一截
+    ind = np.clip((fbm(dx / (rp * .9) + seed + 9, dy / (rp * .9), 3) + .5) * 1.6 - .55, 0, 1) * (rad > .4)
+    c = c * (1 - ind[..., None] * .45) + np.array((.225, .215, .20), np.float32) * ind[..., None] * .45
+    c = c * (1 - street[..., None] * .45) + np.array((.33, .325, .315), np.float32) * street[..., None] * .45
+    c = c * (.9 + .2 * np.clip(1.1 - rad, 0, 1))[..., None]
+    c = c * .95 + np.array((.022, .024, .030), np.float32)
+    a = urb[..., None]
+    colf[sl] = colf[sl] * (1 - a) + c * a
+
+def city_night(em, cx, cy, rp, rot, seed, gain):
+    """夜：街上的灯（沿街更亮）+ 一条贯通主干道 + 中心暖、外缘冷，外围一圈很淡的辉光。"""
+    sl, dx, dy = city_win(cx, cy, rp, 3.0)
+    rad = np.hypot(dx, dy) / rp
+    _, ry, street, _ = city_streets(dx, dy, rp, rot)
+    core = np.clip(1.05 - rad, 0, 1) ** .85
+    lit = .22 + .70 * np.clip(1.15 - rad, 0, 1) + .45 * street
+    arter = np.clip(1 - np.abs(ry) / (rp * .18), 0, 1) * np.clip(1.15 - rad, 0, 1)
+    v = (core * lit + .5 * arter) * gain
+    warm = np.array((1., .70, .38), np.float32); edge = np.array((1., .86, .66), np.float32)
+    tint = warm + (edge - warm) * np.clip(rad, 0, 1)[..., None]
+    e = v[..., None] * tint + np.exp(-(rad / 1.35) ** 2)[..., None] * .05 * gain
+    np.maximum(em[sl], e, out=em[sl])
+
+colF = upsample_render(col)                                             # 成图分辨率的底图（地形本身不变）
+emitF = np.zeros((RES_Y, RES, 3), np.float32)
+lights = []
+for _i, (_pid, _u, _v) in enumerate(CAPS):
+    _cx = (_u / 1600. - UX0) / (UX1 - UX0) * RES
+    _cy = (_v / 1000. - UY0) / (UY1 - UY0) * RES_Y
+    _rp = CAP_R[_i] / 1600. * (UX1 - UX0) * RES
+    print('city %-12s centre %.0f,%.0f px  radius %.1f px (%.0f km)' % (_pid, _cx, _cy, _rp, _rp * KM_PX))
+    city_day(colF, _cx, _cy, _rp, CAP_ROT[_i], 3.1 + _i * 5.7)
+    if TOD == 'night':
+        # 底图是按相机裁切预先放大好的，自发光贴图却铺满整个 UV 0…1：画灯的坐标要按裁切倒算回去，
+        # 否则天城会偏 6 px、圣都偏 37 px（实测互相关 0.99 但位移不等）
+        city_night(emitF, _cx / (UX1 - UX0), _cy / (UY1 - UY0), _rp / (UX1 - UX0), CAP_ROT[_i], 3.1 + _i * 5.7, CAP_E[_i])
+        lights.append([_cx / RES, _cy / RES_Y])
+if TOD == 'night':                                                      # 夜：地面与海只剩很暗的冷灰（月光）
+    colF *= np.array((.30, .36, .50), np.float32)
+    wcol = wcol * np.array((.22, .30, .46), np.float32)
+
 coastramp = np.clip(box(land.astype(np.float32), int(18 * TS)) * 1.8 - .8, 0, 1) ** 1.5
 disp = np.where(land, 0.001 + elev * coastramp, -0.02 - depth * .2).astype(np.float32)
 img_h = to_image('height', disp, float_buf=True); img_h.colorspace_settings.name = 'Non-Color'
-img_c = to_image('albedo', np.clip(col, 0, 1)); img_c.colorspace_settings.name = 'sRGB'
-img_w = to_image('water', wcol); img_w.colorspace_settings.name = 'sRGB'
+img_c = to_image('albedo', np.clip(colF, 0, 1)); img_c.colorspace_settings.name = 'sRGB'
+img_w = to_image('water', np.clip(wcol, 0, 1)); img_w.colorspace_settings.name = 'sRGB'
+img_e = None
+if TOD == 'night':                                                      # 城市灯源图：自检用（无源亮斑检查的源）
+    img_e = to_image('citylights', np.clip(emitF, 0, 1)); img_e.colorspace_settings.name = 'sRGB'
+    img_e.filepath_raw = OUT.replace('.png', '_emit.png'); img_e.file_format = 'PNG'; img_e.save()
 
 MX = min(GW, int(opt['--mesh'])); MY = int(MX * GH / GW)
 bpy.ops.mesh.primitive_grid_add(x_subdivisions=MX, y_subdivisions=MY, size=1, calc_uvs=True)
@@ -333,6 +409,17 @@ def mat_from_image(name, img, rough, detail=0.0):
     b.inputs['Roughness'].default_value = rough
     return m
 terrain.data.materials.append(mat_from_image('terrain', img_c, .92, detail=.18))
+if img_e is not None:      # 夜：城市灯当自发光贴图接进地面材质（图上唯一的灯，亮斑都有源）
+    _nt = terrain.data.materials[0].node_tree; _b = _nt.nodes['Principled BSDF']
+    _ti = _nt.nodes.new('ShaderNodeTexImage'); _ti.image = img_e; _ti.interpolation = 'Cubic'
+    if 'Emission Color' in _b.inputs:
+        _nt.links.new(_ti.outputs['Color'], _b.inputs['Emission Color']); _b.inputs['Emission Strength'].default_value = 2.1
+    else:                   # 旧版 Principled 没有自发光输入：Emission 节点 + Add 混色
+        _em = _nt.nodes.new('ShaderNodeEmission'); _nt.links.new(_ti.outputs['Color'], _em.inputs['Color'])
+        _em.inputs['Strength'].default_value = 2.1
+        _mx = _nt.nodes.new('ShaderNodeMixShader')
+        _nt.links.new(_b.outputs['BSDF'], _mx.inputs[1]); _nt.links.new(_em.outputs['Emission'], _mx.inputs[2])
+        _nt.links.new(_mx.outputs['Shader'], _nt.nodes['Material Output'].inputs['Surface'])
 
 bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, 0.0))
 water = bpy.context.active_object; water.name = 'water'; water.scale = (MW * 1.3, MH * 1.3, 1)
@@ -340,15 +427,22 @@ wm = mat_from_image('water', img_w, .12)
 wm.node_tree.nodes['Principled BSDF'].inputs['Specular IOR Level'].default_value = .6
 water.data.materials.append(wm)
 
-# 天空与太阳：西北来的斜阳
+# 天空与太阳：西北来的斜阳；夜：很弱的冷月光 + 近黑蓝的天
 world = bpy.data.worlds.new('sky'); sc.world = world; world.use_nodes = True
 sky = world.node_tree.nodes.new('ShaderNodeTexSky'); sky.sky_type = 'NISHITA' if 'NISHITA' in [i.identifier for i in sky.bl_rna.properties['sky_type'].enum_items] else sky.sky_type
 try:
     sky.sun_elevation = math.radians(30); sky.sun_rotation = math.radians(135); sky.sun_intensity = .4
 except Exception: pass
-world.node_tree.links.new(sky.outputs['Color'], world.node_tree.nodes['Background'].inputs['Color'])
-world.node_tree.nodes['Background'].inputs['Strength'].default_value = .45
-sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 3.2; sun.angle = math.radians(1.5); sun.color = (1, .96, .9)
+_bg = world.node_tree.nodes['Background']
+if TOD == 'night':
+    for _l in list(world.node_tree.links):
+        if _l.to_node == _bg: world.node_tree.links.remove(_l)
+    _bg.inputs['Color'].default_value = (.010, .016, .034, 1); _bg.inputs['Strength'].default_value = 1.
+else:
+    world.node_tree.links.new(sky.outputs['Color'], _bg.inputs['Color'])
+    _bg.inputs['Strength'].default_value = .45
+sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = .12 if TOD == 'night' else 3.2
+sun.angle = math.radians(1.5); sun.color = (.72, .80, 1.) if TOD == 'night' else (1, .96, .9)
 so = bpy.data.objects.new('sun', sun); sc.collection.objects.link(so)
 so.rotation_euler = (math.radians(66), 0, math.radians(135))
 
@@ -391,7 +485,7 @@ tilt = math.radians(TILT)
 co.rotation_euler = (tilt, 0, 0)
 co.location = (0, -30 * math.sin(tilt), 30 * math.cos(tilt))
 sc.render.resolution_x = RES
-sc.render.resolution_y = int(RES * (MH * math.cos(tilt) * .97) / (MW * .985))
+sc.render.resolution_y = RES_Y
 
 # 渲染设置：Cycles + Metal GPU + 降噪
 sc.render.engine = 'CYCLES'
@@ -408,4 +502,10 @@ if opt['--crop']:   # 局部渲染：x0,y0,x1,y1（0~1，左上为原点），�
     sc.render.border_min_y, sc.render.border_max_y = 1 - y1c, 1 - y0c
 sc.render.filepath = OUT
 bpy.ops.render.render(write_still=True)
+# 相机与灯源写进meta（自检与后续接线用；世界图是俯视，不走斜视相机文件）
+json.dump({'tod': TOD, 'res': [RES, RES_Y], 'view': 'top-down orthographic',
+           'ortho_scale_m': MW * .985 * 750 * 1000, 'm_per_px': MW * .985 * 750 * 1000 / RES,
+           'crop': [UX0, UY0, UX1, UY1], 'lights_uv': lights,
+           'capitals': [[_pid, _u, _v, CAP_R[_i], CAP_E[_i]] for _i, (_pid, _u, _v) in enumerate(CAPS)]},
+          open(OUT + '.meta.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print('WROTE', OUT, sc.render.resolution_x, sc.render.resolution_y)
