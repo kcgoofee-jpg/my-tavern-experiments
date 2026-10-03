@@ -10,14 +10,39 @@ import { createFacts } from '../map/tavern/feature-health.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
-test('host-routes：版本推断、换线路地址（与拆分前同一规则）', () => {
-  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/', PACK_IN: null });
-  assert.equal(R.VER, '0.9.5'); assert.ok(R.swappable); assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);
-  assert.equal(R.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.5/map/');
+test('host-routes：版本推断、换线路地址（DIST-2：npm 线路，顺序 npmmirror → jsDelivr → unpkg）', () => {
+  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/', PACK_IN: null });
+  assert.equal(R.VER, '0.9.7'); assert.ok(R.swappable);
+  assert.deepEqual(R.LINES.map(l => l.key), ['npm-cn', 'npm-js', 'npm-unpkg']);       // Q-26 定的顺序
+  assert.equal(R.PKG, 'eden-map-engine');
+  assert.equal(R.baseFor('npm-js'), 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/');
+  assert.equal(R.baseFor('npm-cn'), 'https://registry.npmmirror.com/eden-map-engine/0.9.7/files/map/');
+  assert.equal(R.baseFor('npm-unpkg'), 'https://unpkg.com/eden-map-engine@0.9.7/map/');
+  assert.equal(R.baseFor(), R.baseFor('npm-cn'), '没选线路时按表的第一条（探测会把它换成能用的那条）');
   assert.equal(R.tagOf('S2:0.1.0'), 'map-s2-v0.1.0'); assert.equal(R.plainVer('S2:0.1.0'), '0.1.0');
-  const B = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: { manifest: { cdn: { repo: 'x/y' } } } });
-  assert.equal(B.VER, null); assert.equal(B.REPO, 'x/y'); assert.equal(B.baseFor('cn'), 'https://cdn.jsdmirror.com/gh/o/r@preview/map/');
-  const L = createRoutes({ scriptBase: 'http://localhost:8080/map/', PACK_IN: null }); assert.ok(!L.swappable); assert.equal(L.baseFor('cn'), 'http://localhost:8080/map/');
+  // 仓库线路的入口（--follow 加载器、用户手里钉了标签的旧脚本）也认版本：美术与三维改从同版本 npm 包取
+  const G = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-s2-v0.1.0/map/', PACK_IN: null });
+  assert.equal(G.VER, 'S2:0.1.0'); assert.ok(G.swappable);
+  assert.equal(G.baseFor('npm-js'), 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.1.0/map/');
+  // 认不出版本（分支 / 提交号）或不在 CDN 域名下（本地开发）→ 不开线路，地址照旧用脚本自己所在的地方
+  const B = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: null });
+  assert.equal(B.VER, null); assert.ok(!B.swappable); assert.deepEqual(B.LINES, []); assert.equal(B.baseFor('npm-js'), 'https://cdn.jsdelivr.net/gh/o/r@preview/map/');
+  const L = createRoutes({ scriptBase: 'http://localhost:8080/map/', PACK_IN: null });
+  assert.ok(!L.swappable); assert.equal(L.baseFor('npm-js'), 'http://localhost:8080/map/');
+});
+
+test('跨包表：包里每个包都拿到这条线路上的地址，索引之外的包名不编（DIST-2）', () => {
+  const R = createRoutes({ scriptBase: 'https://unpkg.com/eden-map-engine@0.9.7/map/', PACK_IN: null });
+  const index = { version: '0.9.7', prefixes: [['art/tc_mid', 'eden-map-art-tc_mid'], ['props/holy_mountain', 'eden-map-props-a']] };
+  const b = R.pkgBases('npm-unpkg', index);
+  assert.equal(b['eden-map-engine'], 'https://unpkg.com/eden-map-engine@0.9.7/map/');
+  assert.equal(b['eden-map-art-tc_mid'], 'https://unpkg.com/eden-map-art-tc_mid@0.9.7/map/');
+  assert.equal(b['eden-map-props-a'], 'https://unpkg.com/eden-map-props-a@0.9.7/map/');
+  assert.equal(Object.keys(b).length, 3, '只有引擎包与索引里出现的包');
+  // 清单写了 cdn.npm 就用它（别的包可以带自己的引擎包名）
+  const P = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/npm/other-pkg@1.2.3/map/', PACK_IN: { manifest: { cdn: { npm: 'other-pkg' } } } });
+  assert.equal(P.PKG, 'other-pkg');
+  assert.equal(P.pkgBases('npm-js', { prefixes: [] })['other-pkg'], 'https://cdn.jsdelivr.net/npm/other-pkg@1.2.3/map/');
 });
 
 test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测量（2026-09-29 重做）', () => {
@@ -38,17 +63,17 @@ test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测�
   assert.equal(probeVerdict(PROBE_MIN_BYTES - 1, 100).ok, false);
 });
 
-test('线路清单与换线门槛：npm 线路仍禁用；测的是清单 data.maps（105 KB 级）而不是小文件', async () => {
+test('线路清单与换线门槛：测的是清单 data.maps（105 KB 级）而不是小文件；竞速后能说出哪几条连不上', async () => {
   const man = JSON.parse(readFileSync(new URL('../map/packs/eden/manifest.json', import.meta.url), 'utf8'));
-  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.6/map/', PACK_IN: null, manifest: Promise.resolve(man) });
-  assert.deepEqual(R.LINES.map(l => l.key), ['vpn', 'cn']);   // npm（enabled:false）仍在禁用状态
+  const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.6/map/', PACK_IN: null, manifest: Promise.resolve(man) });
+  assert.deepEqual(R.LINES.map(l => l.key), ['npm-cn', 'npm-js', 'npm-unpkg']);
   assert.equal(await R.probePath(), 'data/maps.json');         // 第一个包的路径读自它的清单
   assert.equal(await createRoutes({ scriptBase: 'http://x/map/', PACK_IN: { id: 'p', manifest: { data: { maps: 'maps.json' } } } }).probePath(), 'packs/p/maps.json');
   assert.equal(await createRoutes({ scriptBase: 'http://x/map/', PACK_IN: null }).probePath(), 'i18n/en.json');   // 没有清单：引擎自己的词典（够大）
-  assert.equal(createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: man }).PKG, man.cdn.npm); assert.equal(createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-v1.0.0/map/', PACK_IN: null, manifest: { cdn: { repo: 'x/y' } } }).PKG, '');   // 清单不写 npm = 没有 npm 线路，也不从 npm 路径认版本
   assert.equal(R.PROBE_MARGIN, 1.3);                          // 没快 30% 以上不换线
   assert.equal(typeof R.measure, 'function');
   assert.equal(typeof R.race, 'function');
+  assert.deepEqual(R.deadLines(), [], '还没测过：没有连不上的线路');
 });
 
 test('host-lifecycle：listen 登记、kill 之后不再登记、unlisten 全部撤掉', () => {

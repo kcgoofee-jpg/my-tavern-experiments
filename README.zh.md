@@ -16,16 +16,18 @@ English edition: [README.md](README.md)（以英文版为准）
 
 ## 安装
 
-在酒馆助手里新建脚本，内容为下面这一行（或用 `python3 tools/build_preview_script.py <git ref>` 生成可直接导入的 JSON）：
+在酒馆助手里新建脚本，内容为下面这一行：
 
 ```js
-import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@preview/map/tavern/eden-map.js'
+import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/tavern/eden-map.js'
 ```
 
-这条地址跟随 `preview` 分支，不会过期；`tools/check_readme.py` 在 CI 里守着它。分支地址会被 CDN 和浏览器缓存（最长 7 天），
-所以更推荐导入 `python3 tools/build_preview_script.py --follow preview` 生成的脚本：它内联一小段引导，每次打开先取最新的
-`map/data/head.json`（不走缓存、带分钟级参数），再按那个提交号加载入口，所有线路都取不到时才退回分支地址。之前装的是上面这一行的话，
-请重新导入一次脚本；这一行本身仍然可用（加载后会自己跳转到最新提交）。
+这条地址指向已发布的 `eden-map-engine` 包，钉在下面那个版本上，不会过期；`tools/check_readme.py` 在 CI 里守着它。本仓约 1 GB，
+超过了仓库型 CDN 的单包 50 MB 上限，地图已经不再从仓库地址加载：代码、底图与三维模型改按 npm 包发布。地图内部会按顺序试三条线路，
+挑最快答上的那条：国内镜像（需要它的文件白名单，目前还没批）、jsDelivr、unpkg；也可以在标题栏手动选。
+
+想跟随开发分支，就导入 `python3 tools/build_preview_script.py --follow preview` 生成的脚本：它内联一小段引导，每次打开先取最新的
+`map/data/head.json`（不走缓存、带分钟级参数），再按那个提交号加载入口。之前装的是上面这一行的话，请重新导入一次脚本；这一行本身仍然可用。
 
 ## 文档
 

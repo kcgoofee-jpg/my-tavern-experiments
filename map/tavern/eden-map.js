@@ -34,7 +34,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   let explorationLedgerModule = null, explored = {}; import(scriptBase + 'core/exploration-ledger.mjs').then(m => { explorationLedgerModule = m; explored = m.norm(explored); }).catch(e => console.warn('[map] eden-map: exploration-ledger import failed', e));   // 迷雾探索（eden_map.探索）
   let dataSourceRegistryModule = null; import(scriptBase + 'tavern/data-source-registry.mjs').then(m => { dataSourceRegistryModule = m; }).catch(e => console.warn('[map] eden-map: data-source-registry import failed', e));   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
-  const { PKG, REPO, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure } = createRoutes({ scriptBase, PACK_IN, manifest: MAN });
+  const { PKG, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure, deadLines } = createRoutes({ scriptBase, PACK_IN, manifest: MAN, fetchJSON: u => cdnFetch(u).then(r => (r.ok ? r.json() : null)), line: () => line });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
   if (!LINES.some(l => l.key === line)) line = null;
   let BASE = baseFor(line);
@@ -59,8 +59,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐', stall: '地图程序没启动，正在重试…', hop: '这条线路没响应，正在换一条…' },
-    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended', stall: 'The map did not start, retrying…', hop: 'This route did not answer, switching…' } };
+  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐', dropped: '有线路连不上，已自动换到「{p}」', allDown: '三条线路都连不上，稍后重试，或点标题栏的「⇄」手动选一条', stall: '地图程序没启动，正在重试…', hop: '这条线路没响应，正在换一条…' },
+    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended', dropped: 'some routes are unreachable; switched to "{p}"', allDown: 'All three routes are unreachable. Try again later, or tap "⇄" in the title bar to pick one', stall: 'The map did not start, retrying…', hop: 'This route did not answer, switching…' } };
   let uiLang = 'zh', mapTitle = ''; try { uiLang = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
   const U = k => UI[uiLang][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
@@ -113,8 +113,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (manual && line) return true;
     if (!force && line && Date.now() - at < LINE_TTL) return true;   // 24 小时内测过：直接用
     const key = await race(line);   // 把当前线路传进去：没快 30% 以上就不换（见 host-routes.PROBE_MARGIN）
-    if (!key) return false;
-    try { (LS || localStorage).setItem(LINE_AT, String(Date.now())); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
+    if (!key) { hostToast(U('allDown'), [], 9000, null, false, { key: 'linedown' }); fab.classList.add('fail'); fab.title = U('allDown'); if (panel.hidden) fab.click(); return false; }   // 三条都连不上：说能做什么的话（重试 / 手动选），并把面板打开
+    try { (LS || localStorage).setItem(LINE_AT, String(Date.now())); } catch (e) { /* storage unavailable */ } if (deadLines().length) hostToast(U('dropped').replace('{p}', LINES.find(l => l.key === key)?.name || U('unset')), [], 6000, null, false, { key: 'linedrop' });   // 有线路连不上：给用户一句人话（DIST-2 / COPY-1）
     if (key !== line) { line = key; BASE = baseFor(key); html = null; try { (LS || localStorage).setItem(LINE_KEY, key); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ } prefSync(); showLine(); }
     return true;
   }
@@ -186,8 +186,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
       for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); n += value.length; htmlProg?.(n / total); }
       t = new TextDecoder().decode(await new Blob(parts).arrayBuffer());
     } else t = await r.text();
-    const art = artBase(BASE, (() => { try { return (window.__edenMapScript || window.parent.__edenMapScript || {}).art; } catch (e) { return ''; } })());   // N14 a：美术按稳定的 @<art_sha> 取
-    return t.replace('<head>', `<head><base href="${BASE}">` + (art ? `<script>window.__edenArtBase=${JSON.stringify(art)}</script>` : '') + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
+    const pkgs = await PKGS.table(), art = artBase(BASE, (() => { try { return (window.__edenMapScript || window.parent.__edenMapScript || {}).art; } catch (e) { return ''; } })());
+    return t.replace('<head>', `<head><base href="${BASE}"><script>${PKGS.src(pkgs, art)}</script>` + (PACK_IN ? `<script>window.__tcPack=${JSON.stringify(PACK_IN).replace(/</g, '\\u003c')}</script>` : ''));
   })().catch(e => { html = null; throw e; });
   // 生成状态（GEN）：GENERATION_STARTED 置位，ENDED / STOPPED 清零，180 s 超时自动清（断网 / 被杀后 ENDED 永远不来）。
   // 必须在下面 afterGen 之前声明：typeof 也躲不开 TDZ——const 还没初始化时读它照样抛 ReferenceError，而 afterGen 开局就被调。

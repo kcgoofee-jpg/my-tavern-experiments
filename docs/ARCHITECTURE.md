@@ -129,6 +129,7 @@ Pure leaf modules. No DOM, no globals (except the three registered owners), no i
 | `period-pick.mjs` | Which period base a map shows (K-R39, I-24): the current band's variant, else the nearest registered band by band order. |
 | `periods.mjs` | Periods of the day (K-R39): the band a world clock is in, by period words, else by the hour; default bands. |
 | `pickup.mjs` | Objective pickup probe (K-R77): a written physical acquisition action becomes a single ledger fact; normal and strict verb classes, forms that never count, the pack vocabulary (`scan(text, { vocab })`). |
+| `pkg-paths.mjs` | Cross-package paths (DIST-2): runtime files ship as npm packages, so a repo-relative path (art, props) may live in another package. Pure resolution: normalise the index's prefix table, longest prefix first; path to owning package; path to absolute URL on the current line; the one-line resolver injected into pages that import no module. |
 | `place-record.mjs` | One record per place (PLACE-1a, K-R134): `records`, `placeRecord`, `chainOf`, `nearby`, `entryText` (the one source of a world-book entry body), `floorIndex` (floor mates for the entry switch). Computed from the pack's files, never stored. |
 | `portrait-lookup.mjs` | The card-script portrait of a person (I-22): the viewer-side address shape check (the pack's host rule already ran in the host) and the lookup by full name, first segment or the one table key with the same first segment. |
 | `profile.mjs` | The run-time profile of a pack's variables and roster (K-R37–K-R44, K-R69): variable paths, period bands, tables, roster slots, portrait rules (`portraitOk`); the kernel profile of a pack that names nothing. |
@@ -298,7 +299,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
 | `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
-| `host-routes.mjs` | CDN route table, version inference and route race; pure computation. |
+| `host-routes.mjs` | npm route table (DIST-2: npmmirror, then jsDelivr-npm, then unpkg), version inference, per-package addresses and the route race; pure computation. |
 | `host-strings.mjs` | The host's few product texts (map name, script name, "new events" toast) from the manifest `strings` (`hostStr`), else neutral defaults; pure. |
 | `host-tavernhelper.mjs` | TavernHelper adapter: request wrapper, function probing, pack namespace, script-variable preferences, worldbook automation. |
 | `host-tokens.mjs` | The host page's token block (S7-2): `HOST_TOKENS_CSS` / `hostTokensCss(id)`, a scoped copy of the `tokens.css` colours, glass, elevation and the `--zh-*` z ladder (a test compares every value); the host's own `--em-*` names are aliases of it. |
@@ -319,6 +320,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `pack-profile.mjs` | The profile of the pack the script runs (`getProfile` / `setProfile`); the kernel profile until the pack's declarations arrive. |
 | `pack-runtime-v2.mjs` | Host side of schema-2 packs: profile and event geography from the pack, URL / file / embedded import with caps, the go-live gate of model text (K-R91, K-R99, K-R103). |
 | `picker.mjs` | Pure helpers for the customization panel: grouped object list, search, fly-to targets. |
+| `pkg-bases.mjs` | Cross-package table (DIST-2): fetches the index once per line, turns it into package name to package address for the current line, and emits the script block injected into the viewer and the 3-D sub-page. Returns null when there is no table, so the viewer keeps resolving by `<base>`. |
 | `place-action-injection.mjs` | Map-driven actions: a clicked point of interest becomes one sentence (off / compose / silent system injection). |
 | `planner-gateway.mjs` | Background navigator gateway: scheduling, input assembly and response gating for a private-key planner. |
 | `preset.mjs` | Reads semi-structured status fields written by community presets as location / time / presence fallbacks. |

@@ -62,3 +62,6 @@ docs/drafts/props_u12_/
 tools/browser/out-*/
 # 上层岛表落地（tools/upper_layout_land.py）的合成前备份与旧岛心存档：临时文件，落地提交后可删
 map/art/*.pre-v16C.*
+
+# npm 分包的构建产物（tools/pack_npm.sh --out dist/npm）：不入库
+dist/

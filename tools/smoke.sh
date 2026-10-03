@@ -5,7 +5,8 @@
 #   2. node --test tests/*.test.mjs
 #   3. map/viewer.html 的内联脚本抽出来 node --check；map/*.js、map/*.mjs、map/tavern/*.js|mjs 也 node --check
 #   4. map/data/*.json、map/i18n/*.json 能解析
-#   5. 可选 --cdn <ref>：对该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）发 HEAD 到 jsDelivr，要求全部 200
+#   5. 可选 --cdn <ref>：两条线都查——该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）走仓库线路，
+#      再加钉版本的 npm 引擎包（入口、页面、索引、清单、一张底图、一份模型清单），要求全部 200
 #   6. tools/*.sh + tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
 #   7. 架构看门狗（tools/check_architecture.py，8 道防线（含注释卡词）+ tools/arch_baseline.json 只减不增账本）：
@@ -104,6 +105,29 @@ PY
 }
 step "JSON（map/data、map/i18n）" json_check
 
+# DIST-2：交付搬到 npm 之后，smoke --cdn 要查两条线——① 钉版本的 npm 包（用户真正用的那条），
+# ② 仓库线路的 ref（--follow 开发通道仍然从那里进）。两条分别报，坏哪条写哪条。
+npm_check() {
+  local ver pkg base bad=0 u c idx
+  ver=$(command cat VERSION); pkg=$(python3 -c "import json;print(json.load(open('map/packs/eden/manifest.json'))['cdn']['npm'])")
+  base="https://cdn.jsdelivr.net/npm/$pkg@$ver/map"
+  for u in tavern/eden-map.js viewer.html data/assets.json data/maps.json; do
+    c=$(curl -sIL -o /dev/null -m 20 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c npm/$pkg@$ver/$u"; bad=1; }
+  done
+  # 底图与模型各按索引里的第一个前缀取一个真实文件（引擎包只发代码与数据，底图 / 模型在别的包里）
+  idx=$(python3 -c "
+import json
+a = json.load(open('map/data/assets.json')); ps = sorted(a['paths'].items()); out = []
+for k, _ in ps:
+    if k.startswith('art/') and '_files' not in k: out.append(k + '.dzi'); break
+for k, _ in ps:
+    if k.startswith('props/'): out.append(k + '/manifest.json'); break
+print(' '.join(out))")
+  for u in $idx; do
+    c=$(curl -sIL -o /dev/null -m 30 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c npm/$pkg@$ver/$u"; bad=1; }
+  done
+  echo "npm $pkg@$ver（$base）"; return $bad
+}
 cdn_check() {
   local base="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
   git rev-parse --verify -q "$CDN^{commit}" >/dev/null || git fetch -q origin "$CDN" 2>/dev/null || true
@@ -115,7 +139,8 @@ cdn_check() {
   while read -r u; do c=$(curl -sI -o /dev/null -m 20 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c $u"; bad=1; }; done < "$TMP/cdn"
   echo "$(wc -l < "$TMP/cdn" | tr -d ' ') 个 URL"; return $bad
 }
-[ -n "$CDN" ] && step "jsDelivr HEAD @$CDN" cdn_check
+[ -n "$CDN" ] && step "仓库线路 HEAD @$CDN" cdn_check
+[ -n "$CDN" ] && step "npm 包 HEAD（用户实际走的那条）" npm_check
 
 shell_lint() {
   # BSD grep（macOS 自带）没有 -P（PCRE），非 ASCII 判断也不好写可移植的 POSIX 正则，改用 python3。

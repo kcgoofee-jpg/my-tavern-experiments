@@ -4,24 +4,26 @@
 #
 # 背景（2026-10-03）：本仓约 1 GB，超过 jsDelivr 单包 50 MB 上限，cdn.jsdelivr.net 与国内镜像
 # cdn.jsdmirror.com 一律 403，整条 CDN 链路取不到东西。改走 npm 线路，运行时按「底图层族 / 模型组 /
-# 代码」分包，每包控制在 --target-mb 以内（默认 40 MB；真实上限以 npm / npmmirror / jsDelivr 实测为准）。
+# 代码」分包，每包控制在 --target-mb 以内（默认 40 MB；硬上限 --max-mb 72 MB = 实测下界 90 MB 留 20 % 余量）。
 #
 # 用法：
 #   bash tools/pack_npm.sh                        # 每包 dry-run，报体积与文件数
 #   bash tools/pack_npm.sh --out dist/npm         # 真打 tgz 到 dist/npm
 #   bash tools/pack_npm.sh --target-mb 25         # 换目标体积（会改分包表）
+#   bash tools/pack_npm.sh --max-mb 60            # 换硬上限（默认 72）
 #   bash tools/pack_npm.sh --only eden-map-engine # 只做一个包
 #   bash tools/pack_npm.sh --list                 # 只列包名
 #
-# 发布（本脚本不做；需要本机 npm 登录，验证码 / 二次验证请自己来，脚本不碰任何凭据）：
+# 发布（本脚本不做；需要本机 npm 登录，验证码 / 二次验证请自己来，脚本不碰任何凭据）。
 #   npm publish --registry https://registry.npmjs.org --access public
 #   npm publish --registry https://registry.npmmirror.com
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TARGET_MB=40; OUT=; ONLY=; LIST=0; KEEP=0
+TARGET_MB=40; MAX_MB=72; OUT=; ONLY=; LIST=0; KEEP=0
 while [ $# -gt 0 ]; do case "$1" in
   --target-mb) TARGET_MB=$2; shift ;;
+  --max-mb) MAX_MB=$2; shift ;;
   --out) OUT=$2; shift ;;
   --only) ONLY=$2; shift ;;
   --list) LIST=1 ;;
@@ -32,8 +34,8 @@ esac; shift; done
 
 PLAN=$(mktemp); TMP=$(mktemp -d "${TMPDIR:-/tmp}/eden-npm.XXXXXX")
 trap '[ "$KEEP" = 1 ] || rm -rf "$TMP" "$PLAN"' EXIT
-python3 tools/npm_layout.py --target-mb "$TARGET_MB" --json > "$PLAN"
-[ -n "$OUT" ] && mkdir -p "$OUT"
+python3 tools/npm_layout.py --target-mb "$TARGET_MB" --max-mb "$MAX_MB" --json > "$PLAN"
+[ -n "$OUT" ] && mkdir -p "$OUT" && OUT=$(cd "$OUT" && pwd)   # npm pack 在包目录里跑，相对的 --pack-destination 会找不到；先转成绝对路径
 
 python3 - "$PLAN" "$TMP" "$ONLY" <<'PY'
 import json, os, subprocess, sys

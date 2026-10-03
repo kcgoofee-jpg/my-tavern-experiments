@@ -110,6 +110,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `period-pick.mjs` | 地图显示哪个时段的底图（K-R39，I-24）：当前时段的变体，没有就取时段顺序上最近的已登记时段。 |
 | `periods.mjs` | 一天的时段（K-R39）：世界时钟落在哪个时段——先按时段词，再按钟点；默认时段。 |
 | `pickup.mjs` | 客观拾取探测（K-R77）：正文里写明的物理获取动作变成一条单项账目事实；普通与严格两类动词、永不算的句式、包的词表（`scan(text, { vocab })`）。 |
+| `pkg-paths.mjs` | 跨包路径（DIST-2）：运行时文件按 npm 包发，一条仓库相对路径（底图、模型）可能在别的包里。纯计算：归一化索引的前缀表（按前缀长度从长到短）、路径归哪个包、路径换成当前线路上的绝对地址、以及给不引模块的页面注入的那一行解析器。 |
 | `place-record.mjs` | 一个地点一条记录（PLACE-1a，K-R134）：`records`、`placeRecord`、`chainOf`、`nearby`、`entryText`（世界书条目正文的唯一来源）、`floorIndex`（条目开关用的同层房间）。由包的文件现场算出，不存储。 |
 | `portrait-lookup.mjs` | 人物的卡内立绘（I-22）：查看器侧只认图片地址的形状（包的域名规则已在宿主做过），按全名、第一段、或「第一段相同的唯一表键」查找。 |
 | `profile.mjs` | 设定包变量与名册的运行时档案（K-R37–K-R44、K-R69）：变量路径、时段、表、名册槽位、立绘规则（`portraitOk`）；什么都没写的包用内核档案。 |
@@ -278,7 +279,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
-| `host-routes.mjs` | CDN 线路表、版本推断与测速 race；纯计算。 |
+| `host-routes.mjs` | npm 线路表（DIST-2：npmmirror → jsDelivr → unpkg）、版本推断、逐包地址与测速 race；纯计算。 |
 | `host-strings.mjs` | 宿主自己打印的几句产品文案（地图名、脚本名、「有新事态」提示）：读清单 `strings`（`hostStr`），没有就用中性默认；纯函数。 |
 | `host-tavernhelper.mjs` | 酒馆助手适配层：请求包装、接口探测、包命名空间、脚本变量偏好、世界书全自动。 |
 | `host-tokens.mjs` | 宿主页的令牌块（S7-2）：`HOST_TOKENS_CSS` / `hostTokensCss(id)`，`tokens.css` 的颜色、毛玻璃、层级阴影与 `--zh-*` 层叠阶梯的限定作用域副本（测试逐值对拍）；宿主自己的 `--em-*` 名字都是它的别名。 |
@@ -299,6 +300,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `pack-profile.mjs` | 脚本当前跑的包的档案（`getProfile` / `setProfile`）；包的声明到之前是内核档案。 |
 | `pack-runtime-v2.mjs` | schema-2 包的宿主侧：由包得出变量声明与事件地理、网址 / 文件 / 内嵌导入与上限、模型文字生效门（K-R91、K-R99、K-R103）。 |
 | `picker.mjs` | 自定义面板的纯函数：可定制对象的分组清单、搜索、飞行目标。 |
+| `pkg-bases.mjs` | 跨包表（DIST-2）：每条线路取一次索引，拼成「包名 → 该线路上的包地址」，并生成注入查看器与三维子页的那段脚本。没有表就返 null，查看器照旧按 `<base>` 取。 |
 | `place-action-injection.mjs` | 地图驱动的动作：点一个兴趣点变成一句话（关 / 填输入框 / 静默系统注入）。 |
 | `planner-gateway.mjs` | 后台领航员网关：调度、输入装配、响应门控（私有 key 驱动）。 |
 | `preset.mjs` | 把社区预设写的半结构化状态字段读成地点 / 时间 / 在场的兜底。 |

@@ -21,18 +21,19 @@ test('artBase: same route and repo, only the commit changes; tags, branches and 
 });
 
 test('two code-only heads: every art/ path of the registry resolves to the same URL; non-art paths untouched', () => {
-  const urls = c => { const a = artBase(base('cdn.jsdmirror.com', c), ART), out = [];
+  const a = artBase(base('cdn.jsdmirror.com', C1), ART), au = p => (p.startsWith('art/') ? a + p : p);
+  const urls = c => { const x = artBase(base('cdn.jsdmirror.com', c), ART), out = [];
     const walk = v => (typeof v === 'string' ? out.push(v) : v && typeof v === 'object' ? Object.values(v).forEach(walk) : 0);
-    walk(artRegistry(REG, a).maps); return out.filter(u => u.includes('/art/') || u.startsWith('art/')); };
+    walk(artRegistry(REG, p => (p.startsWith('art/') ? x + p : p)).maps); return out.filter(u => u.includes('/art/') || u.startsWith('art/')); };
   const u1 = urls(C1), u2 = urls(C2);
   assert.ok(u1.length > 20); assert.deepEqual(u1, u2);
   assert.ok(u1.every(u => u.startsWith(`https://cdn.jsdmirror.com/gh/o/r@${ART.slice(0, 12)}/map/art/`)));
-  const r = artRegistry(REG, artBase(base('cdn.jsdmirror.com', C1), ART));
+  const r = artRegistry(REG, au);
   assert.equal(r.maps.tc_upper.base, `https://cdn.jsdmirror.com/gh/o/r@${ART.slice(0, 12)}/map/${REG.maps.tc_upper.base}`);
   assert.deepEqual(Object.keys(r.maps), Object.keys(REG.maps)); assert.equal(r.groups, REG.groups);
-  assert.equal(artRegistry(REG, ''), REG, 'no art base: the registry as is');
+  assert.equal(artRegistry(REG, null), REG, 'no art resolver: the registry as is');
   const town = rebaseRegistry({ maps: { t: { base: 'art/town.dzi' } } }, 'packs/town/');
-  assert.equal(artRegistry(town, 'https://x/gh/o/r@bbbbbbbbbbbb/map/').maps.t.base, 'packs/town/art/town.dzi', 'pack art is not engine art');
+  assert.equal(artRegistry(town, au).maps.t.base, 'packs/town/art/town.dzi', 'pack art is not engine art');
 });
 
 test('resolveFollow carries art_sha as art (and only a commit id)', async () => {

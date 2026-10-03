@@ -11,6 +11,10 @@
 # C-11：不预热非运行时文件——文档（.md / .txt）、脚本（.py）、map/shots 截图、map/_proto 原型、*/reviews/ 评审稿、
 #   产品从不加载的原型页（world.html、world_draft*.html、tiancheng.html 与只被它们用的 section.js）。docs/ 不在 map/ 下，本来就不预热。
 # 预热清单由 tools/warm_plan.py 算（全量 / 增量 / 重度升级都在那里面，tests/test_warm_cdn.py 覆盖）。
+# 2026-10-03（DIST-2）：交付搬到 npm 之后，本脚本**不再预热用户实际走的那条线**——npm 的一个版本是不可变的，
+# 预热等于发布（tools/pack_npm.sh 出的包 publish 出去就带过去了），每个提交预热没有意义。现在它只服务
+# 仓库线路：`--follow <分支>` 的开发通道仍然从 gh 进来，push_preview.sh 照旧调本脚本给那条线预热。
+# 用户走的那条线要查，用 `bash tools/smoke.sh --cdn <ref>`（两条线都查）。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 MODE=; ARGS=(); PBR=; ONLY=; FULL=0; DIFF=0; BASE=; DETACH=0; NOESC=0; LOG=logs/warm_cdn.log

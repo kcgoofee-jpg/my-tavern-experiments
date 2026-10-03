@@ -38,7 +38,7 @@ SAMPLES=8 bash tools/crops.sh low 1000 /tmp/c a=0,0,0.2,0.2 b=0.6,0.8,0.8,1 -- -
 ## 3. 冒烟检查
 ```bash
 bash tools/smoke.sh                # check_maps、node --test tests/、viewer.html 内联脚本与 map 脚本 node --check、JSON 解析
-bash tools/smoke.sh --cdn <提交>    # 另外 HEAD 一组 jsDelivr 地址（入口文件 + 随机 12 张瓦片），要求全 200
+bash tools/smoke.sh --cdn <提交>    # 两条线都HEAD：该 ref 的仓库线路（入口 + 随机 12 张瓦片）+ 钉版本的 npm 引擎包（入口、页面、索引、清单、一张底图、一份模型清单），要求全 200
 ```
 - 任何一项失败，退出码为 1。
 - 失败时只显示那一项的最后 15 行输出。
@@ -88,6 +88,12 @@ bash tools/warm_cdn.sh <head.json 里的 sha> 16 --purge-branch <分支>   # 预
 - **旧的跟随脚本要重新导入一次**：旧加载器的解析写死在脚本里（GitHub 接口 → jsDelivr 解析接口 → 本机旧提交），远端没法改它；它加载到的旧提交里的地图代码也是旧的。重新导入（同一个固定 id，覆盖）后就不用再导。
 
 ### 5.1c 增量预热与后台脱离（2026-09-30）
+
+Since 2026-10-03 (DIST-2) the map is delivered as npm packages, not from a repository address: the repository is about 1 GB, over the 50 MB
+per-package limit of the repository-backed CDNs. An npm version is immutable, so warming it is the same as publishing it — `tools/warm_cdn.sh`
+no longer warms the line users actually fetch from; it now only serves the `--follow <branch>` development channel, which still loads from the
+repository. Check the live line with `bash tools/smoke.sh --cdn <ref>` (it checks both). The package layout is `tools/npm_layout.py`
+(hard ceiling 72 MB per package, measured bound 90 MB) and `tools/pack_npm.sh` (builds and dry-runs; it never publishes).
 
 Warming every one of the ~2900 runtime files after each small commit took 3–5 minutes and blocked the session, so `tools/warm_cdn.sh` now has two more modes. The file list itself is computed by `tools/warm_plan.py`:
 

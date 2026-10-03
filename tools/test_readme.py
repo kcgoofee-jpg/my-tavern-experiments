@@ -23,40 +23,37 @@ def run(path, *args):
 
 
 def main():
-    # 用真实仓库的事实拼一份「正确」的样本（仓库名 / 标签都从仓库里取）
-    slug = subprocess.run(['git', 'remote', 'get-url', 'origin'], cwd=ROOT,
-                          capture_output=True, text=True).stdout.strip()
-    slug = re.search(r'[:/]([^/:]+/[^/]+?)(?:\.git)?$', slug).group(1)
+    # 用真实仓库的事实拼一份「正确」的样本（包名 / 版本 / 标签都从仓库里取）
+    import json
     tag = subprocess.run(['git', 'tag', '--list', 'map-v*'], cwd=ROOT,
                          capture_output=True, text=True).stdout.split()
     tag = sorted(tag, key=lambda t: [int(x) for x in re.match(r'map-v(\d+)\.(\d+)\.(\d+)', t).groups()])[-1]
     version = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
+    pkg = json.load(open(os.path.join(ROOT, 'map', 'packs', 'eden', 'manifest.json'), encoding='utf-8'))['cdn']['npm']
+    imp = f"https://cdn.jsdelivr.net/npm/{pkg}@{version}/map/tavern/eden-map.js"
 
     good = (
         "# 标题\n\n"
         "## 一\n\n## 二\n\n"
         f"当前发布版本 `{version}`（标签 `{tag}`）\n\n"
         "## 三\n\n"
-        f"| 预览 | `import 'https://cdn.jsdelivr.net/gh/{slug}@preview/map/tavern/eden-map.js'` |\n"
-        f"| 发版 | `import 'https://cdn.jsdelivr.net/gh/{slug}@{tag}/map/tavern/eden-map.js'` |\n\n"
+        f"| 安装 | `import '{imp}'` |\n\n"
         "## 四\n\n"
         "- 相关：[`tools/smoke.sh`](tools/smoke.sh)、`map/viewer.html`、`docs/todo.md`\n\n"
         "## 五\n\n## 六\n"
     )
-    no_rel = re.sub(r'\| 发版 \|.*\n', '', good)
     cases = [
         ('正确的样本应通过', good, {}, 0),
-        ('钉的标签过期 → 拦', good.replace('@' + tag + '/map', '@map-v0.0.1/map'), {}, 1),
-        ('仓库名写错 → 拦', good.replace(slug, 'someone/other-repo'), {}, 1),
-        ('缺预览线那条 → 拦', good.replace('@preview/map/tavern/eden-map.js', '@' + tag + '/map/tavern/eden-map.js'), {}, 1),
+        ('钉的版本过期 → 拦', good.replace(f'@{version}/map', '@0.0.1/map'), {}, 1),
+        ('包名写错 → 拦', good.replace(pkg, 'other-map-pkg'), {}, 1),
+        ('缺钉版本的 import 地址 → 拦', good.replace(imp, 'https://cdn.jsdelivr.net/gh/o/r@preview/map/tavern/eden-map.js'), {}, 1),
         ('正文版本号对不上 → 拦', good.replace(f'`{version}`', '`9.9.9`'), {}, 1),
         ('提到不存在的路径 → 拦', good + '- 还在用 `map/estate3d/index.html`\n', {}, 1),
         ('通配与占位不算路径 → 通过', good + '- 中间产物在 `map/props/*/*_tex/`、`map/art/gallery/<roomId>/`\n', {}, 0),
-        ('发版线那条可省略 → 通过', no_rel, {}, 0),
         ('小节数不对 → 拦', good + '\n## 七\n', {}, 1),
         ('链接目标不存在 → 拦', good + '\n[坏链](docs/nope-404.md)\n', {}, 1),
         ('外链与锚点不查 → 通过', good + '\n[外](https://example.org/x.md) [锚](#三)\n', {}, 0),
-        ('--fix 能把标签修回来', good.replace('@' + tag + '/map', '@map-v0.0.1/map'), {'fix': True}, 0),
+        ('--fix 能把版本修回来', good.replace(f'@{version}/map', '@0.0.1/map'), {'fix': True}, 0),
     ]
 
     fail = 0
@@ -69,7 +66,7 @@ def main():
             # --fix 那条还要确认真的改对了
             if ok and opts.get('fix'):
                 after = open(p, encoding='utf-8').read()
-                ok = f'@{tag}/map/tavern/eden-map.js' in after
+                ok = imp in after
             print(('  OK   ' if ok else '  FAIL ') + name + ('' if ok else f'（退出码 {rc}，期望 {want}）'))
             if not ok:
                 fail += 1

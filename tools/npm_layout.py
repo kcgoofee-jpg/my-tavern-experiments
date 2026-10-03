@@ -14,12 +14,21 @@ npm 没有单包 50 MB 的限制，于是改走 npm 线路（国内 npmmirror �
 同一族超目标时的规则是确定的：`art/<层>_<时段>` 归入 `eden-map-art-<层族>-<时段>`。
 所有包共用一个版本（VERSION）；运行时按包内 `assets.json` 找同版本的其它包。
 
+体积上限（2026-10-03 实测，探针包 eden-map-probe 0.0.1/0.0.2/0.0.3 = 0.01/45/90 MB）：
+  · jsDelivr-npm（cdn.jsdelivr.net/npm）与 unpkg 都完整取回了 90 MB 的包（5 MiB 块一字节不差），
+    第三方 68 MB 的 aws-cdk-lib@2.100.0 也照常服务——所以每包上限 ≥ 90 MB（测到的是下界，没顶到天花板）。
+  · registry.npmmirror.com 的 unpkg files 服务只对白名单开放，新包一律 451/403
+    （`"x" is not allow to unpkg files`，见 cnpm/unpkg-white-list）。要它服务得提白名单 PR。
+  · 取 90 MB 的下界留 20 % 余量 = 每包硬上限 72 MB（--max-mb）。超了直接报错，不许发。
+    分包目标（--target-mb，默认 40）比它小；不可切的层族（dzi + 它的 _files 必须在一起）允许顶到硬上限。
+
 用法：
-  python3 tools/npm_layout.py# 人读的表（包名 / 体积 / 文件数）
+  python3 tools/npm_layout.py# 人读的表（包名 / 体积 / 文件数 / 没归包的漏网文件）
   python3 tools/npm_layout.py --json           # 机器读（tools/pack_npm.sh 用这个）
   python3 tools/npm_layout.py --target-mb 25   # 目标体积上限（默认 40）
+  python3 tools/npm_layout.py --max-mb 72      # 每包硬上限（默认 72，超出即报错）
   python3 tools/npm_layout.py --write-assets map/data/assets.json   # 生成运行时索引
-体积是磁盘字节之和（未压缩）；真实上限以 npm / npmmirror / jsDelivr 实测为准。
+体积是磁盘字节之和（未压缩）；运行时索引的 paths 段是「仓库相对路径前缀 → 包名」，按前缀长度从长到短匹配。
 """
 import argparse
 import json
@@ -29,6 +38,7 @@ import subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAYPARTS = ('dawn', 'day', 'dusk', 'night')
+MAX_MB_DEFAULT = 72                # 每包硬上限：实测下界 90 MB 留 20 % 余量（见文件头）
 ENGINE_PATHS = ('map/viewer.html', 'map/app', 'map/core', 'map/ui', 'map/tavern', 'map/data',
                 'map/i18n', 'map/vendor', 'map/estate', 'map/packs', 'map/three',
                 'map/props/viewer3d.html')
@@ -90,8 +100,9 @@ def layer_files(roots, ref):
     return out
 
 
-def plan(ref='HEAD', target_mb=40):
+def plan(ref='HEAD', target_mb=40, max_mb=MAX_MB_DEFAULT):
     target = target_mb * 1024 * 1024
+    ceiling = max_mb * 1024 * 1024
     files = git_files(ref, 'map')
     pkgs = []
 
@@ -175,34 +186,67 @@ def plan(ref='HEAD', target_mb=40):
             props_index[d[len('map/props/'):]] = name
 
     ver = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
-    return {'version': ver, 'target_mb': target_mb, 'packages': pkgs,
-            'assets': {'version': ver, 'art': art_index, 'props': props_index}}
+
+    # --- 运行时索引 paths 段：仓库相对路径前缀 → 包名 ---
+    # 运行时拿到的就是一条条相对路径（art/tc_mid.dzi、props/holy_mountain/holy_mountain.glb），
+    # 所以索引按「前缀」编，查看器按前缀长度从长到短匹配（art/tc_mid 要排在 art/tc_mid_obl-day 后面命中）。
+    paths = {}
+    for r, name in art_index.items():
+        paths['art/' + r] = name
+    for p in ART_ALWAYS:                      # 云精灵 / 封面 / 浮雕 / 房间图 / 首屏缩略图跟着 world 层走
+        if os.path.exists(os.path.join(ROOT, p)):
+            paths[p] = 'eden-map-art-world'
+    for d, name in props_index.items():
+        paths['props/' + d] = name
+
+    # --- 硬上限与漏网文件 ---
+    over = [(x['name'], x['bytes']) for x in pkgs if x['bytes'] > ceiling]
+    if over:
+        raise SystemExit('每包硬上限 %d MB 超了：%s（改 --target-mb，或把该族按 --max-mb 切开）'
+                         % (max_mb, '、'.join('%s %.1f MB' % (n, b / 1048576) for n, b in over)))
+    covered = {f for x in pkgs for f in x['files']}
+    # ART_ALWAYS 里写的是目录（map/art/clouds 等）：rsync --files-from 遇到目录会连内容一起拷，
+    # 所以覆盖判断要把「落在已归包的目录下」也算进去。
+    dirs = [f for f in covered if not os.path.splitext(f)[1]]
+    loose = sorted(f for f in set(files) - covered
+                   if not any(f.startswith(d.rstrip('/') + '/') for d in dirs))
+    return {'version': ver, 'target_mb': target_mb, 'max_mb': max_mb, 'packages': pkgs,
+            'assets': {'version': ver, 'art': art_index, 'props': props_index, 'paths': paths},
+            'loose': loose}
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--ref', default='HEAD')
     ap.add_argument('--target-mb', type=int, default=40)
+    ap.add_argument('--max-mb', type=int, default=MAX_MB_DEFAULT)
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--write-assets', metavar='FILE')
     a = ap.parse_args()
-    p = plan(a.ref, a.target_mb)
+    p = plan(a.ref, a.target_mb, a.max_mb)
     if a.write_assets:
         path = os.path.join(ROOT, a.write_assets)
         os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(p['assets'], f, ensure_ascii=False, indent=2, sort_keys=True)
             f.write('\n')
-        print(f'写 {a.write_assets}：底图 {len(p["assets"]["art"])} 层、模型 {len(p["assets"]["props"])} 个')
+        print(f'写 {a.write_assets}：底图 {len(p["assets"]["art"])} 层、模型 {len(p["assets"]["props"])} 个、'
+              f'路径前缀 {len(p["assets"]["paths"])} 条')
     if a.json:
         print(json.dumps(p, ensure_ascii=False, indent=2))
         return 0
     mb = lambda b: b / 1048576
-    print(f"目标每包 ≤ {a.target_mb} MB；版本 {p['version']}；共 {len(p['packages'])} 个包")
+    print(f"目标每包 ≤ {a.target_mb} MB（硬上限 {a.max_mb} MB）；版本 {p['version']}；共 {len(p['packages'])} 个包")
     for pkg in p['packages']:
         print(f"  {pkg['name']:34s} {mb(pkg['bytes']):7.1f} MB {pkg['count']:6d} files  ({pkg['kind']})")
     print(f"  {'合计':34s} {mb(sum(x['bytes'] for x in p['packages'])):7.1f} MB "
           f"{sum(x['count'] for x in p['packages']):6d} files")
+    if p['loose']:
+        print(f"  没归入任何包的 {len(p['loose'])} 个文件（产品不加载的草稿 / 元数据可以不管）：")
+        for f in p['loose'][:12]:
+            print('    ' + f)
+        if len(p['loose']) > 12:
+            print(f'    …… 还有 {len(p["loose"]) - 12} 个')
     return 0
 
 

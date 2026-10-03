@@ -32,7 +32,7 @@
   ],
   "cdn": {
     "repo": "kcgoofee-jpg/my-tavern-experiments",
-    "npm": "tiancheng-map-assets"
+    "npm": "eden-map-engine"
   },
   "theme": {
     "accent": "#e6c36a"

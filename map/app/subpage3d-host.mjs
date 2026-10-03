@@ -14,9 +14,11 @@ import { estPlan, hereRes } from './locate.mjs';
 import { q3Pref } from './settings.mjs';
 import * as TCCvd from './color-vision-mode.mjs';
 import { PACK } from './current-pack.mjs';   // 三维子页的包注入（__packId / __packStrings）：子页读不到清单，语言键与包内文案随页带进去
+import { readTable, tableSrc } from '../core/pkg-paths.mjs';   // DIST-2：模型在 props 包里，包表随子页带进去
 import { plugins } from './plugins.mjs';   // 空间化背包 StashView：三维发光道具的「拿到手」对账
 import { busOn } from './bus.mjs';
 import { chatId } from './extension-api.mjs';
+const PKGS = readTable();   // DIST-2：跨包资源表（宿主注入 window.__edenPkg；没有 = 照旧按 <base> 取）
 import { setFpsMeter } from './fps.mjs';
 import { standIn, zoneChildren } from './nodes-runtime.mjs';
 import { visibilityGuard } from './visibility.mjs';
@@ -153,7 +155,9 @@ export async function openEstate(id, m, hadPrev) {
   // 用 blob: 地址而不是 srcdoc：Tauri Tavern 的 WKWebView 里第三层 srcdoc iframe（宿主 → 查看器 srcdoc → 主场景）永远不加载（TT 实测 P0）。
   // blob 由查看器自己的窗口创建（同源），<base> 照旧，相对资源按线路解析；加载完就回收。
   const packStr = PACK?.strings, hasStr = packStr && Object.keys(packStr).length;
-  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : `<script>window.__shell='host'${m.scene3d ? `;window.__sceneManifest=${JSON.stringify(new URL(m.scene3d, document.baseURI).href)}` : ''}<\/script>`}`)
+  // DIST-2：模型在各自的 props 包里，而三维页不 import 引擎模块——把包表和那一行解析器一起带进去
+  const pk = PKGS ? `<script>${tableSrc(PKGS)}<\/script>` : '';
+  const doc = html.replace(/<head>/i, `<head><base href="${new URL('.', url).href}">${EST_HOOK}${pk}<script>window.__packId=${JSON.stringify(PACK?.id || 'eden')}<\/script>${hasStr ? `<script>window.__packStrings=${JSON.stringify(packStr).replace(/</g, '\\u003c')}<\/script>` : ''}${m.viewer3d ? `<script>window.__modelId=${JSON.stringify(String(m.viewer3d))}<\/script>` : `<script>window.__shell='host'${m.scene3d ? `;window.__sceneManifest=${JSON.stringify(new URL(m.scene3d, document.baseURI).href)}` : ''}<\/script>`}`)
     .replace(/(["'])https:\/\/cdn\.(?:jsdelivr\.net|jsdmirror\.com)\/npm\/three@0\.160\.0\/build\/three\.module(?:\.min)?\.js\1/g, `$1${vend}three.module.min.js$1`)
     .replace(new RegExp(THREE_CDN.source + 'examples\\/jsm\\/', 'g'), vend + 'jsm/');
   const blob = URL.createObjectURL(new Blob([doc], { type: 'text/html' })); f.src = blob;
