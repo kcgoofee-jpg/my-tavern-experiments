@@ -34,7 +34,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   let explorationLedgerModule = null, explored = {}; import(scriptBase + 'core/exploration-ledger.mjs').then(m => { explorationLedgerModule = m; explored = m.norm(explored); }).catch(e => console.warn('[map] eden-map: exploration-ledger import failed', e));   // 迷雾探索（eden_map.探索）
   let dataSourceRegistryModule = null; import(scriptBase + 'tavern/data-source-registry.mjs').then(m => { dataSourceRegistryModule = m; }).catch(e => console.warn('[map] eden-map: data-source-registry import failed', e));   // 数据源注册表（arch-v2 §6 第 8 步）
   // 线路 / 版本识别：host-routes.mjs
-  const { PKG, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure, deadLines } = createRoutes({ scriptBase, PACK_IN, manifest: MAN, fetchJSON: u => cdnFetch(u).then(r => (r.ok ? r.json() : null)), line: () => line });
+  const { PKG, REPO, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, LINE_TTL, LINE_AT, race, measure, deadLines } = createRoutes({ scriptBase, PACK_IN, manifest: MAN, fetchJSON: u => cdnFetch(u).then(r => (r.ok ? r.json() : null)), line: () => line });
   let line = null; try { line = (LS || localStorage).getItem(LINE_KEY); } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
   if (!LINES.some(l => l.key === line)) line = null;
   let BASE = baseFor(line);

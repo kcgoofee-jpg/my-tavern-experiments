@@ -21,6 +21,9 @@ export function probeVerdict(bytes, ms, minBytes = PROBE_MIN_BYTES) {
 /** 引擎自己的 npm 包（清单 cdn.npm 写了别的就用它；不是任何卡的名字）。包的清单与代码一起发，所以名字是常量。 */
 export const ENGINE_PKG = 'eden-map-engine';
 
+/** 引擎自己的仓库：「关于」面板与自检的更新检查走它（清单 cdn.repo 写了别的就用别的）。线路不再从仓库取文件。 */
+export const ENGINE_REPO = 'kcgoofee-jpg/my-tavern-experiments';
+
 /** 线路表：仓库约 1 GB，仓库型 CDN 撑不住（2026-10-03 用户决定走 npm）。顺序 = 优先级：npmmirror → jsDelivr-npm → unpkg（Q-26）。
  *  npmmirror 排在最前是用户定的顺序；它的 unpkg files 服务只对白名单开放（cnpm/unpkg-white-list），
  *  新包一律 451/403，所以它现在必然测不过、自动落选，等白名单下来就自动生效——不用改代码（RESULT DIST-2）。
@@ -41,7 +44,7 @@ const CDN_HOST = /(^|\.)(jsdelivr\.net|jsdmirror\.com|unpkg\.com|npmmirror\.com|
  *  线路表来自清单 cdn.npm：写别的包名就用它（引擎包默认 ENGINE_PKG）。 */
 export function createRoutes({ scriptBase, PACK_IN, manifest, fetchJSON, line }) {
   const cdn = PACK_IN?.manifest?.cdn || (manifest && typeof manifest.then !== 'function' ? manifest.cdn : null);
-  const PKG = cdn?.npm || ENGINE_PKG;
+  const PKG = cdn?.npm || ENGINE_PKG, REPO = cdn?.repo || ENGINE_REPO;   // REPO 给「关于」面板与自检（更新检查走仓库），线路本身不用它
   // 版本号：npm 线路路径里有三种写法（jsDelivr/unpkg 的 <包>@<版本>、npmmirror 的 <包>/<版本>/files），
   // 仓库线路路径里是标签（map-v<版本> 或 map-s<n>-v<版本>，系列 1 记成 'S2:0.1.0'）。规则见 docs/versioning.md（selfcheck.mjs tagOf 同一套）。
   const plainVer = v => (v ? String(v).replace(/^S\d+:/, '') : v);   // npm 版本号里没有系列前缀（S2:0.1.0 → 0.1.0；系列在包名外由 VERSION 决定）
@@ -66,9 +69,12 @@ export function createRoutes({ scriptBase, PACK_IN, manifest, fetchJSON, line })
     for (const [, pkg] of index?.prefixes || []) names.add(pkg);
     return Object.fromEntries([...names].map(n => [n, l.pkgUrl(n, plainVer(VER))]));
   };
+  // 存下来的线路键可能来自旧版本（0.9.x 存的是 vpn / cn，npm 线路换成了 npm-cn / npm-js / npm-unpkg），
+  // 表里没有就退回第一条，不能让它把base 变成 undefined——那会让整张地图都取不到东西。
   const baseFor = key => {
-    const l = LINES.find(x => x.key === key) || (key ? null : LINES[0]);
-    return l ? l.pkgUrl(PKG, plainVer(VER)) : scriptBase;   // 认不出线路（本地 / 没选）：照旧用脚本自己所在的地方
+    if (!swappable) return scriptBase;
+    const l = LINES.find(x => x.key === key) || LINES[0];
+    return l && VER ? l.pkgUrl(PKG, plainVer(VER)) : scriptBase;
   };
   // ---- 测速（2026-09-29 重做）----
   // 老实现：所有线路同时取 data/build.json（约 400 B，还带 ?probe= 绕缓存），**谁先答完谁胜出**，
@@ -118,6 +124,6 @@ export function createRoutes({ scriptBase, PACK_IN, manifest, fetchJSON, line })
   const deadLines = () => lastRace.filter((r) => !r.ok).map((r) => r.key);
   // 跨包资源表（DIST-2 / pkg-bases.mjs）：底图与三维模型在各自的包里，包地址按当前线路拼
   const PKGS = createPkgs({ fetchJSON, base: () => baseFor(line()), line, lines: LINES, swappable, enginePkg: PKG, pkgBases });
-  return { PKG, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, pkgBases, LINE_TTL, LINE_AT,
+  return { PKG, REPO, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, pkgBases, LINE_TTL, LINE_AT,
     probePath, PROBE_MIN_BYTES, PROBE_TIMEOUT, PROBE_MARGIN, measure, probe, race, deadLines };
 }
