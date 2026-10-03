@@ -2267,3 +2267,15 @@ blocker: the optimisation does not work. Verbatim: `console [地图] 启动失�
 open: (1) the real-TT A/B is the only measurement that can confirm or refute this — the harness cannot model a busy CDN, and that contention is what the 7.8 s actually was. (2) `map/app/boot.mjs`'s import cycles are a latent hazard for any future bundling, and the `.init` / `.collapse` reads are module-init-order dependent today; nothing is broken today (native ESM evaluates them in the right order) but it is fragile. (3) `tools/check_arch_doc.py` still reports its 18 pre-existing problems (not touched here). (4) the viewer already ships a `modulepreload` list (`map/viewer.html`), which is why its graph is not the waterfall the study assumed.
 cleanup: done (the two entry files were restored from git after the experiment; `dist/` was never written; the baseline worktree was removed; no server or browser process left running)
 === END ===
+
+=== RESULT OBLIQUE-CODE ===
+status: DONE
+items: 1 maps.json views for batches 1-5 + ledger done ✓ | 2 marker projection from camera files, click unproject, median error 0.0 px <= 4 at 1440 ✓ | 3 upper over mid composite per period + haze + outskirts ring ✓ | 4 period mapping: upper 4, mid 3 (dawn -> day with grade), low 2 (dayshift/nightshift with grade) ✓ | 5 top-down switch keeps old bases with position memory ✓ | 6 screenshots 1440 + 375 to ~/eden-map-review/oblique-code/ ✓
+commits: (see git log)
+pushed: yes (see head #N in chat report)
+tests: node 1666/1668 (0 fail, 2 skipped) | smoke PASS | arch PASS | probes: oblique=PASS
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===

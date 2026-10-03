@@ -2,10 +2,10 @@
 
 状态 2026-10-03（每步结束重写，≤ 5 行）：
 - 阶段：v12（v0.9.8 自用里程碑）；效果审计 EFFECT 进行中（D38–D42，X-RAY / A4 / A5 已完成）；SETTING-1 完成（D41）；WB-1 完成：附加世界书联动规范重写、全部条目默认启用（D43）。
-- 最近 head：以 `map/data/head.json` 为准。PLACE-1（地点记录 D44）a / b 都已落地：地点页 = 当前地点 + 上级链 + 附近，档案 = 同步出去的那条，编辑只有一个。
-- 在跑：FOG-1（代码）；渲染线按台账 9 批、一次一批（仅 Mac，约 38.5 小时），先上层斜视；外观模型重出（夜里的窗光）等台账。
+- 最近 head：以 `map/data/head.json` 为准。OBLIQUE-CODE 已落地（批 1–5 渲染底图、投影、三层合成、时段与俯视开关全部接线跑通）；PLACE-1（地点记录 D44）a / b 均已落地。
+- 在跑：渲染线按台账推进；外观模型重出（夜里的窗光）等台账。
 - 等你：`docs/decision-digest.md` 逐条填保留 / 改；v0.9.8 前抽查一遍（R1）。
-- 下一步：OBLIQUE-CODE（斜视投影与俯视开关）→ 渲染批 1 上层斜视 → REL-0.9.8。
+- 下一步：REL-0.9.8 用户抽查与自测。
 
 1. This is the only work list; plan detail lives in `docs/plans/spatial-os.md`, results in `docs/plans/spatial-os-log.md`, render items in the ledger `docs/plans/render-campaign.md`. Do not copy their items here.
 2. One item per line. A finished item is struck in place (`~~…~~ ✅ <date> <sha>`), never deleted; it moves to §4 only with a sha as evidence.
@@ -104,11 +104,11 @@ Line format: status · prompt id · where the RESULT block is (`docs/plans/spati
   - [ ] **REL-0.9.8** user spot check (R1) + TT sweep with no P0 / P1 → tag v0.9.8 (own use)
 - [ ] **EFFECT** effect-first audit (coordinator, 2026-10-02; user: all as recommended; D38–D42). One line per audit item with its owner step; render items live in the ledger (`docs/plans/render-campaign.md`), batches 1–9 in `docs/tiancheng-maps.md` §0.9.
   - ~~**SETTING-1** setting rewrite for effect: per-tier light, oblique 2.5D main view with one orthographic camera, scale and outskirts, camera files, appendix OBLIQUE-CODE, render plan in the ledger (D41)~~ ✅ 2026-10-02 (RESULT SETTING-1)
-  - [ ] **OBL** oblique main view (upper → mid → low; top-down as a toggle) · setting SETTING-1 ✓ · code **OBLIQUE-CODE** (spec: `docs/tiancheng-maps.md` appendix OBLIQUE-CODE) · renders `obl:tc_upper:*`, `obl:tc_mid:*`, `obl:tc_low:*` (batches 1–3)
+  - [ ] **OBL** oblique main view (upper → mid → low; top-down as a toggle) · setting SETTING-1 ✓ · ~~code **OBLIQUE-CODE** (spec: `docs/tiancheng-maps.md` appendix OBLIQUE-CODE)~~ ✅ 2026-10-03 · renders `obl:tc_upper:*`, `obl:tc_mid:*`, `obl:tc_low:*` (batches 1–3)
     - [ ] **RENDER-B1-rest** batch 1 remainder: the four 128 spp finals + four Eden insets, self-check, camera files `map/data/cam/tc_upper_obl.json` / `tc_upper_eden.json`, PNG tiles, ledger · look locked on the Mac (drafts + 64 spp previews, RENDER-B1) · runbook `docs/render-runbook.md` · handed off
   - [ ] **LIGHT** per-tier light (upper four periods with real night emissives; mid neon by day, whole grid lit at night; low two shifts, low dawn / day / dusk retired) · setting SETTING-1 ✓ · renders batches 1–3
-  - [ ] **SCALE** central column + ~12 km outskirts ring + fog; world map city patch · setting SETTING-1 ✓ · code FOG-1 ✓ (feather, period fog, zoom floor — the ~12 km outskirts ring itself is still to come) + OBLIQUE-CODE (outskirts placement) · renders `out:*` (batch 4), `base:world_cities` (batch 5)
-  - [ ] **D40** upper tier composited over the mid tier · code FOG-1 ✓ (top-down: period base + island mask + the tier below + haze, generic layer order) · still open: OBLIQUE-CODE (the same composite over the oblique images, by `offset`) · renders `obl:tc_upper:*`
+  - [ ] **SCALE** central column + ~12 km outskirts ring + fog; world map city patch · setting SETTING-1 ✓ · code FOG-1 ✓ (feather, period fog, zoom floor — the ~12 km outskirts ring itself is still to come) + ~~OBLIQUE-CODE (outskirts placement)~~ ✅ 2026-10-03 · renders `out:*` (batch 4), `base:world_cities` (batch 5)
+  - [ ] **D40** upper tier composited over the mid tier · code FOG-1 ✓ (top-down: period base + island mask + the tier below + haze, generic layer order) · ~~OBLIQUE-CODE (the same composite over the oblique images, by `offset`)~~ ✅ 2026-10-03 · renders `obl:tc_upper:*`
   - ~~**A1** Eden inset pops to daylight at night · code FOG-1 (skip off-day) · renders `obl:tc_upper_eden:*` (batch 1)~~ ✅ 2026-10-02 (FOG-1; per-period insets are in the SETTING-1 batch-1 ledger)
   - ~~**A2** fog of war default off, light desaturation instead of a black veil · LOOK-1~~ ✅ 2026-10-03 (RESULT LOOK-1: `edenMapFog` default `0`, veil rgba(12,14,18,.15) with wide soft-edged explored areas; FOG-1's night thresholds were calibrated under the old veil — recalibration is an open item in RESULT LOOK-1)
   - ~~**A3** tier-switch cloud sweep through white at night · FOG-1~~ ✅ 2026-10-02 (FOG-1; the white sweep is gone, the short rise / sink reads dark at night)

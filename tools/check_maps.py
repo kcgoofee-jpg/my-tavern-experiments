@@ -109,19 +109,21 @@ for mid, m in maps.items():
         both = set(m.get('rooms', [])) & set(m.get('areas', []))
         if both: err(f'{mid}: {sorted(both)} 同时在 rooms 与 areas 里（当前地点会落到哪里不确定）')
         continue
-    base = m.get('base')
+    views = m.get('views') or {}
+    _top = views.get('top') or {}
+    base = _top.get('base') or m.get('base')
     if not base: err(f'{mid} 没有 base'); continue
     if not exists(os.path.join(ROOT, base)): err(f'{mid}: 缺底图 {base}')
     if base.endswith('.dzi') and not isdir(os.path.join(ROOT, base[:-4] + '_files')): err(f'{mid}: 缺瓦片目录 {base[:-4]}_files/')
     alt = m.get('alt') or {}
     if alt and not exists(os.path.join(ROOT, alt.get('base', ''))): warn(f"{mid}: alt 底图 {alt.get('base')} 还没渲染（查看器里的开关会提示并自动关掉）")
-    for tod, pbase in (m.get('periods') or {}).items():   # 多时段底图（app/map-switch.mjs 按世界时钟档位自动换）：档位图与瓦片目录都要在
+    for tod, pbase in (_top.get('periods') or m.get('periods') or {}).items():   # 多时段底图（app/map-switch.mjs 按世界时钟档位自动换）：档位图与瓦片目录都要在
         if not exists(os.path.join(ROOT, pbase)): err(f'{mid}.periods.{tod}: 缺底图 {pbase}')
         elif pbase.endswith('.dzi') and not isdir(os.path.join(ROOT, pbase[:-4] + '_files')): err(f'{mid}.periods.{tod}: 缺瓦片目录 {pbase[:-4]}_files/')
     ov = m.get('overlay') or {}
     if ov.get('type') == 'dzi' and not exists(os.path.join(ROOT, ov.get('src', ''))): err(f"{mid}: 缺叠加层 {ov.get('src')}")
     if ov.get('from') and ov['from'] not in maps: err(f"{mid}.overlay.from → {ov['from']} 不存在")
-    for ins in m.get('insets') or []:                     # 局部高清插图（伊甸庄园等）：底图存在、切过瓦片、边界合法、指向的标记存在
+    for ins in (m.get('insets') or []) + (_top.get('insets') or []):   # 局部高清插图（伊甸庄园等）：底图存在、切过瓦片、边界合法、指向的标记存在
         iid, ibase = ins.get('id'), ins.get('base', '')
         if not iid: err(f'{mid}: insets 里有一项没有 id'); continue
         if not exists(os.path.join(ROOT, ibase)): err(f'{mid}.insets.{iid}: 缺底图 {ibase}')
@@ -131,6 +133,52 @@ for mid, m in maps.items():
         if ins.get('marker') and ins['marker'] not in (m.get('markers') or {}): err(f"{mid}.insets.{iid}.marker → {ins.get('marker')} 不存在")
         res = ins.get('res_px')
         if not (isinstance(res, list) and len(res) == 2 and all(isinstance(x, (int, float)) and x > 0 for x in res)): err(f'{mid}.insets.{iid}: res_px 应为 [宽, 高]（像素，用于清晰度上限）')
+    # views（附录 OBLIQUE-CODE，D41）：斜视主视图 + 俯视开关；相机文件、朝向、画框、外圈与插图
+    if views:
+        vd = views.get('default', 'top')
+        if vd not in ('oblique', 'top'): err(f"{mid}.views.default 应为 oblique / top，现在是 {vd!r}")
+        if 'top' not in views: err(f'{mid}.views 缺 top（俯视开关没有可切回的视图）')
+        ob = views.get('oblique')
+        if vd == 'oblique' and not ob: err(f'{mid}.views.default=oblique 但没有 views.oblique')
+        if ob:
+            cams = {}
+            for name, blk in (('cam', ob), ('outskirts', ob.get('outskirts') or {})) + tuple((f'insets.{i.get("id")}', i) for i in ob.get('insets') or []):
+                cp = blk.get('cam')
+                if name == 'cam' and not cp: err(f'{mid}.views.oblique 缺 cam（标记 / 合成 / 外圈全靠它投影）')
+                if not cp: continue
+                if not exists(os.path.join(ROOT, cp)): err(f'{mid}.views.oblique.{name}: 缺相机文件 {cp}'); continue
+                try: c = load(os.path.join(ROOT, cp))
+                except Exception as e: err(f'{mid}.views.oblique.{name}: 相机文件解析失败 {e}'); continue
+                if c.get('proj') != 'ortho': err(f"{mid}.views.oblique.{name}: proj 应为 ortho，现在是 {c.get('proj')!r}")
+                for k in ('right', 'up', 'fwd'):
+                    if not (isinstance(c.get(k), list) and len(c[k]) == 3): err(f'{mid}.views.oblique.{name}: 相机缺 {k} 向量'); break
+                fr = c.get('frame') or {}
+                if not (isinstance(fr.get('centre_m'), list) and len(fr['centre_m']) == 3 and fr.get('w_m') and fr.get('h_m') and isinstance(fr.get('px'), list)): err(f'{mid}.views.oblique.{name}: 相机缺 frame（centre_m / w_m / h_m / px）'); continue
+                cams[name] = c
+            if 'cam' in cams:
+                c = cams['cam']; fr = c['frame']
+                for name in ('outskirts',) + tuple(f'insets.{i.get("id")}' for i in ob.get('insets') or []):
+                    o = cams.get(name)
+                    if o and (o['az_deg'], o['pitch_deg']) != (c['az_deg'], c['pitch_deg']):
+                        err(f'{mid}.views.oblique.{name}: 与主图不同朝向（合成 / 摆放前提；米每像素按内容分辨率各自给定）')
+                for tod, s in (ob.get('periods') or {}).items():   # 同层各时段同一画框：DZI 像素尺寸必须与相机 frame 一致
+                    if not exists(os.path.join(ROOT, s)): err(f'{mid}.views.oblique.periods.{tod}: 缺底图 {s}'); continue
+                    if s.endswith('.dzi') and not isdir(os.path.join(ROOT, s[:-4] + '_files')): err(f'{mid}.views.oblique.periods.{tod}: 缺瓦片目录 {s[:-4]}_files/')
+                    if s.endswith('.dzi') and exists(os.path.join(ROOT, s)):
+                        try:
+                            x = open(os.path.join(ROOT, s), encoding='utf-8').read(400)
+                            w, h = re.search(r'Width="(\d+)"', x), re.search(r'Height="(\d+)"', x)
+                            if w and h and [int(w.group(1)), int(h.group(1))] != list(fr['px']): err(f"{mid}.views.oblique.periods.{tod}: DZI {w.group(1)}x{h.group(1)} 与相机 px {fr['px']} 不一致")
+                        except OSError as e: warn(f'{mid}.views.oblique.periods.{tod}: 读不到 {s}（{e}）')
+                if 'z_ref_m' in ob and not isinstance(ob['z_ref_m'], (int, float)): err(f'{mid}.views.oblique.z_ref_m 应为数字（米）')
+                comp = ob.get('composite')
+                if comp and comp.get('below') not in maps: err(f"{mid}.views.oblique.composite.below → {comp.get('below')} 不存在")
+                if ob.get('insets') and not m.get('kind') == 'points': pass
+                for i in ob.get('insets') or []:
+                    for tod, s in (i.get('periods') or {}).items():
+                        if not exists(os.path.join(ROOT, s)): err(f'{mid}.views.oblique.insets.{i.get("id")}.periods.{tod}: 缺底图 {s}')
+                    if i.get('marker') and i['marker'] not in (m.get('markers') or {}): err(f"{mid}.views.oblique.insets.{i.get('id')}.marker → {i['marker']} 不存在")
+                m['_obl_cam'] = c   # 传给下面的同组朝向检查（不写盘）
     if m.get('kind') != 'points': continue
     if 'districts' in m and not (isinstance(m['districts'], list) and all(isinstance(w, str) and w for w in m['districts'])): err(f'{mid}.districts 应为非空字符串列表（当前地点只写到大区时落到这一层）')
     if not m.get('data'): err(f'{mid}: points 地图没有 data'); continue
@@ -163,6 +211,17 @@ for mid, m in maps.items():
         if not isinstance(o, list) or len(o) < 8: err(f'{mid}.islands.{iid}: outline 至少要 8 个点（现在 {len(o) if isinstance(o, list) else type(o).__name__}）'); continue
         bad = [q for q in o if not (isinstance(q, (list, tuple)) and len(q) == 2 and all(isinstance(v, (int, float)) and 0 <= v <= 1 for v in q))]
         if bad: err(f'{mid}.islands.{iid}: outline 有 {len(bad)} 个点不是 0…1 内的 [x, y]（如 {bad[0]}）')
+    # 斜视（附录 OBLIQUE-CODE G）：每个标记按相机从地图米投影进画框（z 用视图的 z_ref_m / 相机画框中心海拔）
+    c = m.get('_obl_cam')
+    if c:
+        fr = c['frame']; obv = views.get('oblique') or {}
+        z0 = obv.get('z_ref_m', fr['centre_m'][2]); e = m.get('view', {}).get('extent_m', [3000, 1875])
+        def _dot(a, b): return sum(x * y for x, y in zip(a, b))
+        for i, k in ids.items():
+            p = [(k['nx'] - .5) * e[0], (.5 - k['ny']) * e[1], z0]
+            dd = [p[j] - fr['centre_m'][j] for j in range(3)]
+            u = .5 + _dot(dd, c['right']) / fr['w_m']; v = .5 - _dot(dd, c['up']) / fr['h_m']
+            if not (-.02 <= u <= 1.02 and -.02 <= v <= 1.02): err(f'{mid}.{i}: 斜视投影 ({u:.3f}, {v:.3f}) 落在画框外（相机与点位不一致）')
 # view：尺度与默认缩放
 wm = load(os.path.join(ROOT, 'data', 'world_markers.json'))
 place_ids = {p.get('id') for p in wm.get('places', [])}
@@ -201,6 +260,9 @@ for gid, g in reg.get('groups', {}).items():   # 同组各层共用一套平面�
     ext = {tuple(data[k].get('extent_m', [])) for k in g['layers'] if data.get(k, {}).get('extent_m')}
     if len(ext) > 1: err(f'group {gid} 各层 extent_m 不一致：{ext}')
     if g.get('place') and g['place'] not in place_ids | {f.get('id') for f in wm.get('fiefs', [])}: err(f"group {gid}.place → {g['place']} 不是世界图的地点 / 封地 id")
+    ori = {k: maps[k]['_obl_cam'] for k in g['layers'] if isinstance(maps.get(k), dict) and maps[k].get('_obl_cam')}   # 斜视同组同相机（合成前提，附录 OBLIQUE-CODE G）
+    sig = {k: (c['az_deg'], c['pitch_deg'], c['m_per_px']) for k, c in ori.items()}
+    if len(set(sig.values())) > 1: err(f'group {gid} 各层斜视相机朝向 / 米每像素不一致：{sig}')
 # 英文界面（map/i18n）：地图标题、层名、地标都要有英文名（没有时查看器显示中文原文）
 for mid, m in maps.items():
     if m.get('status') == 'planned': continue

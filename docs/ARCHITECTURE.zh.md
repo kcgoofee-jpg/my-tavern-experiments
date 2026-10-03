@@ -199,6 +199,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `nodes-runtime-v2.mjs` | schema-2 包的同一套读法，由包自己的树与投影出的注册表建成（K-R96）。纯函数。 |
 | `nodes-runtime.mjs` | 查看器的节点树：已加载的注册表经 `core/compat-v1.mjs` 转一次；面包屑、上一级、预热邻居、庄园替身和三维页判断都从它读（不再走 `parent`）。`buildRuntimeV2` 把 schema-2 的运行时装进同一个槽。 |
 | `notice-layer.mjs` | 通知层（嵌入时交给宿主，单独打开时用 `ui/notice.mjs`）与首次打开提示。 |
+| `oblique.mjs` | 斜视底图（maps.json 的 views 块，附录 OBLIQUE-CODE）：相机文件加载与缓存、米 ↔ 归一化投影、摆放矩形计算、俯视 / 斜视模式切换。 |
 | `one-hand-mode.mjs` | 单手模式：惯用手切换与悬浮按钮跟随；拉起设置首页动作与单指缩放。 |
 | `pack-edit-view.mjs` | 编辑模式的界面（K-R100）：编辑条、图钉拖动、地点卡上的控件、图片与「用一张图作这里的地图」。只在开关打开时绘制。 |
 | `pack-edit.mjs` | 编辑模式的模型（K-R100）：`createEditor` 与它的操作（移动、改上级、叫法、新地点、起点、图片、底图、放弃）和草稿存储（文字在 LocalStore，图片字节在图集 IndexedDB 的 `edit:<包 id>` 作用域）。 |
@@ -323,6 +324,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `timeline-flow.mjs` | 时间轴回放（Part 5-4）与关键帧缓存的宿主侧接线。`createTimelineFlow(host)`。 |
 | `timeline.mjs` | 时间轴回放核心：第 N 楼当时地图该显示什么（地点、时间、谁在哪）。 |
 | `trips-parse.mjs` | 行程推导：从每楼地点与人物标签得出「A → B」，按交通方式分样式。 |
+| `viewer-boot.mjs` | 查看器启动看门狗（F-TT）：监控查看器是否正常开始握手，超时自动重试并支持在多条线路间轮换。纯逻辑。 |
 | `worldbook-crystallize.mjs` | 剧情事实结晶：把坐实的事实沉淀成附加书里按关键词触发的条目。 |
 | `worldbook-jit.mjs` | 世界书即时水合：只启用与当前地点相关的条目。 |
 | `worldbook-readme.mjs` | WB-2：附加书的说明条目——一本会自己交代自己的书：它是什么、哪个版本、什么时候由哪个地图构建写的、开着几条关着几条为什么关、报问题时该带什么。一条，永远关闭（永不注入、不耗 token），每次真正写入这本书的同步都重写一遍。纯文本，事实由同步模块传进来。 |

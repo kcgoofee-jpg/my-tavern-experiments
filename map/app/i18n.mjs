@@ -9,6 +9,7 @@ import { uiTextOr } from './text-lookup.mjs';
 import { syncGlassClock } from './theme.mjs';
 import { applyTier, drawOverlays, tierLabels } from './sharpness-tiers.mjs';
 import { mapChrome } from './map-switch.mjs';
+import { modeOf } from './oblique.mjs';
 import { estateLook } from './subpage3d-host.mjs';
 import { renderNav } from './map-level-nav.mjs';
 import { closeCard } from './markers.mjs';
@@ -75,6 +76,6 @@ export function paintSegs() {
 }
 const themeNow = () => document.documentElement.classList.contains('light') ? 'light' : 'dark';
 // 当前地图、标题、语言、主题 → 酒馆（面板标题栏跟着换语言和深浅）
-export function postState() { if (currentMapId && mapRegistry?.maps[currentMapId]) { post({ type: 'eden-map:state', map: currentMapId, title: localName(mapRegistry.maps[currentMapId], 'title'), lang: LANG, theme: themeNow(), hand: window.__hand }); emMapChanged(); } }   // hand（E7）：卡内脚本据此把悬浮按钮挪到拇指侧
+export function postState() { if (currentMapId && mapRegistry?.maps[currentMapId]) { post({ type: 'eden-map:state', map: currentMapId, title: localName(mapRegistry.maps[currentMapId], 'title'), lang: LANG, theme: themeNow(), hand: window.__hand, top: modeOf(mapRegistry.maps[currentMapId]) === 'top' }); emMapChanged(); } }   // hand（E7）：卡内脚本据此把悬浮按钮挪到拇指侧；top（OBLIQUE-CODE E）：俯视开关开着
 export function setLANG(v) { return (LANG = v); }
 export function setDICT(v) { return (DICT = v); }

@@ -12,15 +12,19 @@ import { baseFrame } from '../core/base-frame.mjs';
 import { plugins } from './plugins.mjs';
 import { syncGlow } from './theme.mjs';
 import { pickPeriod } from '../core/period-pick.mjs';
+import { viewOf, periodsOf, modeOf, loadCam, topOn, keepView, camOf, baseOf as oblBase } from './oblique.mjs';
 // ---------------- 地图切换 ----------------
-// alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住
+// alt：同一张图的另一版底图（上层默认云海，开关后显示下方城市）。只换底图，视角、标记、叠加层都不动；开关状态按地图记住。
+// 斜视主视图里不整张换备用底图（合成常开，开关只改霾的厚薄，见 app/tier-fog.mjs）；俯视开关沿用旧机制
 export const ALT_KEY = 'edenMapAlt:';
 export const altOn = id => { try { return LocalStore.get(ALT_KEY + id) === '1'; } catch (e) { return false; } };
 // periods：多时段底图（maps.json）。按世界时钟的有效档位换（P.CustomNamesView.todNow，关掉时段色调时为空 = 恒用 base）；档位取自包的时段（K-R39，
-// 时钟消息带 bands）。地图没有该档位的底图时取顺序上最近的一档（core/period-pick.mjs；平手取不暗的、再取靠前的），一档都没有 = base
-const periodOf = id => { const c = plugins.CustomNamesView?.clock; return pickPeriod(mapRegistry.maps[id]?.periods, plugins.CustomNamesView?.todNow?.() || '', c?.bands).src; };
+// 时钟消息带 bands）。地图没有该档位的底图时取顺序上最近的一档（core/period-pick.mjs；平手取不暗的、再取靠前的），一档都没有 = base。
+// 档位表按当前视图取（斜视图的 views.oblique.periods / 俯视的 views.top.periods，app/oblique.mjs）
+const periodOf = id => { const c = plugins.CustomNamesView?.clock; return pickPeriod(periodsOf(mapRegistry.maps[id]), plugins.CustomNamesView?.todNow?.() || '', c?.bands).src; };
 export const srcKey = b => (b && typeof b === 'object' ? b.url : b);   // 底图可以是 DZI 路径，也可以是 { type: 'image', url }（schema-2 包的示意图 / 单张图，K-R96）
-const baseOf = id => { const m = mapRegistry.maps[id]; return m.alt && altOn(id) && m.alt.base && !m.alt.composite ? m.alt.base : (periodOf(id) || m.base); };   // composite（FOG-1 D40）底图仍是本层自己的时段图；旧式 alt 才整张换备用底图
+const baseOf = id => { const m = mapRegistry.maps[id];
+  return m.alt && altOn(id) && m.alt.base && !m.alt.composite && modeOf(m) === 'top' ? m.alt.base : (periodOf(id) || oblBase(m)); };   // composite（FOG-1 D40）底图仍是本层自己的时段图；旧式 alt 才整张换备用底图
 let lastBase = null;   // 第 0 层当前用的底图地址（go 打开 / swapBase 换上时记；applyPeriod 拿它判断要不要换）
 // 底图一律按视图范围（view.extent_m）摆：一个世界单位宽、从原点起，与 DZI 有多少像素无关（N10-P0）；标记 / 路线 / 缩放上限都是视图的比例
 const placeOf = id => { const f = baseFrame(mapRegistry.maps[id]?.view?.extent_m); return { x: f.x, y: f.y, width: f.width }; };
@@ -51,11 +55,13 @@ export function swapBase() {
     error: () => { if (!altWanted) { lastBase = was; return; }   // 时段底图打不开：留着现在的底图，下次时钟变化再试（N13）
       try { LocalStore.remove(ALT_KEY + id); } catch (e) {} lastBase = baseOf(id); $('#tgAltBox').checked = false; $('#tierState').textContent = uiText('alt_missing'); } });
 }
-// 世界时钟时段变了（host-messages.mjs 的 eden-map:clock）：当前地图的底图档位变了才换，视角、标记、叠加层都不动
+// 世界时钟时段变了（host-messages.mjs 的 eden-map:clock）：当前地图的底图档位变了才换，视角、标记、叠加层都不动。
+// 三维主场景（kind=estate）没有底图：切走之前迟到的 open 事件会带着它的 id 到这里，此时不换（go 对 estate 早已提前返回）
 export function applyPeriod() {
   if (!currentMapId || lastBase === null) return;
   const want = baseOf(currentMapId);
-  if (srcKey(want) !== srcKey(lastBase)) swapBase();
+  if (!want || srcKey(want) === srcKey(lastBase)) return;
+  swapBase();
 }
 // 同组（主城）各层平面坐标对齐：切层时沿用同一个归一化视野（中心 + 缩放），只有第一次进入这一组时才按 view.focus 定位
 export const groupView = {};
@@ -91,7 +97,8 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   // 叠加层可以取别的地图的数据（overlay.from），例如中层的「上层投影」用上层的岛屿轮廓
   const ovSrc = m.overlay?.from && mapRegistry.maps[m.overlay.from]?.data;
   // 纵深数据（maps.json 的 depth 字段，U16 / U17）：只有配了它的层才取，取不到不阻塞（视差、标签按 d 全部退回默认）
-  const [cd, od, dd] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null, m.depth ? getJSON(m.depth) : null]);
+  // 斜视图的相机文件（views.oblique.cam）一并预取：标记 / 合成 / 外圈同步取用（app/oblique.mjs 缓存）
+  const [cd, od, dd] = await Promise.all([m.data ? getJSON(m.data) : null, ovSrc ? getJSON(ovSrc) : null, m.depth ? getJSON(m.depth) : null, loadCam(id)]);
   if (id !== currentMapId) return;   // 加载期间又切换了地图
   setCurrentMapData(cd); setOverviewMapData(ovSrc ? od : cd); setDepthData(dd || null);
   renderNav(); mapChrome(m); if (m.alt) $('#tgAltBox').checked = altOn(id);
@@ -118,8 +125,23 @@ export function mapChrome(m) {
   if (m.overlay) { let on = m.overlay.type !== 'barriers'; if (!on) try { on = LocalStore.get('edenMapBarriers') === '1'; } catch (e) {} $('#tgBorders').checked = on; }
   $('#tgOverlay span').textContent = m.overlay ? localName(m.overlay, 'label') || uiText('overlay') : uiText('overlay'); $('#tgOverlay').hidden = !m.overlay;
   $('#tgAlt').hidden = !m.alt; if (m.alt) $('#tgAlt span').textContent = localName(m.alt, 'label') || uiText('alt_base');
+  const tv = $('#tgTopView'); if (tv) tv.hidden = !m.views;   // 俯视开关：只有登记了 views 的图显示（附录 OBLIQUE-CODE E）
+  const box = $('#tgTopBox'); if (box) box.checked = m.views ? topOn() : false;
 }
 export function setGo(v) { return (go = v); }
+// 俯视开关（附录 OBLIQUE-CODE E，kernel layer top-view / edenMapTopView）：换视图重开本图；
+// 视野保持：中心反算到地图米再在新视图投影回去，缩放按米 / 屏幕像素不变（app/oblique.mjs keepView）——
+// 换算出的矩形放进 groupView 标 handoff，让开图后的取景（locate.focusStart）原样消费掉，不与动画竞争。
+// go() 对「当前就是这张图」会直接返回，所以先把 currentMapId 摘掉再重开；开相机的等待（俯视 → 斜视）不阻塞 UI。
+export function toggleTopView() {
+  const id = currentMapId, m = mapRegistry.maps[id];
+  if (!m?.views || !osdViewer?.world.getItemCount()) return;
+  const from = modeOf(m), to = from === 'oblique' ? 'top' : 'oblique';
+  const b = osdViewer.viewport.getBounds(true);
+  const apply = r => { if (r && m.group) groupView[m.group] = Object.assign(new OpenSeadragon.Rect(r.x, r.y, r.width, r.height), { handoff: true }); };
+  const reopen = () => { apply(keepView(b, from, to)); setCurrentMapId(null); go(id); };
+  if (to === 'oblique' && !camOf(id)) loadCam(id).then(reopen); else reopen();
+}
 /**
  * 点到「当前就是这张图」时的动作（任务三）：消费掉待聚焦的落点，按图的类型分流——
  *   kind=estate（主场景 / 通用三维查看器）→ 把名字发给三维页聚焦（房间 / 热点由它自己找人）；

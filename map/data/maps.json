@@ -333,6 +333,9 @@
         "src": "art/borders.dzi",
         "label": "国界",
         "label_en": "Borders"
+      },
+      "periods": {
+        "night": "art/world_night.dzi"
       }
     },
     "tc_upper": {
@@ -357,6 +360,69 @@
           0.78
         ]
       },
+      "views": {
+        "default": "oblique",
+        "top": {
+          "base": "art/tc_upper.dzi",
+          "periods": {
+            "dawn": "art/tc_upper_dawn.dzi",
+            "day": "art/tc_upper.dzi",
+            "dusk": "art/tc_upper_dusk.dzi",
+            "night": "art/tc_upper_night.dzi"
+          },
+          "insets": [
+            {
+              "id": "eden_hi",
+              "marker": "eden",
+              "base": "art/tc_upper_eden.dzi",
+              "bounds": [
+                0.33125,
+                0.2975,
+                0.66875,
+                0.7025
+              ],
+              "res_px": [
+                6000,
+                4500
+              ]
+            }
+          ]
+        },
+        "oblique": {
+          "periods": {
+            "dawn": "art/tc_upper_obl_dawn.dzi",
+            "day": "art/tc_upper_obl_day.dzi",
+            "dusk": "art/tc_upper_obl_dusk.dzi",
+            "night": "art/tc_upper_obl_night.dzi"
+          },
+          "cam": "data/cam/tc_upper_obl.json",
+          "outskirts": {
+            "periods": {
+              "day": "art/tc_mid_out_day.dzi",
+              "dusk": "art/tc_mid_out_dusk.dzi",
+              "night": "art/tc_mid_out_night.dzi"
+            },
+            "cam": "data/cam/tc_mid_out.json"
+          },
+          "insets": [
+            {
+              "id": "eden_hi_obl",
+              "marker": "eden",
+              "periods": {
+                "dawn": "art/tc_upper_eden_obl_dawn.dzi",
+                "day": "art/tc_upper_eden_obl_day.dzi",
+                "dusk": "art/tc_upper_eden_obl_dusk.dzi",
+                "night": "art/tc_upper_eden_obl_night.dzi"
+              },
+              "cam": "data/cam/tc_upper_eden.json"
+            }
+          ],
+          "composite": {
+            "below": "tc_mid",
+            "haze": "period"
+          }
+        }
+      },
       "title": "天城 · 上层",
       "title_en": "Tiancheng · Upper Tier",
       "parent": "world",
@@ -370,7 +436,6 @@
         "sub_en": "Floating Estates"
       },
       "kind": "points",
-      "base": "art/tc_upper.dzi",
       "data": "data/tc_upper.json",
       "depth": "data/upper_depth.json",
       "alt": {
@@ -607,29 +672,6 @@
             "label_en": "View 3D model"
           }
         }
-      },
-      "insets": [
-        {
-          "id": "eden_hi",
-          "marker": "eden",
-          "base": "art/tc_upper_eden.dzi",
-          "bounds": [
-            0.33125,
-            0.2975,
-            0.66875,
-            0.7025
-          ],
-          "res_px": [
-            6000,
-            4500
-          ]
-        }
-      ],
-      "periods": {
-        "dawn": "art/tc_upper_dawn.dzi",
-        "day": "art/tc_upper.dzi",
-        "dusk": "art/tc_upper_dusk.dzi",
-        "night": "art/tc_upper_night.dzi"
       }
     },
     "tc_mid": {
@@ -653,6 +695,36 @@
           0.74
         ]
       },
+      "views": {
+        "default": "oblique",
+        "top": {
+          "base": "art/tc_mid_day.dzi",
+          "periods": {
+            "dawn": "art/tc_mid_dawn.dzi",
+            "day": "art/tc_mid_day.dzi",
+            "dusk": "art/tc_mid_dusk.dzi",
+            "night": "art/tc_mid_night.dzi"
+          }
+        },
+        "oblique": {
+          "periods": {
+            "dawn": "art/tc_mid_obl_dusk.dzi",
+            "day": "art/tc_mid_obl_day.dzi",
+            "dusk": "art/tc_mid_obl_dusk.dzi",
+            "night": "art/tc_mid_obl_night.dzi"
+          },
+          "cam": "data/cam/tc_mid_obl.json",
+          "outskirts": {
+            "periods": {
+              "day": "art/tc_mid_out_day.dzi",
+              "dusk": "art/tc_mid_out_dusk.dzi",
+              "night": "art/tc_mid_out_night.dzi"
+            },
+            "cam": "data/cam/tc_mid_out.json"
+          },
+          "z_ref_m": 50
+        }
+      },
       "title": "天城 · 中层",
       "title_en": "Tiancheng · Middle Tier",
       "parent": "world",
@@ -666,13 +738,6 @@
         "sub_en": "Steel & Neon"
       },
       "kind": "points",
-      "base": "art/tc_mid_day.dzi",
-      "periods": {
-        "dawn": "art/tc_mid_dawn.dzi",
-        "day": "art/tc_mid_day.dzi",
-        "dusk": "art/tc_mid_dusk.dzi",
-        "night": "art/tc_mid_night.dzi"
-      },
       "credit": "城市骨架 © OpenStreetMap contributors (ODbL)；核心区建筑几何：NYC 3-D Building Model（2014），© City of New York / Office of Technology and Innovation，NYC Open Data；经投影、旋转、缩放并叠加生成内容",
       "credit_en": "City layout © OpenStreetMap contributors (ODbL); Core-district building geometry: NYC 3-D Building Model (2014), City of New York / Office of Technology and Innovation, via NYC Open Data; reprojected, rotated, scaled and combined with generated content",
       "data": "data/tc_mid.json",
@@ -1182,6 +1247,35 @@
           0.72
         ]
       },
+      "views": {
+        "default": "oblique",
+        "top": {
+          "base": "art/tc_low_night.dzi",
+          "periods": {
+            "dawn": "art/tc_low_night.dzi",
+            "day": "art/tc_low_night.dzi",
+            "dusk": "art/tc_low_night.dzi",
+            "night": "art/tc_low_night.dzi"
+          }
+        },
+        "oblique": {
+          "periods": {
+            "dawn": "art/tc_low_obl_dayshift.dzi",
+            "day": "art/tc_low_obl_dayshift.dzi",
+            "dusk": "art/tc_low_obl_nightshift.dzi",
+            "night": "art/tc_low_obl_nightshift.dzi"
+          },
+          "cam": "data/cam/tc_low_obl.json",
+          "outskirts": {
+            "periods": {
+              "day": "art/tc_low_out_dayshift.dzi",
+              "night": "art/tc_low_out_nightshift.dzi"
+            },
+            "cam": "data/cam/tc_low_out.json"
+          },
+          "z_ref_m": 0
+        }
+      },
       "title": "天城 · 下层",
       "title_en": "Tiancheng · Lower Tier",
       "parent": "world",
@@ -1195,13 +1289,6 @@
         "alt_en": "Ground to −200 m"
       },
       "kind": "points",
-      "base": "art/tc_low_day.dzi",
-      "periods": {
-        "dawn": "art/tc_low_dawn.dzi",
-        "day": "art/tc_low_day.dzi",
-        "dusk": "art/tc_low_dusk.dzi",
-        "night": "art/tc_low_night.dzi"
-      },
       "credit": "城市骨架 © OpenStreetMap contributors (ODbL)",
       "credit_en": "City layout © OpenStreetMap contributors (ODbL)",
       "data": "data/tc_low.json",

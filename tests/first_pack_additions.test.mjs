@@ -27,7 +27,7 @@ test('(b) the first pack declares no layers of its own: the estate ward was remo
   assert.deepEqual(r.layers, []);
   const merged = mergeLayers(KERNEL_LAYERS, r.layers);
   assert.deepEqual(merged.problems, []); assert.deepEqual(merged.layers.filter(x => x.origin === 'pack'), []);
-  assert.equal(merged.layers.length, 21);   // the 19 kernel layers and transit, route-plan (S8-4b); no pack layer any more
+  assert.equal(merged.layers.length, 22);   // the kernel layers (S8-1..S8-4b + top-view, OBLIQUE-CODE); no pack layer any more
   assert.ok(!('layers' in OV), 'the overlay carries no layers block at all');
 });
 

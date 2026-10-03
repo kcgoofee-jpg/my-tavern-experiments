@@ -7,14 +7,15 @@ import { SLOTS, KINDS } from '../map/core/layer-registry.mjs';
 import { LAYERS_V1 } from './helpers/layers_v1_frozen.mjs';
 
 const TYPES = { routes: 'line', traffic: 'flow', weather: 'particles' };
-const MENU_ORDER = { 'base-overlay': 10, 'alt-base': 20, routes: 30, security: 40, weather: 45, traffic: 46, quests: 47, loot: 48, vision: 49, wander: 50, trips: 50, labels: 60, markers: 70, events: 80, 'nav-ops': 85, 'local-props': 86, transit: 32 };
+const MENU_ORDER = { 'base-overlay': 10, 'top-view': 15, 'alt-base': 20, routes: 30, security: 40, weather: 45, traffic: 46, quests: 47, loot: 48, vision: 49, wander: 50, trips: 50, labels: 60, markers: 70, events: 80, 'nav-ops': 85, 'local-props': 86, transit: 32 };
 const S83 = ['nav-ops', 'local-props', 'transit', 'route-plan'];   // added by S8-3 (K-R86, K-R88) and S8-4b (K-R110); everything else is the frozen list of S8-1
+const VIEW = ['top-view'];   // added by OBLIQUE-CODE (K-R135): the top-down toggle (a view switch, not a v1 layer)
 
 test('the kernel list has the 17 layers, the two of S8-3 and the two of S8-4b, ids unique, slots and kinds valid', () => {
   assert.equal(LAYERS_V1.length, 17);
-  assert.equal(KERNEL_LAYERS.length, 21);
-  assert.equal(new Set(KERNEL_IDS).size, 21);
-  assert.deepEqual(KERNEL_IDS.filter(id => !S83.includes(id)).sort(), LAYERS_V1.map(l => l.id).sort());
+  assert.equal(KERNEL_LAYERS.length, 22);
+  assert.equal(new Set(KERNEL_IDS).size, 22);
+  assert.deepEqual(KERNEL_IDS.filter(id => !S83.includes(id) && !VIEW.includes(id)).sort(), LAYERS_V1.map(l => l.id).sort());
   for (const l of KERNEL_LAYERS) { assert.ok(SLOTS.includes(l.slot), l.id); assert.ok(KINDS.includes(l.kind), l.id); assert.equal(l.source, 'kernel'); }
 });
 

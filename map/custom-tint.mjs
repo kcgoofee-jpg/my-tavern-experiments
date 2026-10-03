@@ -2,8 +2,9 @@
 // 叠色的样式表留在 custom-names-view.mjs（z-index 账本）；这里只管判定与 body 上的类 / 数据属性。
 import { mapRegistry } from './app/state.mjs';
 import { viewField } from './app/nodes-runtime.mjs';
-import { pickPeriod } from './core/period-pick.mjs';
+import { pickPeriod, tintBand } from './core/period-pick.mjs';
 import { altOn } from './app/map-switch.mjs';
+import { periodsOf } from './app/oblique.mjs';
 export const NIGHT_KEY = 'edenMapNight';
 export function createTint({ getClock }) {
   const nightOn = () => { try { return LocalStore.get(NIGHT_KEY) !== '0'; } catch (e) { return true; } };
@@ -15,12 +16,16 @@ export function createTint({ getClock }) {
   function todNow() { const clock = getClock(); return clock?.view || (nightOn() ? (clock?.tod || (clock?.night ? 'night' : '')) : ''); }
   function night() { const clock = getClock(), m = document.body.dataset.map, tier = viewField(m, 'x-tint') === 'period', on = (nightOn() || !!clock?.view) && tier;
     const tod = on ? (clock?.tod || (clock?.night ? 'night' : '')) : '';
-    const pick = pickPeriod(mapRegistry?.maps?.[m]?.periods, tod, clock?.bands);
+    const variants = periodsOf(mapRegistry?.maps?.[m]);   // 档位表按当前视图取（斜视 / 俯视，app/oblique.mjs）
+    const pick = pickPeriod(variants, tod, clock?.bands);
     const legacyAlt = altOn(m) && !!mapRegistry?.maps?.[m]?.alt?.base && !mapRegistry?.maps?.[m]?.alt?.composite;
     const swapped = !legacyAlt && pick.exact;
     document.body.classList.toggle('nighttint', tod === 'night' && !swapped && !!pick.src);
     if (swapped) document.body.dataset.baseTod = tod; else delete document.body.dataset.baseTod;   // 底图本身就是这一档：CSS 不再叠这一档的色调
-    if (pick.src === null && tod) document.body.dataset.gradetod = tod; else delete document.body.dataset.gradetod;   // A7：没有时段底图的图按时段整体调色
+    // 整体调色（A7）：完全没有时段底图的图；这一档自己的图缺、借了相邻档的图；或多个档共用一张图时借用方（中层晨用昏图、下层两班，
+    // OBLIQUE-CODE 时段）——显示的图都不是「这一档自己的」，按当前时段调色区分
+    const grade = pick.src === null && tod ? tod : (!pick.exact && tod) || tintBand(variants, pick, clock?.bands);
+    if (grade) document.body.dataset.gradetod = grade; else delete document.body.dataset.gradetod;
     if (tod && tod !== 'day') document.body.dataset.tod = tod; else delete document.body.dataset.tod; }
   new MutationObserver(night).observe(document.body, { attributes: true, attributeFilter: ['data-map'] });
   document.addEventListener('change', e => { if (e.target?.id === 'tgAltBox') setTimeout(night, 0); });   // 备用底图开 / 关：色调判定跟着变

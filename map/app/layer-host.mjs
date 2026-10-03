@@ -12,7 +12,7 @@ import { $ } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { mapRegistry, currentMapId } from './state.mjs';
 import { applyOverlayToggle, routeGaps } from './sharpness-tiers.mjs';
-import { ALT_KEY, swapBase } from './map-switch.mjs';
+import { ALT_KEY, swapBase, toggleTopView } from './map-switch.mjs';
 import { LANG } from './i18n.mjs';
 export const registry = new LayerRegistry();
 let slots = null;
@@ -58,6 +58,8 @@ export function registerCoreLayers() {
     setVisible: v => { if (mapRegistry.maps[currentMapId]?.overlay?.type === 'barriers') { try { storage.set('edenMapBarriers', v ? '1' : '0'); } catch (e) {} } applyOverlayToggle(); } }));
   registry.register(declared('alt-base', { initialVisible: false,
     setVisible: v => { try { storage.set(ALT_KEY + currentMapId, v ? '1' : '0'); } catch (e) {} return swapBase(); } }));
+  registry.register(declared('top-view', { initialVisible: storage.get('edenMapTopView') === '1',
+    setVisible: v => { try { storage.set('edenMapTopView', v ? '1' : '0'); } catch (e) { console.warn('[layer-host] top view pref', e); } return toggleTopView(); } }));   // OBLIQUE-CODE E: switch view and reopen the map (view kept)
   const routesOn = storage.get('edenMapRoutes') !== '0';
   registry.register(declared('routes', { initialVisible: routesOn,
     setVisible: v => { document.body.classList.toggle('noroutes', !v); routeGaps(); try { storage.set('edenMapRoutes', v ? '1' : '0'); } catch (e) {} } }));

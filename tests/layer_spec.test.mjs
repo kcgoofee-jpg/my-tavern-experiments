@@ -123,7 +123,7 @@ test('mergeLayers: kernel list order kept, adjustments, new layers after in arra
   assert.ok(codes(r.problems).includes('layer-duplicate') && codes(r.problems).includes('layer-incomplete') && codes(r.problems).includes('layer-type'));
   const many = mergeLayers([], Array.from({ length: 40 }, (_, i) => ({ id: `l${i}`, type: 'tint', slot: 'fx', source: 'inline' })));
   assert.equal(many.layers.length, 32); assert.equal(codes(many.problems).filter(c => c === 'layer-limit').length, 8);
-  assert.equal(KERNEL_LAYERS[2].menu.label, '航线', 'the kernel list is not touched');
+  assert.equal(KERNEL_LAYERS.find(l => l.id === 'routes').menu.label, '航线', 'the kernel list is not touched');
 });
 
 test('appliesTo: truth table', () => {

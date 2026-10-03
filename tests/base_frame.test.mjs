@@ -23,9 +23,10 @@ test('aspectDrift: pixel count does not matter, shape does', () => {
   assert.equal(aspectDrift([3000, 1875], [0, 0]), 0);
 });
 
-test('every period base of tc_upper / tc_mid / tc_low has the view shape (<= 0.5 %)', () => {
+test('every period base of tc_upper / tc_mid / tc_low has the view shape (<= 0.5 %); both views (OBLIQUE-CODE)', () => {
   for (const id of ['tc_upper', 'tc_mid', 'tc_low']) {
-    const m = maps[id];
-    for (const src of [m.base, ...Object.values(m.periods)]) assert.ok(aspectDrift(m.view.extent_m, dziSize(src)) <= 0.005, `${id} ${src}`);
+    const m = maps[id], v = m.views;
+    const srcs = [v.top.base, ...Object.values(v.top.periods), v.oblique.periods.day];
+    for (const src of [...new Set(srcs)]) assert.ok(aspectDrift(m.view.extent_m, dziSize(src)) <= 0.005, `${id} ${src}`);
   }
 });

@@ -14,7 +14,7 @@ export const SCHEMA = {
   'eden-map:ready': [VIEWER_TO_HOST, { proto: 'number?' }],
   'eden-map:progress': [VIEWER_TO_HOST, { pct: 'number' }],
   'eden-map:loaded': [VIEWER_TO_HOST, {}],
-  'eden-map:state': [VIEWER_TO_HOST, { map: 'string?', title: 'string?', lang: 'string?', theme: 'string?', hand: 'string?' }],
+  'eden-map:state': [VIEWER_TO_HOST, { map: 'string?', title: 'string?', lang: 'string?', theme: 'string?', hand: 'string?', top: 'boolean?' }],   // top（OBLIQUE-CODE E）：这张图当前是俯视开关（true）还是斜视主视图（false）
   'eden-map:esc': [VIEWER_TO_HOST, { from: 'string?' }],   // from = 'key'：Esc 逐层关到底（宿主先关回放条）；没有 = × 按钮（直接关面板）
   'eden-map:build': [VIEWER_TO_HOST, {}],
   'eden-map:line-pick': [VIEWER_TO_HOST, {}],

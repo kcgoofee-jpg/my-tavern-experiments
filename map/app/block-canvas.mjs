@@ -8,6 +8,7 @@ import { visibilityGuard } from './visibility.mjs';
 import { trafficField, routeList, pathMetrics, trailOf } from '../core/traffic.mjs';
 import { weatherOf, particleField, lightningAt, tintOf } from '../core/weather.mjs';
 import { aspect, osdViewer } from './state.mjs';
+import { isOblique, projectPt, zAt } from './oblique.mjs';
 
 const CSS_ID = 'blkCss';
 const CSS = '.blkcv { position: absolute; inset: 0; pointer-events: none; } .blkcv[hidden] { display: none; }';
@@ -15,10 +16,12 @@ function css() {
   if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return;
   const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS; document.head.appendChild(s);
 }
-/** 图坐标（nx, ny*aspect）→ 视口像素；OSD 没就绪返回 null（画布还没挂上就别算） */
+/** 图坐标（nx, ny*aspect）→ 视口像素；OSD 没就绪返回 null（画布还没挂上就别算）。斜视图按相机投影（附录 OBLIQUE-CODE C） */
 export function toScreen(nx, ny) {
   try {
-    const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true);
+    let x = nx, y = ny;
+    if (isOblique()) [x, y] = projectPt(nx, ny, zAt(nx, ny));
+    const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(x, y * aspect), true);
     return p?.x != null && Number.isFinite(p.x) ? p : null;
   } catch (e) { return null; }
 }

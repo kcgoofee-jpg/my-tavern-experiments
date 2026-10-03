@@ -7,7 +7,7 @@ import { go, groupView } from './map-switch.mjs';
 import { estFail, estateRoom, estateStandIn } from './subpage3d-host.mjs';
 import { updateLayerBadges } from './map-level-nav.mjs';
 import { rebuildHere } from './extension-api.mjs';
-import { activeInset } from './hires-inset-tiles.mjs';
+import { activeInset, insetPx } from './hires-inset-tiles.mjs';
 import { localName, uiText } from './i18n.mjs';
 import { plugins } from './plugins.mjs';
 import { isScene, eventGeo, groupPlaces } from './nodes-runtime.mjs';
@@ -28,7 +28,8 @@ export function applyZoomLimit() { if (mapRegistry.maps[currentMapId]?.kind === 
   const mw = viewNorm(mapRegistry.maps[currentMapId], 'min_width_m') || 0, cw = osdViewer.container.clientWidth;
   const ins = activeInset();
   // 插图覆盖的范围只占底图的一小块（bounds 宽度），像素上限要按「那一小块在屏幕上能占多宽」折算，不能直接拿插图像素宽比整张底图宽
-  const pw = ins ? cw / (ins.res_px[0] / (ins.bounds[2] - ins.bounds[0]) * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
+  // （斜视插图的覆盖宽度与源像素由它的相机画框给出，app/hires-inset-tiles.mjs insetPx；相机没到时按底图算）
+  const den = insetPx(ins), pw = den ? cw / (den[0] / den[1] * INSET_MAX_PX) : cw / (it.getContentSize().x * MAX_PX);
   // v0.9.6「主城周边」：主城各层拖得出去（visibilityRatio 放宽），不再撞到硬边；缩放下限见 TIER_MIN_ZOOM（FOG-1 item 5）
   const ring = window.ScaleHandoffApi?.isTier(currentMapId); osdViewer.viewport.minZoomLevel = ring ? TIER_MIN_ZOOM : null; osdViewer.viewport.visibilityRatio = ring ? .15 : 1;
   osdViewer.viewport.maxZoomLevel = 1 / Math.max(mw, pw); osdViewer.viewport.applyConstraints();

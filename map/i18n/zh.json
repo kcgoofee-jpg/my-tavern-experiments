@@ -148,6 +148,8 @@
   "overlay": "叠加层",
   "alt_base": "另一版底图",
   "alt_title": "高级：换成带下方城市的底图（图更大）",
+  "topview": "俯视",
+  "topview_title": "用正上方俯视的底图看这一层（斜视是主视图，再点一次切回来）",
   "labels": "地名",
   "markers": "标记",
   "here": "当前地点",

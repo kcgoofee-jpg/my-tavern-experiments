@@ -8,6 +8,7 @@ const tgt = (order, boxId, labelKey, label, titleKey, title, more = {}) => ({ or
 
 export const KERNEL_LAYERS = Object.freeze([
   L('base-overlay', 'base', 'osd', null, { menu: { order: 10, id: 'tgOverlay', boxId: 'tgBorders', label: '国界' } }),
+  L('top-view', 'base', 'osd', null, { order: 6, menu: { order: 15, id: 'tgTopView', boxId: 'tgTopBox', labelKey: 'topview', label: '俯视', titleKey: 'topview_title', title: '用正上方俯视的底图看这一层（斜视是主视图；只有登记了斜视图与俯视图的层有这一项）', hidden: true } }),   // OBLIQUE-CODE E: the top-down toggle (edenMapTopView, default off)
   L('alt-base', 'base', 'osd', null, { order: 1, menu: { order: 20, id: 'tgAlt', boxId: 'tgAltBox', label: '显示下方城市', titleKey: 'alt_title', title: '高级：换成带下方城市的底图（图更大）', hidden: true } }),
   L('routes', 'routes', 'osd', 'line', { menu: { order: 30, id: 'tgRoutes', boxId: 'tgRoutesBox', labelKey: 'routes', label: '航线', titleKey: 'routes_title', title: '上层航线（金色虚线）与巡逻环（淡蓝点划线）', hidden: true } }),
   L('security', 'markers', 'osd', null, { order: 2, menu: { order: 40, id: 'tgSec', boxId: 'tgSecBox', labelKey: 'sec.title', label: '安保', titleKey: 'sec.hint', title: '结界、监控、门禁规则（只列卡里写明的）' } }),

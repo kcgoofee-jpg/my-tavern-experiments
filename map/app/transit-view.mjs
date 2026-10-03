@@ -13,6 +13,7 @@ import { currentMapId, aspect, osdViewer, mapRegistry } from './state.mjs';
 import { declutter } from './sharpness-tiers.mjs';
 import { busOn } from './bus.mjs';
 import { uiText, LANG } from './i18n.mjs';
+import { isOblique } from './oblique.mjs';
 
 const ID = 'transit', CSS = `
 .lyr-lb.badge { background: var(--lc); color: var(--lc-ink); border-color: transparent; }
@@ -47,6 +48,7 @@ async function draw() {
   if (rec) Object.assign(rec, { legend: lg.rows, style: { by: lg.by } });   // the registry record the legend reads (K-R84)
   const sig = JSON.stringify([on, lg.rows, lg.by]); if (sig !== legendSig) { legendSig = sig; legendChanged(); }
   if (!on) return;
+  if (isOblique()) { count = 0; syncRow(); return; }   // 斜视主视图暂不叠专题交通图（它是俯视图的画法；OBLIQUE-CODE 未列，留待数据步对位轨道后再接）
   ensureCss();
   for (const l of layers) drawn.push(drawOverlay({ viewer: osdViewer, layer: l, features: l.features, aspect, lang: LANG }));
   declutter();

@@ -11,9 +11,14 @@ import { cardSheet } from './drawer-glue.mjs';
 import { placeCardBridge } from './place-card-bridge.mjs';   // PLACE-1b: 记录卡那一对函数（place-card.mjs 装）
 import { plugins } from './plugins.mjs';
 import { isScene, RT } from './nodes-runtime.mjs';
+import { isOblique, projectPt, zAt } from './oblique.mjs';
 // ---------------- 标记 ----------------
-export function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT) {
-  osdViewer.addOverlay({ element: el, location: new OpenSeadragon.Point(nx, ny * aspect), placement });
+// 斜视图（maps.json views.oblique，附录 OBLIQUE-CODE C）：叠加点由相机文件从地图米投影到画幅——
+// (nx, ny) 仍是顶视归一化坐标，z 取标记 z_m / 所在岛的海拔 / 本层 z_ref_m（app/oblique.mjs zAt）；俯视图原样使用 nx / ny。
+export function placeN(el, nx, ny, placement = OpenSeadragon.Placement.TOP_LEFT, meta) {
+  let x = nx, y = ny;
+  if (isOblique()) { const z = zAt(nx, ny, meta); [x, y] = projectPt(nx, ny, z); }
+  osdViewer.addOverlay({ element: el, location: new OpenSeadragon.Point(x, y * aspect), placement });
 }
 function place(el, x, y, placement) { const [nx, ny] = toImg(x, y); placeN(el, nx, ny, placement); }
 // 叠加层的点击追踪器：OSD 的 MouseTracker 要显式 destroy，否则元素移走后监听还在（切层 20 轮监听 792 → 9065，E4 N11）。
@@ -143,35 +148,38 @@ window.MarkersApi = { closeCard: () => { try { closeCard(); } catch (e) {} } };
 // 渲染脚本导出的点位地图（主城各层）：标记 + 结界圈（或别的地图的岛屿轮廓，如中层的「上层投影」）
 export function pointOverlays() {
   const m = mapRegistry.maps[currentMapId], d = currentMapData || { markers: [], islands: [] }, od = overviewMapData || {};
+  const ob = isOblique();
+  const obXY = (nx, ny, z) => { if (!ob) return [nx, ny]; const [u, v] = projectPt(nx, ny, z ?? zAt(nx, ny)); return [u, v]; };   // 顶视归一化 → 画幅归一化（斜视）
   window.ScaleHandoffApi?.ring();   // v0.9.6：城外一圈（最先加，排在标记下面）
-  if (m.overlay?.type === 'barriers' && od.islands?.length) {
+  if (m.overlay?.type === 'barriers' && od.islands?.length && !(ob && m.overlay.from)) {   // 斜视里不再画「上层投影」（上层视图已合成，附录 OBLIQUE-CODE C）
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('barriers');
     if (m.overlay.from) svg.classList.add('proj');
     // 有 outline（渲染脚本导出的岛轮廓，归一化、左上原点）就按轮廓画平滑闭合曲线；没有时退回椭圆
-    // 结界比岛缘略向外扩（5%），投影就是岛本身的轮廓
+    // 结界比岛缘略向外扩（5%），投影就是岛本身的轮廓；斜视里每个顶点按岛的海拔投影（正交下多边形仍是多边形）
     const grow = m.overlay.from ? 1 : 1.05;
+    const zOfI = i => depthData?.islands?.[i.id]?.alt ?? i.alt_m;
     for (const i of od.islands) { let e;
       if (Array.isArray(i.outline) && i.outline.length >= 8) {
         e = document.createElementNS(ns, 'path');
-        e.setAttribute('d', smoothPath(i.outline.map(([x, y]) => [(i.nx + (x - i.nx) * grow) * VW, (i.ny + (y - i.ny) * grow) * VH])));
-      } else {
+        e.setAttribute('d', smoothPath(i.outline.map(([x, y]) => { const nx = i.nx + (x - i.nx) * grow, ny = i.ny + (y - i.ny) * grow, [u, v] = obXY(nx, ny, ob ? zOfI(i) : undefined); return [u * VW, v * VH]; })));
+      } else if (!ob) {
         e = document.createElementNS(ns, 'ellipse');
         e.setAttribute('cx', i.nx * VW); e.setAttribute('cy', i.ny * VH); e.setAttribute('rx', i.rx * VW * 1.08); e.setAttribute('ry', i.ry * VH * 1.08);
         e.setAttribute('transform', `rotate(${-i.rot * 180 / Math.PI} ${i.nx * VW} ${i.ny * VH})`);
-      }
-      if (i.id === 'eden') e.classList.add('eden');
-      svg.appendChild(e); }
+      } else e = null;
+      if (e) { if (i.id === 'eden') e.classList.add('eden'); svg.appendChild(e); } }
     svg.style.pointerEvents = 'none';
     osdViewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
-  // 航线与巡逻环（上层数据的 routes：[{kind: lane | patrol | patrol_city, from, to, pts: [[nx, ny] …]}]）
+  // 航线与巡逻环（上层数据的 routes：[{kind: lane | patrol | patrol_city, from, to, pts: [[nx, ny] …]}]）；斜视里每个顶点按所在处的海拔投影
   if (d.routes?.length) {
     const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg'), VW = 1000, VH = 1000 * aspect;
     svg.setAttribute('viewBox', `0 0 ${VW} ${VH}`); svg.setAttribute('preserveAspectRatio', 'none'); svg.classList.add('routes');
     // U8（spec §2.6）：航线在地名标签、人物头像处断开——遮罩里的黑块由 routeGaps() 按标签实际位置更新
     svg.innerHTML = `<defs><mask id="rtGap" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect x="0" y="0" width="${VW}" height="${VH}" fill="#fff"/><g class="gaps"></g></mask></defs><g mask="url(#rtGap)" class="rtg"></g>`;
-    for (const q of routePaths(d.routes, VW, VH)) {   // the line block's paths (core/layer-geometry.mjs; K-R80): every halo, then every line
+    const routes = ob ? d.routes.map(q => ({ ...q, pts: (q.pts || []).map(([x, y]) => obXY(x, y)) })) : d.routes;
+    for (const q of routePaths(routes, VW, VH)) {   // the line block's paths (core/layer-geometry.mjs; K-R80): every halo, then every line
       const e = document.createElementNS(ns, 'path'); e.setAttribute('d', q.d); e.setAttribute('class', q.cls); svg.querySelector('.rtg').appendChild(e); }
     osdViewer.addOverlay({ element: svg, location: new OpenSeadragon.Rect(0, 0, 1, aspect) });
   }
@@ -186,6 +194,6 @@ export function pointOverlays() {
     el.dataset.mid = k.id;   // the marker's id (a node id for a schema-2 pack): edit mode (pack-edit-view.mjs) finds the node through it
     if (k.id === (m.view?.focus || m.focus)) el.dataset.focus = '1'; if (meta.link) el.dataset.link = '1';   // 标签避让的优先级
     depthFx(el, meta);
-    placeN(el, k.nx, k.ny); }
+    placeN(el, k.nx, k.ny, undefined, meta); }
 }
 export function setCardFrom(v) { return (cardFrom = v); }

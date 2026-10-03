@@ -11,20 +11,25 @@ const i18nOf = (zh, en) => {
   return Object.keys(out).length ? out : undefined;
 };
 const tiles = (m, node, has) => {
-  if (!str(m.base)) return null;
-  const v = { kind: 'tiles', src: m.base }, w = m.view || {};
+  // views（OBLIQUE-CODE，K-R135）：顶层 base / periods / insets 已迁进 views.top 时从那里取；斜视图（views.oblique）只属于
+  // 查看器的画面层，host 侧的投影不消费它
+  const top = m.views && typeof m.views === 'object' && m.views.top && typeof m.views.top === 'object' ? m.views.top : null;
+  const src = (top && str(top.base)) || str(m.base);
+  if (!src) return null;
+  const periods = (top && top.periods) || m.periods, insets = (top && top.insets) || m.insets;
+  const v = { kind: 'tiles', src }, w = m.view || {};
   put(v, 'extent', size(w.extent_m)); put(v, 'regions', str(m.data));
   const focus = str(w.focus) && (node[w.focus] || w.focus), home = {};
   if (focus && has(focus)) home.focus = focus;
   if (w.width_m > 0) home.width = w.width_m; if (w.min_width_m > 0) home.min_width = w.min_width_m;
   if (Array.isArray(w.phone) && w.phone.length === 4) home.phone = w.phone;
   put(v, 'home', Object.keys(home).length ? home : undefined);
-  if (m.periods && typeof m.periods === 'object') put(v, 'variants', Object.fromEntries(Object.entries(m.periods).filter(([, s]) => str(s))));
+  if (periods && typeof periods === 'object') put(v, 'variants', Object.fromEntries(Object.entries(periods).filter(([, s]) => str(s))));
   put(v, 'credit', str(m.credit)); put(v, 'i18n', i18nOf({ title: m.title }, { title: m.title_en, credit: m.credit_en }));
   if (m.alt && str(m.alt.base)) put(v, 'alt', put({ src: m.alt.base, ...(str(m.alt.label) ? { label: m.alt.label } : {}) }, 'i18n', i18nOf({}, { label: m.alt.label_en })));
   const o = m.overlay;
   if (o && str(o.src) && ['dzi', 'barriers'].includes(o.type)) { const ov = put(put({ kind: o.type, src: o.src }, 'label', str(o.label)), 'i18n', i18nOf({}, { label: o.label_en })); put(ov, 'from', str(o.from)); v.overlays = [ov]; }
-  if (Array.isArray(m.insets)) put(v, 'insets', m.insets.filter(i => i && str(i.id) && str(i.base) && Array.isArray(i.bounds) && size(i.res_px)).map(i => put({ id: i.id, src: i.base, bounds: i.bounds, px: i.res_px }, 'node', str(i.marker) && (node[i.marker] || i.marker))));
+  if (Array.isArray(insets)) put(v, 'insets', insets.filter(i => i && str(i.id) && str(i.base) && Array.isArray(i.bounds) && size(i.res_px)).map(i => put({ id: i.id, src: i.base, bounds: i.bounds, px: i.res_px }, 'node', str(i.marker) && (node[i.marker] || i.marker))));
   put(v, 'x-depth', m.depth);
   put(v, 'x-clouds', m.clouds === true ? true : undefined); put(v, 'x-tint', m.tint === 'period' ? 'period' : undefined);   // K-R70: pack data says which maps get drifting clouds and the period night tint
   put(v, 'x-people', ['macro', 'micro'].includes(m.people) ? m.people : undefined);   // K-R73: a map may force how the people tab groups the present people

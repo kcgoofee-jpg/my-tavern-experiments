@@ -664,3 +664,22 @@ ts,id,stage,event,agent,gate,note
 2026-10-03T06:47:21Z,estate:cutaway,final,done,render-b6,pass,"F1-F3 interior materials, AO bake, realistic lighting fixtures (chandeliers, sconces, fireplaces)"
 2026-10-03T06:47:24Z,estate:cutaway,verify,done,render-b6,pass,verified in estate3d probe and e13b 6-view sweep with zero flicker across B2-F3
 2026-10-03T06:47:29Z,estate:cutaway,ship,done,render-b6,pass,shipped house.glb with F1-F3 interiors and merged B2 medical center
+2026-10-03T10:42:36Z,obl:tc_upper:day,ship,done,oblique-code,,wired in maps.json
+2026-10-03T10:42:59Z,obl:tc_upper:dawn,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper:dusk,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper:night,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper_eden:day,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper_eden:dawn,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper_eden:dusk,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_upper_eden:night,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_mid:dusk,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_mid:night,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,obl:tc_low:nightshift,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,out:tc_mid:day,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,out:tc_mid:dusk,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,out:tc_mid:night,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,out:tc_low:dayshift,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,out:tc_low:nightshift,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:42:59Z,var:world:night,register,done,oblique-code,,registered in maps.json views
+2026-10-03T10:43:04Z,obl:tc_mid:day,ship,done,oblique-code,,shipped in maps.json views
+2026-10-03T10:43:04Z,obl:tc_low:dayshift,ship,done,oblique-code,,shipped in maps.json views

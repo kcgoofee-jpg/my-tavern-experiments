@@ -29,7 +29,7 @@ test('two code-only heads: every art/ path of the registry resolves to the same 
   assert.ok(u1.length > 20); assert.deepEqual(u1, u2);
   assert.ok(u1.every(u => u.startsWith(`https://cdn.jsdmirror.com/gh/o/r@${ART.slice(0, 12)}/map/art/`)));
   const r = artRegistry(REG, au);
-  assert.equal(r.maps.tc_upper.base, `https://cdn.jsdmirror.com/gh/o/r@${ART.slice(0, 12)}/map/${REG.maps.tc_upper.base}`);
+  assert.equal(r.maps.tc_upper.views.top.base, `https://cdn.jsdmirror.com/gh/o/r@${ART.slice(0, 12)}/map/${REG.maps.tc_upper.views.top.base}`);   // OBLIQUE-CODE: the top base moved into views
   assert.deepEqual(Object.keys(r.maps), Object.keys(REG.maps)); assert.equal(r.groups, REG.groups);
   assert.equal(artRegistry(REG, null), REG, 'no art resolver: the registry as is');
   const town = rebaseRegistry({ maps: { t: { base: 'art/town.dzi' } } }, 'packs/town/');

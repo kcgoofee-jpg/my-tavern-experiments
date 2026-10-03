@@ -13,6 +13,7 @@ import { visibilityGuard } from './visibility.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { aspect, currentMapId, currentMapData, mapRegistry, osdViewer } from './state.mjs';
+import { isOblique, projectPt, zAt } from './oblique.mjs';
 
 let cv = null, cx = null, raf = 0, t0 = 0, W = 0, H = 0, mounted = false, night = false, now = 0;
 let lastId = null, walls = [];
@@ -27,7 +28,7 @@ function size() {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-const toScreen = (nx, ny) => { try { const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
+const toScreen = (nx, ny) => { try { let x = nx, y = ny; if (isOblique()) [x, y] = projectPt(nx, ny, zAt(nx, ny)); const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(x, y * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };   // 斜视按相机投影（附录 OBLIQUE-CODE C）
 
 /** 此刻的岗哨：没有巡逻环的图一个都不出（多数地图一帧不画） */
 export const conesNow = t => patrolCones(currentMapData?.routes, { t, quality: quality() });

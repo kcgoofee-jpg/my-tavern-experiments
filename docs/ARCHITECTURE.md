@@ -219,6 +219,7 @@ mutable state is written only by its declaring module through `set*()`.
 | `nodes-runtime-v2.mjs` | The same reads for a schema-2 pack, built from the pack's own tree and the projected registry (K-R96). Pure. |
 | `nodes-runtime.mjs` | The viewer's node tree: the loaded registry converted once by `core/compat-v1.mjs`; breadcrumb, up button, warm-up neighbours, estate stand-in and 3D-page test read it (no `parent` walking). `buildRuntimeV2` installs the schema-2 runtime into the same slot. |
 | `notice-layer.mjs` | Notice layer (handed to the host when embedded, `ui/notice.mjs` when standalone) and the first-run hint. |
+| `oblique.mjs` | Oblique base maps (views block in maps.json, appendix OBLIQUE-CODE): camera loading and cache, metre-to-normalised projection, place rectangle calculation, top-down vs oblique view mode switch. |
 | `one-hand-mode.mjs` | One-hand mode: handedness switch with the floating button following it; starts the settings-home actions and quick zoom. |
 | `pack-edit-view.mjs` | Edit mode on screen (K-R100): the edit bar, marker drag, the controls on a place card, pictures and "use a picture as this place's map". Drawn only while the switch is on. |
 | `pack-edit.mjs` | Edit mode model (K-R100): `createEditor` with its operations (move, reparent, alias, new place, start, pictures, base map, discard) and the draft's storage (text in LocalStore, picture bytes in the gallery IndexedDB under `edit:<pack id>`). |
@@ -343,6 +344,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `timeline-flow.mjs` | Timeline replay (Part 5-4) and the keyframe cache wiring on the host side. `createTimelineFlow(host)`. |
 | `timeline.mjs` | Timeline replay core: what the map should show at floor N (location, time, who is where). |
 | `trips-parse.mjs` | Trip derivation: "A to B" trips from per-floor places and character tags, styled by transport mode. |
+| `viewer-boot.mjs` | Watchdog for viewer startup (F-TT): monitors initial handshake messages, retries mounting, and rotates through alternate routes if startup stalls. Pure logic. |
 | `worldbook-crystallize.mjs` | Story-fact crystallization into the add-on worldbook as keyword-triggered entries. |
 | `worldbook-jit.mjs` | Worldbook just-in-time hydration: only entries relevant to the current place are enabled. |
 | `worldbook-readme.mjs` | WB-2: the readme entry of an add-on book — a book that explains itself: what it is, which version, when and by which map build it was written, how many entries are on or off and why, and what to send with a bug report. One entry, always disabled (never injected, costs no tokens), rewritten by every sync that writes the book. Pure text; the sync module hands in the facts. |

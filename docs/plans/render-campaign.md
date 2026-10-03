@@ -1,13 +1,14 @@
-> Generated file: do not edit — run tools/render_campaign.py status --md
+wrote docs/plans/render-campaign.md
+n tools/render_campaign.py status --md
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-03T05:36:30Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-03T10:43:04Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 55 | 0 | 0 | 10 | 17 | 0 | 82 |
-| hero | 24 | 0 | 1 | 9 | 1 | 0 | 35 |
+| standard | 57 | 0 | 7 | 0 | 18 | 0 | 82 |
+| hero | 27 | 0 | 5 | 0 | 3 | 0 | 35 |
 
 Below-gate (user spot-check): none
 
@@ -70,20 +71,20 @@ Below-gate (user spot-check): none
 | 53 | `fix:climate_tower` | review | done | - |  |  | Climate tower material: white block on the top, pink strip on the podium |
 | 54 | `inst:supreme_court` | review | done | - |  |  | Institution model check: supreme court |
 | 55 | `inst:tiancheng_univ` | review | done | - |  |  | Institution model check: tiancheng univ |
-| 56 | `obl:tc_mid:day` | basemap | waiting | ship |  | waiting-on-freeze | Mid oblique base, day: canyon light, neon on (D41) |
-| 57 | `obl:tc_mid:dusk` | variant | waiting | register |  | waiting-on-freeze | Mid oblique, dusk (D41) |
-| 58 | `obl:tc_mid:night` | variant | waiting | register |  | waiting-on-freeze | Mid oblique, night (D41) |
-| 59 | `obl:tc_low:dayshift` | basemap | waiting | ship |  | waiting-on-freeze | Low oblique base, day shift: artificial light only (D41) |
-| 60 | `obl:tc_low:nightshift` | variant | waiting | register |  | waiting-on-freeze | Low oblique, night shift (D41) |
-| 61 | `out:tc_mid:day` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / day, low-res (D41 scale) |
-| 62 | `out:tc_mid:dusk` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / dusk, low-res (D41 scale) |
-| 63 | `out:tc_mid:night` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_mid / night, low-res (D41 scale) |
-| 64 | `out:tc_low:dayshift` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
-| 65 | `out:tc_low:nightshift` | variant | waiting | register |  | waiting-on-freeze | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
-| 66 | `glb:budget:upper` | estate | blocked | final |  |  | Landmark models, upper group: budget re-export (D41 B3) |
-| 67 | `glb:budget:mid` | estate | blocked | final |  |  | Landmark models, mid group: budget re-export (D41 B3) |
-| 68 | `glb:budget:low` | estate | blocked | final |  |  | Landmark models, low group: budget re-export (D41 B3) |
-| 69 | `glb:budget:sites` | estate | blocked | final |  |  | Landmark models, sites group: budget re-export (D41 B3) |
+| 56 | `obl:tc_mid:day` | basemap | done | - |  |  | Mid oblique base, day: canyon light, neon on (D41) |
+| 57 | `obl:tc_mid:dusk` | variant | open | ship |  |  | Mid oblique, dusk (D41) |
+| 58 | `obl:tc_mid:night` | variant | open | ship |  |  | Mid oblique, night (D41) |
+| 59 | `obl:tc_low:dayshift` | basemap | done | - |  |  | Low oblique base, day shift: artificial light only (D41) |
+| 60 | `obl:tc_low:nightshift` | variant | open | ship |  |  | Low oblique, night shift (D41) |
+| 61 | `out:tc_mid:day` | variant | blocked | ship |  |  | Outskirts ring tc_mid / day, low-res (D41 scale) |
+| 62 | `out:tc_mid:dusk` | variant | blocked | ship |  |  | Outskirts ring tc_mid / dusk, low-res (D41 scale) |
+| 63 | `out:tc_mid:night` | variant | blocked | ship |  |  | Outskirts ring tc_mid / night, low-res (D41 scale) |
+| 64 | `out:tc_low:dayshift` | variant | blocked | ship |  |  | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
+| 65 | `out:tc_low:nightshift` | variant | blocked | ship |  |  | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
+| 66 | `glb:budget:upper` | estate | open | final |  |  | Landmark models, upper group: budget re-export (D41 B3) |
+| 67 | `glb:budget:mid` | estate | open | final |  |  | Landmark models, mid group: budget re-export (D41 B3) |
+| 68 | `glb:budget:low` | estate | open | final |  |  | Landmark models, low group: budget re-export (D41 B3) |
+| 69 | `glb:budget:sites` | estate | open | final |  |  | Landmark models, sites group: budget re-export (D41 B3) |
 | 70 | `bake:night:upper` | estate | blocked | final |  |  | Landmark models, upper group: night emissive bake (D41 B4) |
 | 71 | `bake:night:mid` | estate | blocked | final |  |  | Landmark models, mid group: night emissive bake (D41 B4) |
 | 72 | `bake:night:low` | estate | blocked | final |  |  | Landmark models, low group: night emissive bake (D41 B4) |
@@ -124,17 +125,17 @@ Below-gate (user spot-check): none
 | 20 | `lm:sun_arena` | landmark | done | - |  |  | New model: sun arena |
 | 21 | `lm:union_tower` | landmark | done | - |  |  | New model: union tower |
 | 22 | `base:world` | basemap | done | - |  |  | Final-spec audit / re-render of base map world |
-| 23 | `obl:tc_upper:day` | basemap | waiting | ship |  | waiting-on-freeze | Upper oblique base, day: islands only with alpha (D41) |
-| 24 | `obl:tc_upper:dawn` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, dawn period: islands only with alpha (D41) |
-| 25 | `obl:tc_upper:dusk` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, dusk period: islands only with alpha (D41) |
-| 26 | `obl:tc_upper:night` | variant | waiting | register |  | waiting-on-freeze | Upper oblique, night period: islands only with alpha (D41) |
-| 27 | `obl:tc_upper_eden:day` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, day period (D41 B6) |
-| 28 | `obl:tc_upper_eden:dawn` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, dawn period (D41 B6) |
-| 29 | `obl:tc_upper_eden:dusk` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, dusk period (D41 B6) |
-| 30 | `obl:tc_upper_eden:night` | variant | waiting | register |  | waiting-on-freeze | Eden oblique hi-res inset, night period (D41 B6) |
+| 23 | `obl:tc_upper:day` | basemap | done | - |  |  | Upper oblique base, day: islands only with alpha (D41) |
+| 24 | `obl:tc_upper:dawn` | variant | open | ship |  |  | Upper oblique, dawn period: islands only with alpha (D41) |
+| 25 | `obl:tc_upper:dusk` | variant | open | ship |  |  | Upper oblique, dusk period: islands only with alpha (D41) |
+| 26 | `obl:tc_upper:night` | variant | open | ship |  |  | Upper oblique, night period: islands only with alpha (D41) |
+| 27 | `obl:tc_upper_eden:day` | variant | open | ship |  |  | Eden oblique hi-res inset, day period (D41 B6) |
+| 28 | `obl:tc_upper_eden:dawn` | variant | blocked | ship |  |  | Eden oblique hi-res inset, dawn period (D41 B6) |
+| 29 | `obl:tc_upper_eden:dusk` | variant | blocked | ship |  |  | Eden oblique hi-res inset, dusk period (D41 B6) |
+| 30 | `obl:tc_upper_eden:night` | variant | blocked | ship |  |  | Eden oblique hi-res inset, night period (D41 B6) |
 | 31 | `base:world_cities` | basemap | done | - |  |  | World map day re-render with city patches (D41 B7) |
 | 32 | `var:world:borders` | variant | done | - |  |  | World map borders at full resolution, thin lines (D41 B7) |
-| 33 | `var:world:night` | variant | waiting | register |  | waiting-on-freeze | World map night variant with city lights (D41 B7) |
-| 34 | `estate:cutaway` | estate | blocked | final |  |  | Estate floors view: real interior materials, AO bake, practical lamps (D41 B5) |
-| 35 | `glb:estate:night-glow` | estate | open | final |  |  | Estate exterior glb: a separable window / glass material for the night glow (D38) |
+| 33 | `var:world:night` | variant | open | ship |  |  | World map night variant with city lights (D41 B7) |
+| 34 | `estate:cutaway` | estate | done | - |  |  | Estate floors view: real interior materials, AO bake, practical lamps (D41 B5) |
+| 35 | `glb:estate:night-glow` | estate | done | - |  |  | Estate exterior glb: a separable window / glass material for the night glow (D38) |
 

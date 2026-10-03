@@ -8,6 +8,7 @@ import { seedOf } from '../core/rng.mjs';
 import { busOn } from './bus.mjs';
 import { visibilityGuard } from './visibility.mjs';
 import { aspect, currentMapId, currentMapData, worldData, mapRegistry, osdViewer } from './state.mjs';
+import { isOblique, projectPt, zAt } from './oblique.mjs';
 import { plugins } from './plugins.mjs';
 import { layerStore, saveVisible } from './declared-layers.mjs';
 
@@ -23,7 +24,7 @@ function size() {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   cx?.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-const toScreen = (nx, ny) => { try { const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(nx, ny * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };
+const toScreen = (nx, ny) => { try { let x = nx, y = ny; if (isOblique()) [x, y] = projectPt(nx, ny, zAt(nx, ny)); const p = osdViewer?.viewport?.pixelFromPoint(new OpenSeadragon.Point(x, y * aspect), true); return p?.x != null && Number.isFinite(p.x) ? p : null; } catch (e) { return null; } };   // 斜视按相机投影（附录 OBLIQUE-CODE C）
 
 /** 当前图的地点：标记名（有 meta 就用 meta 的） + 归一化坐标 */
 function placesNow() {

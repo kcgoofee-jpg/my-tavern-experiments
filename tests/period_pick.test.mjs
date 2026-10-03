@@ -8,14 +8,15 @@ import { DEFAULT_PERIODS } from '../map/core/periods.mjs';
 
 const maps = JSON.parse(readFileSync(fileURLToPath(new URL('../map/data/maps.json', import.meta.url)), 'utf8')).maps;
 const BANDS = ['dawn', 'day', 'dusk', 'night'];
-const file = (id, tod, bands) => pickPeriod(maps[id].periods, tod, bands).src || maps[id].base;
+const topOf = id => (maps[id].views ? maps[id].views.top : maps[id]);   // OBLIQUE-CODE: the tier maps' top view carries the former top-level fields
+const file = (id, tod, bands) => pickPeriod(topOf(id).periods, tod, bands).src || topOf(id).base;
 
 test('every band picks its own file on tc_upper / tc_mid / tc_low (default bands, and the bands a host sends)', () => {
   const sent = [{ id: 'dawn' }, { id: 'day' }, { id: 'dusk' }, { id: 'night', dark: true }];
   for (const id of ['tc_upper', 'tc_mid', 'tc_low']) for (const b of BANDS) for (const bands of [undefined, [], sent, DEFAULT_PERIODS]) {
-    const r = pickPeriod(maps[id].periods, b, bands);
-    assert.equal(r.src, maps[id].periods[b], `${id} ${b}`); assert.equal(r.exact, true);
-    assert.equal(file(id, b, bands), maps[id].periods[b]);
+    const r = pickPeriod(topOf(id).periods, b, bands);
+    assert.equal(r.src, topOf(id).periods[b], `${id} ${b}`); assert.equal(r.exact, true);
+    assert.equal(file(id, b, bands), topOf(id).periods[b]);
   }
   assert.equal(new Set(BANDS.map(b => file('tc_upper', b))).size, 4, 'four distinct files on tc_upper');
 });
@@ -23,12 +24,17 @@ test('every band picks its own file on tc_upper / tc_mid / tc_low (default bands
 test('parity: day and night are the files they were before; no tod = the base', () => {
   assert.equal(file('tc_mid', 'day'), 'art/tc_mid_day.dzi'); assert.equal(file('tc_mid', 'night'), 'art/tc_mid_night.dzi');
   assert.equal(file('tc_upper', 'day'), 'art/tc_upper.dzi'); assert.equal(file('tc_low', 'night'), 'art/tc_low_night.dzi');
-  for (const id of ['tc_upper', 'tc_mid', 'tc_low']) assert.equal(file(id, ''), maps[id].base);
+  for (const id of ['tc_upper', 'tc_mid', 'tc_low']) assert.equal(file(id, ''), topOf(id).base);
 });
 
 test('a map without period variants keeps its single base for every band', () => {
-  for (const id of ['world', 'dairy', 'site_fief1']) for (const b of ['', ...BANDS]) {
-    const r = pickPeriod(maps[id].periods, b); assert.equal(r.src, null); assert.equal(file(id, b), maps[id].base);
+  for (const id of ['dairy', 'site_fief1']) for (const b of ['', ...BANDS]) {
+    const r = pickPeriod(topOf(id).periods, b); assert.equal(r.src, null); assert.equal(file(id, b), topOf(id).base);
+  }
+  for (const b of BANDS) {   // world has a night variant (batch 5): it borrows it for every other band
+    const r = pickPeriod(maps.world.periods, b);
+    if (b === 'night') { assert.equal(r.src, 'art/world_night.dzi'); assert.equal(r.exact, true); }
+    else { assert.equal(r.key, 'night'); assert.equal(r.exact, false); }
   }
 });
 

@@ -148,6 +148,8 @@
   "overlay": "Overlay",
   "alt_base": "Alternate base map",
   "alt_title": "Advanced: switch to the base map with the city below (larger download)",
+  "topview": "Top-down",
+  "topview_title": "Show this tier with the straight-down base map (oblique is the main view; toggle back)",
   "labels": "Names",
   "markers": "Markers",
   "here": "Location",

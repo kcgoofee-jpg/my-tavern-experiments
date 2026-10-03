@@ -13,6 +13,7 @@ import { registry, declared } from './layer-host.mjs';
 import { altDepth, channel, parallaxOn } from '../core/depth.mjs';
 import { lean } from './sharpness-tiers.mjs';
 import { altOn, go, setGo } from './map-switch.mjs';
+import { isOblique } from './oblique.mjs';
 import { viewField } from './nodes-runtime.mjs';   // 包说哪些图有漂移云：视图上的 x-clouds（K-R70）
 import { artUrl } from './current-pack.mjs';
 import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记（键重复先摘旧的，卸载可一把摘净）
@@ -30,7 +31,8 @@ import { visibilityGuard } from './visibility.mjs';
   const LAYERS = { far: { n: 11, size: [.42, .62], op: [.3, .45], dur: [70, 95], par: .85 }, near: { n: 6, size: [.62, .85], op: [.38, .5], dur: [42, 58], par: 1.2 } };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const isTC = id => { const m = mapRegistry?.maps?.[id]; return !!m && m.kind === 'points' && !!m.group; };
-  const want = () => !!viewField(currentMapId, 'x-clouds') && !altOn(currentMapId) && !lean();
+  // 斜视图的云片烘在成图里（设定 §0.3），屏幕固定的漂移云只在俯视开
+  const want = () => !!viewField(currentMapId, 'x-clouds') && !altOn(currentMapId) && !lean() && !isOblique();
   let box = null, lay = {}, anims = [], shown = false, acc = { far: [0, 0], near: [0, 0] }, last = null, hooked = false;
   const size = () => { const c = osdViewer.container; return [c.clientWidth, c.clientHeight]; };
   function mount() {

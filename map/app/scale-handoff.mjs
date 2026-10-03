@@ -23,6 +23,7 @@ import { fogColors } from './tier-fog.mjs';
 import { worldGroup } from './nodes-runtime.mjs';
 import { artUrl } from './current-pack.mjs';
 import { busOn } from './bus.mjs';
+import { isOblique } from './oblique.mjs';
 const ScaleHandoffApi = (() => {
   const W_M = 12e6;
   const grp = id => { const m = mapRegistry?.maps?.[id]; return m && m.kind === 'points' && m.status !== 'planned' && m.group && mapRegistry.groups[m.group]?.place ? m.group : null; };
@@ -71,6 +72,10 @@ const ScaleHandoffApi = (() => {
   }
   function ring() {
     if (!isTier(currentMapId)) return;
+    if (isOblique()) {   // 斜视图用渲出来的外圈（views.oblique.outskirts，app/tier-fog.mjs），不再画 DOM 雾环
+      if (holder) try { osdViewer.removeOverlay(holder); } catch (e) { console.warn('[scale-handoff] overlay', e); }
+      holder = null; return;
+    }
     const gid = grp(currentMapId), upper = (mapRegistry.groups[gid].upper || []).includes(currentMapId), period = periodNow() || 'day';
     const key = currentMapId + ':' + aspect.toFixed(3) + ':' + period;
     if (holder) try { osdViewer.removeOverlay(holder); } catch (e) { console.warn('[scale-handoff] overlay', e); }   // 时段变了重画：旧环先摘掉

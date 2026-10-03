@@ -40,11 +40,11 @@ test('D40: 掩模资产与画面框同纵横比，数据里每座岛都有轮廓
   assert.ok(data.islands.length >= 9 && data.islands.every(i => Array.isArray(i.outline) && i.outline.length > 8));
 });
 
-test('A6: 三个分层的无时段默认底图 = 同一档（白天图）', () => {
+test('A6: 三个分层的无时段默认底图 = 同一档（白天图；OBLIQUE-CODE 后顶层字段在 views.top）', () => {
   for (const id of ['tc_upper', 'tc_mid', 'tc_low']) {
-    const m = maps.maps[id];
-    assert.equal(m.base, m.periods.day, id);
-    for (const p of PERIODS) assert.ok(m.periods[p], `${id} ${p}`);
+    const m = maps.maps[id], t = m.views.top;
+    assert.equal(t.base, t.periods.day, id);
+    for (const p of PERIODS) assert.ok(t.periods[p], `${id} ${p}`);
   }
 });
 
@@ -55,19 +55,22 @@ test('item 5: 分层缩放下限是常量 0.5（城区 ≥ 半个视口宽再交
   assert.doesNotMatch(src, /1 \/ RING_W/);
 });
 
-test('A1: 插图在非白天档不叠（导出 insetAllowed；时钟换档时重查）', () => {
+test('A1: 插图在非白天档不叠（导出 insetAllowed；时钟换档时重查）；斜视插图随时段走', () => {
   const src = rd('app/hires-inset-tiles.mjs');
   assert.match(src, /export const insetAllowed/);
-  assert.match(src, /insetAllowed\(\)/);
+  assert.match(src, /insetAllowed\(ins\)/);
+  assert.match(src, /isObliqueInset/);
   assert.match(rd('app/host-messages.mjs'), /eden-map:clock.*updateInsets|updateInsets.*clock/s);
 });
 
-test('D40: 合成是通用三层（层序 + 掩模 + 位移），引擎不写死任何一层', () => {
+test('D40: 合成是通用三层（层序 + 掩模 + 位移），引擎不写死任何一层；斜视合成按相机摆放（OBLIQUE-CODE F）', () => {
   const src = rd('app/tier-fog.mjs');
   assert.match(src, /destination-in/);
   assert.match(src, /destination-over/);
   assert.match(src, /offset/);
-  assert.match(src, /alt\.composite/);
+  assert.match(src, /alt\?\.composite/);
+  assert.match(src, /rectFor/);
+  assert.match(src, /outskirts/);
   assert.ok(!src.includes('tc_upper') && !src.includes('tc_mid'), '引擎模块零卡词');
 });
 
