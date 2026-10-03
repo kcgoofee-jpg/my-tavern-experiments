@@ -37,7 +37,7 @@ export function createRoutes({ scriptBase, PACK_IN, manifest }) {
     { key: 'npm', name: 'npm 镜像', sub: '国内 · npmmirror', enabled: false, url: v => `https://registry.npmmirror.com/${PKG}/${v}/files/map/` },
   ].filter(l => l.enabled !== false);
   const LINE_KEY = 'edenMapLine';
-  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com)$/.test(new URL(scriptBase).host);
+  const swappable = /(^|\.)(jsdelivr\.net|jsdmirror\.com|npmmirror\.com|statically\.io)$/.test(new URL(scriptBase).host);   // F-TT：跟着引导脚本可能从任何 gh 镜像加载入口（用户手改过 HOSTS 的就有 statically.io）；不在名单里时线路机制整个失效，图片与数据被钉死在那一台上，它一卡地图就永远起不来
   // 当前版本：gh 标签 map-v<版本>（系列 1）或 map-s<n>-v<版本>（系列 ≥ 2，版本写成 'S2:0.1.0'），或 npm 路径里的版本号；标签规则见 docs/versioning.md（selfcheck.mjs tagOf 同一套）
   const VER = (() => { const m = scriptBase.match(/@map-(?:s(\d+)-)?v([\d.]+)\//); if (m) return m[1] && +m[1] > 1 ? `S${+m[1]}:${m[2]}` : m[2];
     return PKG ? (scriptBase.match(new RegExp(`/${PKG}/([\\d.]+)/files/`)) || [])[1] || null : null; })();

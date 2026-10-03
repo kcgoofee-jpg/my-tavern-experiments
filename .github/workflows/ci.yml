@@ -55,3 +55,5 @@ jobs:
         run: node tools/browser/v096.mjs /tmp/v096
       - if: ${{ !cancelled() }}
         run: node tools/browser/topo_dairy.mjs /tmp/topo_dairy
+      - if: ${{ !cancelled() }}
+        run: node tools/browser/boot_watchdog.mjs /tmp/boot_watchdog   # F-TT：查看器有一个子资源不落地时自己起来（WebKit + Chromium）

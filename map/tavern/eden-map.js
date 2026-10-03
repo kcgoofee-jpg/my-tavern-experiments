@@ -22,7 +22,7 @@ import { createHostApi } from './host-api.mjs';
 import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
-import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）
+import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs'; import { createBootWatchdog } from './viewer-boot.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）；viewer-boot：查看器起不来时的重挂（见 mountFrame）
 (() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
@@ -59,8 +59,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   const pickEl = root.querySelector('.em-pick'), lineBtn = root.querySelector('.em-line'), clockEl = root.querySelector('.em-clock');
   lineBtn.hidden = !swappable;
   // 标题栏跟着地图的语言与深浅主题（地图在 srcdoc 里，与酒馆页同源，设置存在同一个 localStorage；切换时地图发 eden-map:state {lang, theme}）
-  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐' },
-    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended' } };
+  const UI = { zh: { title: '新历 2088', clock: '世界时间', map: '地图', here: '当前地点：', line: '线路：', unset: '未选', close: '关闭', load: '加载地图 {p}%', open: '打开世界地图', fab: '世界地图', unm: '未上图：', unm_tip: '点这里把它放到地图上', pend: '等待本楼变量更新', stale: '本楼没有变量快照，显示的是上一楼的', probe: '测速中…', dead: '连不上', toosmall: '响应过小（未计分）', rec: '推荐', stall: '地图程序没启动，正在重试…', hop: '这条线路没响应，正在换一条…' },
+    en: { title: 'NC 2088', clock: 'World time', map: 'Map', here: 'Location: ', line: 'Route: ', unset: 'not set', close: 'Close', load: 'Loading map {p}%', open: 'Open world map', fab: 'World map', unm: 'Not on map: ', unm_tip: 'Tap to place it on the map', pend: 'waiting for this reply\'s variable update', stale: 'no variable snapshot on this reply; showing the previous one', probe: 'Measuring…', dead: 'unreachable', toosmall: 'response too small to score', rec: 'Recommended', stall: 'The map did not start, retrying…', hop: 'This route did not answer, switching…' } };
   let uiLang = 'zh', mapTitle = ''; try { uiLang = (LS || localStorage).getItem('edenMapLang') === 'en' ? 'en' : 'zh'; } catch (e) { /* storage unavailable (private mode / quota): keep the default */ }
   const U = k => UI[uiLang][k];
   // 深 / 浅主题挂在根元素上（面板、自检提示一起换）；地图没开着时系统切换深浅也跟上（v0.9.5）
@@ -153,7 +153,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (ok) { fab.classList.add('ready'); setTimeout(() => fab.classList.remove('ready'), 2000); }
     else { fab.classList.add('fail'); fab.title = '地图预加载失败，点开重试'; }
   }
-  let html = null, here = '', alive = false, sent = null, killT = 0, unm = null;   // unm（v0.9.6）：地图说当前地点「未上图」时的名字
+  let html = null, here = '', alive = false, sent = null, killT = 0, unm = null, docNow = '';   // unm（v0.9.6）：地图说当前地点「未上图」时的名字
   // 统一加载进度：地图程序 0–20%、启动 20–50%、首屏图块 50–100%。只增不减；8 秒没进展提示网络慢，20 秒提示卡住
   const txtEl = loadEl.querySelector('.txt'), barEl = loadEl.querySelector('.bar i'), hintEl = loadEl.querySelector('.hint'), actsEl = loadEl.querySelector('.acts');
   let pct = 0, lastMove = 0, watchT = 0, quietT = 0;
@@ -212,11 +212,10 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
       hintEl.textContent = '地图程序下载失败，可以重试或换一条线路'; actsEl.hidden = false; clearInterval(watchT); if (ghost) endGhost(false); return; }
     finally { htmlProg = null; }
     if (panel.hidden) return;   // 取页面期间面板又被关了
-    frame.onload = () => { setHostToken(); push(); };
-    setHostToken();
-    frame.srcdoc = doc;
+    docNow = doc; mountFrame();
   }
-  function unloadViewer() { alive = false; frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; mapTitle = ''; showTitle(); }
+  function mountFrame() { frame.onload = () => { BW.saw(); setHostToken(); push(); }; setHostToken(); frame.srcdoc = docNow; BW.arm(); }   // arm：挂上就开始计时，查看器第一条消息到达就停（F-TT：子资源卡住时自己重挂）
+  function unloadViewer() { BW.stop(); alive = false; frame.onload = null; frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; mapTitle = ''; showTitle(); }
   // 宿主令牌（2026-09-27 接手 review P1）：查看器只认带这个令牌的消息。脚本跑在卡片 iframe 里、查看器挂在宿主页上时
   // 「消息来源窗口」并不是查看器的 parent，所以只比对 e.source 会把真宿主也挡掉；令牌写在查看器窗口上，只有能碰到这个窗口的脚本才拿得到。
   const HOST_TOKEN = 'ek' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -226,11 +225,12 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     post({ type: 'eden-map:sleep' }); clearTimeout(killT); killT = setTimeout(unloadViewer, SLEEP_MS);
   }
   const post = msg => { if (!life.dead) { setHostToken(); frame.contentWindow?.postMessage({ ...msg, v: PROTO, t: HOST_TOKEN }, '*'); } }; const resendVisible = watchVisible(panel, frame, on => post({ type: 'eden-map:visible', on }));   // srcdoc 换页后属性会丢，每次发消息前补一次；S7-2：面板开关 / 滚出视口告诉查看器
+  const BW = createBootWatchdog({ base: () => BASE, onStall: (n, next) => { if (n) { hintEl.textContent = next ? U('hop') : U('stall'); actsEl.hidden = false; } }, onMount: b => { if (b && b !== BASE) { BASE = b; html = null; } unloadViewer(); loadViewer(); } }); life.add(BW.stop);   // F-TT（tavern/viewer-boot.mjs）：查看器挂上之后一直没有启动消息 = 有子资源永远没取回 → 同一个域名重挂，再逐个换镜像域名重挂
   let flyQ = null, tileSwitchAt = 0;   // EdenMap.flyTo 在地图就绪前调用时排队；tileSwitchAt：上次自动换线的时间（N13）
   // 地图 → 酒馆：ready 撤掉遮罩；state 更新面板标题。只接受来自本面板 iframe 的消息
   const onMsg = e => {
     if (e.source !== frame.contentWindow || (protocolModule && !protocolModule.accept(e.data, '（查看器 → 宿主）'))) return;
-    if (e.data?.type === 'eden-map:boot') setProg(20 + e.data.pct * 30);
+    if (e.data?.type === 'eden-map:boot') { BW.saw(); setProg(20 + e.data.pct * 30); }
     if (e.data?.type === 'eden-map:ready') { post({ type: 'eden-map:lang', lang: uiLang }); resendVisible(); sendBar(); sendAbout(); sendCardInfo(); alive = true; CF.sentClock = CF.sentOutfit = charsSent = null; CF.resetLayerSent(); LL.sendOps(true); RF.onReady(); HA.replayLayers(); knowRooms(); sendCheck(); sendCustom(); sendInv(); sendTrips(); sendRoutine(); sendTh(); mvuBridge.varSig = ''; refreshVarMap(); setProg(50); loadEl.classList.add('over'); sent = null; push(); sendEvents(); if (panel.hidden) sleepViewer(); }
     if (e.data?.type === 'eden-map:ready' && CK.setQ) { const q = CK.setQ; CK.setQ = null; setTimeout(() => post({ type: 'eden-map:settings', page: q }), 0); }
     if (e.data?.type === 'eden-map:ready' && flyQ) { const q = flyQ; flyQ = null; setTimeout(() => inner()?.flyTo?.(q), 0); }   // EdenMap.flyTo 排队的
