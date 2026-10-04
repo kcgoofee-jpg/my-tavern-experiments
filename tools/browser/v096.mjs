@@ -57,7 +57,9 @@ const ev = (p, f, a) => p.evaluate(f, a);
   // 4 过渡环：缩到最远 → 环可见、面包屑「天城周边」；再推 → 回世界图
   await ev(p, () => { ViewerDebug.osdViewer.viewport.zoomTo(ViewerDebug.osdViewer.viewport.getMinZoom(), null, true); ViewerDebug.osdViewer.viewport.applyConstraints(true); }); await B.wait(1200);
   const ring = await ev(p, () => ({ w: ViewerDebug.osdViewer.viewport.getBounds(true).width, holder: !!document.querySelector('.tc-ring canvas'), vis: document.querySelector('.tc-ring')?.style.visibility, crumb: document.getElementById('crumbs').textContent }));
-  rep.check('ring_visible', ring.holder && ring.vis !== 'hidden' && ring.w > 1.9 && ring.w < 2.2, JSON.stringify(ring));
+  // U-FIX-12: the default view is the oblique composite — the DOM fog ring is retired there (the rendered outskirts in the oblique art take over, scale-handoff.mjs ring());
+  // the handoff itself is still announced by the breadcrumb 「天城周边」
+  rep.check('ring_visible', (ring.holder && ring.vis !== 'hidden' || /天城周边/.test(ring.crumb)) && ring.w > 1.9 && ring.w < 2.2, JSON.stringify(ring));
   rep.check('ring_crumb', /天城周边/.test(ring.crumb), ring.crumb);
   await snap(p, 'ring_375');
   await ev(p, () => { for (let i = 0; i < 2; i++) { ViewerDebug.osdViewer.viewport.zoomBy(1 / 1.3); ViewerDebug.osdViewer.viewport.applyConstraints(); } });
@@ -108,7 +110,7 @@ const ev = (p, f, a) => p.evaluate(f, a);
   await ev(p, () => ViewerDebug.go('tc_mid')); await p.waitForFunction(() => ViewerDebug.currentMapId === 'tc_mid' && !document.querySelector('.tier-snap'), null, { timeout: 5000 }).catch(() => {});
   rep.check('desktop_tier_switch_clears', await ev(p, () => !document.querySelector('.tier-snap, #clCover.run')));
   await ev(p, () => { ViewerDebug.osdViewer.viewport.zoomTo(ViewerDebug.osdViewer.viewport.getMinZoom(), null, true); ViewerDebug.osdViewer.viewport.applyConstraints(true); }); await B.wait(1000);
-  rep.check('desktop_ring', await ev(p, () => !!document.querySelector('.tc-ring canvas') && ScaleHandoffApi.ringOn));
+  rep.check('desktop_ring', await ev(p, () => ScaleHandoffApi.ringOn));   // U-FIX-12: on the oblique view no DOM ring is drawn (the rendered outskirts replace it); the handoff state is ringOn
   if (shotTag) await B.shot(p, SHOTS, `v096_${shotTag}_ring_desktop`);
   rep.check('desktop_no_errors', !P.errors.filter(e => !/favicon/.test(e)).length, P.errors.slice(0, 3).join(' | '));
   await P.close();
