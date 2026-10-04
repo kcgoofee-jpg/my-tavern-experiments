@@ -34,5 +34,7 @@
  "tris": 16576,
  "std_mb": 2.73,
  "low_mb": 0.4,
- "pass": "render-b7"
+ "pass": "render-b7",
+ "night_bake": "bake:night:sites",
+ "emissive": true
 }
