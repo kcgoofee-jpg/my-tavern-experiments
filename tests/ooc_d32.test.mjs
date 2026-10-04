@@ -51,6 +51,10 @@ test('corrections: place, person, half-width brackets, no space, English, self-r
   assert.deepEqual(O.floorCorrections(4, 'OOC地图：Y@Z'), [{ floor: 4, kind: 'char', name: 'Y', place: 'Z' }]);
   assert.deepEqual(O.floorCorrections(4, '（OOC：写得长一点）'), [], 'an ordinary OOC line is no correction');
   assert.deepEqual(O.floorCorrections(4, '没有 OOC 的消息 现在在 书房'), []);
+  assert.deepEqual(O.floorCorrections(4, '（OOC 地图：现在在 ）'), [], 'an empty place is nothing, not a character');
+  assert.deepEqual(O.floorCorrections(4, '（OOC 地图：现在在）'), [], 'an empty place with no space either');
+  assert.deepEqual(O.floorCorrections(4, '(OOC Map: now at )'), [], 'an empty English place is nothing');
+  assert.deepEqual(O.floorCorrections(4, '（OOC 地图： 在 ）'), [], 'an empty name and place is nothing');
 });
 
 test('place correction: survives recompute, ends on a later variable change or a later move, undone with its floor', () => {

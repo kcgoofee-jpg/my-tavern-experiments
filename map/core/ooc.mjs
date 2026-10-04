@@ -31,8 +31,9 @@ export function segments(text) {
 
 const MAP = /^OOC(?![A-Za-z])\s*(?:地图|map)(?![A-Za-z])\s*[:：]\s*([\s\S]+)$/i;
 const SELF = /^(?:我|我们|咱们|玩家|主角|你|\{\{user\}\}|me|i|we)$/i;
-const NOW_ZH = /^(?:现在|当前|目前)\s*(?:在|位于|处于|来到了?|到了?)\s*([\s\S]+)$/;
-const NOW_EN = /^(?:(?:we|i)(?:\s+are|['’]m|['’]re)?|now|currently)\s*(?:now\s+|currently\s+)?(?:at|in)\s+([\s\S]+)$/i;
+// The tail may be empty: 「现在在 」 with no place is consumed here and must not fall through to the character pattern (which would read 「现 在 在」 as a person).
+const NOW_ZH = /^(?:现在|当前|目前)\s*(?:在|位于|处于|来到了?|到了?)\s*([\s\S]*)$/;
+const NOW_EN = /^(?:(?:we|i)(?:\s+are|['’]m|['’]re)?|now|currently)\s*(?:now\s+|currently\s+)?(?:at|in)\s*([\s\S]*)$/i;
 const PUT = /^([^@＠\n]{1,40}?)\s*(?:@|＠|在|\bat\b)\s*([\s\S]+)$/i;
 
 /** One floor's corrections: [{ floor, kind: 'place', place } | { floor, kind: 'char', name, place }], in text order. */
