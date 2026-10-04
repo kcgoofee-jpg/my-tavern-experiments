@@ -1045,3 +1045,6 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-04,site_kavalierki,draft,2000,16,0.1,0,darwin,ok,0,0
 2026-10-04,site_kavalierki,draft,2000,64,0.2,0,darwin,ok,0,0
 2026-10-04,site_kavalierki,final,8000,128,3.0,0,darwin,ok,0,0
+2026-10-04,site_yuanyu_sanctum,draft,2000,16,0.1,0,darwin,ok,0,0
+2026-10-04,site_yuanyu_sanctum,draft,2000,64,0.1,0,darwin,ok,0,0
+2026-10-04,site_yuanyu_sanctum,final,8000,128,2.2,0,darwin,ok,0,0

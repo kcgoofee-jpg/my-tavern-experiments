@@ -730,3 +730,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T05:40:10Z,site8k:site_kavalierki,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_kavalierki_8k_full.png (8000x5000); draft 16spp + 64spp preview self-checked: no overlay/text, markers reproduced"
 2026-10-04T05:40:13Z,site8k:site_kavalierki,tiles,done,glm-b9,,"DZI re-cut at same prefix map/art/site_kavalierki (8000x5000, 226 tiles, jpg, extent 20000x12500 checked)"
 2026-10-04T05:40:13Z,site8k:site_kavalierki,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors; manual marker arms_rnd merged back after script export
+2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_yuanyu_sanctum_8k_full.png (8000x5000); draft + 64spp preview self-checked against shipped 4000px look (cloud-girt mound, golden dome); markers unchanged"
+2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 16000x10000)"
+2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
