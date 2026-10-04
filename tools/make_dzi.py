@@ -2,14 +2,14 @@
 """把一张大图切成 Deep Zoom（DZI）瓦片金字塔，供 OpenSeadragon 按需加载。
 
 用法：
-  python3 tools/make_dzi.py <源图> <输出前缀> [--tile 512] [--format jpg|png] [--quality 82]
+  python3 tools/make_dzi.py <源图> <输出前缀> [--tile 512] [--format jpg|png] [--quality 82] [--minline 0.35]
   python3 tools/make_dzi.py --verify <前缀> [--extent-m 宽 高]      # 只校验已有金字塔
 输出：<前缀>.dzi 与 <前缀>_files/<层级>/<列>_<行>.<格式>。依赖 Pillow（pip3 install --user pillow）。
 原子（C-8）：先切到临时目录 + 临时 .dzi，校验层数 / 每层瓦片数后再换上；中断只留下临时目录，旧金字塔不动。
 --extent-m：地图的实际宽高（米，maps.json view.extent_m）；与 DZI 宽高比偏差超过 1% 时报错。
 """
 import argparse, math, os, re, shutil, sys
-from PIL import Image
+from PIL import Image, ImageChops, ImageFilter
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -46,12 +46,35 @@ def verify(dzi, files, extent=None, tol=.01):
     return bad
 
 
+def min_line_underlay(orig, w, h, s, alpha_floor):
+    """每层最小线宽（B5 遗留）：细线随金字塔缩放会淡到看不见，这里在低层给线像素保底。
+
+    orig 是 RGBA 源图（线条叠加层：非线像素 alpha=0）。按缩放系数 s 在该层分辨率上把线掩膜
+    膨胀到至少 1 px 宽，颜色取线条像素的预乘重采样色，alpha 抬到 alpha_floor。
+    返回 (rgb, a) 或 None（s 太小 / 非叠加层不需要）。"""
+    r = int(math.ceil(s / 2))
+    if r < 1:
+        return None
+    a0 = orig.getchannel('A').point(lambda p: 255 if p > 8 else 0)
+    m = a0.resize((w, h), Image.BILINEAR)
+    m = m.filter(ImageFilter.MaxFilter(2 * r + 1)).point(lambda p: 255 if p > 96 else 0)
+    col = orig.convert('RGBa').resize((w, h), Image.LANCZOS).convert('RGBA')
+    ca = col.getchannel('A').point(lambda p: min(255, int(alpha_floor * 255)) if p > 0 else 0)
+    ca = ImageChops.multiply(ca, m)          # 膨胀支撑 ∩ 有线色的像素
+    if ca.getextrema() == (0, 0):
+        return None
+    rgb = Image.merge('RGB', col.split()[:3])
+    return rgb, ca
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src'); ap.add_argument('out')
     ap.add_argument('--tile', type=int, default=512); ap.add_argument('--overlap', type=int, default=1)
     ap.add_argument('--format', default='jpg', choices=['jpg', 'png']); ap.add_argument('--quality', type=int, default=80)
     ap.add_argument('--extent-m', type=float, nargs=2, metavar=('W', 'H'))
+    ap.add_argument('--minline', type=float, default=0.0, metavar='ALPHA',
+                    help='线条叠加层的每层最小线宽：低层把线像素 alpha 抬到 ALPHA（0.35 左右），远处缩放国界仍可见')
     if '--verify' in sys.argv:
         i = sys.argv.index('--verify'); pre = sys.argv[i + 1]
         em = sys.argv.index('--extent-m') if '--extent-m' in sys.argv else 0
@@ -60,6 +83,7 @@ def main():
         print(f'{pre}.dzi：' + ('通过' if not bad else f'{len(bad)} 个问题')); sys.exit(1 if bad else 0)
     a = ap.parse_args()
     img = Image.open(a.src).convert('RGBA' if a.format == 'png' else 'RGB')
+    orig = img.copy() if (a.minline > 0 and img.mode == 'RGBA') else None
     W, H = img.size
     top = math.ceil(math.log2(max(W, H)))
     files, dzi = a.out + '_files', a.out + '.dzi'
@@ -74,6 +98,13 @@ def main():
         w, h = max(1, math.ceil(W / s)), max(1, math.ceil(H / s))
         if (w, h) != img.size:   # 带透明通道时用预乘 alpha 缩放，避免透明像素的颜色渗进边缘
             img = img.convert('RGBa').resize((w, h), Image.LANCZOS).convert('RGBA') if img.mode == 'RGBA' else img.resize((w, h), Image.LANCZOS)
+        if orig is not None:     # 每层最小线宽：细线在低层不再淡没（B5）
+            u = min_line_underlay(orig, w, h, W / w, a.minline)
+            if u:
+                rgb, ca = u
+                base = img.convert('RGB')
+                mixed = Image.composite(rgb, base, ca.point(lambda p: 255 if p > 0 else 0))
+                img = Image.merge('RGBA', list(mixed.split()) + [ImageChops.lighter(img.getchannel('A'), ca)])
         d = os.path.join(tmp, str(level)); os.makedirs(d)
         T, O = a.tile, a.overlap
         for c in range(math.ceil(w / T)):
