@@ -2368,3 +2368,15 @@ blocker: none
 open: as RESULT FIX-4.
 cleanup: done
 === END ===
+
+=== RESULT AUTO-SWEEP ===
+status: DONE
+items: probe sweep ✓ / screenshot matrix 1440+375 ✓ / contact sheets ✓ / §5b visual review + 报告.md ✓ / worldbook builder + B checks ✓ / TT手动检查清单.md ✓ / U-FIX-9…13 filed ✓ / AUTO-SWEEP struck in todo ✓
+commits: 5879ddb3 auto-sweep: probe sweep (46/66 green, reds clustered), U-FIX-9..13 filed, v098-probes updated   (log commit follows)
+pushed: yes
+tests: node 795/796 (1 skipped) | smoke PASS | arch PASS | probes: full sweep 46/66 PASS — red clusters: estate_generic/estate_kbd/estate_presence FAIL (U-FIX-9), tile_fail+v096 route FAIL (U-FIX-10), accept-cloud+clouds FAIL (U-FIX-12), 12 stale-probe FAILs (U-FIX-12), ui3d1/varmap095 flake (U-FIX-12); estate3d green (E-14 resolved)
+deviations: prerequisite C06/C07 RESULT blocks absent from the log at start; user confirmed prerequisites met, proceeded on 82a3ec3a (head #351). First screenshot pass had self-inflicted artifacts (a seeded error notice stayed open, settings panel covered the drawer); all affected shots re-taken (auto_sweep_reshots.mjs).
+blocker: none
+open: 3 P1 + 2 P2 batches filed as U-FIX-9…13 for U-FIX-R3; tag-rate A/B and prompt-order check need the real TT (user checklist steps 29–30); worldbook readme entry real counts are written by the map script at install time (by design)
+cleanup: done (probe/shot servers closed by their scripts; worktree left on auto-sweep branch, pushed)
+=== END ===
