@@ -2309,3 +2309,25 @@ open: none
 cleanup: done
 === END ===
 
+
+=== RESULT RENDER-B9 ===
+status: DONE
+items: site8k:site_kavalierki ✓ | site8k:yuanyu_sanctum ✓ | site8k:yuanyu_city ✓ | site8k:site_highland ✓ | site8k:site_fief1 ✓ | site8k:site_fief2 ✓ | site8k:site_fief3 ✓ | site8k:site_fief4 ✓ | site8k:site_fief5 ✓ | RENDER-B5 open item (DZI per-level min line width) ✓
+commits: b33b5949 tools(render): DZI cutter per-level minimum line width (RENDER-B5 open item)
+a98eceab render(b9): site_kavalierki opening map re-rendered at 8000 px (site8k:site_kavalierki)
+f02049c9 render(b9): site_yuanyu_sanctum opening map re-rendered at 8000 px (site8k:yuanyu_sanctum)
+d3cdbfc6 render(b9): site_yuanyu_city opening map re-rendered at 8000 px (site8k:yuanyu_city)
+89cfba29 render(b9): site_highland opening map re-rendered at 8000 px (site8k:site_highland)
+1602d4f4 render(b9): site_fief1 opening map re-rendered at 8000 px (site8k:site_fief1)
+42052095 render(b9): site_fief2 opening map re-rendered at 8000 px (site8k:site_fief2)
+2f98c01d render(b9): site_fief3 opening map re-rendered at 8000 px (site8k:site_fief3)
+d36c9496 render(b9): site_fief4 opening map re-rendered at 8000 px (site8k:site_fief4)
+9b7ff1bd render(b9): site_fief5 opening map re-rendered at 8000 px (site8k:site_fief5)
+pushed: yes (head #345 / #346 / #347)
+tests: node 1667/1668 (0 fail, 1 skipped) | smoke PASS | arch PASS | probes: not run (no engine code touched)
+render minutes (logs/render_times.csv, GPU): kavalierki draft 0.1 / prev64 0.2 / final 3.0 | yuanyu_sanctum 0.1 / 0.1 / 2.2 | yuanyu_city 0.1 / 0.2 / 2.9 | highland 0.1 / 0.1 / 2.7 | fief1 0.1 / 0.1 / 2.8 | fief2 0.1 / 0.1 / 2.7 | fief3 0.1 / 0.2 / 2.8 | fief4 0.2 / 0.3 / 3.0 | fief5 0.1 / 0.1 / 2.6
+self-check notes: every site draft (2000 px / 16 spp) and 64 spp preview viewed; look matches the shipped 4000 px tiles for the same map (kavalierki three rings + star keep, sanctum cloud-girt mound with golden dome, yuanyu_city walled ring city, highland cliff + trail, fief1 lake + star keep + striped fields, fief2 cape fort + piers, fief3 moated bridge keep + round walled town, fief4 forest hunting castle, fief5 concentric castle + lists + fields); no overlays, no text, no flat colour plates; all finals 8000x5000 at 128 spp; DZI re-cut at the same prefixes with extent_m checked; auto markers reproduced byte-identically (kavalierki manual marker arms_rnd merged back after the script export); check_maps green after every cut (69 maps, 93 markers, 0 errors). B5 open item: make_dzi.py --minline 0.35 re-cut the borders DZI; far-zoom comparison (level 9) shows the 1 px border clearly at every zoom; verify passes (226 tiles).
+deviations: none (tiles stage cut to the existing map/art/site_* prefixes instead of the hint-derived *_8k prefix, so maps.json stays untouched)
+open: none
+cleanup: done (queue empty, no Blender processes left, 27 cache .blend files from this batch's jobs deleted, ~60 GB free)
+=== END ===

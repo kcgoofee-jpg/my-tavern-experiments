@@ -754,3 +754,12 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T06:16:10Z,site8k:site_fief5,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief5_8k_full.png (8000x5000); draft + 64spp preview self-checked (concentric castle, lists yard, barrack rows, grain fields); markers unchanged"
 2026-10-04T06:16:10Z,site8k:site_fief5,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
 2026-10-04T06:16:10Z,site8k:site_fief5,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
+2026-10-04T06:16:39Z,site8k:site_kavalierki,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:yuanyu_sanctum,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:yuanyu_city,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_highland,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_fief1,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_fief2,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_fief3,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_fief4,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
+2026-10-04T06:16:39Z,site8k:site_fief5,ship,done,glm-b9,,"shipped: DZI + data at same prefixes, maps.json untouched; pushed to preview (head #347)"
