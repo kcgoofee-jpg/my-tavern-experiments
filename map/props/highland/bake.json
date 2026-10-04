@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_rocks": {
+   "tris_src": 62814,
+   "tris": 12515,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_scorch": {
+   "tris_src": 29466,
+   "tris": 4491,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_cliff": {
+   "tris_src": 201600,
+   "tris": 55158,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_plateau": {
+   "tris_src": 81900,
+   "tris": 22405,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_trail": {
+   "tris_src": 21858,
+   "tris": 4022,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_vegetation": {
+   "tris_src": 252232,
+   "tris": 69010,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 167601,
+ "std_mb": 5.44,
+ "low_mb": 1.85,
+ "pass": "render-b7"
+}

@@ -114,6 +114,10 @@ BUDGET = budget_table()
 
 def select_only(o):
     bpy.ops.object.select_all(action='DESELECT')
+    if o.hide_get():
+        o.hide_set(False)
+    if hasattr(o, 'hide_viewport'):
+        o.hide_viewport = False
     o.select_set(True)
     bpy.context.view_layer.objects.active = o
 
@@ -328,12 +332,31 @@ def rebuild_display(J, base_path, norm_path=None, orm_path=None):
 def main():
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     import tc_common
+    global ARGS, TIER, OUT, TEXDIR, SAMPLES, LO_MB, HI_MB, BUDGET
+    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    ARGS = dict(tier='std', out='/tmp/lm_budget_raw.glb', budget_json='', samples='32', log='', skip_data='0')
+    for k, v in zip(argv[::2], argv[1::2]):
+        ARGS[k.lstrip('-').replace('-', '_')] = v
+    TIER = ARGS['tier']
+    OUT = os.path.abspath(ARGS['out'])
+    TEXDIR = os.path.splitext(OUT)[0] + '_tex'
+    os.makedirs(TEXDIR, exist_ok=True)
+    SAMPLES = int(ARGS['samples'])
+    LO_MB = float(ARGS.get('fit_lo', 4.0 if TIER == 'std' else 0.0))
+    HI_MB = float(ARGS.get('fit_hi', 8.0 if TIER == 'std' else 2.0))
+    BUDGET = budget_table()
+
     sc = bpy.context.scene
     sc.render.engine = 'CYCLES'
     tc_common.pick_gpu(sc)
     for o in list(bpy.data.objects):
-        if o.type == 'CAMERA' or o.name.startswith('bg_'):
+        if o.type == 'CAMERA' or o.name.startswith('bg_') or o.name.startswith('tuft') or o.hide_render:
             bpy.data.objects.remove(o, do_unlink=True)
+    g = bpy.data.objects.get('ground')
+    if g:
+        for m in list(g.modifiers):
+            if m.type == 'NODES':
+                g.modifiers.remove(m)
     meshes = [o for o in bpy.data.objects if o.type == 'MESH' and len(o.data.polygons)
               and not o.name.startswith('mist')]   # yuanyu_holy_mount 的体积雾体不导出（同旧 --glb 口径）
     ctx = v3d_context()
@@ -348,10 +371,42 @@ def main():
         select_only(J)
         before = src[J.name]
         if before > trib[J.name]:
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles(threshold=0.001)
+            bpy.ops.object.mode_set(mode='OBJECT')
             d = J.modifiers.new('dec', 'DECIMATE')
-            d.ratio = trib[J.name] / before
+            d.ratio = trib[J.name] / max(before, 1)
             d.use_collapse_triangulate = True
             bpy.ops.object.modifier_apply(modifier='dec')
+            # 若因大量独立碎面/建筑群导致折叠受阻（三角数仍 > 1.5 倍预算），按连通分量抽稀
+            if tris_of(J) > trib[J.name] * 1.5:
+                import bmesh
+                bm = bmesh.new()
+                bm.from_mesh(J.data)
+                visited = set()
+                islands = []
+                for f in bm.faces:
+                    if f not in visited:
+                        isl = [f]
+                        visited.add(f)
+                        q = [f]
+                        while q:
+                            curr = q.pop()
+                            for e in curr.edges:
+                                for lf in e.link_faces:
+                                    if lf not in visited:
+                                        visited.add(lf)
+                                        q.append(lf)
+                                        isl.append(lf)
+                        islands.append(isl)
+                if len(islands) > 200:
+                    step = max(2, int(round(tris_of(J) / max(trib[J.name], 1))))
+                    del_faces = [f for i, isl in enumerate(islands) if i % step != 0 for f in isl]
+                    bmesh.ops.delete(bm, geom=del_faces, context='FACES')
+                    bm.to_mesh(J.data)
+                    J.data.update()
+                bm.free()
         smart_uv(J, ctx)
         info[J.name] = [before, tris_of(J), tex[J.name][0], tex[J.name][1]]
         log('UV %s %d -> %d (tex %d norm %d)' % (J.name, before, tris_of(J), tex[J.name][0], tex[J.name][1]))

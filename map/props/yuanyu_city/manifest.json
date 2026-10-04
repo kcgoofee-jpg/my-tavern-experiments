@@ -1,161 +1,161 @@
 {
- "_note": "viewer3d.html?model=yuanyu_city 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/yuanyu_city.md。整片城区（约 560 m × 450 m）一个模型，体量上限放宽（见 max_mb）；悬浮圣山与远山（bg_*）只在成图里。",
- "id": "yuanyu_city",
- "title": {
-  "zh": "原域城区",
-  "en": "Yuanyu City District"
- },
- "glb": "yuanyu_city.glb",
- "glb_low": "yuanyu_city_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [
-   "props_spires",
-   "props_domes"
+  "_note": "viewer3d.html?model=yuanyu_city 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/yuanyu_city.md。整片城区（约 560 m × 450 m）一个模型，体量上限放宽（见 max_mb）；悬浮圣山与远山（bg_*）只在成图里。",
+  "id": "yuanyu_city",
+  "title": {
+    "zh": "原域城区",
+    "en": "Yuanyu City District"
+  },
+  "glb": "yuanyu_city.glb",
+  "glb_low": "yuanyu_city_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [
+      "props_spires",
+      "props_domes"
+    ],
+    "walls": [
+      "props_gate",
+      "props_plaza"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground",
+      "props_lamps"
+    ],
+    "building": {
+      "min": [
+        -290,
+        -3,
+        -230
+      ],
+      "max": [
+        300,
+        120,
+        230
+      ]
+    }
+  },
+  "section": {
+    "min": 0,
+    "max": 120,
+    "default": 120
+  },
+  "camera": {
+    "frame": [
+      "props_plaza",
+      "props_gate"
+    ],
+    "dir": [
+      0.6,
+      0.5,
+      0.6
+    ],
+    "min": 15,
+    "max": 1400,
+    "maxPolar": 1.45
+  },
+  "budgets": {
+    "props_domes": [
+      25620,
+      1024
+    ],
+    "props_gate": [
+      1370,
+      1024
+    ],
+    "props_lamps": [
+      7072,
+      512
+    ],
+    "props_plaza": [
+      16028,
+      1024
+    ],
+    "props_spires": [
+      7488,
+      1024
+    ],
+    "site_ground": [
+      1428,
+      1024
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "gate",
+      "mesh": "props_gate",
+      "name": {
+        "zh": "东门",
+        "en": "East gate"
+      },
+      "desc": {
+        "zh": "白石城墙与双塔东门：尖拱门洞、扶壁、四角小尖塔，门外是通向广场的东门大道。",
+        "en": "A white-stone wall and twin-tower east gate with pointed arches, buttresses and corner pinnacles; the avenue leads in to the plaza."
+      },
+      "view": [
+        0.6,
+        0.5,
+        0.6
+      ]
+    },
+    {
+      "id": "dome",
+      "mesh": "props_domes",
+      "name": {
+        "zh": "穹顶区",
+        "en": "Dome quarter"
+      },
+      "desc": {
+        "zh": "广场以南的街区：鼓座上的巴洛克穹顶（铜绿与白石），金色灯亭与小穹顶。",
+        "en": "The quarter south of the plaza: Baroque domes on drums in verdigris copper and white stone, with gilded lanterns and small corner domes."
+      },
+      "view": [
+        0.6,
+        0.5,
+        0.6
+      ]
+    },
+    {
+      "id": "plaza",
+      "mesh": "props_plaza",
+      "name": {
+        "zh": "朝圣广场",
+        "en": "Pilgrim plaza"
+      },
+      "desc": {
+        "zh": "悬浮圣山正下方的圆形广场：同心铺石环、一圈黑白交替的无面容长袍立像、东门大道两侧的神像回廊。",
+        "en": "The round plaza beneath the floating mountain: concentric paving rings, a ring of alternating black and white faceless robed statues and a statue gallery along the east avenue."
+      },
+      "view": [
+        0.6,
+        0.5,
+        0.6
+      ]
+    },
+    {
+      "id": "spire",
+      "mesh": "props_spires",
+      "name": {
+        "zh": "尖塔区",
+        "en": "Spire quarter"
+      },
+      "desc": {
+        "zh": "广场以北的街区：白石高屋、陡峭的深蓝板岩坡顶与细长的哥特式尖塔。",
+        "en": "The quarter north of the plaza: tall white-stone houses with steep slate roofs and slender Gothic spires."
+      },
+      "view": [
+        0.6,
+        0.5,
+        0.6
+      ]
+    }
   ],
-  "walls": [
-   "props_gate",
-   "props_plaza"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground",
-   "props_lamps"
-  ],
-  "building": {
-   "min": [
-    -290,
-    -3,
-    -230
-   ],
-   "max": [
-    300,
-    120,
-    230
-   ]
+  "max_mb": {
+    "std": 2.8,
+    "low": 1.4
   }
- },
- "section": {
-  "min": 0,
-  "max": 120,
-  "default": 120
- },
- "camera": {
-  "frame": [
-   "props_plaza",
-   "props_gate"
-  ],
-  "dir": [
-   0.6,
-   0.5,
-   0.6
-  ],
-  "min": 15,
-  "max": 1400,
-  "maxPolar": 1.45
- },
- "budgets": {
-  "props_gate": [
-   5000,
-   1024
-  ],
-  "props_plaza": [
-   16000,
-   1024
-  ],
-  "props_spires": [
-   30000,
-   1024
-  ],
-  "props_domes": [
-   30000,
-   1024
-  ],
-  "props_lamps": [
-   9000,
-   256
-  ],
-  "site_ground": [
-   3000,
-   1024
-  ]
- },
- "hotspots": [
-  {
-   "id": "gate",
-   "mesh": "props_gate",
-   "name": {
-    "zh": "东门",
-    "en": "East gate"
-   },
-   "desc": {
-    "zh": "白石城墙与双塔东门：尖拱门洞、扶壁、四角小尖塔，门外是通向广场的东门大道。",
-    "en": "A white-stone wall and twin-tower east gate with pointed arches, buttresses and corner pinnacles; the avenue leads in to the plaza."
-   },
-   "view": [
-    0.6,
-    0.5,
-    0.6
-   ]
-  },
-  {
-   "id": "dome",
-   "mesh": "props_domes",
-   "name": {
-    "zh": "穹顶区",
-    "en": "Dome quarter"
-   },
-   "desc": {
-    "zh": "广场以南的街区：鼓座上的巴洛克穹顶（铜绿与白石），金色灯亭与小穹顶。",
-    "en": "The quarter south of the plaza: Baroque domes on drums in verdigris copper and white stone, with gilded lanterns and small corner domes."
-   },
-   "view": [
-    0.6,
-    0.5,
-    0.6
-   ]
-  },
-  {
-   "id": "plaza",
-   "mesh": "props_plaza",
-   "name": {
-    "zh": "朝圣广场",
-    "en": "Pilgrim plaza"
-   },
-   "desc": {
-    "zh": "悬浮圣山正下方的圆形广场：同心铺石环、一圈黑白交替的无面容长袍立像、东门大道两侧的神像回廊。",
-    "en": "The round plaza beneath the floating mountain: concentric paving rings, a ring of alternating black and white faceless robed statues and a statue gallery along the east avenue."
-   },
-   "view": [
-    0.6,
-    0.5,
-    0.6
-   ]
-  },
-  {
-   "id": "spire",
-   "mesh": "props_spires",
-   "name": {
-    "zh": "尖塔区",
-    "en": "Spire quarter"
-   },
-   "desc": {
-    "zh": "广场以北的街区：白石高屋、陡峭的深蓝板岩坡顶与细长的哥特式尖塔。",
-    "en": "The quarter north of the plaza: tall white-stone houses with steep slate roofs and slender Gothic spires."
-   },
-   "view": [
-    0.6,
-    0.5,
-    0.6
-   ]
-  }
- ],
- "max_mb": {
-  "std": 2.8,
-  "low": 1.4
- }
 }

@@ -57,25 +57,25 @@
     "maxPolar": 1.48
   },
   "budgets": {
-    "props_gallery": [
-      26000,
-      512
-    ],
-    "props_lists": [
-      8000,
-      512
-    ],
     "props_fair": [
-      16000,
+      2558,
       512
     ],
-    "site_ground": [
-      10000,
+    "props_gallery": [
+      5748,
       512
     ],
     "props_lights": [
-      5000,
-      256
+      856,
+      512
+    ],
+    "props_lists": [
+      228,
+      512
+    ],
+    "site_ground": [
+      6420,
+      512
     ]
   },
   "hotspots": [

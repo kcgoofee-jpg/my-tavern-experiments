@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_depot": {
+   "tris_src": 402,
+   "tris": 402,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_rail": {
+   "tris_src": 2492,
+   "tris": 2492,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_yard": {
+   "tris_src": 2426,
+   "tris": 2426,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 48,
+   "tris": 48,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 5368,
+ "std_mb": 3.1,
+ "low_mb": 0.18,
+ "pass": "render-b7"
+}

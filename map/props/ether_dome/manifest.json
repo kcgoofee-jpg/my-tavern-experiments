@@ -57,20 +57,20 @@
   },
   "budgets": {
     "props_dome": [
-      26000,
+      6772,
       512
     ],
     "props_field": [
-      9000,
-      512
-    ],
-    "site_ground": [
-      9000,
+      880,
       512
     ],
     "props_lights": [
-      3000,
-      256
+      864,
+      512
+    ],
+    "site_ground": [
+      1800,
+      512
     ]
   },
   "hotspots": [

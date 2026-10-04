@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_camp": {
+   "tris_src": 856,
+   "tris": 856,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_market": {
+   "tris_src": 898,
+   "tris": 898,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_tents": {
+   "tris_src": 1156,
+   "tris": 1156,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 168,
+   "tris": 168,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 3078,
+ "std_mb": 4.58,
+ "low_mb": 0.19,
+ "pass": "render-b7"
+}

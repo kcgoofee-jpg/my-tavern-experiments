@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_arena": {
+   "tris_src": 3748,
+   "tris": 3748,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_club": {
+   "tris_src": 1180,
+   "tris": 1180,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 1344,
+   "tris": 1344,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_main": {
+   "tris_src": 6198,
+   "tris": 6198,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_tower": {
+   "tris_src": 1296,
+   "tris": 1296,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 7128,
+   "tris": 7128,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 20894,
+ "std_mb": 4.15,
+ "low_mb": 0.53,
+ "pass": "render-b7"
+}

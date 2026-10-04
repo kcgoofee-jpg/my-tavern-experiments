@@ -1,0 +1,26 @@
+{
+ "groups": {
+  "props_court": {
+   "tris_src": 43042,
+   "tris": 43042,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_house": {
+   "tris_src": 368,
+   "tris": 368,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 24,
+   "tris": 24,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 43434,
+ "std_mb": 3.45,
+ "low_mb": 0.88,
+ "pass": "render-b7"
+}

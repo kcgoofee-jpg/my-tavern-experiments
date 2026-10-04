@@ -1,0 +1,80 @@
+{
+ "groups": {
+  "city_bld": {
+   "tris_src": 1981660,
+   "tris": 83620,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "city_ground": {
+   "tris_src": 9412,
+   "tris": 466,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "city_roads": {
+   "tris_src": 9260,
+   "tris": 944,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "glow_core": {
+   "tris_src": 256,
+   "tris": 256,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "lamps_city": {
+   "tris_src": 76128,
+   "tris": 3904,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "lamps_stair": {
+   "tris_src": 5600,
+   "tris": 428,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "mount_dark": {
+   "tris_src": 49392,
+   "tris": 2479,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "mount_rock": {
+   "tris_src": 22254,
+   "tris": 1005,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "stair": {
+   "tris_src": 11132,
+   "tris": 722,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "summit": {
+   "tris_src": 29820,
+   "tris": 1980,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "summit_win": {
+   "tris_src": 3456,
+   "tris": 500,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "trees": {
+   "tris_src": 832,
+   "tris": 374,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 96678,
+ "std_mb": 3.38,
+ "low_mb": 0.96,
+ "pass": "render-b7"
+}

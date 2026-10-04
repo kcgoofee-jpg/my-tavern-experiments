@@ -1,0 +1,38 @@
+{
+ "groups": {
+  "props_camp": {
+   "tris_src": 5454,
+   "tris": 5454,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_marquee": {
+   "tris_src": 598,
+   "tris": 598,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_tents": {
+   "tris_src": 2870,
+   "tris": 2870,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_trees": {
+   "tris_src": 28812,
+   "tris": 28812,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 72,
+   "tris": 72,
+   "tex": 512,
+   "tex_norm": 512
+  }
+ },
+ "tris": 37806,
+ "std_mb": 2.13,
+ "low_mb": 0.66,
+ "pass": "render-b7"
+}

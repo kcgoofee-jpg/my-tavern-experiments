@@ -1,0 +1,56 @@
+{
+ "groups": {
+  "props_castle": {
+   "tris_src": 2643,
+   "tris": 2643,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_extra": {
+   "tris_src": 104,
+   "tris": 104,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_fields": {
+   "tris_src": 1068,
+   "tris": 1068,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_order": {
+   "tris_src": 627,
+   "tris": 627,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_roads": {
+   "tris_src": 388,
+   "tris": 388,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_trees": {
+   "tris_src": 125162,
+   "tris": 125162,
+   "tex": 512,
+   "tex_norm": 512
+  },
+  "props_village": {
+   "tris_src": 1606,
+   "tris": 1606,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_terrain": {
+   "tris_src": 10660,
+   "tris": 10660,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 142258,
+ "std_mb": 4.22,
+ "low_mb": 1.09,
+ "pass": "render-b7"
+}

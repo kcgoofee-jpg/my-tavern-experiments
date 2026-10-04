@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_dome": {
+   "tris_src": 6772,
+   "tris": 6772,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_field": {
+   "tris_src": 880,
+   "tris": 880,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_lights": {
+   "tris_src": 864,
+   "tris": 864,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 1800,
+   "tris": 1800,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 10316,
+ "std_mb": 2.8,
+ "low_mb": 0.29,
+ "pass": "render-b7"
+}

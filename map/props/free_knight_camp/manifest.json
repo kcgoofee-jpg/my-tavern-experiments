@@ -1,141 +1,141 @@
 {
- "_note": "viewer3d.html?model=free_knight_camp 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/free_knight_camp.md。",
- "id": "free_knight_camp",
- "title": {
-  "zh": "独立骑士黑市营地",
-  "en": "Free Knights Camp"
- },
- "glb": "free_knight_camp.glb",
- "glb_low": "free_knight_camp_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_tents",
-   "props_market",
-   "props_camp"
-  ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "site_ground"
+  "_note": "viewer3d.html?model=free_knight_camp 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/free_knight_camp.md。",
+  "id": "free_knight_camp",
+  "title": {
+    "zh": "独立骑士黑市营地",
+    "en": "Free Knights Camp"
+  },
+  "glb": "free_knight_camp.glb",
+  "glb_low": "free_knight_camp_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_tents",
+      "props_market",
+      "props_camp"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -50.0,
+        -0.3,
+        -50.0
+      ],
+      "max": [
+        50.0,
+        30.0,
+        50.0
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 9,
+    "default": 9
+  },
+  "camera": {
+    "frame": [
+      "props_tents",
+      "props_market"
+    ],
+    "dir": [
+      0.35,
+      0.55,
+      -0.76
+    ],
+    "min": 5,
+    "max": 320,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_camp": [
+      856,
+      512
+    ],
+    "props_market": [
+      898,
+      512
+    ],
+    "props_tents": [
+      1156,
+      512
+    ],
+    "site_ground": [
+      168,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "tents",
+      "mesh": "props_tents",
+      "name": {
+        "zh": "中央大帐（双坡帆布 + 门厅柱 + 无字旗杆）+ A 形 / 圆锥小帐篷圈",
+        "en": ""
+      },
+      "desc": {
+        "zh": "中央大帐（双坡帆布 + 门厅柱 + 无字旗杆）+ A 形 / 圆锥小帐篷圈",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "market",
+      "mesh": "props_market",
+      "name": {
+        "zh": "黑市货摊（木架斜面帆布棚 + 摊台道具）+ 两层瞭望木塔",
+        "en": ""
+      },
+      "desc": {
+        "zh": "黑市货摊（木架斜面帆布棚 + 摊台道具）+ 两层瞭望木塔",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "camp",
+      "mesh": "props_camp",
+      "name": {
+        "zh": "篝火圈、拴马桩列、条箱坐凳、水桶架",
+        "en": ""
+      },
+      "desc": {
+        "zh": "篝火圈、拴马桩列、条箱坐凳、水桶架",
+        "en": ""
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ],
   "building": {
-   "min": [
-    -50.0,
-    -0.3,
-    -50.0
-   ],
-   "max": [
-    50.0,
-    30.0,
-    50.0
-   ]
+    "min": [
+      -48.0,
+      -0.3,
+      -40.0
+    ],
+    "max": [
+      48.0,
+      10.0,
+      42.0
+    ]
   }
- },
- "section": {
-  "min": 0.5,
-  "max": 9,
-  "default": 9
- },
- "camera": {
-  "frame": [
-   "props_tents",
-   "props_market"
-  ],
-  "dir": [
-   0.35,
-   0.55,
-   -0.76
-  ],
-  "min": 5,
-  "max": 320,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_tents": [
-   26000,
-   512
-  ],
-  "props_market": [
-   18000,
-   512
-  ],
-  "props_camp": [
-   8000,
-   512
-  ],
-  "site_ground": [
-   9000,
-   512
-  ]
- },
- "hotspots": [
-  {
-   "id": "tents",
-   "mesh": "props_tents",
-   "name": {
-    "zh": "中央大帐（双坡帆布 + 门厅柱 + 无字旗杆）+ A 形 / 圆锥小帐篷圈",
-    "en": ""
-   },
-   "desc": {
-    "zh": "中央大帐（双坡帆布 + 门厅柱 + 无字旗杆）+ A 形 / 圆锥小帐篷圈",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "market",
-   "mesh": "props_market",
-   "name": {
-    "zh": "黑市货摊（木架斜面帆布棚 + 摊台道具）+ 两层瞭望木塔",
-    "en": ""
-   },
-   "desc": {
-    "zh": "黑市货摊（木架斜面帆布棚 + 摊台道具）+ 两层瞭望木塔",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "camp",
-   "mesh": "props_camp",
-   "name": {
-    "zh": "篝火圈、拴马桩列、条箱坐凳、水桶架",
-    "en": ""
-   },
-   "desc": {
-    "zh": "篝火圈、拴马桩列、条箱坐凳、水桶架",
-    "en": ""
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ],
- "building": {
-  "min": [
-   -48.0,
-   -0.3,
-   -40.0
-  ],
-  "max": [
-   48.0,
-   10.0,
-   42.0
-  ]
- }
 }

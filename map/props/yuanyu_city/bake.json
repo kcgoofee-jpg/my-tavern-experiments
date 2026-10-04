@@ -1,0 +1,44 @@
+{
+ "groups": {
+  "props_domes": {
+   "tris_src": 25620,
+   "tris": 25620,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_gate": {
+   "tris_src": 1370,
+   "tris": 1370,
+   "tex": 1024,
+   "tex_norm": 1024
+  },
+  "props_lamps": {
+   "tris_src": 7072,
+   "tris": 7072,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_plaza": {
+   "tris_src": 16028,
+   "tris": 16028,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "props_spires": {
+   "tris_src": 7488,
+   "tris": 7488,
+   "tex": 1024,
+   "tex_norm": 512
+  },
+  "site_ground": {
+   "tris_src": 1428,
+   "tris": 1428,
+   "tex": 1024,
+   "tex_norm": 512
+  }
+ },
+ "tris": 59006,
+ "std_mb": 4.76,
+ "low_mb": 1.04,
+ "pass": "render-b7"
+}

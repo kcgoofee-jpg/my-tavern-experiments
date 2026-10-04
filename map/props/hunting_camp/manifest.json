@@ -1,156 +1,156 @@
 {
- "_note": "viewer3d.html?model=hunting_camp 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/hunting_camp.md。 体量上限放宽到 std 0.9 / low 0.45 MB（单栋默认 0.6/0.3）：一个模型含宴会大帐、六顶圆帐、营火与随行设施、整圈秋林；实测 std 0.76 MB。",
- "id": "hunting_camp",
- "title": {
-  "zh": "猎季营地",
-  "en": "Hunting Season Camp"
- },
- "glb": "hunting_camp.glb",
- "glb_low": "hunting_camp_low.glb",
- "credit": {
-  "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
-  "en": "Own model; textures Poly Haven / ambientCG (CC0)"
- },
- "groups": {
-  "roof": [],
-  "walls": [
-   "props_marquee",
-   "props_tents"
+  "_note": "viewer3d.html?model=hunting_camp 的清单（标准档 + 低档 glb）。坐标 = glTF（Y 朝上，米）。设定见 docs/landmarks/hunting_camp.md。 体量上限放宽到 std 0.9 / low 0.45 MB（单栋默认 0.6/0.3）：一个模型含宴会大帐、六顶圆帐、营火与随行设施、整圈秋林；实测 std 0.76 MB。",
+  "id": "hunting_camp",
+  "title": {
+    "zh": "猎季营地",
+    "en": "Hunting Season Camp"
+  },
+  "glb": "hunting_camp.glb",
+  "glb_low": "hunting_camp_low.glb",
+  "credit": {
+    "zh": "自建模型；贴图 Poly Haven / ambientCG（CC0）",
+    "en": "Own model; textures Poly Haven / ambientCG (CC0)"
+  },
+  "groups": {
+    "roof": [],
+    "walls": [
+      "props_marquee",
+      "props_tents"
+    ],
+    "interior": [],
+    "floors": [],
+    "site": [
+      "props_camp",
+      "props_trees",
+      "site_ground"
+    ],
+    "building": {
+      "min": [
+        -96,
+        -0.3,
+        -80
+      ],
+      "max": [
+        96,
+        16,
+        80
+      ]
+    }
+  },
+  "section": {
+    "min": 0.5,
+    "max": 16,
+    "default": 16
+  },
+  "camera": {
+    "frame": [
+      "props_marquee",
+      "props_tents",
+      "props_camp"
+    ],
+    "dir": [
+      0.4,
+      0.42,
+      -0.8
+    ],
+    "min": 6,
+    "max": 350,
+    "maxPolar": 1.48
+  },
+  "budgets": {
+    "props_camp": [
+      5454,
+      512
+    ],
+    "props_marquee": [
+      598,
+      512
+    ],
+    "props_tents": [
+      2870,
+      512
+    ],
+    "props_trees": [
+      28812,
+      512
+    ],
+    "site_ground": [
+      72,
+      512
+    ]
+  },
+  "hotspots": [
+    {
+      "id": "marquee",
+      "mesh": "props_marquee",
+      "name": {
+        "zh": "宴会大帐（双坡帆布 + 扇形檐饰 + 帐杆与几何纹样旗杆）",
+        "en": "Banquet marquee: gabled canvas, scalloped valance, pattern flag poles"
+      },
+      "desc": {
+        "zh": "宴会大帐（双坡帆布 + 扇形檐饰 + 帐杆与几何纹样旗杆）",
+        "en": "Banquet marquee: gabled canvas, scalloped valance, pattern flag poles"
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "tents",
+      "mesh": "props_tents",
+      "name": {
+        "zh": "六顶私人圆帐 + 野外厨房帐（烟囱 / 木箱 / 酒桶）",
+        "en": "Six round pavilion tents and the field-kitchen tent"
+      },
+      "desc": {
+        "zh": "六顶私人圆帐 + 野外厨房帐（烟囱 / 木箱 / 酒桶）",
+        "en": "Six round pavilion tents and the field-kitchen tent"
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "camp",
+      "mesh": "props_camp",
+      "name": {
+        "zh": "营火圈 + 长凳 / 折叠桌 + 灯笼杆与灯串 + 拴马桩 + 空犬舍 + 三辆悬浮车",
+        "en": "Fire ring, benches and tables, lantern poles, horse posts, empty kennels, three parked hover cars"
+      },
+      "desc": {
+        "zh": "营火圈 + 长凳 / 折叠桌 + 灯笼杆与灯串 + 拴马桩 + 空犬舍 + 三辆悬浮车",
+        "en": "Fire ring, benches and tables, lantern poles, horse posts, empty kennels, three parked hover cars"
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    },
+    {
+      "id": "trees",
+      "mesh": "props_trees",
+      "name": {
+        "zh": "林缘秋色阔叶林（橙红 / 赭黄 / 金黄）+ 几株常绿",
+        "en": "Autumn broadleaf forest edge with a few evergreens"
+      },
+      "desc": {
+        "zh": "林缘秋色阔叶林（橙红 / 赭黄 / 金黄）+ 几株常绿",
+        "en": "Autumn broadleaf forest edge with a few evergreens"
+      },
+      "view": [
+        0.4,
+        0.42,
+        -0.8
+      ]
+    }
   ],
-  "interior": [],
-  "floors": [],
-  "site": [
-   "props_camp",
-   "props_trees",
-   "site_ground"
-  ],
-  "building": {
-   "min": [
-    -96,
-    -0.3,
-    -80
-   ],
-   "max": [
-    96,
-    16,
-    80
-   ]
+  "max_mb": {
+    "std": 0.9,
+    "low": 0.45
   }
- },
- "section": {
-  "min": 0.5,
-  "max": 16,
-  "default": 16
- },
- "camera": {
-  "frame": [
-   "props_marquee",
-   "props_tents",
-   "props_camp"
-  ],
-  "dir": [
-   0.4,
-   0.42,
-   -0.8
-  ],
-  "min": 6,
-  "max": 350,
-  "maxPolar": 1.48
- },
- "budgets": {
-  "props_marquee": [
-   6000,
-   512
-  ],
-  "props_tents": [
-   14000,
-   512
-  ],
-  "props_camp": [
-   16000,
-   512
-  ],
-  "props_trees": [
-   26000,
-   512
-  ],
-  "site_ground": [
-   2000,
-   512
-  ]
- },
- "hotspots": [
-  {
-   "id": "marquee",
-   "mesh": "props_marquee",
-   "name": {
-    "zh": "宴会大帐（双坡帆布 + 扇形檐饰 + 帐杆与几何纹样旗杆）",
-    "en": "Banquet marquee: gabled canvas, scalloped valance, pattern flag poles"
-   },
-   "desc": {
-    "zh": "宴会大帐（双坡帆布 + 扇形檐饰 + 帐杆与几何纹样旗杆）",
-    "en": "Banquet marquee: gabled canvas, scalloped valance, pattern flag poles"
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "tents",
-   "mesh": "props_tents",
-   "name": {
-    "zh": "六顶私人圆帐 + 野外厨房帐（烟囱 / 木箱 / 酒桶）",
-    "en": "Six round pavilion tents and the field-kitchen tent"
-   },
-   "desc": {
-    "zh": "六顶私人圆帐 + 野外厨房帐（烟囱 / 木箱 / 酒桶）",
-    "en": "Six round pavilion tents and the field-kitchen tent"
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "camp",
-   "mesh": "props_camp",
-   "name": {
-    "zh": "营火圈 + 长凳 / 折叠桌 + 灯笼杆与灯串 + 拴马桩 + 空犬舍 + 三辆悬浮车",
-    "en": "Fire ring, benches and tables, lantern poles, horse posts, empty kennels, three parked hover cars"
-   },
-   "desc": {
-    "zh": "营火圈 + 长凳 / 折叠桌 + 灯笼杆与灯串 + 拴马桩 + 空犬舍 + 三辆悬浮车",
-    "en": "Fire ring, benches and tables, lantern poles, horse posts, empty kennels, three parked hover cars"
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  },
-  {
-   "id": "trees",
-   "mesh": "props_trees",
-   "name": {
-    "zh": "林缘秋色阔叶林（橙红 / 赭黄 / 金黄）+ 几株常绿",
-    "en": "Autumn broadleaf forest edge with a few evergreens"
-   },
-   "desc": {
-    "zh": "林缘秋色阔叶林（橙红 / 赭黄 / 金黄）+ 几株常绿",
-    "en": "Autumn broadleaf forest edge with a few evergreens"
-   },
-   "view": [
-    0.4,
-    0.42,
-    -0.8
-   ]
-  }
- ],
- "max_mb": {
-  "std": 0.9,
-  "low": 0.45
- }
 }

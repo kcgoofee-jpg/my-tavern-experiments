@@ -1,0 +1,32 @@
+{
+ "groups": {
+  "props_clutter": {
+   "tris_src": 1904,
+   "tris": 1904,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_shanties": {
+   "tris_src": 3806,
+   "tris": 3806,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "props_tank": {
+   "tris_src": 342,
+   "tris": 342,
+   "tex": 512,
+   "tex_norm": 1024
+  },
+  "site_ground": {
+   "tris_src": 48,
+   "tris": 48,
+   "tex": 512,
+   "tex_norm": 1024
+  }
+ },
+ "tris": 6100,
+ "std_mb": 4.39,
+ "low_mb": 0.23,
+ "pass": "render-b7"
+}

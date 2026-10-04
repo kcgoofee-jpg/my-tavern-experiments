@@ -60,29 +60,29 @@
     "maxPolar": 1.48
   },
   "budgets": {
-    "props_main": [
-      30000,
-      512
-    ],
     "props_arena": [
-      22000,
-      512
-    ],
-    "props_tower": [
-      8000,
+      3748,
       512
     ],
     "props_club": [
-      10000,
-      512
-    ],
-    "site_ground": [
-      10000,
+      1180,
       512
     ],
     "props_lights": [
-      4000,
-      256
+      1344,
+      512
+    ],
+    "props_main": [
+      6198,
+      512
+    ],
+    "props_tower": [
+      1296,
+      512
+    ],
+    "site_ground": [
+      7128,
+      512
     ]
   },
   "hotspots": [
