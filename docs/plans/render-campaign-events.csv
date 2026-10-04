@@ -733,3 +733,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_yuanyu_sanctum_8k_full.png (8000x5000); draft + 64spp preview self-checked against shipped 4000px look (cloud-girt mound, golden dome); markers unchanged"
 2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 16000x10000)"
 2026-10-04T05:44:47Z,site8k:yuanyu_sanctum,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
+2026-10-04T05:48:51Z,site8k:yuanyu_city,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_yuanyu_city_8k_full.png (8000x5000); draft + 64spp preview self-checked (walled ring city, domes, central plaza); markers unchanged"
+2026-10-04T05:48:51Z,site8k:yuanyu_city,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 16000x10000)"
+2026-10-04T05:48:51Z,site8k:yuanyu_city,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
