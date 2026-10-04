@@ -748,3 +748,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T06:06:38Z,site8k:site_fief3,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief3_8k_full.png (8000x5000); draft + 64spp preview self-checked (moated keep on the river bridge, walled round town, fields); markers unchanged"
 2026-10-04T06:06:38Z,site8k:site_fief3,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
 2026-10-04T06:06:38Z,site8k:site_fief3,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
+2026-10-04T06:11:46Z,site8k:site_fief4,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief4_8k_full.png (8000x5000); draft + 64spp preview self-checked (forest hunting castle, clearing village, order camp, meadow); markers unchanged"
+2026-10-04T06:11:46Z,site8k:site_fief4,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
+2026-10-04T06:11:46Z,site8k:site_fief4,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
