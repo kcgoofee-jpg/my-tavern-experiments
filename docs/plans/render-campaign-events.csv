@@ -739,3 +739,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T05:53:18Z,site8k:site_highland,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_highland_8k_full.png (8000x5000); draft + 64spp preview self-checked against shipped look (cliff, trail, tones match); markers unchanged"
 2026-10-04T05:53:19Z,site8k:site_highland,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 8000x5000)"
 2026-10-04T05:53:19Z,site8k:site_highland,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
+2026-10-04T05:57:43Z,site8k:site_fief1,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief1_8k_full.png (8000x5000); draft + 64spp preview self-checked (lake, star keep, order yard, village, fields all present); markers unchanged"
+2026-10-04T05:57:43Z,site8k:site_fief1,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
+2026-10-04T05:57:43Z,site8k:site_fief1,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors

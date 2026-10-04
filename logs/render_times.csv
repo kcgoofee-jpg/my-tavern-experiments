@@ -1054,3 +1054,6 @@ date,asset,kind,res,spp,minutes,exit,host,status,wasted_min,wasted_cny
 2026-10-04,site_highland,draft,2000,16,0.1,0,darwin,ok,0,0
 2026-10-04,site_highland,draft,2000,64,0.1,0,darwin,ok,0,0
 2026-10-04,site_highland,final,8000,128,2.7,0,darwin,ok,0,0
+2026-10-04,site_fief1,draft,2000,16,0.1,0,darwin,ok,0,0
+2026-10-04,site_fief1,draft,2000,64,0.1,0,darwin,ok,0,0
+2026-10-04,site_fief1,final,8000,128,2.8,0,darwin,ok,0,0
