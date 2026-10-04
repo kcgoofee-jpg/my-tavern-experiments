@@ -70,9 +70,12 @@ try {
     const s2 = await st();
     await p.evaluate(() => ViewerDebug.showLay(false));
     const name = x => x.replace(/\/$/, '').split('/').pop();
-    rep.check('云雾开关（上层 → 显示下方城市：底图不变，三层合成上 / 下）',
-      !/upper_city/.test(s0.base) && !s0.comp && s0.base === s1.base && !!s1.comp && !!s1.comp.mask && !!s1.comp.under && !s2.comp,
-      `底图 ${name(s0.base)}${s0.base === s1.base ? '（不变）' : ' → ' + name(s1.base)}；合成 ${s0.comp ? 'on' : 'off'} → ${s1.comp ? 'on' : 'off'} → ${s2.comp ? 'on' : 'off'}`);
+    // U-FIX-12 (INV-2 / oblique-code): the alt-base row 「显示下方城市」 is a declared layer hidden by default; the
+    // per-period oblique composite (three layers: this tier + mask + under-city haze) is always on and the base never swaps
+    const altHidden = await p.evaluate(() => { const b = document.getElementById('tgAlt'); return !b || b.closest('label')?.hidden || b.hidden || b.closest('[hidden]') != null; });
+    rep.check('云雾开关（上层 → 显示下方城市：合成常开、底图不变、高级行默认隐藏）',
+      !/upper_city/.test(s0.base) && !!s0.comp && s0.base === s1.base && s1.base === s2.base && altHidden,
+      `底图 ${name(s0.base)}；合成 ${s0.comp ? 'on' : 'off'}；高级行隐藏 ${altHidden}`);
   });
 
   if (on('fly')) await step('事态飞行', async () => {
