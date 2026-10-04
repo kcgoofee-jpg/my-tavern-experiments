@@ -45,13 +45,13 @@ try {
   // 陈旧入口自己的静态模块图（.mjs / .js）会经分支路径取到（它们只是代码、取完什么也不挂）；内容（页面 / 数据 / 包 / 瓦片 / 图）一律不许走分支名
   const bad = x => x.urls.filter(q => q.ref === 'preview' && q.rel !== 'data/head.json' && !/\.m?js$/.test(q.rel)).map(q => q.rel);
   rep.check('头 A：内容请求（非代码）没有走分支名地址', bad(a).length === 0, JSON.stringify(bad(a)));
-  rep.check('头 A：关于页「当前构建」一行', /当前构建 head #9001 · aaaaaaa/.test(a.r.line), a.r.line);
+  rep.check('头 A：关于页「当前构建」一行', /当前构建 head #9001 · /.test(a.r.line), a.r.line);   // U-FIX-12: the line now shows the build date, not the sha
   // 发布头 B：分支路径上的内容仍是陈旧的 A，只有 head.json 变了
   branchHead = 'B';
   const b = await load(P, 'b');
   rep.check('头 B：重载后 SCRIPT.sha = B、构建号 = B', b.S?.sha === SHA.B.slice(0, 12) && b.S?.build === BUILD.B, JSON.stringify(b.S));
   rep.check('头 B：查看器报告 B 的构建标记（不是陈旧分支路径的 A）', b.r.build?.code === MARK.B, String(b.r.build?.code));
-  rep.check('头 B：关于页「当前构建」跟着变', /当前构建 head #9002 · bbbbbbb/.test(b.r.line), b.r.line);
+  rep.check('头 B：关于页「当前构建」跟着变', /当前构建 head #9002 · /.test(b.r.line), b.r.line);
   rep.check('头 B：没有任何内容请求走分支名地址（只有陈旧入口的代码图与 head.json）', bad(b).length === 0, JSON.stringify(bad(b)));
   rep.check('头 B：数据 / 查看器页 / 包文件都在 B 的提交号下', b.urls.some(q => q.ref === SHA.B && q.rel === 'viewer.html') && b.urls.some(q => q.ref === SHA.B && /^packs\/eden\/manifest\.json$/.test(q.rel)), String(b.urls.filter(q => q.ref === SHA.B).length));
   rep.check('页面无报错', P.errors.filter(e => !/favicon|ERR_|404/.test(e)).length === 0, P.errors.slice(0, 3).join(' | '));

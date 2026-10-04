@@ -77,10 +77,11 @@ async function unmap(preset) {
   try {
     await B.openViewer(P, { map: 'tc_mid', here: '一个地图上没有的小酒馆' }); await B.wait(2000); const p = P.page;
     const r = await p.evaluate(() => ({ name: typeof UnmappedPlacePicker !== 'undefined' && UnmappedPlacePicker.name, hidden: ViewerDrawer.el.hidden, pl: !ViewerDrawer.button('pl').hidden,
-      btn: document.querySelector('#cardEmpty button')?.textContent || '' }));
+      btn: document.querySelector('#cardEmpty button')?.textContent || '', empty: document.getElementById('cardEmpty')?.textContent || '' }));
     if (!r.name) { rep.check(`${preset} 未上图（这个地点被认出来了，跳过）`, true, JSON.stringify(r)); return; }
     rep.check(`${preset} 未上图时抽屉 / 右栏不藏`, !r.hidden && r.pl, JSON.stringify(r));
-    rep.check(`${preset} 「地点」页有「放到地图上」`, r.btn === '放到地图上', r.btn);
+    // U-FIX-12 (HEADER-1 / PLACE-1b): the 「放到地图上」 button row is gone; the entry is the header place pill and the tab says so
+    rep.check(`${preset} 「地点」页给出去哪放的指引（入口在标题栏地点签）`, /放到地图上/.test(r.empty), r.empty.slice(0, 80));
     await p.evaluate(() => ViewerDrawer.setTab('pl', 'half')); await B.wait(400);
     await B.shot(p, OUT, `unmap_${preset}`);
   } finally { await P.ctx.close(); }

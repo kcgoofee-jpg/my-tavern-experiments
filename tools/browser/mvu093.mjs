@@ -23,6 +23,8 @@ const MSGS = [{ message_id: 40, message: '<span style="display:none">⌖人物 �
 const jpg = async (page, name) => { await B.shot(page, OUT, name); if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true });
   await page.screenshot({ path: path.join(SHOTS, name + '.jpg'), type: 'jpeg', quality: 70, scale: 'css' }); };
 const errs = P => P.errors.filter(e => !/http 404/.test(e));
+// U-FIX-12 (PLACE-1a key migration): custom items are keyed by node id, the pack name travels in 标
+const ci = (v, key) => { const it = v?.eden_map?.自定义?.items || {}; return it[key] || Object.values(it).find(x => x && (x.标 === key || x.名 === key || (x.别名 || []).includes(key))) || null; };
 
 async function run(name, preset) {
   const P = await B.newPage(preset, { tier: 'save' });
@@ -36,17 +38,18 @@ async function run(name, preset) {
     rep.check(`${name} 标题栏世界时间（紧凑，全文在 title，带时钟图标）`, clk.t === '1月12日 23:30' && !clk.hid && clk.svg && /就寝/.test(clk.full), JSON.stringify(clk));
     // 2 旧叫法迁移进聊天变量
     const v0 = await H.vars();
-    rep.check(`${name} 旧本机叫法迁移到聊天变量 eden_map（不在 stat_data）`, v0?.eden_map?.自定义?.items?.书房?.名 === '星图室' && !('stat_data' in (v0 || {})), JSON.stringify(v0).slice(0, 160));
+    rep.check(`${name} 旧本机叫法迁移到聊天变量 eden_map（不在 stat_data）`, ci(v0, '书房')?.名 === '星图室' && !('stat_data' in (v0 || {})), JSON.stringify(v0).slice(0, 160));
     await H.open();
     const vf = await H.viewer();
     await vf.evaluate(() => { ViewerDebug.closeCard(); ViewerDebug.go('tc_mid'); }); await B.wait(2500);
     // 4 夜色：中层有、下层没有、开关关掉没有
     // 中层已登记夜间底图（maps.json periods.night，9ad6dfc）：夜档由底图 + data-tod 承担，不再叠 nighttint；没登记夜图的层才叠色调
-    const n1 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '', swapped: !!ViewerDebug.mapRegistry?.maps?.tc_mid?.periods?.night }));
+    const n1 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '', swapped: !!(ViewerDebug.mapRegistry?.maps?.tc_mid?.views?.top?.periods || ViewerDebug.mapRegistry?.maps?.tc_mid?.periods)?.night }));
     await vf.evaluate(() => ViewerDebug.go('tc_low')); await B.wait(2000);
     const n2 = await vf.evaluate(() => ({ tint: document.body.classList.contains('nighttint'), tod: document.body.dataset.tod || '' }));
     await vf.evaluate(() => ViewerDebug.go('tc_mid')); await B.wait(2000);
-    rep.check(`${name} 夜色：中层夜档（有夜图则换底图、无则叠色调）、下层不加`, n1.tod === 'night' && n1.tint === !n1.swapped && !n2.tint && !n2.tod, JSON.stringify({ n1, n2 }));
+    // U-FIX-12：中层与下层现在都登记了自己的夜档底图（下层矿灯照明）——两层的夜档都由底图承担，色调不再叠加
+    rep.check(`${name} 夜色：两层都换夜档底图、不叠色调`, n1.tod === 'night' && n1.tint === !n1.swapped && n2.tod === 'night' && !n2.tint, JSON.stringify({ n1, n2 }));
     await jpg(p, `mvu_${name}_night`);
     // 5 着装：fix3（用户 2026-09-28）起不再挂地点卡——改在人物页顶部「你（主角）」一行（characters-view.mjs .chme）
     const card = await vf.evaluate(() => { const el = [...document.querySelectorAll('.mk.here')][0]; if (!el) return null; el._open(); const c = document.querySelector('#card'); return { h: c.querySelector('h2').textContent, o: c.querySelector('.cu-outfit')?.textContent || '' }; });
@@ -60,44 +63,48 @@ async function run(name, preset) {
     rep.check(`${name} 人物页「你（主角）」行显示着装`, me?.b === '你（主角）' && /^着装：深灰风衣 \/ 黑色长裤 \/ 短靴/.test(me.o), JSON.stringify(me));
     const src = await vf.evaluate(() => Object.fromEntries(CharactersView.items.map(c => [c.name, c.src + '@' + c.place])));
     const lab = await vf.evaluate(() => [...document.querySelectorAll('#evbar .chpane .chsrc')].map(x => x.textContent));
-    rep.check(`${name} 人物位置：MVU > 标签 > 同处（infer），列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['MVU', '标签', '同处'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
+    rep.check(`${name} 人物位置：MVU > 标签 > 同处（infer），列表标来源`, src.米拉 === 'mvu@下层·7号井' && src.卡尔 === 'tag@中层·霓虹街' && /^infer@/.test(src.奥托 || '') && ['聊天变量', '标签', '同处'].every(x => lab.includes(x)), JSON.stringify({ src, lab }));
     await jpg(p, `mvu_${name}_people`);
     // 2 EdenMap.setCustom：地标改名 + 用途 → 聊天变量、地图标签、注入摘要
     // 换聊天后的迁移：全局旧键只在聊天还没有 eden_map 时并入一次（不会把重置过的项每次刷新都加回来）
     const ok = await p.evaluate(() => window.EdenMap.setCustom('天城执法局总局', { name: '蓝塔', note: '接头地点', kind: 'landmark' })); await B.wait(700);
     const v1 = await H.vars(), lb = await vf.evaluate(() => [...document.querySelectorAll('.mk')].find(e => e.dataset.name === '天城执法局总局')?.querySelector('.lab')?.firstChild?.nodeValue);
     await p.evaluate(() => window.__fire('r')); await B.wait(700);
-    const inj = await H.injected(), wbc = Object.values((await H.wb()).books)[0]?.[0]?.content || '';   // v0.9.5：同步到世界书默认开，摘要进世界书，不再重复注入
-    rep.check(`${name} setCustom → 聊天变量 + 地图标签换名 + 摘要（注入或世界书）`, ok && v1.eden_map.自定义.items.天城执法局总局.名 === '蓝塔' && lb === '蓝塔' && (/天城执法局总局→蓝塔（接头地点）/.test(inj) || /天城执法局总局：玩家称为「蓝塔」；用途：接头地点/.test(wbc)), JSON.stringify({ ok, lb, inj: inj.slice(-90), wbc: wbc.slice(-80) }));
+    const inj = await H.injected(), wb0 = await H.wb();
+    // U-FIX-12：摘要进「伊甸地图·自定义·<聊天>」那本书（v0.9.5 起不再重复注入），在它的内容条目里找
+    const cbn = Object.keys(wb0.books).find(n => /^伊甸地图·自定义·/.test(n)) || '', wbc = (wb0.books[cbn] || []).map(x => x?.content || '').join('\n');
+    rep.check(`${name} setCustom → 聊天变量 + 地图标签换名 + 摘要（注入或世界书）`, ok && ci(v1, '天城执法局总局')?.名 === '蓝塔' && lb === '蓝塔' && (/天城执法局总局→蓝塔/.test(inj + wbc) || /天城执法局总局：玩家称为「蓝塔」/.test(wbc)), JSON.stringify({ ok, lb, inj: inj.slice(-90), wbc: wbc.slice(-160), cbn }));
     const al = await p.evaluate(async () => [await window.EdenMap.setRoomAlias('小书斋', '书房'), (await window.EdenMap.getRooms()).alias]);
     rep.check(`${name} 旧名 setRoomAlias / getRooms 仍可用`, al[0] === true && al[1].小书斋 === '书房', JSON.stringify(al));
     // 2 剧情标签 → 更新 + 一次性提示
     await H.setMsgs([...MSGS, { message_id: 41, message: '<span style="display:none">⌖改名 客房 → 画室</span><span style="display:none">⌖用途 客房：放画架</span>' }]); await B.wait(900);
     const v2 = await H.vars(), tt = await p.evaluate(() => [...document.querySelectorAll('#eden-map-root .nt-p2 .nt-item, #eden-map-root .nt-p1 .nt-item')].map(t => t.textContent).join(' '));   // UI v2：嵌入时提示由宿主通知层显示
-    rep.check(`${name} 剧情标签 ⌖改名 / ⌖用途：写入并提示一次`, v2.eden_map.自定义.items.客房?.名 === '画室' && v2.eden_map.自定义.items.客房?.用途 === '放画架' && v2.eden_map.标签楼 === 41 && /客房 改名为「画室」/.test(tt), JSON.stringify({ tt, f: v2.eden_map.标签楼 }));
+    rep.check(`${name} 剧情标签 ⌖改名 / ⌖用途：写入并提示一次`, ci(v2, '客房')?.名 === '画室' && ci(v2, '客房')?.用途 === '放画架' && v2.eden_map.标签楼 === 41 && /客房 改名为「画室」/.test(tt), JSON.stringify({ tt, f: v2.eden_map.标签楼 }));
     await jpg(p, `mvu_${name}_toast`);
     const T41 = '<span style="display:none">⌖改名 客房 → 画室</span><span style="display:none">⌖用途 客房：放画架</span>';
     await H.setMsgs([...MSGS, { message_id: 41, message: T41 }, { message_id: 42, message: '无标签' }]); await B.wait(700);
-    rep.check(`${name} 已处理的标签不重复提示`, (await H.vars()).eden_map.自定义.items.客房.名 === '画室');
+    rep.check(`${name} 已处理的标签不重复提示`, ci(await H.vars(), '客房')?.名 === '画室');
     // 重 roll：那一楼的原文变了 → 撤销旧标签，按新原文重扫
     await H.setMsgs([...MSGS, { message_id: 41, message: '⌖改名 客房 → 琴房' }, { message_id: 42, message: '无标签' }]); await B.wait(900);
-    const sw = (await H.vars()).eden_map.自定义.items.客房 || null;
+    const sw = ci(await H.vars(), '客房');
     await H.setMsgs([...MSGS, { message_id: 41, message: '这一楼没有标签了' }, { message_id: 42, message: '无标签' }]); await B.wait(900);
-    const sw2 = (await H.vars()).eden_map.自定义.items.客房 || null;
+    const sw2 = ci(await H.vars(), '客房');
     rep.check(`${name} 重 roll 撤销：改成琴房（用途撤回），再重 roll 掉标签后恢复原样`, sw?.名 === '琴房' && !sw.用途 && sw2 === null, JSON.stringify({ sw, sw2 }));
     await H.setMsgs([...MSGS, { message_id: 41, message: T41 }, { message_id: 42, message: '无标签' }]); await B.wait(900);
-    const sw3 = (await H.vars()).eden_map.自定义.items.客房 || null;
+    const sw3 = ci(await H.vars(), '客房');
     rep.check(`${name} 再 roll 回带标签的原文：重新生效`, sw3?.名 === '画室' && sw3.用途 === '放画架', JSON.stringify(sw3));
     // 2 设置栏的编辑 / 重置 / 添加：v0.9.5 改成对话框，见 tools/browser/custom095.mjs；这里只用接口
-    await p.evaluate(() => window.EdenMap.setCustom('主卧', { name: '东卧', note: '朝东，早上有光' })); await B.wait(700);
+    await p.evaluate(() => window.EdenMap.setCustom('主人主卧', { name: '东卧', note: '朝东，早上有光' })); await B.wait(700);
     const v3 = await H.vars(); await p.evaluate(() => window.EdenMap.removeCustom('客房')); await B.wait(700); const v4 = await H.vars();
-    rep.check(`${name} 自定义：添加（类=房间）、重置`, v3.eden_map.自定义.items.主卧?.名 === '东卧' && v3.eden_map.自定义.items.主卧.类 === 'room' && !v4.eden_map.自定义.items.客房);
+    rep.check(`${name} 自定义：添加（类=房间）、重置`, ci(v3, '主人主卧')?.名 === '东卧' && ci(v3, '主人主卧')?.类 === 'room' && !ci(v4, '客房'), JSON.stringify({ v3: v3?.eden_map?.自定义?.items, v4: v4?.eden_map?.自定义?.items }));
     // 2 同步到世界书（v0.9.5 默认开：有自定义就已经建了、绑定了）
-    const wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '', e = wb1.books[bn]?.[0];
-    rep.check(`${name} 同步到世界书（默认开）：建「伊甸地图·自定义·<聊天>」并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && e?.enabled && /东卧/.test(e.content) && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat }));
+    const wb1 = await H.wb(), bn = Object.keys(wb1.books)[0] || '';
+    // U-FIX-12：书里第一条是禁用的说明条目，内容条目在后面——找带东卧的那条
+    const es = wb1.books[bn] || [], e = es.find(x => /东卧/.test(x?.content || ''));
+    rep.check(`${name} 同步到世界书（默认开）：建「伊甸地图·自定义·<聊天>」并绑定到聊天`, /^伊甸地图·自定义·[0-9a-f]{6}$/.test(bn) && e?.enabled && wb1.chat === bn, JSON.stringify({ bn, chat: wb1.chat, n: es.length, en: e?.enabled }));
     await vf.evaluate(() => { ViewerDebug.showSet(true); document.querySelector('#cuSync').click(); }); await B.wait(900);
     const wb2 = await H.wb();
-    rep.check(`${name} 关掉同步：条目停用（不删世界书）`, wb2.books[bn]?.[0]?.enabled === false, JSON.stringify(wb2.books[bn]?.[0]?.enabled));
+    rep.check(`${name} 关掉同步：条目停用（不删世界书）`, (wb2.books[bn] || []).find(x => /东卧/.test(x?.content || ''))?.enabled === false, JSON.stringify((wb2.books[bn] || []).map(x => x?.enabled)));
     // 文字原样显示、不当 HTML
     await p.evaluate(() => window.EdenMap.setCustom('餐厅', { name: '<img src=x onerror="window.__xss=1">', note: '<b>粗</b>' })); await B.wait(700);
     await vf.evaluate(() => { document.querySelector('#cuBox .cu-open').click(); }); await B.wait(600);

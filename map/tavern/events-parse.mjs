@@ -98,8 +98,17 @@ export function parseMarks(raw) {
   for (const e of marksOf(raw)) {
     const loc = norm(e.loc);
     const pl = GEO ? GEO.place(String(e.loc).trim()) : null;   // 先别名、再提示词；认不出的事件照样列出、不上图（K-01 B）
-    const layer = pl ? pl.layer : '', place = pl ? GEO.strip(loc, pl.owner) : loc, node = pl ? pl.node : null;
-    const rem = pl ? restOf(place, pl.word) : '';   // the part of the place text the matched word does not cover ("霓虹街后巷" -> "后巷"): two places under one node stay two events (Q-13)
+    const place0 = pl ? GEO.strip(loc, pl.owner) : loc;
+    const rem = pl ? restOf(place0, pl.word) : '';   // the part of the place text the matched word does not cover ("霓虹街后巷" -> "后巷"): two places under one node stay two events (Q-13)
+    // 只认出层名、后面的具体地点哪都认不出（「某层·某某」）：整条按未上图处理（U-FIX-11），不钉在层的概略位置上
+    // 前缀写明的层与认出的地方的层对不上（前缀说下层、认到的是别层的同名地点）：同样未上图，不跨层钉；层名也不写认出的那层（列表照原文写）
+    let mismatch = false;
+    if (pl && loc.includes('·')) {
+      const head = String(e.loc).trim().split(/[·•・.]/)[0] || '', w = pl.word || '';
+      if (!(w && (head.includes(w) || w.includes(head)))) { const said = GEO.layers().find(l => head.endsWith(l)); mismatch = !!said && said !== pl.layer; }
+    }
+    const node = pl && !mismatch && !(rem && pl.node === pl.owner) ? pl.node : null;
+    const layer = pl && !mismatch ? pl.layer : '', place = pl && !mismatch ? place0 : loc;
     const { line, loc: _, cls: c, ...rest } = e;
     out.push({ ...rest, layer, place, node, ...(rem ? { rem } : {}), type: c.type, grp: c.grp, ch: c.icon, color: c.color, rare: c.rare, text: e.text.slice(0, 60), src: (e.src || c.source || '').slice(0, 20),
       ...(c.fx ? { fx: c.fx } : {}), ...(c.inject === false ? { inject: false } : {}), ...(c.own ? { life: c.life } : {}) });

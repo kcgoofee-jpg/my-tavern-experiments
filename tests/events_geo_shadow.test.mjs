@@ -38,11 +38,17 @@ function both({ loc, cat = '', xy = '' }) {
   return { loc, cat, o, n, op, np, nmap, place };
 }
 function classify(r) {
-  const { o, n, op, np, nmap } = r;
+  const { o, n, op, np, nmap, loc } = r;
   if (!o && !n) return 'K-01 B';                                  // v1 dropped it, v2 lists it without a pin
   if (!o) return 'found';                                         // v1 dropped it, the tree knows the place
   if (!n) return 'lost';
-  if (o.layer !== n.layer || op.map !== nmap) return 'tier';
+  if (o.layer !== n.layer || op.map !== nmap) {
+    // U-FIX-11: the stated layer contradicts the place the tree found (「天城下层·C区检查点」→ 中层的层间检查点) —
+    // the tag pipeline lists it without a pin instead of pinning the wrong tier; v1 read the prefix only
+    const head = loc.split(/[·•・.]/)[0] || '', w = n.word || '';
+    if (!(w && (head.includes(w) || w.includes(head))) && g.layers().some(l => head.endsWith(l) && l !== n.layer)) return 'ufix11';
+    return 'tier';
+  }
   if (o.place !== r.place) return 'text';
   if (nmap === 'world') return op.none && !np.none ? 'world alias' : op.none === np.none && Math.hypot(op.nx - np.nx, op.ny - np.ny) <= TOL ? 'same' : 'world spot';
   if (Math.hypot(op.nx - np.nx, op.ny - np.ny) <= TOL && !!op.approx === !!np.approx) return 'same';
@@ -62,6 +68,11 @@ test('parity: no place is lost; the layer label, the map and the place text neve
   assert.deepEqual(rows.filter(r => ['lost', 'tier', 'text', 'spot', 'world spot'].includes(r.cls)).map(r => [r.cls, r.loc]), []);
   assert.ok(tally(rows).same > 290);
 });
+test('U-FIX-11: a stated layer that contradicts the found place is listed without a pin (the tag pipeline, not the geo)', () => {
+  assert.deepEqual(locs('ufix11'), ['天城下层·C区检查点']);
+  assert.equal(parseMarkNode('⌖盗窃｜天城下层·C区检查点｜2｜珠宝店失窃'), null);
+});
+function parseMarkNode(line) { return EVM.parseMarks(line)[0]?.node ?? null; }
 test('K-01 B: a place no node holds is listed without a pin (v1 dropped the event)', () => {
   assert.deepEqual(locs('K-01 B'), ['区议会', '某处', '骑士团巡逻据点']);   // "区议会": a root hint hides the shorter 议会; the others name nothing
   for (const loc of ['区议会', '某处', '骑士团巡逻据点']) assert.equal(g.place(loc), null);

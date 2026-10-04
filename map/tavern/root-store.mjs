@@ -102,7 +102,9 @@ export function createRootStore(host) {
     const k = String(word || '').trim(); if (!k || !custom) return { key: k, std: k };
     const mvr = host.mvuReaders, hit = mvr?.findKey(custom, k), km = await placeKeys();
     const key = hit || km.idOf(k) || k;
-    return { key, std: hit ? mvr.stdOf(custom, hit) : (km.by?.get(key) || (key === k ? k : mvr?.stdOf(custom, key) || k)) };
+    await placeKeys();   // U-FIX-12: km 只带 idOf；id → 包原名的那张表在 keysNow 上（丢了它，自定义项就存不出 标，标签与摘要都退回节点 id）
+    const std = hit ? mvr.stdOf(custom, hit) : (keysNow?.by?.get(key) || (key === k ? k : mvr?.stdOf(custom, key) || k));
+    return { key, std };
   }
   async function loadCustom() {
     if (!host.mvuReaders) return;
@@ -220,6 +222,11 @@ export function createRootStore(host) {
     const r = contextPipeline.customTags(custom, msgs, host.floorNow, kindOf, tagsIdOf);
     if (!r) return;
     custom = r.custom; contextPipeline.tag = r.tag;
+    // U-FIX-12（PLACE-1b 的收尾）：键是节点 id 的项把包里的原名补进 标——剧情标签这条写路径不经过 placeKeyOf，
+    // 没有它，stdOf / 摘要 / 标签改名后的找回都退回节点 id
+    if (keysNow?.by?.size) for (const [k, e] of Object.entries(custom.items || {})) {
+      if (e && !e.标 && keysNow.by.get(k)) { const nx = host.mvuReaders.setCustom(custom, k, { std: keysNow.by.get(k) }); if (nx) custom = nx; }
+    }
     if (r.applied.length || r.undone) { toastQ.push(...r.applied.map(host.mvuReaders.tagToast)); customChanged(true); } else saveRoot();
   }
   /** PLACE-1a: the record editor's save (patch = { name?, use?, desc?, facts?, aliases?, base? }; '' / [] puts the pack's text back) and its undo. Both go through setCustom, so the chat variable, the viewer and the chat's custom book follow. */

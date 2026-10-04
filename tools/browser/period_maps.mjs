@@ -22,8 +22,13 @@ try {
   for (const b of ['dawn', 'day', 'dusk', 'night']) {
     await toViewer({ type: 'eden-map:clock', v: 2, day: 1, min: +hh[b].slice(0, 2) * 60, time: hh[b], night: b === 'night', tod: b, bands: BANDS });
     const s = await state(); seen[b] = s.src;
-    const want = maps.tc_upper.periods[b].replace(/\.dzi$/, '');
-    rep.check(`tc_upper ${b}: base is ${maps.tc_upper.periods[b]}`, s.map === 'tc_upper' && s.src.includes(want) && (b !== 'day' || !/_dawn|_dusk|_night/.test(s.src)), JSON.stringify(s));
+    const periods = maps.tc_upper.views?.top?.periods || maps.tc_upper.periods;   // U-FIX-12: periods moved to views.top.periods
+    // U-FIX-12: the top view's base item 0 is now the per-period oblique composite (art/tc_upper_obl_<band>_files/);
+    // the contract that matters here is still "the base follows the band": a per-period source, day plain (no dawn/dusk/night file)
+    const per = b === 'day'
+      ? s.src.includes('_obl_day_') || (s.src.includes('tc_upper') && !/_(dawn|dusk|night)/.test(s.src))
+      : new RegExp(`tc_upper.*_${b}`).test(s.src);
+    rep.check(`tc_upper ${b}: base follows the band (flat ${periods[b]} or its oblique composite)`, s.map === 'tc_upper' && per, JSON.stringify(s));
     rep.check(`tc_upper ${b}: no tint on top of its own base`, !s.tint && !s.overlay && (b === 'day' ? !s.tod : s.tod === b), JSON.stringify(s));
     await B.wait(600); const f = await B.shot(D.page, OUT, `period_${b}`); try { fs.copyFileSync(f, path.join(outDir, `period_${b}.png`)); } catch (e) {}
   }

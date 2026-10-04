@@ -218,6 +218,8 @@ function clampLabels() {
   const S = window.ViewerDrawer, dr = S?.el && !S.el.hidden ? S.el.getBoundingClientRect() : null;
   const right = dr?.width && dr.left > osd.left + osd.width / 2 && dr.left < osd.right ? dr.left : osd.right, L = osd.left + 6, R = right - 6;
   const labs = [...document.querySelectorAll('.mk .lab')]; labs.forEach(l => { l.style.removeProperty('--ldx'); l.style.removeProperty('--ldy'); });
+  const realms = [...document.querySelectorAll('.realm')]; realms.forEach(e => e.style.removeProperty('--ldx'));   // U-FIX-13.2: a realm title wider than the map's left edge slides back inside (375 px world map)
+  for (const e of realms) { const r = e.getBoundingClientRect(); if (!r.width || r.right < osd.left || r.left > right) continue; const dx = r.left < L ? L - r.left : r.right > R ? R - r.right : 0; if (dx) e.style.setProperty('--ldx', Math.round(dx) + 'px'); }
   const rs = labs.map(l => [l, l.getBoundingClientRect(), l.closest('.mk')?.querySelector('.pin')?.getBoundingClientRect()]);
   for (const [l, r, p] of rs) { if (!r.width || !p?.width || p.right < osd.left || p.left > right) continue; const dx = r.left < L ? L - r.left : r.right > R ? R - r.right : 0; if (dx) l.style.setProperty('--ldx', Math.round(dx) + 'px');
     if (r.top < osd.top + 6 && p.top >= osd.top && p.bottom <= osd.bottom) l.style.setProperty('--ldy', Math.round(p.bottom - r.top + 2) + 'px'); }   // SW2-07: a pin at the top edge: its name flips below the pin instead of running under the bar

@@ -19,8 +19,9 @@ export function roomCard(r, ctx) {
   const k = ctx.kinds.find(x => x.id === r.kind) || { id: r.kind, label: r.kind, color: '' };
   const sub = rec?.sub || [floorLabel(ctx.floors, r.floor), ctx.building.title].filter(Boolean).join(' · ');
   if (!rec) return bareRoom(r, k, sub);
-  recordCard(rec, { kindLabel: k.label, back: ctx.back, sub });
-  return $('#card');
+  const c = recordCard(rec, { kindLabel: k.label, back: ctx.back, sub });
+  if (Number.isFinite(r.area) && r.area > 0 && !(rec.rows || []).some(x => /面积|area/i.test(`${x.label || ''}${x.key || ''}`))) c.querySelector('.src').append(dl([[T('v3.area', '面积'), `${Math.round(r.area)} ㎡`]]));
+  return c;
 }
 /** 这一间在树里还没有记录（表里有、记录还没算出来）：只画它自己的行，不编文字 */
 function bareRoom(r, k, sub) {

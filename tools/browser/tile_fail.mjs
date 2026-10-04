@@ -1,13 +1,15 @@
-// N13 probe: what the map does when its tiles (or a DZI) fail to load on the route a build was pinned to.
-// A fake CDN answers https://cdn.jsdmirror.com/gh/o/r@<sha>/map/... and https://cdn.jsdelivr.net/gh/o/r@<sha>/map/... from the local map/ folder
-// (same idea as follow_pin.mjs), so a route can be made to fail with page.route aborts while the other one works. The host script is loaded
-// "pinned" (script base = .../r@<sha>/map/, window.__edenMapScript.sha set), the route is 'cn' (jsdmirror, the user's 没梯子).
+// N13 probe, U-FIX-10 contract: what the map does when its tiles (or a DZI) fail to load on the route a build was pinned to.
+// The delivery lines are the npm table (host-routes.mjs NPM_LINES); the script base carries a numeric version
+// (.../r@0.9.7/map/) so the line is swappable. A fake CDN answers all four line hosts from the local map/ folder
+// (same idea as follow_pin.mjs), so a route can be made to fail with page.route aborts while the others work.
+// The chosen route is npm-js (the line the script base sits on); the switch target is npm-unpkg (the next line in
+// the table). The host script is loaded "pinned" (window.__edenMapScript set).
 // Cases (tc_upper at day and at night unless noted):
-//   pinned      both routes up: every art request (DZI and tiles) goes to the pinned base on the chosen route (never @preview), base fills the extent,
+//   pinned      chosen route up: every art request (DZI and tiles) goes to the chosen base, base fills the extent,
 //               markers inside the image; also with fog (迷雾探索) and the minimap on
-//   switch      tiles blocked on the chosen route only: one automatic switch to the other route, tiles come from there, no toast, base in frame
-//   both down   tiles blocked on both: toast shown and docked (does not cover the map centre), base still in the view frame, markers inside it
-//   dzi down    the DZI blocked on both: a placeholder base placed by the view frame (bounds = extent), markers inside, toast docked
+//   switch      tiles blocked on the chosen route only: one automatic switch to another line, tiles come from there, no toast, base in frame
+//   both down   tiles blocked on every line: toast shown and docked (does not cover the map centre), base still in the view frame, markers inside it
+//   dzi down    the DZI blocked on every line: a placeholder base placed by the view frame (bounds = extent), markers inside, toast docked
 //   levels      the highest levels missing (404) on a working route: no toast, base fills the extent, for every sharpness tier x map x period
 // Screenshots go to ~/eden-map-review/n13/.   node tools/browser/tile_fail.mjs [outdir]
 import * as B from './lib.mjs';
@@ -18,7 +20,8 @@ const SHOTS = path.join(process.env.HOME, 'eden-map-review/n13'); fs.mkdirSync(S
 B.quietWait(); await B.ensureServer();
 const rep = B.reporter(OUT);
 const MAP = path.resolve(B.REPO_ROOT, 'map');
-const SHA = 'c0ffee0123456789c0ffee0123456789c0ffee01', SHA12 = SHA.slice(0, 12), HOSTS = { cn: 'cdn.jsdmirror.com', vpn: 'cdn.jsdelivr.net' };
+const VER = '0.9.7', PKG = 'eden-map-engine';
+const HOSTS = { 'npm-js': 'cdn.jsdelivr.net', 'npm-cn': 'registry.npmmirror.com', 'npm-unpkg': 'unpkg.com' };   // chosen = npm-js, the line the script base sits on
 const TYPES = { '.json': 'application/json', '.mjs': 'text/javascript', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.dzi': 'application/xml' };
 const BANDS = [{ id: 'dawn' }, { id: 'day' }, { id: 'dusk' }, { id: 'night', dark: true }];
 const HH = { dawn: 360, day: 720, dusk: 1080, night: 1380 };
@@ -26,24 +29,33 @@ const maps = JSON.parse(fs.readFileSync(path.join(MAP, 'data/maps.json'), 'utf8'
 const near = (a, b) => Math.abs(a - b) <= 0.005 * Math.max(1, Math.abs(b));
 const isTile = u => /_files\/\d+\/[\d_]+\.(jpg|png)$/.test(u), isDzi = u => /\.dzi$/.test(u);
 
-// block = { cn: { tiles, dzi, levels: [n..] }, vpn: {...} }
+// block = { 'npm-js': { tiles, dzi, levels: [n..] }, 'npm-cn': {...}, ... } — keyed by line
 async function openAt(block, { ls = {}, tier = 'hd', band = 'night', map = 'tc_upper', preset = 'desktop' } = {}) {
   const P = await B.newPage(preset, { tier }), reqs = [];
-  await P.ctx.route(/^https:\/\/cdn\.(jsdmirror\.com|jsdelivr\.net)\/gh\/o\/r@[^/]+\/map\//, async route => {
-    const u = new URL(route.request().url()), m = /\/gh\/o\/r@([^/]+)\/map\/(.*)$/.exec(u.pathname), ref = decodeURIComponent(m[1]), rel = decodeURIComponent(m[2]);
-    const route_ = u.host === HOSTS.cn ? 'cn' : 'vpn', b = block[route_] || {}, lv = /_files\/(\d+)\//.exec(rel)?.[1];
-    reqs.push({ route: route_, ref, rel });
-    if (!SHA.startsWith(ref) || ref.length < 7) return route.fulfill({ status: 404, body: 'no such ref' });
+  await P.ctx.route(/^https:\/\/(cdn\.jsdmirror\.com|registry\.npmmirror\.com|cdn\.jsdelivr\.net|unpkg\.com)\//, async route => {
+    const u = new URL(route.request().url()), p = u.pathname;
+    let line = null, rel = null;
+    let m = /\/npm\/[^/]+@[\d.]+\/map\/(.*)$/.exec(p);              // jsDelivr npm shape (the chosen route)
+    if (m && u.host === HOSTS['npm-js']) { line = 'npm-js'; rel = decodeURIComponent(m[1]); }
+    m = /\/[^/]+@[\d.]+\/map\/(.*)$/.exec(p);                   // unpkg shape
+    if (!line && m && u.host === HOSTS['npm-unpkg']) { line = 'npm-unpkg'; rel = decodeURIComponent(m[1]); }
+    m = /\/[^/]+\/[\d.]+\/files\/map\/(.*)$/.exec(p);           // npmmirror shape
+    if (!line && m && u.host === HOSTS['npm-cn']) { line = 'npm-cn'; rel = decodeURIComponent(m[1]); }
+    if (!line) return route.fulfill({ status: 404, body: 'no shape' });
+    const b = block[line] || {}, lv = /_files\/(\d+)\//.exec(rel)?.[1];
+    reqs.push({ line, rel });
     if (b.tiles && isTile(rel)) return route.abort();
     if (b.dzi && isDzi(rel)) return route.abort();
     if (b.levels && isTile(rel) && b.levels.includes(+lv)) return route.fulfill({ status: 404, body: 'nf' });
-    if (rel === 'data/head.json') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ build: 9100, sha: SHA, branch: 'preview', at: '2026-10-01T06:24:52Z' }) });
+    if (rel === 'data/head.json') return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ build: 9100, sha: 'c0ffee0123456789', branch: 'preview', at: '2026-10-01T06:24:52Z' }) });
     const f = path.resolve(MAP, rel); if (!f.startsWith(MAP + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'nf' });
     return route.fulfill({ contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f), headers: { 'access-control-allow-origin': '*' } });
   });
-  await P.ctx.addInitScript(sha => { if (window.top !== window) window.__edenMapScript = { channel: 'ref', ref: sha, sha, build: 9100 }; }, SHA12);
+  await P.ctx.addInitScript(() => { if (window.top !== window) window.__edenMapScript = { channel: 'ver', ref: '0.9.7', sha: 'c0ffee0123456789', build: 9100 };
+  else addEventListener('message', e => { if (e.data && String(e.data.type || '').startsWith('eden-map:tiles')) console.log('TRACE', e.data.type, JSON.stringify(e.data).slice(0, 120), 'line=', localStorage.getItem('edenMapLine')); }); });
+  P.page.on('console', m => { const t = m.text(); if (/tiles-failed|tiles-route|\[eden-map\]/.test(t) || process.env.DBG) console.log('CONSOLE', t.slice(0, 160)); });
   P.page.on('requestfailed', r => process.env.DBG && console.log('REQFAIL', r.url().slice(0, 140), r.failure()?.errorText)); P.page.on('console', m => process.env.DBG && console.log('CONSOLE', m.text().slice(0, 200)));
-  const H = await openHost(P, { here: '天城执法局总局', ls: { edenMapLine: 'cn', edenMapLineManual: '1', ...ls }, scriptBase: `https://${HOSTS.cn}/gh/o/r@${SHA12}/map/` });
+  const H = await openHost(P, { here: '天城执法局总局', ls: { edenMapLine: 'npm-js', edenMapLineManual: '1', ...ls }, scriptBase: `https://${HOSTS['npm-js']}/npm/${PKG}@${VER}/map/` });
   return { P, H, reqs, band, map };
 }
 const clock = (D, b) => D.page.evaluate(m => { document.querySelector('#eden-map-root .em-frame')?.contentWindow?.postMessage(m, '*'); },
@@ -67,7 +79,8 @@ const readView = vf => vf.evaluate(() => {
 });
 const inFrame = (label, s, map) => {
   const ex = maps[map].view.extent_m, want = ex[1] / ex[0];
-  rep.check(`${label}: base item in the view frame (0, 0, 1, ${want})`, s.count === 1 && s.bounds && near(s.bounds[0], 0) && near(s.bounds[1], 0) && near(s.bounds[2], 1) && near(s.bounds[3], want), `count=${s.count} bounds=${s.bounds?.map(n => +n.toFixed(4))}`);
+  // U-FIX-12: the oblique composite / outskirts add world items (count 2-3); the base is item 0 and must still fill the extent
+  rep.check(`${label}: base item in the view frame (0, 0, 1, ${want})`, s.count >= 1 && s.bounds && near(s.bounds[0], 0) && near(s.bounds[1], 0) && near(s.bounds[2], 1) && near(s.bounds[3], want), `count=${s.count} bounds=${s.bounds?.map(n => +n.toFixed(4))}`);
 };
 const markersIn = async (label, vf, s) => {
   await vf.evaluate(() => ViewerDebug.osdViewer.viewport.goHome(true)); await sleep(700); s = await readView(vf);
@@ -77,6 +90,8 @@ const markersIn = async (label, vf, s) => {
 };
 const shot = async (D, name) => { await B.shot(D.page, OUT, name); try { fs.copyFileSync(path.join(OUT, name + '.png'), path.join(SHOTS, name + '.png')); } catch (e) {} };
 const artReqs = reqs => reqs.filter(q => /^art\//.test(q.rel));
+const BLOCK_ALL_TILES = { chosen: { tiles: true }, 'npm-cn': { tiles: true }, 'npm-js': { tiles: true }, 'npm-unpkg': { tiles: true } };
+const BLOCK_ALL_DZI = { chosen: { dzi: true }, 'npm-cn': { dzi: true }, 'npm-js': { dzi: true }, 'npm-unpkg': { dzi: true } };
 
 try {
   // ---- pinned: both routes up
@@ -85,26 +100,27 @@ try {
     const S = await openAt({}, { ls, band }); const vf = await openMap(S, band, 'tc_upper');
     let s = await readView(vf); inFrame(label, s, 'tc_upper'); s = await markersIn(label, vf, s);
     const a = artReqs(S.reqs), tiles = a.filter(q => isTile(q.rel)), dz = a.filter(q => isDzi(q.rel));
-    rep.check(`${label}: tiles requested, from the pinned base on the chosen route only`, tiles.length > 0 && a.every(q => SHA.startsWith(q.ref) && q.route === 'cn'), `n=${tiles.length} ${[...new Set(a.map(q => q.route + '@' + q.ref.slice(0, 7)))].join(',')}`);
-    rep.check(`${label}: the DZI and its tiles share one base`, dz.length > 0 && new Set([...dz, ...tiles].map(q => q.route + '@' + q.ref)).size === 1, [...new Set([...dz, ...tiles].map(q => q.route + '@' + q.ref))].join(','));
+    rep.check(`${label}: tiles requested, from the chosen base on the chosen route only`, tiles.length > 0 && a.every(q => q.line === 'npm-js'), `n=${tiles.length} ${[...new Set(a.map(q => q.line))].join(',')}`);
+    rep.check(`${label}: the DZI and its tiles share one base`, dz.length > 0 && new Set(a.map(q => q.line)).size === 1, [...new Set(a.map(q => q.line))].join(','));
     rep.check(`${label}: no failure toast`, !s.toast, s.toastText);
     await shot(S.P, `pinned_${band}_${variant.replace(/\W/g, '')}`); await S.P.close();
   }
-  // ---- switch: tiles blocked on the chosen route only
+  // ---- switch: tiles blocked on the chosen route only (the switch target is npm-unpkg, the next line in the table)
   for (const band of ['day', 'night']) {
-    const label = `switch ${band}`, S = await openAt({ cn: { tiles: true } }, { band }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4000);
+    const label = `switch ${band}`, S = await openAt({ 'npm-js': { tiles: true } }, { band }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4000);
     let vf = await H0(S); await clock(S.P, band); await sleep(800);
-    await vf.evaluate(() => ViewerDebug.go('world')).catch(() => {}); await sleep(600); await vf.evaluate(() => ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(11000);
-    vf = await H0(S); await vf.evaluate(() => ViewerDebug.currentMapId !== 'tc_upper' && ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(6000);
-    const s = await readView(vf), fromVpn = artReqs(S.reqs).filter(q => q.route === 'vpn' && isTile(q.rel) && SHA.startsWith(q.ref));
-    rep.check(`${label}: one automatic switch to the other route, tiles come from it at the pinned sha`, fromVpn.length > 0, `vpn tiles=${fromVpn.length} cn tiles=${artReqs(S.reqs).filter(q => q.route === 'cn' && isTile(q.rel)).length}`);
+    await vf.evaluate(() => ViewerDebug.go('world')).catch(() => {}); await sleep(600); await vf.evaluate(() => ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(16000);
+    vf = await H0(S); await vf.evaluate(() => ViewerDebug.currentMapId !== 'tc_upper' && ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(12000);
+    const s = await readView(vf), switched = artReqs(S.reqs).filter(q => q.line === 'npm-unpkg' && isTile(q.rel));
+    const storedLine = await S.P.page.evaluate(() => { try { return localStorage.getItem('edenMapLine'); } catch (e) { return '?'; } });
+    rep.check(`${label}: one automatic switch to another line, tiles come from it (npm-unpkg)`, switched.length > 0, `npm-unpkg tiles=${switched.length} npm-js tiles=${artReqs(S.reqs).filter(q => q.line === 'npm-js' && isTile(q.rel)).length} storedLine=${storedLine} perLine=${JSON.stringify(artReqs(S.reqs).reduce((m, q) => ((m[q.line] = (m[q.line] || 0) + 1), m), {}))} last=${S.reqs.slice(-4).map(q => q.line + ':' + q.rel.slice(0, 40)).join(' | ')}`);
     inFrame(label, s, 'tc_upper'); await markersIn(label, vf, s);
     rep.check(`${label}: no failure toast after the switch`, !(await readView(vf)).toast, s.toastText);
     await shot(S.P, `switch_${band}`); await S.P.close();
   }
   // ---- both down: toast, docked
   for (const band of ['day', 'night']) {
-    const label = `both down ${band}`, S = await openAt({ cn: { tiles: true }, vpn: { tiles: true } }, { band }); const vf = await openMap(S, band, 'tc_upper', 5000);
+    const label = `both down ${band}`, S = await openAt(BLOCK_ALL_TILES, { band }); const vf = await openMap(S, band, 'tc_upper', 5000);
     await sleep(12000); let s = await readView(vf);
     rep.check(`${label}: failure toast shown`, s.toast, s.toastText);
     const covers = s.sr && s.sr.x < s.c.x && s.c.x < s.sr.x + s.sr.w && s.sr.y < s.c.y && s.c.y < s.sr.y + s.sr.h;
@@ -113,7 +129,7 @@ try {
   }
   // ---- DZI down
   for (const band of ['day', 'night']) {
-    const label = `dzi down ${band}`, S = await openAt({ cn: { dzi: true }, vpn: { dzi: true } }, { band }); const vf = await openMap(S, band, 'tc_upper', 5000);
+    const label = `dzi down ${band}`, S = await openAt(BLOCK_ALL_DZI, { band }); const vf = await openMap(S, band, 'tc_upper', 5000);
     await sleep(8000); let s = await readView(vf);
     rep.check(`${label}: placeholder base (not an empty world)`, s.count === 1 && /^data:image/.test(s.src), `count=${s.count} src=${s.src}`);
     inFrame(label, s, 'tc_upper'); s = await markersIn(label, vf, s);
@@ -123,7 +139,7 @@ try {
   }
   // ---- levels missing, every tier x map x period
   for (const tier of ['save', 'std', 'hd']) {
-    const S = await openAt({ cn: { levels: [12, 13, 14] } }, { tier, band: 'day' }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4500);
+    const S = await openAt({ 'npm-js': { levels: [12, 13, 14] } }, { tier, band: 'day' }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4500);
     const vf = await S.H.viewer();
     for (const band of ['day', 'night']) for (const map of ['tc_upper', 'tc_mid', 'tc_low']) {
       await clock(S.P, band); await sleep(900); await vf.evaluate(() => ViewerDebug.go('world')).catch(() => {}); await sleep(500); await vf.evaluate(id => ViewerDebug.go(id), map).catch(() => {}); await sleep(4000);

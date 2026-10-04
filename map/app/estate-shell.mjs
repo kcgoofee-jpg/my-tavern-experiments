@@ -14,7 +14,7 @@ import { renderNav } from './map-level-nav.mjs';
 import { hereRes } from './locate.mjs';
 import { eventGeo, isScene } from './nodes-runtime.mjs';
 import { buildEstatePeople, sameList } from '../core/estate-people.mjs';
-import { roomCard, zoneCard } from './estate-cards.mjs';
+import { roomCard, roomList, zoneCard } from './estate-cards.mjs';
 import { placeTab, recordCard, nearbyRow } from './place-card.mjs';
 import { recordOf, buildingOf, onSources } from './place-sources.mjs';
 
@@ -137,7 +137,8 @@ function pickPlace(id, isFloor) {
 /** the drawer's place tab, while no card is open: where the player is, its ancestors, what is next door (PLACE-1b) */
 function refreshList() {
   const e = $('#cardEmpty'); if (!e || !S.on || !S.ready) return;
-  e.replaceChildren(placeTab({ record: hereRecord(), pick: pickPlace }));
+  e.replaceChildren(placeTab({ record: hereRecord(), pick: pickPlace }),
+    roomList(S.rooms, S.floors, r => send({ type: 'estate:select', node: r.node })));   // 三维页开着时楼里的房间始终一列（U-FIX-9：PLACE-1b 重画时丢了）
   e.dataset.um = '3d';
 }
 

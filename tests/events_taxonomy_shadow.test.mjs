@@ -94,7 +94,14 @@ test('Q-13 (merge key = type + node + the part of the place text the matched wor
   const o = OLD.collect(msgs, now), n = NEW.collect(msgs, now);
   console.log(`stream: old ${o.length} events, new ${n.length}`);
   assert.equal(n.length, 165); assert.equal(o.length, 165);
-  assert.deepEqual(n.map(e => e.id).sort(), o.map(e => e.id).sort(), 'the same events (ids are type + layer + place + floor)');
+  // U-FIX-11: the one stated-layer mismatch (天城下层·C区检查点) is now listed unplaced with the place text as written,
+  // so its id (type + layer + place) changes; that one swap is the whole diff
+  const ids = (x, drop) => x.map(e => e.id).filter(id => !drop.includes(id)).sort();
+  const drop = ['3g51qf', '1g9czcq'];
+  assert.equal(n.filter(e => drop.includes(e.id)).length, 1); assert.equal(o.filter(e => drop.includes(e.id)).length, 1);
+  const swapped = n.find(e => e.id === '1g9czcq');
+  assert.equal(swapped.node, null); assert.ok(swapped.place.includes('C区检查点'));
+  assert.deepEqual(ids(n, drop), ids(o, drop), 'the same events (ids are type + layer + place + floor)');
   // with the type and node alone (first cut of S4-1) three of them folded into neighbours
   const a = NEW.parseMarks('⌖火灾｜中层·B｜2｜x')[0], b = NEW.parseMarks('⌖火灾｜中层·C｜2｜x')[0], c = NEW.parseMarks('⌖火灾｜中层·霓虹街｜2｜x')[0], d = NEW.parseMarks('⌖火灾｜中层·霓虹街后巷｜2｜x')[0];
   assert.equal(a.node, b.node); assert.notEqual(a.rem, b.rem); assert.equal(c.rem, undefined); assert.equal(d.rem, '后巷');

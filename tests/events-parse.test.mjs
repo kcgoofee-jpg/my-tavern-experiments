@@ -25,6 +25,14 @@ t('无层前缀：按地名 / 提示词落层；推不出的照样列出、不�
   const [u] = parseMarks('⌖火灾｜某处｜1｜冒烟');
   assert.equal(u.layer, ''); assert.equal(u.place, '某处'); assert.equal(u.node, null); assert.equal(u.text, '冒烟');
 });
+t('U-FIX-11：层名对不上的地方不上图（前缀说下层、认到的是中层的检查点）；只认出层名的同样未上图', () => {
+  const [e] = parseMarks('⌖盗窃｜天城下层·C区检查点｜2｜珠宝店失窃｜巡卫');
+  assert.equal(e.node, null); assert.ok(e.place.includes('C区检查点'));   // 列出、不上图（与「异象｜某处」同一待遇）
+  const [ok] = parseMarks('⌖火灾｜中层·C区检查点｜2｜起火');   // 对照：前缀与地方同层照常上图
+  assert.equal(ok.node, 'checkpoint_c');
+  const [lay] = parseMarks('⌖盗窃｜天城下层·不存在的广场｜2｜失窃');
+  assert.equal(lay.node, null);   // 只认出层名：不钉在层的概略位置上
+});
 t('等级越界 / 缺字段丢弃', () => {
   assert.equal(parseMarks('⌖火灾｜中层·C区｜5｜太大').length, 0);
   assert.equal(parseMarks('⌖火灾｜中层·C区').length, 0);

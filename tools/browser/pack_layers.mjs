@@ -82,7 +82,7 @@ try {
     const e = await p.evaluate(() => ({ declared: window.DeclaredLayersApi?.describe().map(d => d.id), lyr: [...document.querySelectorAll('#layList label[id^="lyr-"]')].map(l => l.id), ward: document.getElementById('lyr-estate_ward'), rows: document.querySelectorAll('#layList label').length,
       legendKids: [...(document.getElementById('legendPane')?.children || [])].map(c => c.tagName), canvases: document.querySelectorAll('canvas.lyr-cv').length, svgs: document.querySelectorAll('svg.lyr-svg').length }));
     // S8-3 (pinned additions, K-R86 / K-R88): the kernel rows lyr-nav-ops and lyr-local-props are two more rows (hidden until they hold something): 17 rows
-    rep.check('first pack (world): the pack declares no layer (A8); only the transit row and the two S8-3 kernel rows are there (hidden); 17 menu rows; nothing drawn', e.declared?.length === 0 && e.lyr.join() === 'lyr-transit,lyr-nav-ops,lyr-local-props' && !e.ward && e.rows === 17 && !e.canvases && !e.svgs, JSON.stringify(e));
+    rep.check('first pack (world): the pack declares no layer (A8); only the transit row and the two S8-3 kernel rows are there (hidden); 18 menu rows (U-FIX-12: the top-view toggle joined the kernel list); nothing drawn', e.declared?.length === 0 && e.lyr.join() === 'lyr-transit,lyr-nav-ops,lyr-local-props' && !e.ward && e.rows === 18 && !e.canvases && !e.svgs, JSON.stringify(e));
     rep.check('first pack: the legend pane markup is the old one (heading and one list)', e.legendKids.join() === 'H3,DL', JSON.stringify(e.legendKids));
     await p.evaluate(() => ViewerDebug.go('tc_upper')); await B.wait(3500);
     const u = await p.evaluate(() => { const r = document.getElementById('tgRoutes'), svg = document.querySelector('svg.routes');

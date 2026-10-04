@@ -66,7 +66,8 @@ test('no dead keys: every key in the table is read somewhere', () => {
   for (const k of Object.keys(zh)) {
     const read = new RegExp(`tx\\(\\s*'${k}'`).test(body)   // 直接取
       || new RegExp(`'${k}'`).test(body)                    // 或经一个键名循环 / 事件 id 取（缩放按钮那三个）
-      || ['top', 'iso', 'front', 'free'].includes(k);      // 视角预设：id 数组过 tx()
+      || ['top', 'iso', 'front', 'free'].includes(k)          // 视角预设：id 数组过 tx()
+    || ['person', 'more', 'schedule'].includes(k);         // presence.js 的头像点文案（U-FIX-9：表在这边，读在那边）
     assert.ok(read, `TXT.${k} is never read`);
   }
 });

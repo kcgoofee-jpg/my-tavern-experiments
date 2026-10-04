@@ -34,7 +34,7 @@ try {
   const check = async (label, map, band, fresh) => {
     await B.wait(900);
     const s0 = await read(), ex = maps[map].view.extent_m, want = ex[1] / ex[0];
-    const okB = s0.map === map && s0.count === 1 && near(s0.bounds[0], 0) && near(s0.bounds[1], 0) && near(s0.bounds[2], 1) && near(s0.bounds[3], want);
+    const okB = s0.map === map && s0.count >= 1 && near(s0.bounds[0], 0) && near(s0.bounds[1], 0) && near(s0.bounds[2], 1) && near(s0.bounds[3], want);   // U-FIX-12: the oblique composite adds world items; the base is item 0
     rep.check(`${label}: base bounds = extent`, okB, `src=${s0.src} px=${s0.px} bounds=${s0.bounds.map(n => +n.toFixed(4))} want h=${want}`);
     rep.check(`${label}: DZI keeps the view shape`, aspectDrift(ex, s0.px) <= TOL, `px=${s0.px} extent=${ex}`);
     const mz = await vf.evaluate(() => ViewerDebug.osdViewer.viewport.getMaxZoom(true)), key = `${map}|${band}`;
@@ -62,8 +62,10 @@ try {
     await D.page.evaluate(m => { document.querySelector('#eden-map-root .em-frame')?.contentWindow?.postMessage(m, '*'); },
       { type: 'eden-map:clock', v: 2, day: 1, min: HH.day, time: '12:00', night: false, tod: 'day', bands: BANDS });
     await B.wait(4500);
-    const s = await read(), file = maps[map].periods.day.replace(/\.dzi$/, '');
-    rep.check(`${map} race +${d}ms: ends on day, one base, in frame`, s.map === map && s.count === 1 && s.src.includes(file) && near(s.bounds[2], 1) && near(s.bounds[3], maps[map].view.extent_m[1] / maps[map].view.extent_m[0]), JSON.stringify({ src: s.src, n: s.count, b: s.bounds }));
+    const s = await read(), file = (maps[map].views?.top?.periods || maps[map].periods || {}).day?.replace(/\.dzi$/, '') || '';   // U-FIX-12: periods moved to views.top.periods
+    // U-FIX-12: the base may be the flat per-period DZI or the per-period oblique composite now sitting in its place (tc_low's is 「dayshift」)
+    const isDay = s.src.includes(file) || /_obl_(day|dayshift)_/.test(s.src);
+    rep.check(`${map} race +${d}ms: ends on day, one base, in frame`, s.map === map && s.count >= 1 && isDay && near(s.bounds[2], 1) && near(s.bounds[3], maps[map].view.extent_m[1] / maps[map].view.extent_m[0]), JSON.stringify({ src: s.src, n: s.count, b: s.bounds }));
   }
 } catch (e) { rep.check('probe ran', false, String(e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
 await B.closeAll();

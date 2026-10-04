@@ -389,7 +389,7 @@ html.rm, html.rm body, html.rm body[data-map] { --glow-text: none; --glow: none;
   body.far .mk:not(.active) .lab small { display: none; }
   body.nomarkers .mk { display: none; }
   /* 世界图国名：字号随地图显示比例缩放；深色描边，雪地、亮海面上也读得清（E4 N31） */
-  .realm { transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff; text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; z-index: var(--zv-labels); }
+  .realm { transform: translate(calc(-50% + var(--ldx, 0px)), calc(-50% + var(--ldy, 0px))); pointer-events: auto; cursor: pointer; text-align: center; white-space: nowrap; color: #fff; text-shadow: 0 0 6px #000, 0 0 3px #000, 0 2px 8px #000c; z-index: var(--zv-labels); }
   .realm b, .realm span { -webkit-text-stroke: 3px rgba(0,0,0,.72); paint-order: stroke fill; }
   .realm b { display: block; font-size: clamp(13px, calc(30px * var(--rs, 1)), 40px); letter-spacing: calc(12px * min(var(--rs, 1), 1)); font-weight: 900; }
   .realm span { font-size: clamp(var(--fs-micro), calc(13px * var(--rs, 1)), 15px); letter-spacing: 2px; }

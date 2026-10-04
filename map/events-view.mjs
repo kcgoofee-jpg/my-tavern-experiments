@@ -263,7 +263,7 @@ const EventsView = (() => {
   /* 色觉模式（E7）：图标加黑描边 + 白外晕，任何底图上都留出对比度（tests/color-vision-mode.test.mjs），形状（i::before 的裁形）本来就是第二线索 */
   html.cvd .ev i{filter:drop-shadow(1.2px 0 0 #000) drop-shadow(-1.2px 0 0 #000) drop-shadow(0 1.2px 0 #000) drop-shadow(0 -1.2px 0 #000) drop-shadow(0 0 1.5px #fff)}
   html.cvd .evleg button i,html.cvd #evbar li i{box-shadow:0 0 0 1px rgba(0,0,0,.55)}
-  .ev i::before{content:'';position:absolute;inset:0;z-index:var(--zl-under);border-radius:4px;background:linear-gradient(145deg,#fff 0,var(--c) 45%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
+  .ev i::before{content:'';position:absolute;inset:0;z-index:var(--zl-under);border-radius:4px;background:var(--c)}   /* U-FIX-11: 平色一块，与地点钉、三角事态钉同一套语言（去立体高光） */
   .ev.sev2 i{width:22px;height:22px}.ev.sev3 i{width:25px;height:25px;font-size:13px}
   .ev.sh-circle i::before,.ev.sh-ring i::before,i.shp.sh-circle,i.shp.sh-ring{border-radius:50%}
   .ev.sh-ring i::before{box-shadow:inset 0 0 0 2.5px rgba(0,0,0,.55)} i.shp.sh-ring{box-shadow:inset 0 0 0 2px rgba(0,0,0,.6)}
