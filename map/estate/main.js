@@ -151,8 +151,8 @@ const HOUSE_BOX = polyBox(CARD.rooms || []);
 
 /* ---------------- UI 文案（COPY-1 定词：docs/copy-style.md。本页自己一张表，zh 为准、en 镜像；表外不留硬编码） ---------------- */
 const TXT = {
-  zh: { ext: '外观', sect: '楼层', hint: '拖动旋转 · 右键拖动或双指平移 · 滚轮平移，捏合或按住 Ctrl 缩放 · 双击房间或区域拉近 · 按 0 复位视野', zin: '放大', zout: '缩小', zreset: '复位视野', labels: '显示标注（L）', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', estate: '室外', alias: '叫法', where: '位置', orig: '原名', loadingP: '加载模型 {p}', enter3d: '进入三维', expand: '展开', collapse: '收起', region: '房间与关于', rooms: '房间', roomsShort: '房', about: '关于', aboutShort: '关', empty: '点模型上的房间或区域，这里显示它的说明', top: '俯视', iso: '斜视 45°', front: '正面', free: '自由', pick: '拾取', hidden: '暗格：{v}' },
-  en: { ext: 'Exterior', sect: 'Floors', hint: 'Drag to orbit · right-drag or two fingers to pan · wheel pans, pinch or Ctrl-drag zooms · double-click a room or area to zoom in · 0 resets the view', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', labels: 'Show labels (L)', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', estate: 'Grounds', alias: 'Called', where: 'Where', orig: 'Original name', loadingP: 'Loading model {p}', enter3d: 'Enter 3D', expand: 'Expand', collapse: 'Collapse', region: 'Room and about', rooms: 'Room', roomsShort: 'R', about: 'About', aboutShort: 'A', empty: 'Tap a room or area on the model to read about it here', top: 'Top', iso: 'Iso 45°', front: 'Front', free: 'Free', pick: 'Pick up', hidden: 'hidden: {v}' },
+  zh: { ext: '外观', sect: '楼层', hint: '拖动旋转 · 右键拖动或双指平移 · 滚轮平移，捏合或按住 Ctrl 缩放 · 双击房间或区域拉近 · 按 0 复位视野', zin: '放大', zout: '缩小', zreset: '复位视野', labels: '显示标注（L）', size: '面积', use: '说明', access: '出入', canvas: '{b}，{f}，{n} 人', estate: '室外', alias: '叫法', where: '位置', orig: '原名', loadingP: '加载模型 {p}', enter3d: '进入三维', expand: '展开', collapse: '收起', region: '房间与关于', rooms: '房间', roomsShort: '房', about: '关于', aboutShort: '关', empty: '点模型上的房间或区域，这里显示它的说明', top: '俯视', iso: '斜视 45°', front: '正面', free: '自由', pick: '拾取', hidden: '暗格：{v}', houseFail: '楼层模型没取到，检查网络后重试', retry: '重试' },
+  en: { ext: 'Exterior', sect: 'Floors', hint: 'Drag to orbit · right-drag or two fingers to pan · wheel pans, pinch or Ctrl-drag zooms · double-click a room or area to zoom in · 0 resets the view', zin: 'Zoom in', zout: 'Zoom out', zreset: 'Reset view', labels: 'Show labels (L)', size: 'Area', use: 'Notes', access: 'Access', canvas: '{b}, {f}, {n} people', estate: 'Grounds', alias: 'Called', where: 'Where', orig: 'Original name', loadingP: 'Loading model {p}', enter3d: 'Enter 3D', expand: 'Expand', collapse: 'Collapse', region: 'Room and about', rooms: 'Room', roomsShort: 'R', about: 'About', aboutShort: 'A', empty: 'Tap a room or area on the model to read about it here', top: 'Top', iso: 'Iso 45°', front: 'Front', free: 'Free', pick: 'Pick up', hidden: 'hidden: {v}', houseFail: 'The floor model failed to load. Check the connection and retry.', retry: 'Retry' },
 };
 const tx = (k, v = {}) => (TXT[LANG][k] || TXT.zh[k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
 const FL = () => Estate3D.floorList(MAN, LANG);   // K-R132: id + label (the id when the manifest gives none)
@@ -167,8 +167,7 @@ let lastEnvPhase = 'noon';   // 最近一次画背景用的时段（主题切换
 const paintBackdrop = () => backdrop.paint({ phase: lastEnvPhase, light: THEME === 'light' });
 
 /* ---------------- 加载：整岛外观 glb ---------------- */
-const loadEl = $('#loading');
-const setLoadText = (s) => { const sp = loadEl.querySelector('span'); if (sp) sp.textContent = s; };
+const loadEl = $('#loading'), setLoadText = (s) => { const sp = loadEl.querySelector('span'); if (sp) sp.textContent = s; };
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 // 档位常数登记在清单 budget（各向异性过滤上限、低档内存阈值），这里只消费
 const ANISO = MAN.budget?.anisotropy ?? 8, ANISO_LOW = MAN.budget?.anisotropy_low ?? 4;
@@ -185,8 +184,7 @@ async function loadGlb(u, onProg) {
   if (cache) cache.put(key, new Response(g.slice(0), { headers: { 'content-type': 'model/gltf-binary' } })).then(() => cache.keys()).then((ks) => ks.forEach((r) => { if (r.url.startsWith(u) && r.url !== key) cache.delete(r); })).catch(() => { });
   return loader.parseAsync(g, u.replace(/[^/]*$/, ''));
 }
-const TB = {};
-const STAT = { tris: 0, bytes: 0, site: '', house: '' };
+const TB = {}, STAT = { tris: 0, bytes: 0, site: '', house: '' };
 const siteFile = (LOW && M3D.parts.site.low) || M3D.parts.site.std;   // 清单已按所在目录解析；low 档缺失回落 std
 STAT.site = siteFile.split('/').pop();
 let t = performance.now();
@@ -194,8 +192,7 @@ const siteG = (await loadGlb(siteFile, (e) => { post({ type: 'estate:progress', 
   if (e.total) { STAT.bytes = e.total; setLoadText(tx('loadingP', { p: Math.round(100 * e.loaded / e.total) + '%' })); } else setLoadText(tx('loadingP', { p: (e.loaded / 1048576).toFixed(1) + ' MB' })); })).scene;
 TB.site = performance.now() - t;
 kick('setup');
-const MESH = {};
-const GROUNDS = [], SITE_EXTRA = [];
+const MESH = {}, GROUNDS = [], SITE_EXTRA = [];
 const shellClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 siteG.traverse((o) => {
   if (!o.isMesh) return;
@@ -287,8 +284,10 @@ function loadHouse() {
       STAT.tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
     });
     scene.add(root); houseState = 2; TB.house = performance.now() - t0; applyMode(); wake();
-  }).catch((e) => { console.warn('estate: house.glb', e); houseState = -1; });
+  }).catch((e) => { console.warn('estate: house.glb', e); houseState = -1; applyMode(); });   // 失败在楼层视图里亮一行说明 + 重试（applyMode 里同步可见性）
 }
+const houseFailEl = $('#houseFail');
+if (houseFailEl) { $('#houseRetry').textContent = tx('retry'); $('#houseRetry').onclick = () => { houseFailEl.hidden = true; houseState = 0; loadHouse(); }; }
 
 /* ---------------- 房间（精确多边形）与室外热点 ---------------- */
 const pickMat = new THREE.MeshBasicMaterial({ visible: false });
@@ -549,7 +548,7 @@ function applyMode() {
   roomG.forEach((g, i) => { g.visible = fl && i === m; });
   plates.forEach((ps, i) => ps.forEach((p) => { p.visible = fl && i === m; }));
   houseFloors.forEach((ms, i) => ms.forEach((o) => { o.visible = fl && i === m; }));
-  zoneG.visible = m === 'ext'; carG.visible = m === 'ext';
+  zoneG.visible = m === 'ext'; carG.visible = m === 'ext'; if (houseFailEl) { houseFailEl.hidden = !(fl && houseState === -1); if (!houseFailEl.hidden) houseFailEl.querySelector('span').textContent = tx('houseFail'); }   // 楼层模型没取到：在楼层视图的位置给一行说明（带重试）
   for (const g of props) g.visible = propVisible(g.userData.prop);   // 藏物跟着模式走（楼层视图看本层、外观只亮室外）
   wake();
 }

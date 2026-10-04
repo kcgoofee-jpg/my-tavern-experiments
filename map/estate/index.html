@@ -58,6 +58,12 @@
   #loading .fail button, .acts button { all: unset; box-sizing: border-box; cursor: pointer; min-height: 32px; padding: var(--sp-2) var(--sp-5); border: 1px solid var(--accent); border-radius: var(--r-pill); color: var(--accent); font-size: var(--fs-small); letter-spacing: .1em; display: inline-flex; align-items: center; }
   .acts button:hover { background: var(--accent); color: var(--on-accent); }
   #loading .fail button:focus-visible, .acts button:focus-visible, .pc:focus-visible i { outline: none; box-shadow: var(--focus-ring); }
+  /* 楼层模型加载失败：楼层视图的位置上给一行说明与重试（main.js 在失败且处于楼层视图时亮出） */
+  #houseFail { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: var(--sp-4); color: var(--ink); letter-spacing: .12em; font-size: var(--fs-small); pointer-events: none; }
+  #houseFail[hidden] { display: none; }
+  #houseFail button { all: unset; box-sizing: border-box; cursor: pointer; min-height: 32px; padding: var(--sp-2) var(--sp-5); border: 1px solid var(--accent); border-radius: var(--r-pill); color: var(--accent); font-size: var(--fs-small); letter-spacing: .1em; pointer-events: auto; }
+  #houseFail button:hover { background: var(--accent); color: var(--on-accent); }
+  #houseFail button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
   body:not(.embed) { background: radial-gradient(120% 95% at 50% 32%, color-mix(in srgb, var(--bg) 85%, #fff), var(--bg) 58%, color-mix(in srgb, var(--bg) 70%, #000)); }
   #vignette { position: fixed; inset: 0; pointer-events: none; display: none; background: radial-gradient(130% 100% at 50% 45%, transparent 58%, color-mix(in srgb, var(--bg) 40%, transparent) 100%); }
   #grade { position: fixed; inset: 0; pointer-events: none; display: none; mix-blend-mode: soft-light; background: linear-gradient(180deg, rgba(255,214,150,.20), rgba(255,190,120,.10) 55%, rgba(40,70,70,.10)); }
@@ -103,6 +109,7 @@
 <div id="card"></div><div id="tip" class="g1" aria-hidden="true"></div>
 <div id="stats"></div>
 <div id="loading"><span>Loading…</span></div>
+<div id="houseFail" hidden role="status"><span></span><button type="button" id="houseRetry"></button></div>
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/jsm/" } }
 </script>

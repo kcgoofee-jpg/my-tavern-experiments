@@ -106,6 +106,23 @@ try {
     rep.check(`${tag}：无脚本错误`, !P.errors.length, P.errors.slice(0, 3).join(' | '));
     await P.close();
   }
+  // 楼层模型加载失败（FIX-4）：楼层视图的位置亮一行说明 + 重试；重试成功后说明行消失
+  {
+    const P = await B.newPage('desktop');
+    await P.page.route(/house\.glb/, (r) => r.abort());   // 只拦主楼 glb：整岛外观照常载入，进楼层视图才失败
+    await B.openEstate(P, { stats: false });
+    const f = P.page.mainFrame();
+    await f.evaluate(() => window.__estate.setMode('F1'));
+    await f.waitForFunction(() => window.__estate.houseState() === -1, null, { timeout: 30000 });
+    const shown = await f.evaluate(() => { const el = document.getElementById('houseFail'); return { visible: !!el && !el.hidden, text: el?.querySelector('span')?.textContent, btn: el?.querySelector('button')?.textContent }; });
+    rep.check('楼层模型加载失败：楼层视图里出现一行说明与重试按钮', shown.visible && !!shown.text && shown.btn === '重试', JSON.stringify(shown));
+    await P.page.unroute(/house\.glb/);
+    await f.evaluate(() => document.getElementById('houseRetry').click());
+    await f.waitForFunction(() => window.__estate.houseState() === 2, null, { timeout: 60000 });
+    const gone = await f.evaluate(() => document.getElementById('houseFail').hidden);
+    rep.check('重试成功：楼层模型载入，说明行消失', gone, `houseFail.hidden=${gone}`);
+    await P.close();
+  }
   // 查看器休眠 / 唤醒：庄园 iframe 留着（隐藏 + 暂停），唤醒不再出加载页；第一帧 < 100 ms。再冷开一次：glb 从 Cache API 取
   {
     const P = await B.newPage('desktop');
