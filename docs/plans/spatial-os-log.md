@@ -2279,3 +2279,22 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT RENDER-B7 ===
+status: DONE
+items: glb:budget:upper ✓ | glb:budget:mid ✓ | glb:budget:low ✓ | glb:budget:sites ✓
+commits: 6566f2f4 feat(render): B7 landmark budget re-export pipeline (glb:budget:*)
+8210fe4d assets(render-b7): upper-group landmark budget re-export (glb:budget:upper)
+f15a5e2a assets(render-b7): mid-group landmark budget re-export (glb:budget:mid)
+8306c285 assets(render-b7): kelly_residence landmark budget re-export (glb:budget:upper)
+c5b142fb assets(render-b7): low-group landmark budget re-export (glb:budget:low)
+2a19b1e5 assets(render-b7): sites-group landmark budget re-export (glb:budget:sites)
+(final commit) docs(render): ledger and RESULT RENDER-B7
+pushed: yes
+tests: node 1667/1668 (0 fail, 1 skipped) | smoke PASS | arch PASS | probes: lm_budget_sweep=PASS (55/55 models, desktop std 4-8 MB, phone <= 2 MB *_low.glb, 0 errors)
+deviations: dairy.blend contains 1700+ ungrouped objects; pre-grouped into the canonical 18 groups from export_glb.py before budget bake. High component meshes (holy_mountain) and non-welded meshes (fief4 foliage) handled with pre-decimate remove-doubles and island subsampling fallbacks.
+blocker: none
+open: none
+cleanup: done (no Blender or preview server processes left running, temporary files cleaned)
+=== END ===
+

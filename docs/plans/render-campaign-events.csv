@@ -683,3 +683,15 @@ ts,id,stage,event,agent,gate,note
 2026-10-03T10:42:59Z,var:world:night,register,done,oblique-code,,registered in maps.json views
 2026-10-03T10:43:04Z,obl:tc_mid:day,ship,done,oblique-code,,shipped in maps.json views
 2026-10-03T10:43:04Z,obl:tc_low:dayshift,ship,done,oblique-code,,shipped in maps.json views
+2026-10-04T03:07:20Z,glb:budget:upper,final,done,render-b7,pass,29b24f29 83940cdf: 7 upper landmarks re-exported at D41 B3 budgets
+2026-10-04T03:07:39Z,glb:budget:upper,verify,done,render-b7,pass,verified in viewer3d day/night and low tier
+2026-10-04T03:07:39Z,glb:budget:upper,ship,done,render-b7,pass,29b24f29 83940cdf shipped
+2026-10-04T03:07:42Z,glb:budget:mid,final,done,render-b7,pass,4c311d9e: 17 mid landmarks re-exported at D41 B3 budgets
+2026-10-04T03:07:46Z,glb:budget:mid,verify,done,render-b7,pass,verified in viewer3d day/night and low tier with zero errors
+2026-10-04T03:07:49Z,glb:budget:mid,ship,done,render-b7,pass,4c311d9e shipped
+2026-10-04T03:07:54Z,glb:budget:low,final,done,render-b7,pass,b135df6e: 12 low landmarks re-exported at D41 B3 budgets
+2026-10-04T03:07:58Z,glb:budget:low,verify,done,render-b7,pass,verified in viewer3d day/night and low tier with zero errors
+2026-10-04T03:08:01Z,glb:budget:low,ship,done,render-b7,pass,b135df6e shipped
+2026-10-04T03:08:06Z,glb:budget:sites,final,done,render-b7,pass,0090dc6e: 19 sites landmarks re-exported at D41 B3 budgets
+2026-10-04T03:08:10Z,glb:budget:sites,verify,done,render-b7,pass,verified in viewer3d day/night and low tier with zero errors
+2026-10-04T03:08:13Z,glb:budget:sites,ship,done,render-b7,pass,0090dc6e shipped
