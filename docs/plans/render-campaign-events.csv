@@ -745,3 +745,6 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T06:01:59Z,site8k:site_fief2,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief2_8k_full.png (8000x5000); draft + 64spp preview self-checked (cape sea fort with four round towers, piers, cove village, patchwork fields); markers unchanged"
 2026-10-04T06:01:59Z,site8k:site_fief2,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
 2026-10-04T06:01:59Z,site8k:site_fief2,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
+2026-10-04T06:06:38Z,site8k:site_fief3,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_fief3_8k_full.png (8000x5000); draft + 64spp preview self-checked (moated keep on the river bridge, walled round town, fields); markers unchanged"
+2026-10-04T06:06:38Z,site8k:site_fief3,tiles,done,glm-b9,,"DZI re-cut at same prefix (226 tiles, jpg, extent 6000x3750)"
+2026-10-04T06:06:38Z,site8k:site_fief3,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors
