@@ -707,3 +707,26 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T04:10:16Z,bake:night:sites,final,done,render-b8,pass,night emissive bake verified
 2026-10-04T04:10:16Z,bake:night:sites,verify,done,render-b8,pass,verified in viewer3d night look
 2026-10-04T04:10:16Z,bake:night:sites,ship,done,render-b8,pass,shipped B8 landmark night bakes
+2026-10-04T05:23:36Z,obl:tc_mid:dusk,ship,claim,glm-b9,,
+2026-10-04T05:24:20Z,obl:tc_mid:dusk,ship,release,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_kavalierki,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:yuanyu_sanctum,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:yuanyu_city,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_highland,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_fief1,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_fief2,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_fief3,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_fief4,audit,claim,glm-b9,,
+2026-10-04T05:25:12Z,site8k:site_fief5,audit,claim,glm-b9,,
+2026-10-04T05:34:57Z,site8k:site_kavalierki,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_highland,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_fief1,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_fief2,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_fief3,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_fief4,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:57Z,site8k:site_fief5,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:59Z,site8k:yuanyu_sanctum,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:34:59Z,site8k:yuanyu_city,audit,done,glm-b9,,"audit: current tiles are 4000 px; spec is 8000 px, render needed"
+2026-10-04T05:40:10Z,site8k:site_kavalierki,render,done,glm-b9,,"8K 128spp final logs/campaign/full/site_kavalierki_8k_full.png (8000x5000); draft 16spp + 64spp preview self-checked: no overlay/text, markers reproduced"
+2026-10-04T05:40:13Z,site8k:site_kavalierki,tiles,done,glm-b9,,"DZI re-cut at same prefix map/art/site_kavalierki (8000x5000, 226 tiles, jpg, extent 20000x12500 checked)"
+2026-10-04T05:40:13Z,site8k:site_kavalierki,verify,done,glm-b9,,check_maps green: 69 maps 93 markers 0 errors; manual marker arms_rnd merged back after script export
