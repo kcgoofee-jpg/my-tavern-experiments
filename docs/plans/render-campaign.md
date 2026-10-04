@@ -1,13 +1,12 @@
-wrote docs/plans/render-campaign.md
-n tools/render_campaign.py status --md
+> Generated file: do not edit — run tools/render_campaign.py status --md
 
 # Render campaign status
 
-Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-03T10:43:04Z.
+Items: `render-campaign.items.json`, events: `render-campaign-events.csv`. Last event: 2026-10-04T04:10:16Z.
 
 | lane | done | claimed | open | waiting | blocked | stuck | total |
 |---|---|---|---|---|---|---|---|
-| standard | 57 | 0 | 7 | 0 | 18 | 0 | 82 |
+| standard | 65 | 0 | 12 | 0 | 5 | 0 | 82 |
 | hero | 27 | 0 | 5 | 0 | 3 | 0 | 35 |
 
 Below-gate (user spot-check): none
@@ -81,23 +80,23 @@ Below-gate (user spot-check): none
 | 63 | `out:tc_mid:night` | variant | blocked | ship |  |  | Outskirts ring tc_mid / night, low-res (D41 scale) |
 | 64 | `out:tc_low:dayshift` | variant | blocked | ship |  |  | Outskirts ring tc_low / dayshift, low-res (D41 scale) |
 | 65 | `out:tc_low:nightshift` | variant | blocked | ship |  |  | Outskirts ring tc_low / nightshift, low-res (D41 scale) |
-| 66 | `glb:budget:upper` | estate | open | final |  |  | Landmark models, upper group: budget re-export (D41 B3) |
-| 67 | `glb:budget:mid` | estate | open | final |  |  | Landmark models, mid group: budget re-export (D41 B3) |
-| 68 | `glb:budget:low` | estate | open | final |  |  | Landmark models, low group: budget re-export (D41 B3) |
-| 69 | `glb:budget:sites` | estate | open | final |  |  | Landmark models, sites group: budget re-export (D41 B3) |
-| 70 | `bake:night:upper` | estate | blocked | final |  |  | Landmark models, upper group: night emissive bake (D41 B4) |
-| 71 | `bake:night:mid` | estate | blocked | final |  |  | Landmark models, mid group: night emissive bake (D41 B4) |
-| 72 | `bake:night:low` | estate | blocked | final |  |  | Landmark models, low group: night emissive bake (D41 B4) |
-| 73 | `bake:night:sites` | estate | blocked | final |  |  | Landmark models, sites group: night emissive bake (D41 B4) |
-| 74 | `site8k:site_kavalierki` | basemap | blocked | audit |  |  | Opening site map site_kavalierki at 8000 px (D41 B6) |
-| 75 | `site8k:yuanyu_sanctum` | basemap | blocked | audit |  |  | Opening site map yuanyu_sanctum at 8000 px (D41 B6) |
-| 76 | `site8k:yuanyu_city` | basemap | blocked | audit |  |  | Opening site map yuanyu_city at 8000 px (D41 B6) |
-| 77 | `site8k:site_highland` | basemap | blocked | audit |  |  | Opening site map site_highland at 8000 px (D41 B6) |
-| 78 | `site8k:site_fief1` | basemap | blocked | audit |  |  | Opening site map site_fief1 at 8000 px (D41 B6) |
-| 79 | `site8k:site_fief2` | basemap | blocked | audit |  |  | Opening site map site_fief2 at 8000 px (D41 B6) |
-| 80 | `site8k:site_fief3` | basemap | blocked | audit |  |  | Opening site map site_fief3 at 8000 px (D41 B6) |
-| 81 | `site8k:site_fief4` | basemap | blocked | audit |  |  | Opening site map site_fief4 at 8000 px (D41 B6) |
-| 82 | `site8k:site_fief5` | basemap | blocked | audit |  |  | Opening site map site_fief5 at 8000 px (D41 B6) |
+| 66 | `glb:budget:upper` | estate | done | - |  |  | Landmark models, upper group: budget re-export (D41 B3) |
+| 67 | `glb:budget:mid` | estate | done | - |  |  | Landmark models, mid group: budget re-export (D41 B3) |
+| 68 | `glb:budget:low` | estate | done | - |  |  | Landmark models, low group: budget re-export (D41 B3) |
+| 69 | `glb:budget:sites` | estate | done | - |  |  | Landmark models, sites group: budget re-export (D41 B3) |
+| 70 | `bake:night:upper` | estate | done | - |  |  | Landmark models, upper group: night emissive bake (D41 B4) |
+| 71 | `bake:night:mid` | estate | done | - |  |  | Landmark models, mid group: night emissive bake (D41 B4) |
+| 72 | `bake:night:low` | estate | done | - |  |  | Landmark models, low group: night emissive bake (D41 B4) |
+| 73 | `bake:night:sites` | estate | done | - |  |  | Landmark models, sites group: night emissive bake (D41 B4) |
+| 74 | `site8k:site_kavalierki` | basemap | open | audit |  |  | Opening site map site_kavalierki at 8000 px (D41 B6) |
+| 75 | `site8k:yuanyu_sanctum` | basemap | open | audit |  |  | Opening site map yuanyu_sanctum at 8000 px (D41 B6) |
+| 76 | `site8k:yuanyu_city` | basemap | open | audit |  |  | Opening site map yuanyu_city at 8000 px (D41 B6) |
+| 77 | `site8k:site_highland` | basemap | open | audit |  |  | Opening site map site_highland at 8000 px (D41 B6) |
+| 78 | `site8k:site_fief1` | basemap | open | audit |  |  | Opening site map site_fief1 at 8000 px (D41 B6) |
+| 79 | `site8k:site_fief2` | basemap | open | audit |  |  | Opening site map site_fief2 at 8000 px (D41 B6) |
+| 80 | `site8k:site_fief3` | basemap | open | audit |  |  | Opening site map site_fief3 at 8000 px (D41 B6) |
+| 81 | `site8k:site_fief4` | basemap | open | audit |  |  | Opening site map site_fief4 at 8000 px (D41 B6) |
+| 82 | `site8k:site_fief5` | basemap | open | audit |  |  | Opening site map site_fief5 at 8000 px (D41 B6) |
 
 ## Hero lane
 

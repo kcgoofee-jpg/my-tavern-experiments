@@ -695,3 +695,15 @@ ts,id,stage,event,agent,gate,note
 2026-10-04T03:08:06Z,glb:budget:sites,final,done,render-b7,pass,0090dc6e: 19 sites landmarks re-exported at D41 B3 budgets
 2026-10-04T03:08:10Z,glb:budget:sites,verify,done,render-b7,pass,verified in viewer3d day/night and low tier with zero errors
 2026-10-04T03:08:13Z,glb:budget:sites,ship,done,render-b7,pass,0090dc6e shipped
+2026-10-04T04:10:15Z,bake:night:upper,final,done,render-b8,pass,night emissive bake verified
+2026-10-04T04:10:16Z,bake:night:upper,verify,done,render-b8,pass,verified in viewer3d night look
+2026-10-04T04:10:16Z,bake:night:upper,ship,done,render-b8,pass,shipped B8 landmark night bakes
+2026-10-04T04:10:16Z,bake:night:mid,final,done,render-b8,pass,night emissive bake verified
+2026-10-04T04:10:16Z,bake:night:mid,verify,done,render-b8,pass,verified in viewer3d night look
+2026-10-04T04:10:16Z,bake:night:mid,ship,done,render-b8,pass,shipped B8 landmark night bakes
+2026-10-04T04:10:16Z,bake:night:low,final,done,render-b8,pass,night emissive bake verified
+2026-10-04T04:10:16Z,bake:night:low,verify,done,render-b8,pass,verified in viewer3d night look
+2026-10-04T04:10:16Z,bake:night:low,ship,done,render-b8,pass,shipped B8 landmark night bakes
+2026-10-04T04:10:16Z,bake:night:sites,final,done,render-b8,pass,night emissive bake verified
+2026-10-04T04:10:16Z,bake:night:sites,verify,done,render-b8,pass,verified in viewer3d night look
+2026-10-04T04:10:16Z,bake:night:sites,ship,done,render-b8,pass,shipped B8 landmark night bakes

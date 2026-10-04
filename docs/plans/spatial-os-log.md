@@ -2296,5 +2296,16 @@ deviations: dairy.blend contains 1700+ ungrouped objects; pre-grouped into the c
 blocker: none
 open: none
 cleanup: done (no Blender or preview server processes left running, temporary files cleaned)
+=== RESULT RENDER-B8 ===
+status: DONE
+items: bake:night:upper ✓ | bake:night:mid ✓ | bake:night:low ✓ | bake:night:sites ✓
+commits: d05ba738 assets(render-b8): landmark night bakes across four groups (bake:night:*)
+(final commit) docs(render): ledger and RESULT RENDER-B8
+pushed: yes
+tests: node 1667/1668 (0 fail, 1 skipped) | smoke PASS | arch PASS | probes: lm_budget_sweep=PASS (55/55 models, desktop std 4-8 MB, phone <= 2 MB *_low.glb, 0 errors)
+deviations: none (same pass as the B7 budget re-export models; emissive night look verified per model against fixture absence/presence)
+blocker: none
+open: none
+cleanup: done
 === END ===
 
