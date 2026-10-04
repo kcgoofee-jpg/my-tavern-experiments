@@ -89,7 +89,7 @@ export async function go(id) {   // 云脚本块（文末）会包一层：主�
   if (id === currentMapId) { focusSameMap(id); return; }
   const prev = currentMapId && mapRegistry.maps[currentMapId], fromEstate = prev?.kind === 'estate';
   saveView();
-  setCurrentMapId(id); setUserMoved(false); closeCard(); plugins.EventsView.collapse?.(); document.body.dataset.map = id; syncGlow(id);
+  setCurrentMapId(id); setUserMoved(false); closeCard(); plugins.EventsView?.collapse?.(); document.body.dataset.map = id; syncGlow(id);
   if (m.kind === 'estate') return openEstate(id, m, !!prev);
   dropParked(); phId = null;
   // 离开主场景：iframe 留到新底图画出来再淡出
