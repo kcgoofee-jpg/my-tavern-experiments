@@ -139,6 +139,12 @@ def build_follow(branch, fallback, baked=None):
 (async () => {
   const REPO = %(repo)s, BR = %(b)s, KEY = 'edenMapFollowHead', HOSTS = %(hosts)s, BAKED = %(baked)s;
   const imp = window.__edenMapImport || (u => import(u));
+  // F-TT open(2)：只等「拒绝」不够——镜像可能接受连接后挂起不回字节。每个 import 与超时竞速（默认 10 s，
+  // window.__edenMapImportTimeout 只给测试 / 探针用），超时按这条线路不可用换下一条；迟到的 import 若真成功，
+  // 入口 takeOver 是幂等的（先清掉上一份再挂），不会出现两份地图。
+  const IMP_MS = +(window.__edenMapImportTimeout || 10000);
+  const impT = (u, ms) => new Promise((res, rej) => { const to = setTimeout(() => rej(new Error('import 无响应 ' + ms + ' ms')), ms);
+    imp(u).then(v => { clearTimeout(to); res(v); }, e => { clearTimeout(to); rej(e); }); });
   const getJson = async u => { const c = new AbortController(), to = setTimeout(() => c.abort(), 5000);
     try { const r = await (window.__edenMapFetch || fetch)(u, { cache: 'no-store', credentials: 'omit', signal: c.signal }); return r.ok ? await r.json() : null; } catch (e) { return null; } finally { clearTimeout(to); } };
   %(resolve)s
@@ -152,12 +158,12 @@ def build_follow(branch, fallback, baked=None):
   console.info('[地图] 预览构建', '#' + h.build, sha, h.source);
   for (const s of sha === BAKED.sha.slice(0, 12) ? [sha] : [sha, BAKED.sha.slice(0, 12)]) for (const x of HOSTS) {
     const u = `https://${x}/gh/${REPO}@${s}/map/tavern/eden-map.js`;
-    try { await imp(u); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
+    try { await impT(u, IMP_MS); return; } catch (e) { console.warn('[地图] 线路不可用，换下一个', u); }
   }
   // 提交号地址都加载不了（CDN 还没缓存到这个提交 / 全部线路不通）：退回分支路径；入口自带门卫，加载后会再按提交号重载一次
   for (const x of HOSTS) {
     const u = `https://${x}/gh/${REPO}@${BR}/map/tavern/eden-map.js`;
-    try { await imp(u); return; } catch (e) { console.warn('[地图] 分支路径不可用', u); }
+    try { await impT(u, IMP_MS); return; } catch (e) { console.warn('[地图] 分支路径不可用', u); }
   }
 })();
 """ % {'b': json.dumps(branch), 'repo': json.dumps(REPO), 'hosts': json.dumps(HOSTS), 'baked': json.dumps({'build': baked['build'], 'sha': baked['sha']}),

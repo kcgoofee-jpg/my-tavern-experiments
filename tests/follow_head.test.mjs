@@ -58,3 +58,15 @@ test('加载器（build_preview_script --follow）嵌同一段解析，按 head.
   r = await run({}, { edenMapFollowHead: JSON.stringify(H(1, 'c')) });   // 本机的比内置的旧：用内置
   assert.match(r.imported[0], new RegExp(`@${'e'.repeat(12)}/`)); assert.equal(r.win.__edenMapScript.source, 'baked');
 });
+test('线路挂起不回字节：import 超时也换下一条，不是只有拒绝才换（F-TT open 2）', async () => {
+  const py = `import sys, json; sys.path.insert(0, 'tools'); import build_preview_script as b; print(json.dumps(b.build_follow('${B}', '${'f'.repeat(40)}', {'build': 2, 'sha': '${'e'.repeat(40)}'})))`;
+  const d = JSON.parse(execFileSync('python3', ['-c', py], { cwd: ROOT, encoding: 'utf8' }));
+  const imported = [], store = {};
+  const stall = new Promise(() => {});   // 第一条线路（jsdmirror）：接受连接后永远不回
+  const win = { __edenMapImportTimeout: 60, __edenMapImport: async u => { imported.push(u); if (u.includes('jsdmirror')) return stall; },
+                __edenMapFetch: async u => ({ ok: false, json: async () => null }) };
+  const localStorage = { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; } };
+  await new Function('window', 'localStorage', 'console', `return (async () => { ${d.content.replace('(async () => {', 'await (async () => {')} })()`)(win, localStorage, { info() {}, warn() {} });
+  assert.ok(imported.some(u => u.includes('cdn.jsdelivr.net')), `挂在 jsdmirror 后应落到 jsDelivr，实际只试了 ${JSON.stringify(imported)}`);
+  assert.ok(imported[0].includes('jsdmirror'));
+});
