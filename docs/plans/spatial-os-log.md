@@ -2356,3 +2356,15 @@ blocker: none
 open: (1) Q-34: map/app cycle removal, 60+ edge cuts — dedicated step, after v0.9.8 (test ratchet in place). (2) the 0.9.8 version bump should carry the three notes lines into map/data/build.json (tools/check_version.py blocks them earlier). (3) pre-existing, not from this step: accept.mjs 「云雾开关（上层 → 显示下方城市）」 fails identically on clean origin/preview (reproduced in a base worktree at e6dbabb1: 合成 on → on → on) — OBLIQUE-CODE changed the alt/composite semantics on tc_upper and the probe's expectation is stale; belongs to whoever owns OBLIQUE-CODE / the probe.
 cleanup: done (probe servers stopped, base worktree /Users/davidzhao/eden-work/fix4-base removed after verification, /tmp scratch files only)
 === END ===
+
+=== RESULT FIX-4 (note) — CI correction ===
+status: DONE
+items: CI status correction for the block above
+commits: see the push after this note (head #351)
+pushed: yes
+tests: node 1669/1670 | smoke PASS | arch PASS — unchanged; CI on the push of RESULT FIX-4 (runs 37197129960 / 37197131878) is red in browser-smoke, and it is red the same way on the base: head #349's run 37194867424 fails the identical checks (`accept` 云雾开关 合成 on → on → on; `v096` ring_visible / desktop_ring / v3d_pins_no_overlap), reproduced locally on a clean origin/preview worktree (e6dbabb1). Both stem from OBLIQUE-CODE / DIST-3's rework of the tc_upper composite and the ring UI, not from FIX-4 (FIX-4 touches boot.mjs EventsView guards, map-switch.mjs one optional chain, ooc.mjs, the estate page). Filed under RESULT FIX-4 open (3) for the owners.
+deviations: none
+blocker: none
+open: as RESULT FIX-4.
+cleanup: done
+=== END ===
