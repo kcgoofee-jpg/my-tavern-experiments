@@ -2509,3 +2509,17 @@ blocker: none
 open: new extension repo creation + remote name (awaiting user yes) · mainland mirror clone address untested (Q-32c; zip fallback documented) · ST registerCommand exposure differs by version (loader degrades silently) · drawer strings are zh-only for v0 (ext/ is outside the engine i18n gate; en mirror if a non-zh user appears)
 cleanup: done (worktree removed after push; no servers started)
 === END ===
+
+=== RESULT F3 ===
+status: DONE
+items: 1 ✓ 2 ✓
+commits: 95a1b674 feat(transfer): F3 WKWebView clipboard / download / external-link chain with manual-copy panel
+commits: a047e67e test(f3): transfer + chat-surface unit tests, WebKit/Chromium probe in CI, state-free extension pins
+commits: docs(f3): ARCHITECTURE entries, ext/README TT specifics, todo strike, RESULT F3
+pushed: not pushed
+tests: node 1748/1749 pass (1 skipped; 1726/1727 before F3 — 22 new cases in tests/f3_ext_state / f3_transfer / f3_chat_surface, none removed) | smoke PASS | arch PASS | probes: f3_tt_webkit=PASS (16 checks × WebKit + Chromium, trusted-gesture; found and pinned two WebKit facts: hidden textarea must be ≥2 px, no setSelectionRange)
+deviations: none
+blocker: none
+open: real-machine confirmation (Mac TT + Android TT) is the user checklist ~/eden-map-review/f3-tt/TT手动检查清单.md · extension repo creation still awaits the user's yes (F2) · mainland mirror clone address untested (Q-32c)
+cleanup: done (probe output dir /tmp/f3tt-webkit removed; worktree removed after push; no servers or background processes left)
+=== END ===

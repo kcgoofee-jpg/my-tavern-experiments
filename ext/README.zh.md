@@ -10,7 +10,7 @@
 
 | 文件 | 作用 |
 |---|---|
-| `manifest.json` | 扩展清单（照 CCST 的字段形状）；`auto_update` 先关——TT 更新后本来就要完全退出重开 |
+| `manifest.json` | 扩展清单（照 CCST 的字段形状）；`auto_update` 开——前提是加载器自己不存状态（见下面「TT 特有行为」）；但更新之后 TT 照旧要完全退出重开 |
 | `index.js` | 加载器：取版本 → 校验完整性 → 换上原生适配层 → import 引擎入口 → 按卡启用 → 双开握手 |
 | `loader-core.mjs` | 纯计算层（线路表、地址、head 校验、卡名单、完整性判定），单测在 `tests/f2_ext_loader.test.mjs` |
 | `style.css` | 只管设置抽屉的行和失败提示条；地图界面样式还是引擎自己的 |
@@ -41,6 +41,22 @@
 （一行一个卡名或编号）。注意：扩展装着的时候脚本形态整体让路，所以名单外的卡两种形态都没有地图——这正是
 「只在这些卡上」的效果。设置存在 `extension_settings.eden_map_ext`，清空扩展目录重装也还在（实测，
 `docs/extension-study.md` §3.5）。
+
+## TT 特有行为（F3）
+
+- **更新会清空克隆目录**（`.git` 除外，实测 `docs/extension-study.md` §3.5），所以 `ext/` 里一概不许存状态：
+  加载器和 `map/tavern/host-native.mjs` 不碰 localStorage / sessionStorage / IndexedDB / cookie
+  （`tests/f3_ext_state.test.mjs` 静态扫描钉死）。扩展设置存 `extension_settings.eden_map_ext`，地图状态存
+  聊天变量和 webview 自己的存储——都在克隆目录之外，清空也不丢。**每次更新之后（不管自动还是手动）
+  完全退出重开 TT**：`/reload-page` 不重载扩展 JS。
+- **WKWebView 里的复制与保存**：网页剪贴板在 TT 里可能永远不返回（不是报错，是挂住），`<a download>` 被整个
+  忽略（CCST 真机结论，`docs/extension-study.md` §7）。`map/app/transfer.mjs` 走它验证过的三级兜底：
+  TT 自己的桥（沿 window→parent 链找 `__TAURI__.core.invoke('plugin:clipboard-manager|write_text')`）→
+  网页剪贴板（800 ms 超时）→ 隐藏文本框 + `execCommand('copy')`（WebKit 实测：隐藏框要 ≥2px，且不能用
+  `setSelectionRange`，见 `tools/browser/f3_tt_webkit.mjs`）。TT 里「保存文件」改走复制；三级全挂时挂出
+  已全选内容的手动复制面板。外链有 TT 桥时走 `plugin:opener|open_url`。
+- **聊天界面**：泄露防御网取「渲染后的那一楼」统一走 `hostAdapter.ui.displayedMessage`——扩展形态直接查
+  `#chat .mes[mesid]`（研究 §4），不依赖酒馆助手也能清掉糊在界面上的 `<StatusPlaceHolderImpl/>` 与状态栏残留。
 
 ## 国内安装：镜像地址与 zip 兜底
 

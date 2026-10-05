@@ -241,6 +241,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `tier-fog.mjs` | 分层的自装模块（FOG-1）：底图外缘的羽化渐隐（跟着底图矩形走的生成掩模，只吃画面，标记照常清楚）、合成模式的高空霾，以及 D40 的三层合成（本层同时段底图 + 岛掩模 + 下一层），计划全在 `maps.json` 的 `alt.composite` 里，代码零卡词。 |
 | `topbar.mjs` | 顶栏布局、后台预热、版本编码。 |
 | `traffic-view.mjs` | 流光在 `fx` 槽位画布上的查看器渲染。 |
+| `transfer.mjs` | F3 TT 专项：在 WKWebView 里能落地的复制与存文件——`copyText`（TT 的 Tauri 桥 → 带 800 ms 超时的网页剪贴板 → 隐藏文本框 `execCommand` 三级兜底）、`openExternal`（opener 桥 → `window.open`）、`saveTextFile`（返回 `'downloaded'｜'copied'｜'manual'`）与手动复制面板 `revealManual`；窗口、文档、invoke 全部可注入，node 单测喂假对象即可。 |
 | `transit-env.mjs` | 查看器的路线器环境（K-R109、K-R112）：当前包的交通图，每个站点与地点画在哪里（树的答案、经 JSON 缓存从点位文件取标记锚点），`endOf`、`planBetween`，以及沿交通网的行程折线。 |
 | `transit-view.mjs` | 内核图层 `transit`（K-R110）：经 S8-2 积木画出城区、线路、连接、站点、徽标与标签层级，图例行，默认关；同时带标记标签等级的样式（K-R114）。 |
 | `viewer-debug.mjs` | 调试面：一个只读的 `window.ViewerDebug` 命名空间（`mapRegistry`、`currentMapId`、`osdViewer`、`go` 等），浏览器探针读它，不再读散挂的 `window` 全局。 |
@@ -281,6 +282,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
+| `host-native.mjs` | F1 原生适配层：`createNativeAdapter(ctx)` 用原版 SillyTavern / TauriTavern 接口（`getContext()` 事件、聊天楼层、`chat_metadata.variables`、`extension_settings`、`setExtensionPrompt`、世界书增删改、宏系统、`#chat .mes[mesid]` 楼层读取）实现与 `host-adapter.mjs` 相同的能力分组形状；扩展加载器把它换进 `hostAdapter` 单例。看门狗检查 10 与 `host-adapter.mjs` 一同豁免。 |
 | `host-routes.mjs` | npm 线路表（DIST-2：npmmirror → jsDelivr → unpkg）、版本推断、逐包地址与测速 race；纯计算。 |
 | `host-strings.mjs` | 宿主自己打印的几句产品文案（地图名、脚本名、「有新事态」提示）：读清单 `strings`（`hostStr`），没有就用中性默认；纯函数。 |
 | `host-tavernhelper.mjs` | 酒馆助手适配层：请求包装、接口探测、包命名空间、脚本变量偏好、世界书全自动。 |

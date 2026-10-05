@@ -16,7 +16,7 @@ Files:
 
 | File | Role |
 |---|---|
-| `manifest.json` | ST/TT extension manifest (CCST field shape): `js: index.js`, `css: style.css`, `auto_update: false` (TT needs a full restart after update anyway) |
+| `manifest.json` | ST/TT extension manifest (CCST field shape): `js: index.js`, `css: style.css`, `auto_update: true` (safe only because the loader holds no state — see §TT specifics; after any update TT still needs a full quit + reopen) |
 | `index.js` | loader: version pin, integrity check, native adapter swap, engine import, per-card enable, settings drawer, handshake |
 | `loader-core.mjs` | pure helpers (line table, URL build, head check, card allowlist, integrity verdict) — unit-tested in `tests/f2_ext_loader.test.mjs` |
 | `style.css` | drawer rows and the failure notice only; everything else keeps the engine's own styles |
@@ -55,6 +55,26 @@ cards whose name or index is in the list get the map; other cards show nothing (
 the extension is installed, so an unlisted card has no map in either form — that is what "only these cards"
 means). Settings live in `extension_settings.eden_map_ext`, which survives a wiped clone dir (measured,
 `docs/extension-study.md` §3.5).
+
+## TT specifics (F3)
+
+- **An update wipes the clone directory** (everything except `.git`, measured `docs/extension-study.md` §3.5), so
+  nothing under `ext/` may keep state: the loader and `map/tavern/host-native.mjs` touch no localStorage /
+  sessionStorage / IndexedDB / cookies (pinned by `tests/f3_ext_state.test.mjs`). Settings live in
+  `extension_settings.eden_map_ext`, map state in chat variables and the webview's own storage — all outside
+  the clone dir, all survive a wipe. **After any update (auto or manual): fully quit and reopen TT** —
+  `/reload-page` does not reload extension JS.
+- **Clipboard and save in WKWebView**: the web clipboard can hang forever instead of rejecting, and
+  `<a download>` is ignored outright (CCST real-machine findings, `docs/extension-study.md` §7).
+  `map/app/transfer.mjs` runs the proven three-tier chain — TT's own bridge
+  (`__TAURI__.core.invoke('plugin:clipboard-manager|write_text')`, found along the window→parent chain),
+  then the web clipboard behind an 800 ms timeout, then a hidden textarea + `execCommand('copy')` (WebKit
+  needs ≥2 px and no `setSelectionRange`, verified in `tools/browser/f3_tt_webkit.mjs`). Saving a file in TT
+  becomes copying; when every copy path fails, a manual-copy panel opens with the text preselected. External
+  links go through `plugin:opener|open_url` where present.
+- **Chat surface**: the leak fence reads rendered floors through `hostAdapter.ui.displayedMessage` — in the
+  extension form that queries `#chat .mes[mesid]` directly (study §4), so leaked
+  `<StatusPlaceHolderImpl/>` / statusbar markup is swept without TavernHelper.
 
 ## Mainland install: clone address and zip fallback
 
