@@ -94,8 +94,8 @@ test('generic names carry secondary keys (the building, any); specific names do 
   for (const e of SHIP.entries.filter(x => x.id.startsWith('map.room.'))) { assert.equal(e.strategy.type, 'selective'); assert.ok(e.strategy.keys.length > 0); assert.equal(e.position.type, 'at_depth'); assert.equal(e.position.depth, 1); assert.equal(e.position.role, 'system'); assert.equal(e.enabled, true); }   // WB-2 (D45): depth 1, order band 1000+
 });
 
-test('the constant entries and the older place entries read exactly as at head #301 (the injected text did not change)', () => {
-  const H = { 'map.link-rules': '507d3fb31eec2dc6bb159837150d0f36070993d5', 'map.event-types': '667685e0804768f13399bd049d9f430a47890479', 'map.current-location': 'a63cd990a9bcdd401e27af8296cd297cccc3c6b2' };
+test('the constant entries and the older place entries read exactly as at head #301 (the rules entry carries the TURN-IDS 【词表】 sentence since this round; the others did not change)', () => {
+  const H = { 'map.link-rules': '2f692402f73233a117108d116e6b6548303a0c13', 'map.event-types': '667685e0804768f13399bd049d9f430a47890479', 'map.current-location': 'a63cd990a9bcdd401e27af8296cd297cccc3c6b2' };
   for (const [id, h] of Object.entries(H)) assert.equal(sha(entryOf(id).content), h, id);
   const places = SHIP.entries.filter(e => e.id.startsWith('map.place.'));
   assert.equal(places.length, 42); assert.equal(sha(places.map(e => e.id + e.content).join('|')), '458a610740ea45b56dce7163ab6a357e18739907');
@@ -184,7 +184,7 @@ test('entryState: synced / edited in the tavern / pending', () => {
 test('the room entries cost: numbers for the report', () => {
   const rooms = SHIP.entries.filter(e => e.id.startsWith('map.room.')), chars = rooms.reduce((n, e) => n + e.content.length, 0);
   assert.ok(rooms.length >= 70); assert.ok(chars < 7000, `${chars} characters`);
-  const con = SHIP.entries.filter(e => e.strategy.type === 'constant').reduce((n, e) => n + e.content.length, 0); assert.equal(con, 762 + 879 + 999, 'the constant part did not grow');
+  const con = SHIP.entries.filter(e => e.strategy.type === 'constant').reduce((n, e) => n + e.content.length, 0); assert.equal(con, 762 + 879 + 1058, 'the constant part did not grow (rules entry carries the TURN-IDS 【词表】 sentence)');
 });
 
 test('schema 2: nodes may carry facts and access (K-R134); a bad value is dropped with one problem; a pack-owned record shows them', async () => {

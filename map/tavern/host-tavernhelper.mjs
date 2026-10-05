@@ -173,7 +173,7 @@ export function createWbAuto(deps) {
   const navSaved = () => { const o = jget('edenMapNavCfg', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; };
   const navOn = () => !!lsGet('edenMapNav') && lsGet('edenMapNav') !== '0';
   function thPrefs() { const nc = navSaved(), nv = +lsGet('edenMapNav'); return { inj: lsGet('edenMapStateInj') !== '0', depth: +(lsGet('edenMapStateDepth') || 2), budget: +(lsGet('edenMapStateBudget') || 150), macros: lsGet('edenMapMacros') === '1', wbOn: wbOn(), wbTomb: wbTomb(), wbWhere: lsGet('edenMapWbWhere') || null,
-    dice: lsGet('edenMapDice') === '1', ledgerWrite: lsGet('edenMapLedgerWrite') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1',
+    dice: lsGet('edenMapDice') === '1', ledgerWrite: lsGet('edenMapLedgerWrite') === '1', spatial: lsGet('edenMapSpatial') === '1', wbJit: lsGet('edenMapWbJit') === '1', wbXtal: lsGet('edenMapWbXtal') === '1', turnIds: lsGet('edenMapTurnIds') === '1',   // TURN-IDS：本轮词表 + 校验（docs/turn-ids.md）
     invInj: lsGet('edenMapInvInj') !== '0', nav: navOn(), navCfg: { provider: String(nc.provider || ''), base: String(nc.base || ''), model: String(nc.model || ''), hasKey: !!String(nc.key || '').trim() },   // the key never leaves the host
     stateOmit: (Array.isArray(jget('edenMapStateOmit', [])) ? jget('edenMapStateOmit', []) : []).filter(k => FIELDS.includes(k)), spatialDepth: +(lsGet('edenMapSpatialDepth') ?? 2), spatialBudget: +(lsGet('edenMapSpatialBudget') || 120),
     navConsent: lsGet('edenMapNavConsent') === '1', navCadence: CADENCE.includes(+lsGet('edenMapNavCadence')) ? +lsGet('edenMapNavCadence') : CADENCE.includes(nv) ? nv : 120000 }; }
@@ -187,9 +187,9 @@ export function createWbAuto(deps) {
     if (watching && Date.now() - lastSend < 1000) { if (!sendT) sendT = setTimeout(() => { sendT = 0; sendTh(); }, 1000 - (Date.now() - lastSend)); return; }
     clearTimeout(sendT); sendT = 0; lastSend = Date.now(); const ex = pend; pend = {};
     const h = healthNow(); if (watching && !providers) providers = await import(deps.scriptBase + 'tavern/llm-gateway.mjs').then(m => m.PROVIDERS.map(p => ({ id: p.id, base: p.base, model: p.model }))).catch(() => []);
-    post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, healthSum: healthSum(h), ...(watching ? { health: h, providers } : {}), ...ex });
+    post({ type: 'eden-map:th-state', prefs: thPrefs(), inject: (() => { try { return deps.injectPreview?.() ?? null; } catch (e) { return null; } })(), last: wbSaved(), api: { macros: !!thFn('registerMacroLike'), inject: !!thFn('injectPrompts'), buttons: !!deps.thBtns() }, healthSum: healthSum(h), turnIds: (() => { try { return deps.turnIdsRecent?.() ?? { on: false, items: [] }; } catch (e) { return { on: false, items: [] }; } })(), ...(watching ? { health: h, providers } : {}), ...ex });
   }
-  const FACT_OF = { dice: 'dice', ledgerWrite: 'ledger', spatial: 'spatial', wbJit: 'jit', wbXtal: 'xtal' };   // a switch change makes the feature "idle" again until its next round
+  const FACT_OF = { dice: 'dice', ledgerWrite: 'ledger', spatial: 'spatial', wbJit: 'jit', wbXtal: 'xtal', turnIds: 'turnIds' };   // a switch change makes the feature "idle" again until its next round
   /** the AI advisor's test connection: one tiny request with the form's current values (used once in memory, never stored, the key never echoed) */
   async function navTest(c, nonce) {
     if (testBusy) return; testBusy = true; const t0 = performance.now(), saved = navSaved(); let key = '', out, L = null;
@@ -233,6 +233,7 @@ export function createWbAuto(deps) {
       if ('spatial' in P) put('edenMapSpatial', P.spatial ? '1' : '0');   // W1 空间坐标契约
       if ('wbJit' in P) { put('edenMapWbJit', P.wbJit ? '1' : '0'); if (!P.wbJit) jitRestore().catch(e => console.warn('[map] wb: JIT restore failed', e)); }   // W6 JIT 水合；关掉时把它停用的条目全部重新启用（D43）
       if ('wbXtal' in P) put('edenMapWbXtal', P.wbXtal ? '1' : '0');   // W7 事实结晶
+      if ('turnIds' in P) { put('edenMapTurnIds', P.turnIds ? '1' : '0'); if (!P.turnIds) deps.turnIdsOff?.(); }   // TURN-IDS：关掉时立刻撤掉已注入的词表（下一轮重算也会撤，这里是不等重算的即时清理）
       if ('packLlm' in P) { const G = await import(deps.scriptBase + 'tavern/pack-gate.mjs').catch(() => null); if (G && await G.setLlm(!!P.packLlm)) return; }   // K-R103：外来包的模型文字开关（edenMapPackLlm 存哈希，门卫写；成功会重启实例）
       if ('navCadence' in P && CADENCE.includes(+P.navCadence)) put('edenMapNavCadence', +P.navCadence);   // the chosen interval has its own pref: it survives switching the advisor off and on
       if ('nav' in P) put('edenMapNav', P.nav ? (CADENCE.includes(+lsGet('edenMapNavCadence')) ? +lsGet('edenMapNavCadence') : '1') : '0');   // W5 领航员（默认关；同意在卡片里给）

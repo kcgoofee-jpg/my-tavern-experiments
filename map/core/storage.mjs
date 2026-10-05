@@ -52,6 +52,7 @@ export const KEYS = {
   edenMapSpatial: { pref: true, owner: 'host', def: '0' }, edenMapSpatialBudget: { pref: true, owner: 'host', def: '120' }, edenMapSpatialDepth: { pref: true, owner: 'host', def: '2' },
   edenMapWbAuto: { pref: true, owner: 'host', def: '0' }, edenMapWbOn: { pref: true, owner: 'host', def: '1' }, edenMapWbTomb: { pref: false, owner: 'host', def: '0' }, edenMapWbChars: { pref: false, owner: 'host' }, edenMapWbNoticeVer: { pref: false, owner: 'host' }, edenMapWbSync: { pref: false, owner: 'host' }, edenMapWbWhere: { pref: false, owner: 'host' }, edenMapWbSyncAt: { pref: false, owner: 'host' } /* PLACE-1a: ms timestamp of this device's last successful automatic sync (the record card's sync line); not a switch */,
   edenMapWbJit: { pref: true, owner: 'host', def: '0' },   // W6 世界书 JIT 水合：人在哪只挂哪（默认关；只动附加书 extra.eden_id 条目）
+  edenMapTurnIds: { pref: true, owner: 'host', def: '0' },   // TURN-IDS（docs/turn-ids.md）：每轮注入「本轮标签词表」+ 地点 / 人物 / 事件标签校验与诊断环（默认关；关 = 行为与今天完全一致）
   edenMapWbXtal: { pref: true, owner: 'host', def: '0' }, edenMapWbXtalCfg: { pref: false, owner: 'host' },   // W7 事实结晶：开关 + 水位/墓表 {tombstones, written}（默认关）
   // 通用脚本的包选择（S9-2，docs/zero-config.md §11）：都在没有任何包之前就要读，所以是宿主的原始键、从不加包命名空间（K-R90 / K-R103）
   edenMapPackPick: { pref: false, owner: 'tavern/pack-gate.mjs' },   // JSON { <卡键>: 'index:<id>' | 'url:<https 地址>' | 'file' }；没有 = 自动

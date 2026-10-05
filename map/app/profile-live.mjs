@@ -43,7 +43,7 @@ export const HOST_PREFS = {
   edenMapStateOmit: ['stateOmit', v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a : []; } catch (e) { return []; } }],
   edenMapInvInj: ['invInj', v => v !== '0'], edenMapMacros: ['macros', v => v === '1'], edenMapWbOn: ['wbOn', v => v !== '0'],
   edenMapDice: ['dice', v => v === '1'], edenMapLedgerWrite: ['ledgerWrite', v => v === '1'], edenMapSpatial: ['spatial', v => v === '1'],
-  edenMapSpatialBudget: ['spatialBudget', num(120, 60, 240)], edenMapSpatialDepth: ['spatialDepth', num(2, 0, 20)], edenMapWbJit: ['wbJit', v => v === '1'], edenMapWbXtal: ['wbXtal', v => v === '1'],
+  edenMapSpatialBudget: ['spatialBudget', num(120, 60, 240)], edenMapSpatialDepth: ['spatialDepth', num(2, 0, 20)], edenMapWbJit: ['wbJit', v => v === '1'], edenMapWbXtal: ['wbXtal', v => v === '1'], edenMapTurnIds: ['turnIds', v => v === '1'],
   edenMapNavCadence: ['navCadence', v => (CADENCE.includes(+v) ? +v : 120000)],
 };
 const hostDefault = k => ({ edenMapStateInj: '1', edenMapStateDepth: '2', edenMapStateBudget: '150', edenMapStateOmit: '[]', edenMapInvInj: '1', edenMapWbOn: '1', edenMapSpatialBudget: '120', edenMapSpatialDepth: '2', edenMapNavCadence: '120000' })[k] ?? '0';

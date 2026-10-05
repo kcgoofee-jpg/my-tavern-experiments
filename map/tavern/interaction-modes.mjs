@@ -72,16 +72,20 @@ export function configure({ examples, prefixes } = {}) {
 }
 const SEP = /[\s·・.\-—_/／|｜]/g;
 const clean = s => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+// TURN-IDS（默认关）：地点标签的守卫由宿主装入（turn-ids 开着时校验写法）；守卫说不要的候选当没写过——当前地点自然走 MVU / 数据库 / 预设兜底，等于「被拦下什么都不写」。
+let HERE_GUARD = null;
+export function setHereGuard(fn) { HERE_GUARD = typeof fn === 'function' ? fn : null; }
 /** 一楼原文里明确写的玩家当前地点：⌖地点 X（隐藏 span 或裸写）、或 data-tcmap="地点=…"（不带 人物 / 类型 / 标题）；取最后一个 */
 export function parseHereTag(raw) {
   if (!raw || !/⌖\s*地点|地点\s*[=＝]/.test(raw)) return null;
   const text = String(raw).replace(/```[\s\S]*?```/g, ''); let best = null;
+  const keep = p => !!p && !EX.has(p) && !(HERE_GUARD && !HERE_GUARD(p));
   // WB-1: a space after ⌖ is accepted
-  for (const m of text.matchAll(/⌖\s*地点[\s:：]+([^<\n⌖，。；,;！？!?]{1,60})/g)) { const p = clean(m[1]); if (p && !EX.has(p)) best = [m.index, p]; }
+  for (const m of text.matchAll(/⌖\s*地点[\s:：]+([^<\n⌖，。；,;！？!?]{1,60})/g)) { const p = clean(m[1]); if (keep(p)) best = [m.index, p]; }
   for (const m of text.matchAll(/data-tcmap\s*=\s*(["'])(.*?)\1/g)) {
     const o = {}; for (const kv of m[2].split(/[;；]/)) { const k = kv.search(/[=＝]/); if (k > 0) o[kv.slice(0, k).trim()] = kv.slice(k + 1).trim(); }
     if (!o.地点 || o.人物 || o.类型 || o.标题) continue; const p = clean((o.层 && !o.地点.includes(o.层) ? o.层 + '·' : '') + o.地点);
-    if (p && !EX.has(p) && (!best || m.index > best[0])) best = [m.index, p];
+    if (keep(p) && (!best || m.index > best[0])) best = [m.index, p];
   }
   return best ? best[1] : null;
 }

@@ -111,7 +111,7 @@ test('host-th createWbAuto：设置消息与总开关（搬家后自由变量都
   const W = createWbAuto({ scriptBase: new URL('../map/', import.meta.url).href, LS, lsGet, lsSet, life, base: () => 'http://127.0.0.1:9/map/', alive: () => true, uiLang: () => 'zh', thBtns: () => null,
     chatId: () => 'c1', cardKey: () => 'card', post: m => posts.push(m), hostToast: () => null, stateInject: () => injected++, macroSet: on => { macros = on; }, prefSync: () => synced++, facts: createFacts(), navFacts: () => ({}), macroVal: () => '', navSchedule() {} });
   await W.onTh({ op: 'state' });
-  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, ledgerWrite: false, spatial: false, wbJit: false, wbXtal: false, invInj: true, nav: false, navCfg: { provider: '', base: '', model: '', hasKey: false }, stateOmit: [], spatialDepth: 2, spatialBudget: 120, navConsent: false, navCadence: 120000 });
+  assert.equal(posts.at(-1).type, 'eden-map:th-state'); assert.deepEqual(posts.at(-1).prefs, { inj: true, depth: 2, budget: 150, macros: false, wbOn: true, wbTomb: false, wbWhere: null, dice: false, ledgerWrite: false, spatial: false, wbJit: false, wbXtal: false, turnIds: false, invInj: true, nav: false, navCfg: { provider: '', base: '', model: '', hasKey: false }, stateOmit: [], spatialDepth: 2, spatialBudget: 120, navConsent: false, navCadence: 120000 });
   await W.onTh({ op: 'prefs', prefs: { inj: false, depth: 99, budget: 5, macros: true, wbOn: false } });
   assert.equal(ls.get('edenMapStateInj'), '0'); assert.equal(ls.get('edenMapStateDepth'), '20'); assert.equal(ls.get('edenMapStateBudget'), '40');
   assert.equal(macros, true); assert.equal(injected, 1); assert.equal(synced, 1); assert.equal(ls.get('edenMapWbOn'), '0');
@@ -143,7 +143,7 @@ test('入口只从 host-*.mjs 取，不再自带副本；worldbook 自动化的�
 // ---------------------------------------------------------------------------------------------------------------------
 const lines = f => rd(f).split('\n').length - (rd(f).endsWith('\n') ? 1 : 0);
 const FLOWS = {   // 文件 → [工厂名, 返回的接口]
-  'llm-flow': ['createLlmFlow', 'addRoutes jitReset jitRound navFacts navSchedule opEvents planRoutes resetOps sendOps worldbookJitModule WBSm xtalClear xtalRound'],
+  'llm-flow': ['createLlmFlow', 'addRoutes jitReset jitRound navFacts navSchedule opEvents planRoutes resetOps sendOps turnIdsRound worldbookJitModule WBSm xtalClear xtalRound'],
   'route-flow': ['createRouteFlow', 'addSuggestions held macroSet macroValue onChat onHere onPlan onReady onRound'],   // S8-4b K-R111: the planned route and the class macros
   'stash-flow': ['createStashFlow', 'changedInv FRm frState gate gateFlush injectAction stash stashStoreModule stashRecomputeModule ledgerSync ledgerModule ledgerRecord lootFacts resetChat scanPickups sendInv settleCarry stealthCheck takeLoot'],
   'chars-flow': ['createCharsFlow', 'mvuBridge ooc oocRead gallery placeText cardKey chatId clock computeTrips contextPipeline getHere mvuReaders mvuStat outfitNow pushMvu readVars refreshVarMap resetLayerSent routineModule rtSched sendChars sendRoutine sendTrips sentClock sentOutfit setVarUser tripsParseModule userName'],

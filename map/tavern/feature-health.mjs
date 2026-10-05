@@ -4,7 +4,7 @@
 // Pure: no DOM, no host globals, no storage, no network. node test tests/feature_health.test.mjs.
 import { tokens } from './interaction-modes.mjs';
 
-export const CARD_IDS = Object.freeze(['digest', 'state', 'macros', 'dice', 'ledger', 'spatial', 'wbJit', 'wbXtal', 'nav', 'inject']);
+export const CARD_IDS = Object.freeze(['digest', 'state', 'macros', 'dice', 'ledger', 'spatial', 'wbJit', 'wbXtal', 'nav', 'inject', 'turnIds']);
 export const MAX_TEXT = 600;
 const cap = (s, n = MAX_TEXT) => { const a = [...String(s ?? '')]; return a.length > n ? a.slice(0, n).join('') + '…' : a.join(''); };
 const num = v => (Number.isFinite(+v) && v !== null && v !== '' ? +v : null);
@@ -15,7 +15,7 @@ export function createFacts() {
     digest: { text: '', floor: null }, state: { text: '', reason: '', floor: null, fields: null }, spatial: { text: '', floor: null, placed: null },
     macros: { here: '', route: '' }, dice: { last: '', floor: null }, ledger: { rows: null, floor: null }, jit: { enabled: 0, disabled: 0, floor: null, book: null },
     xtal: { written: 0, last: '', floor: null, book: null, seenTags: null }, nav: { consent: null, cfgOk: null, lastAt: 0, runs: 0, lastN: 0, lastDropped: 0, lastStatus: null, lastTokens: 0, nextAt: 0, generating: false },
-    inject: { mode: 'off', lastOk: null, floor: null },
+    inject: { mode: 'off', lastOk: null, floor: null }, turnIds: { text: '', floor: null },
   };
 }
 const off = { on: false, state: 'off', reason: 'off' };
@@ -57,6 +57,9 @@ export function healthOf(facts = {}) {
   // C10 map actions into chat
   const i = f.inject;
   out.inject = i.mode === 'off' ? off : i.lastOk === false ? bad('no-input', { ...(num(i.floor) !== null ? { floor: num(i.floor) } : {}) }) : i.lastOk === null ? idle() : ok({ ...(num(i.floor) !== null ? { floor: num(i.floor) } : {}) });
+  // C11 TURN-IDS per-turn vocabulary line (docs/turn-ids.md)
+  const ti = f.turnIds;
+  out.turnIds = !P.turnIds ? off : ti.text ? ok(withText(ti.text, ti.floor)) : idle(ti.floor === null ? '' : 'empty');
   return out;
 }
 /** healthSum(health) -> { n: how many cards are on, m: how many are on and not effective } (the home summary; idle is not counted as not effective, U-32).

@@ -8,7 +8,7 @@ import { busOn } from './bus.mjs';   // P2-3：全局监听统一登记
 import { setAiSum } from './settings.mjs';
 
 const W = { global: ['th.wb_global', '全局'], char: ['th.wb_char', '当前角色的附加世界书'], chat: ['th.wb_chat', '当前聊天'] };
-let S = { prefs: null, wb: null, last: null, result: null, api: null }, diffShown = false, armed = 0, delArmed = '';
+let S = { prefs: null, wb: null, last: null, result: null, api: null, turnIds: null }, diffShown = false, armed = 0, delArmed = '';
 
 function sec(page, id, order) {
   let el = document.getElementById(id);
@@ -68,18 +68,35 @@ function renderWb() {
 }
 
 let lastTh = {};
+// TURN-IDS（docs/turn-ids.md 项 3）：诊断环——最近被校验拦下的标签（地点 / 人物 / 事件）与原因，只展示不改写。
+// 开关本体在「AI 联动」页的功能卡片（app/ai-cards.mjs turnIds）；没开过且没有记录时这一节不出现。
+const TI_KIND = { place: 'ti.kind.place', char: 'ti.kind.char', event: 'ti.kind.event' };
+function renderTurnIds() {
+  const t = S.turnIds; if (!t) return;
+  const items = Array.isArray(t.items) ? t.items : [];
+  if (!t.on && !items.length) return;
+  const box = sec('data', 'thTurnIds', 6);
+  let h = `<h3>${esc(uiTextOr('ti.title', '本轮词表与校验'))}</h3>`
+    + `<small>${esc(uiTextOr(t.on ? 'ti.hint' : 'ti.off_hint', t.on ? '校验开着：下面记录最近被拦下的标签（最多 16 条）。被拦下的写法不会上图，其余照常。' : '这一功能当前关闭；下面留着上次开启时的记录。'))}</small>`;
+  h += items.length ? items.map(x => `<div class="thdiff"><b>${esc(uiTextOr(TI_KIND[x.kind] || 'ti.kind.char', x.kind || '?'))}</b> ${esc(uiTextOr('ti.reason.' + x.code, x.code || '?'))}`
+    + `<div>${esc(String(x.text || '').slice(0, 60))}</div>`
+    + `<div>${esc(uiTextOr('ti.floor', '第 {n} 楼', { n: Number.isFinite(+x.floor) ? +x.floor : '?' }))} · ${esc(x.at ? when(x.at) : '')}</div></div>`).join('')
+    : `<small>${esc(uiTextOr('ti.none', '这一局还没有标签被拦下'))}</small>`;
+  box.innerHTML = h;
+}
 const thListeners = new Set();
 /** onThState(fn): the cards get the last prefs / health now and every later th-state (the module is only loaded when the AI link page first opens) */
 export function onThState(fn) { thListeners.add(fn); fn(lastTh); }
 export function applyState(d) {
   const wbRes = d.result && !d.result.navTest ? d.result : null;   // the AI advisor's test answer rides in `result` too: it is not a worldbook result
-  S = { ...S, inject: d.inject || S.inject, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: wbRes || (d.wb || d.result ? null : S.result) };
+  S = { ...S, inject: d.inject || S.inject, prefs: d.prefs || S.prefs, last: d.last ?? S.last, api: d.api || S.api, wb: d.wb || S.wb, result: wbRes || (d.wb || d.result ? null : S.result), turnIds: d.turnIds || S.turnIds };
   if (wbRes) { diffShown = false; armed = 0; }
   if (d.healthSum) setAiSum(d.healthSum);
   lastTh = { ...lastTh, ...Object.fromEntries(['prefs', 'health', 'providers'].filter(k => d[k]).map(k => [k, d[k]])), ...(d.result?.navTest ? { navTest: d.result.navTest } : {}) };
   for (const f of thListeners) try { f(lastTh); } catch (e) {}
   delete lastTh.navTest;   // a test answer is delivered once   // the AI link page (ai-cards.mjs, loaded on demand) subscribes here
   renderWb();
+  renderTurnIds();
 }
 
 if (typeof window !== 'undefined' && window.top !== window) {

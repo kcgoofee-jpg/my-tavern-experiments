@@ -7,9 +7,10 @@ import { getGeo } from './events-parse.mjs';
 import { routeOp } from '../core/router.mjs';
 import { floorIndex } from '../core/place-record.mjs';
 import { tokens } from './interaction-modes.mjs';
+import { idsText, applyIds } from './turn-ids.mjs';
 export const DEPS = [
   'GEN', 'HS', 'facts', 'scriptBase', 'hostToast', 'life', 'lsGet', 'lsSet', 'panel', 'pointsFor', 'sendEvents', 'contextPipeline', 'FRm', 'mvuReaders', 'SpatialM', 'uiLang', 'floorNow',
-  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary', 'post', 'alive', 'MAN', 'BASE', 'PACK_ID',
+  'frState', 'here', 'regNow', 'spatialNow', 'eventsSummary', 'post', 'alive', 'MAN', 'BASE', 'PACK_ID', 'chars',
 ];
 export function createLlmFlow(host) {
   for (const k of DEPS) if (!(k in host)) throw new Error('llm-flow: missing dep ' + k);
@@ -93,7 +94,7 @@ export function createLlmFlow(host) {
   // 激活集 = spatial.activationOf（自身 + 出口 + 同层邻近）；激活集哈希没变不写（裁决 10）；withLock 跨标签互斥。
   let worldbookJitModule = null, WBSm = null, jitWatermark = null, jitBusy = false, jitEpoch = 0;
   /** 换聊天：激活水位作废（上一个聊天算出的激活集不能当新聊天的），正在跑的一轮结果也不再记水位；下一轮重算一遍再写 */
-  const jitReset = () => { jitWatermark = null; jitEpoch++; };
+  const jitReset = () => { jitWatermark = null; jitEpoch++; tiWater = ''; };
   import(scriptBase + 'tavern/worldbook-jit.mjs').then(m => { worldbookJitModule = m; }).catch(e => console.warn('[map] llm-flow: worldbook-jit import failed', e));
   import(scriptBase + 'tavern/worldbook-sync.mjs').then(m => { WBSm = m; }).catch(e => console.warn('[map] llm-flow: worldbook-sync import failed', e));
   // PLACE-1a: the pack's room table (floors, room names) for the entry switch: in a room, the rooms of its floor are switched on with it. Fetched once; no table = the old active set.
@@ -151,6 +152,28 @@ export function createLlmFlow(host) {
     finally { jitBusy = false; }
   }
 
+  // ---------------- TURN-IDS 本轮标签词表（docs/turn-ids.md；纯逻辑在 tavern/turn-ids.mjs）----------------
+  // 激活集与 JIT 同源（activationSet：当前地点 + 同层房间 / 出口 / 邻近地标），加 20 楼内有人物位置记录的名字 → 一行 ≤400 token 的闭合词表，
+  // 固定 id、深度 0（排在整段历史之后的末尾，缓存前缀不动——与规范条目同一位置论证）。默认关（edenMapTurnIds）；关时只撤旧注入一次。
+  let tiWater = '';
+  // 调用方契约：turnIdsRound 永不 reject（内部兜住）——eden-map.js 的棘轮账本不许多出 .catch(() => {}) 空位。
+  async function turnIdsRound() { try { await turnIdsStep(); } catch (e) { console.warn('[eden-map] 本轮词表没注入（下一轮再试）', e); } }
+  async function turnIdsStep() {
+    if (life.dead) return;
+    if (lsGet('edenMapTurnIds') !== '1' || !host.SpatialM) { if (tiWater) { tiWater = ''; applyIds(thFn, '', 0); Object.assign(host.facts.turnIds, { text: '', floor: null }); } return; }
+    const loc = host.SpatialM.locate(host.regNow, host.here);
+    if (!loc?.mapId) { if (tiWater) { tiWater = ''; applyIds(thFn, '', 0); } Object.assign(host.facts.turnIds, { text: '', floor: host.floorNow }); return; }
+    const pts = await pointsFor(loc.mapId);
+    if (life.dead) return;
+    const act = host.SpatialM.activationSet(host.regNow, host.here, { [loc.mapId]: pts }, { place: await placeFor() });
+    const names = [], cs = host.chars || [], fresh = x => host.floorNow - x.floor <= 20 && (x.place || x.present);   // 只列还活着的位置记录（同注入行的 20 楼口径）
+    for (const c of cs) { if (fresh(c) && c.name && !names.includes(c.name)) names.push(c.name); if (names.length >= 12) break; }
+    const text = idsText({ here: act.where || String(host.here || '').trim(), places: [...act.names], names });
+    Object.assign(host.facts.turnIds, { text, floor: host.floorNow });
+    if (text === tiWater) return; tiWater = text;
+    applyIds(thFn, text, 0);
+  }
+
   // ---------------- W7 剧情事实自动结晶（tavern/worldbook-crystallize.mjs 纯收集与草案；写世界书在这里） ----------------
   // ⌖事实 标签 → 附加书关键词触发条目（map.fact.<hash>，内容照抄原文）；LRU + 墓碑（用户删除永不复活）；
   // 已写 id 记水位（edenMapWbXtalCfg.written）→ 消息窗口重放幂等。默认关（edenMapWbXtal）。
@@ -191,6 +214,6 @@ export function createLlmFlow(host) {
     finally { xtalBusy = false; }
   }
   return {
-    jitRound, jitReset, resetOps, sendOps, addRoutes, navFacts, planRoutes, navSchedule, xtalClear, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
+    jitRound, jitReset, resetOps, sendOps, addRoutes, navFacts, planRoutes, navSchedule, xtalClear, turnIdsRound, get opEvents() { return opEvents; }, set opEvents(v) { opEvents = v; }, get worldbookJitModule() { return worldbookJitModule; }, get WBSm() { return WBSm; }, xtalRound,
   };
 }

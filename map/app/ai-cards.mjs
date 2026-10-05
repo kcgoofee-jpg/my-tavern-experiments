@@ -28,6 +28,7 @@ const DEFS = [
   { id: 'macros', sw: 'thMacro', pref: 'macros' }, { id: 'dice', sw: 'thDice', pref: 'dice' }, { id: 'ledger', sw: 'thLedgerWrite', pref: 'ledgerWrite' },
   { id: 'spatial', sw: 'thSpatial', pref: 'spatial', cost: true, tpl: true }, { id: 'wbJit', sw: 'thWbJit', pref: 'wbJit' }, { id: 'wbXtal', sw: 'thWbXtal', pref: 'wbXtal', parked: 'xtal' },
   { id: 'nav', sw: 'thNav', pref: 'nav', cost: true, consent: true }, { id: 'inject', sw: 'thInject' },
+  { id: 'turnIds', sw: 'thTurnIds', pref: 'turnIds', cost: true },
 ];
 export const CARD_KEYS = DEFS.map(d => d.id);
 const liveDefs = () => DEFS.filter(d => !d.parked || parkedOn(d.parked));   // INV-2: a parked card is not built, rendered or searchable until edenMapOn:<id> = '1'

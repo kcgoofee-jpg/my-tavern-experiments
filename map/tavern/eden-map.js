@@ -24,6 +24,7 @@ import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
 import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs'; import { createBootWatchdog, rotateKeys } from './viewer-boot.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）；viewer-boot：查看器起不来时的重挂（见 mountFrame）
+import { createTurnIds, applyIds } from './turn-ids.mjs';   // TURN-IDS（docs/turn-ids.md）：本轮标签词表 + 落点校验（默认关 edenMapTurnIds；纯逻辑在 turn-ids.mjs）
 (() => { if (redirected || (window.parent?.__edenMapExtInstalled && !window.__edenMapExtImport)) return;   // 分支路径加载的旧入口：门卫已换成 @<sha>（follow-gate.mjs）；或扩展已接管本页（F2 双开握手：ext/index.js 置 __edenMapExtInstalled，自己 import 时临时带 __edenMapExtImport）——都不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
@@ -371,7 +372,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     storeWarn: (...a) => RS.storeWarn(...a), get swappable() { return swappable; }, get switchedFrom() { return switchedFrom; }, get tavernhelperApiModule() { return HA.tavernhelperApiModule; },
     get tlWalk() { return TL.tlWalk; }, set tlWalk(v) { TL.tlWalk = v; }, get transitMod() { return HA.transitMod; }, get tripsParseModule() { return CF.tripsParseModule; }, get UI() { return UI; },
     get uiLang() { return uiLang; }, userName: (...a) => CF.userName(...a), varsOk: (...a) => RS.varsOk(...a), get VER() { return VER; }, get worldbookJitModule() { return LL.worldbookJitModule; },
-    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; }, addRoutes: (...a) => LL.addRoutes(...a), get facts() { return HA.facts; }, navFacts: () => LL.navFacts(), navSchedule: () => LL.navSchedule(), xtalClear: () => LL.xtalClear(), macroVal: (...a) => RF.macroValue(...a), flyMark: p => '<span style="display:none" data-eden-fly="' + p.replace(/"/g, '') + '"></span>',
+    get WBSm() { return LL.WBSm; }, get wbState() { return RS.wbState; }, set wbState(v) { RS.wbState = v; }, get wrapLS() { return wrapLS; }, addRoutes: (...a) => LL.addRoutes(...a), get facts() { return HA.facts; }, navFacts: () => LL.navFacts(), navSchedule: () => LL.navSchedule(), xtalClear: () => LL.xtalClear(), macroVal: (...a) => RF.macroValue(...a), flyMark: p => '<span style="display:none" data-eden-fly="' + p.replace(/"/g, '') + '"></span>', turnIdsRecent: () => TI.recent(), turnIdsOff: () => LL.turnIdsRound(),
   };
   const LL = createLlmFlow(host), { jitRound, xtalRound } = LL, RF = createRouteFlow(host);   // K-R111: the planned route and the class macros
 
@@ -396,7 +397,6 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     const target = loc.markerId ? { map: loc.mapId, marker: loc.markerId } : (loc.room ? { map: loc.mapId, room: loc.room } : { map: loc.mapId });
     try { post({ type: 'eden-map:fly', target }); } catch (e) {}
   }
-
 
   const LF = createStashFlow(host), { frState, gate, gateFlush, injectAction, ledgerSync, lootFacts, scanPickups, sendInv, settleCarry, stealthCheck, takeLoot } = LF;
 
@@ -460,6 +460,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   import(new URL('events-parse.mjs', import.meta.url).href).then(async m => { try { m.setGeo(await (await import(new URL('event-geo-load.mjs', import.meta.url).href)).loadEventGeo({ fetchJSON: rel => cdnFetch(BASE + rel).then(r => r.ok ? r.json() : null).catch(() => null), packId: PACK_ID, manifest: await MAN, events: PACK_IN?.events, lang: uiLang })); } catch (e) { try { m.setGeo(null); } catch (x) {} console.warn('[eden-map] 事态落点的节点树没建出来：事件只列出、不上图', e); } EVM = m; recompute(); }).catch(e => console.warn('[eden-map] 事态模块加载失败', e));
   // 人物栏（v0.9.2）：人物位置标签 + MVU 人物表 → 每人最新位置；模块加载失败只是没有人物栏
   let CHM = null, chars = [], charSig = '', charsSent = null;   // charsSent：上一次发给地图的人物签名（没变就不重发）
+  const TI = createTurnIds({ on: () => lsGet('edenMapTurnIds') === '1', floorNow: () => floorNow, resolve: t => { const g = EVM && EVM.getGeo(); return g ? !!g.place(String(t || '').trim()) : true; }, apply: c => applyIds(thFn, c, 0) });   // TURN-IDS：开关 / 诊断环 / 三个校验入口（geo 没装好时一律放行，只判认得出的）
   import(new URL('characters-parse.mjs', import.meta.url).href).then(m => { CHM = m; recompute(); }).catch(e => console.warn('[eden-map] 人物模块加载失败', e));
   const chatKey = () => 'edenMapSeen:' + chatId();
   function loadSeen() { try { seen = +(LS || localStorage).getItem(chatKey()); if (!Number.isFinite(seen)) seen = -1; } catch (e) { seen = -1; } }
@@ -470,7 +471,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   function readMsgs() {
     let list = null;
     try { const id = hostAdapter.chat.lastId(); floorNow = typeof id === 'number' ? id : -1; if (floorNow >= 0) list = hostAdapter.chat.messages(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
-    const out = contextPipeline.readMsgs(list, floorNow); CF.oocRead(out, floorNow); return out;   // D32: the player's OOC map corrections (user floors) are read with the window
+    const out = contextPipeline.readMsgs(list, floorNow, GEN.generating); CF.oocRead(out, floorNow); return out;   // D32: the player's OOC map corrections (user floors) are read with the window; TURN-IDS 项4: a still-streaming top floor never enters the window
   }
   function recompute(lite = false) {
     if (!EVM || life.dead) return;
@@ -480,7 +481,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     let stSig = ''; try { stSig = JSON.stringify(st); } catch (e) { /* unparsable value: keep the default */ }
     // 一轮的纯计算（签名去重、事件收集、人物栏 / 名册、新事态数）在流水线里（tavern/context.mjs）；这里只做取数与副作用
     const r = contextPipeline.round({ floorNow, msgs, stSig, dbSig: mvuBridge.dbSig(), varSig: mvuBridge.varSig, custVer, customChat: RS.customChat, chatId: chatId(), seen, wbState: RS.wbState,
-      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.mvuReaders, hasTRm: !!CF.tripsParseModule, hasHereMod: !!HA.transitMod, hereNow, collect: EVM.collect, oocChars: CF.ooc.chars, oocSig: CF.ooc.sig,
+      hasReg: !!RS.regNow, hasCHM: !!CHM, hasMV: !!CF.mvuReaders, hasTRm: !!CF.tripsParseModule, hasHereMod: !!HA.transitMod, hereNow, collect: (mm, nf) => TI.filterEvents(EVM.collect(mm, nf)), oocChars: CF.ooc.chars, oocSig: CF.ooc.sig,   // TURN-IDS：开关开着才滤（认不出节点的写法拦下 + 记诊断环），关 = EVM.collect 原样
       charsDeps: CHM ? {
         mvuChars: CHM.mvuChars(st, hereNow, mvuBridge.varMap.present),
         known: mvuBridge.rosterNames({ msgs }),   // P3-B：五来源统一装配的已知名单（MVU 名册 + 聊天标签 + 数据库 + 保底 + 柏宝绘）
@@ -491,7 +492,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
       } : null });
     if (!r.changed) { if (!lite && restDue) restNow(); gateFlush('round'); return; }
     events = r.events;
-    if (r.chars) { chars = r.chars;
+    if (r.chars) { chars = TI.filterChars(r.chars);   // TURN-IDS：标签来源、地点认不出的拦下（开关关 = 原样）
       // 日程漫游（Part 5-3）：聊天 / MVU 没接管的人物按世界时刻补位（不覆盖已有位置）
       if (CF.routineModule && CF.rtSched) { const minute = CF.routineModule.minuteOf(CF.clock?.time || ''); if (minute != null) for (const w of CF.routineModule.whoWhere(CF.rtSched, minute, chars.map(c => c.name))) chars.push({ name: w.name, place: w.place, floor: floorNow, src: 'routine' }); }
       if (CF.mvuReaders) { roster = r.roster; rep = r.rep; mvuBridge.stageOrderFor(roster); mvuBridge.portraitsFor(); }
@@ -513,7 +514,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (frLine) LF.FRm.markInjected(frState);
     scanPickups(msgs, hereNow);   // 任务一：本轮正文里的客观获取动作先入账，下面的结算闸门放行时一并补发（漏写变量也丢不了）
     gate()?.request('sync', ledgerSync);   // W11：本轮的结算（漏项审计 + 单项补发）入队，末尾才放行——读取期间不写变量
-    if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); }
+    if (!lite) { stateInject(); spatialInject(); jitRound().catch(() => {}); xtalRound().catch(() => {}); checkpointStep(); LL.turnIdsRound(); }   // TURN-IDS：本轮词表注入（开关关时内部直接撤净；turnIdsRound 内部兜错，永不 reject）
     if (!panel.hidden && alive) sendEvents();
     flyScan();   // W8：最新楼里的 data-eden-fly 标记（{{eden_fly}} 宏展开）→ eden-map:fly 聚焦地图
     if (subs.events.size) { const sig = floorNow + '|' + events.map(e => e.id + ':' + e.last + ':' + e.tier).join(); if (sig !== emEvSig) { emEvSig = sig; emit('events', { items: events.map(e => ({ ...e })), floor: floorNow, hereLayer: layerOf(here) }); } }
@@ -556,7 +557,6 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   let emHere = null, hereShown = null, emEvSig = '';
   const RS = createRootStore(host), { budgetSweep, customTags, loadCustom, saveRoot, sendCustom, store } = RS;  let AP = null; if (PACK_IN?.source === 'auto') import(new URL('auto-pack.mjs', import.meta.url).href).then(m => { AP = m.createAutoPack(host); recomputeSoon(0); }).catch(e => console.warn('[eden-map] automatic pack', e));   // S9-3: growth, only for the automatic pack
 
-
   const CK = createHostChecks(host), { autoCheck, finishCheck, followCheck, followHead, followNewer, hostToast, runCheck, sendCheck, showSplash, showUpdPrompt, splashDue, switchBranch, switchVersion, toastOnce } = CK;
   // 通知层模块加载失败时的兜底（强制更新等不能悄悄丢）：最简单的一张卡，文字 + 自带按钮 + ×（P0 无 ×）
   function fallbackToast(title, lines, extra, o = {}) {
@@ -567,7 +567,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     extra?.(t); root.appendChild(t); return t;
   }
 
-  const MO = createModesFlow(host), { MDm, checkpointStep, spatialInject, stateInject } = MO;
+  const MO = createModesFlow(host), { MDm, checkpointStep, spatialInject, stateInject } = MO; MDm?.setHereGuard(p => TI.checkHere(p));   // TURN-IDS：【地点】标签的校验入口（认不出且开关开着 = 不上图 + 记诊断环）
 
   let wbChatT = 0;
 
@@ -634,7 +634,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     onT('CHAT_CHANGED', () => pushSoon(300));
     onT('CHAT_CHANGED', () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
     onT('MESSAGE_SWIPED', () => pushSoon(300));
-    chatSwitched = () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} LL.jitReset(); injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); }; onT('CHAT_CHANGED', () => chatSwitched());
+    chatSwitched = () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} LL.jitReset(); TI.clear(); injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); }; onT('CHAT_CHANGED', () => chatSwitched());
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
     for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) onT(k, () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
@@ -658,6 +658,6 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (window.parent.__edenMapCleanup === cleanup) delete window.parent.__edenMapCleanup;
     try { const R = window.parent.__edenMapIds; if (R && R[scriptOwner] === scriptBase) delete R[scriptOwner]; } catch (e) { /* host page not reachable: nothing to do */ }   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」
     try { for (const el of [...pdoc.querySelectorAll('[data-eden-owner]')]) if (el.getAttribute('data-eden-owner') === scriptOwner) el.remove(); } catch (e) {}
-    prefs.stop(); window.removeEventListener('storage', onStorage); try { RF.macroSet(false); } catch (e) {} try { MDm?.applyState(thFn, '', 0); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
+    prefs.stop(); window.removeEventListener('storage', onStorage); try { RF.macroSet(false); } catch (e) {} try { MDm?.applyState(thFn, '', 0); TI.uninject(); } catch (e) {} };   // 换版本 / 关掉脚本后不再算作「另一个地图脚本」（用户实测：换成 v0.9.3 后没刷新页面就误报）
   install(cleanup);   // __edenMapCleanup + pagehide（host-lifecycle.mjs）
 })();

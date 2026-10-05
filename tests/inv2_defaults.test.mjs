@@ -11,10 +11,10 @@ const rd = p => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 const store = o => ({ localStorage: { getItem: k => (k in o ? o[k] : null) } });
 
 test('default-off table: every switch the inventory marks "default off" has default 0 (or off)', () => {
-  for (const k of ['edenMapMacros', 'edenMapDice', 'edenMapLedgerWrite', 'edenMapSpatial', 'edenMapWbJit', 'edenMapWbXtal', 'edenMapNav', 'edenMapNavConsent']) {
+  for (const k of ['edenMapMacros', 'edenMapDice', 'edenMapLedgerWrite', 'edenMapSpatial', 'edenMapWbJit', 'edenMapWbXtal', 'edenMapNav', 'edenMapNavConsent', 'edenMapTurnIds']) {
     assert.ok(k in KEYS && (KEYS[k].def === '0' || KEYS[k].def === undefined), k);
   }
-  for (const k of ['edenMapDice', 'edenMapMacros', 'edenMapSpatial', 'edenMapWbJit', 'edenMapWbXtal', 'edenMapNav']) assert.equal(KEYS[k].def ?? '0', '0', k);
+  for (const k of ['edenMapDice', 'edenMapMacros', 'edenMapSpatial', 'edenMapWbJit', 'edenMapWbXtal', 'edenMapNav', 'edenMapTurnIds']) assert.equal(KEYS[k].def ?? '0', '0', k);
 });
 test('layers: traffic, vision, nav-ops and local-props start hidden; a stored 1 shows them', () => {
   for (const f of ['traffic-view', 'vision-view', 'nav-ops-view', 'local-props-view']) {

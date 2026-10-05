@@ -89,7 +89,7 @@ export const SCHEMA = {
   'eden-map:sleep': [HOST_TO_VIEWER, {}],
   'eden-map:wake': [HOST_TO_VIEWER, {}],
   'eden-map:compose-done': [HOST_TO_VIEWER, { ok: 'boolean?', ooc: 'boolean?' }],
-  'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', inject: 'object?', wb: 'object?', last: 'object?', result: 'object?', health: 'object?', healthSum: 'object?', providers: 'array?' }],   // S7-1: health only while watched; healthSum = { n, m }; providers = the AI advisor's endpoint presets (id, base, model); the key is never in this payload
+  'eden-map:th-state': [HOST_TO_VIEWER, { prefs: 'object?', inject: 'object?', wb: 'object?', last: 'object?', result: 'object?', health: 'object?', healthSum: 'object?', providers: 'array?', turnIds: 'object?' }],   // S7-1: health only while watched; healthSum = { n, m }; providers = the AI advisor's endpoint presets (id, base, model); the key is never in this payload; turnIds = TURN-IDS 诊断环 { on, items }（最近 16 条被拦下的标签，纯展示）
   'eden-map:open': [HOST_TO_VIEWER, { map: 'string' }],   // 本机扩展入口（docs/content-compat.md），仓库内无发送方
   'eden-map:fly': [HOST_TO_VIEWER, {}],                     // 同上
   // 查看器 ↔ 主场景 / 三维子页

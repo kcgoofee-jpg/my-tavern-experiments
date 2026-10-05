@@ -88,11 +88,15 @@ export class ContextPipeline {
   /** 宿主把楼层列表（getChatMessages 的原文）递进来，这里规范化 + 缓存 → [{ floor, raw, text, h }]。
    *  text 剥思考链与变量更新块（msgtext.mjs，G1）；raw 留给行程的 JSONPatch、变量提取用完整原文。
    *  先剥社区预设块（sanitize.mjs，标签表在构造时给；换标签表缓存跟着失效），再剥 EJS。
-   *  extra._acu_original_content = 数据库插件「正文优化」改写前的原文：丢掉的 ⌖ 标签从原文补回（只补标签，不动正文）。 */
-  readMsgs(list, lastId) {
+   *  extra._acu_original_content = 数据库插件「正文优化」改写前的原文：丢掉的 ⌖ 标签从原文补回（只补标签，不动正文）。
+   *  generating = 正在生成（TURN-IDS 项 4）：窗口顶上的那一楼若是助手楼（正在被写的那条）就整楼不进窗口——
+   *  半截标签永不解析；GENERATION_ENDED / STOPPED 会再重算一轮，写完的楼照常进来。 */
+  readMsgs(list, lastId, generating = false) {
     let out = [];
     const tagKey = Array.isArray(this.stripTags) && this.stripTags.length ? this.stripTags.join(',') : '';
-    if (Array.isArray(list) && lastId >= 0) out = list.map(m => {
+    let arr = Array.isArray(list) ? list : [];
+    if (generating && lastId >= 0 && arr.length) { const top = arr[arr.length - 1]; if (top && top.message_id === lastId && !top.is_user && !top.is_system) arr = arr.slice(0, -1); }
+    if (lastId >= 0) out = arr.map(m => {
       let msg = String(m.message || ''); const c0 = m.extra?._acu_original_content;
       if (typeof c0 === 'string' && c0.includes('⌖')) msg += lostTags(c0, msg);
       if (m.is_user) msg = stripOoc(msg);   // a player floor: OOC lines are never an action, an event, a person or a place (D32)
