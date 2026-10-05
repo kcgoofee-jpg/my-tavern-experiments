@@ -47,6 +47,11 @@
   9. 空 catch（D16）：引擎文件里 `catch (e) {}` / `catch {}` / `.catch(() => {})` 等吞错写法按文件计数，≤ 账本 "empty_catch"
      （map/core 也按账本算，不是硬零）。新文件或计数变大即失败；该记日志的换成 console.warn（logbuf 收进反馈报告）。
 
+  10. 宿主接口名封锁（F0，硬零、无账本）：酒馆助手 / 酒馆的接口名（词表 = map/tavern/host-adapter.mjs
+     的 TH_API 登记表，本脚本读它，不另建一份）只许在适配层里出现。引擎其余文件剥注释与字符串后命中即失败——
+     所有调用走 host.fn / host.ok 或分组接口（events / chat / mvu / vars / inject / wb / macro / ui）。
+     纯函数模块收「取法函数」当参数、按名字字符串要接口不算违规（名字在字符串里，真调用经调用方递进来的 host.fn）。
+
 引擎范围（ENGINE_GLOBS）之外永不扫描：map/vendor/、map/estate/ 下的 vendor / model / assets 等（S7-3 起 map/estate/*.js 与 index.html 在范围内）、map/props/*/（逐道具数据）、
 map/packs/、map/data/、map/section.js、viewer.html 以外的 map/*.html、map/_proto/、map/tavern/test-*.html、
 tests/、tools/。
@@ -548,6 +553,127 @@ def check_tc_globals(files=None, root=ROOT):
     return bad, len(targets)
 
 
+# ---------------------------------------------------------------- 检查 10：宿主接口名（F0，硬零、无账本）
+
+HOST_ADAPTER = 'map/tavern/host-adapter.mjs'
+TH_API_BLOCK_RE = re.compile(r'export const TH_API\s*=\s*Object\.freeze\(\[(.*?)\]\)', re.S)
+QUOTED_RE = re.compile(r"'([^']+)'")
+
+
+def th_api_names(root=ROOT):
+    """适配层登记的宿主接口名表：读 map/tavern/host-adapter.mjs 的 TH_API（这一张表是唯一来源）。
+    解析不出来直接退出——闸门空转比报错危险。"""
+    src = (Path(root) / HOST_ADAPTER).read_text(encoding='utf-8')
+    m = TH_API_BLOCK_RE.search(src)
+    if not m:
+        sys.exit(f'{HOST_ADAPTER}: 找不到 TH_API 登记表，检查 10 无法运行')
+    return sorted(set(QUOTED_RE.findall(m.group(1))))
+
+
+def strip_js(src, literals=True):
+    r"""strip() 的正则字面量版：`/…/i` 里的引号（如 /=\s*"([^"]{1,80})"/）不该被当成字符串开头——
+    一旦错位，后面的真字符串被当代码、真代码被当字符串。检查 10 按名字扫「裸引用 / 成员访问」，
+    错位就是误报，所以这条防线单独用这一版（其余检查沿用 strip，账本计数不动）。"""
+    out = []
+    i, n = 0, len(src)
+
+    def blank(s):
+        return ''.join('\n' if c == '\n' else ' ' for c in s)
+
+    def regex_ok():
+        """当前位置的 `/` 能是正则开头吗：前面最近的非空白字符不是标识符 / 数字 / ) ] } . 引号。"""
+        for j in range(len(out) - 1, -1, -1):
+            s = out[j].rstrip('\n \t')
+            if not s:
+                continue
+            c = s[-1]
+            return not (c.isalnum() or c in '_$)]}\'"`.')
+        return True
+
+    while i < n:
+        c = src[i]
+        if src.startswith('//', i) and not (i > 0 and src[i - 1] == ':'):
+            j = src.find('\n', i)
+            j = n if j < 0 else j
+            out.append(blank(src[i:j])); i = j; continue
+        if src.startswith('/*', i):
+            j = src.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            out.append(blank(src[i:j])); i = j; continue
+        if literals and c in '\'"`':
+            q = c
+            j = i + 1
+            while j < n:
+                if src[j] == '\\':
+                    j += 2; continue
+                if src[j] == q:
+                    break
+                j += 1
+            end = min(j + 1, n)
+            out.append(blank(src[i:end])); i = end; continue
+        if literals and c == '/' and i + 1 < n and src[i + 1] not in '/*' and regex_ok():
+            j = i + 1
+            while j < n:
+                ch = src[j]
+                if ch == '\\':
+                    j += 2; continue
+                if ch == '[':
+                    j += 1
+                    while j < n and src[j] != ']':
+                        j += 2 if src[j] == '\\' else 1
+                    j += 1; continue
+                if ch == '/':
+                    j += 1
+                    while j < n and src[j].isalpha():
+                        j += 1
+                    break
+                if ch == '\n':
+                    j = i + 1; break
+                j += 1
+            out.append(blank(src[i:j])); i = j; continue
+        out.append(c); i += 1
+    return ''.join(out)
+
+
+def scan_host_calls(files=None, root=ROOT):
+    """F0：酒馆 / 酒馆助手的接口名与全局对象只许出现在适配层里。引擎源码剥注释、字符串与正则字面量后
+    按 TH_API 名单扫裸引用与成员访问（`window.Mvu`、`Mvu.getMvuData`、`getChatMessages(…)`），命中即违规（硬零）。
+    纯函数模块收「取法函数」当参数、按名字字符串要接口不算违规——名字在字符串里，真调用必须经调用方递进来的
+    host.fn，闸门因此仍然只认一个出口。files 可显式给（门控自测用）。"""
+    names = th_api_names(root)
+    rx = re.compile(r'(?:\?\.|\.)?\b(' + '|'.join(re.escape(n) for n in names) + r')\b(?!\s*[:=](?![:=]))')
+    hits = {}
+    targets = list(host_check_files(files, root))
+    for p in targets:
+        rel = rel_of(p, root)
+        raw = p.read_text(encoding='utf-8')
+        if str(p).endswith('.html'):
+            raw = re.sub(r'<!--.*?-->', lambda m: ''.join('\n' if c == '\n' else ' ' for c in m.group(0)), raw, flags=re.S)
+        src = strip_js(raw, literals=True)
+        found = [(line_of(src, m.start()), f"直连宿主接口「{m.group(0)}」——改经 {HOST_ADAPTER}（host.fn/ok 或分组接口）")
+                 for m in rx.finditer(src)]
+        if found:
+            hits[rel] = found
+    return hits, len(targets)
+
+
+def host_check_files(files=None, root=ROOT):
+    """检查 10 的扫描面 = 引擎文件去掉适配层本身。"""
+    return [p for p in (engine_files(root) if files is None else [Path(f) for f in files])
+            if rel_of(p, root) != HOST_ADAPTER]
+
+
+def check_host_calls(files=None, root=ROOT):
+    hits, n = scan_host_calls(files, root)
+    bad = []
+    for rel in sorted(hits):
+        for line, msg in sorted(hits[rel])[:8]:
+            bad.append(f"{rel}:{line}: {msg}")
+        if len(hits[rel]) > 8:
+            bad.append(f"{rel}: 另有 {len(hits[rel]) - 8} 处同类违规")
+    return bad, n, len(hits)
+
+
 def current_counts(root=ROOT):
     """当前各栏的按文件违规计数（只含非零文件）；--init / --update-baseline 用。"""
     _, li = check_line_count(baseline={}, root=root)
@@ -633,7 +759,7 @@ def _cli(args):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description='架构看门狗（8 道防线 + 只减不增账本）')
+    ap = argparse.ArgumentParser(description='架构看门狗（10 道防线 + 只减不增账本）')
     ap.add_argument('--init-baseline', action='store_true', help='账本不存在时首次生成')
     ap.add_argument('--update-baseline', action='store_true', help='下调账本到当前计数（只减不增）')
     args = ap.parse_args(argv)
@@ -703,12 +829,17 @@ def main(argv=None):
     note_lowerable(info, 'empty_catch')
     fails += bad
 
+    bad, n_files, n_hit_files = check_host_calls()
+    print(f"  [宿主接口] 引擎 {n_files} 个文件（适配层除外），TH_API 名单直连须为零"
+          f"（所有酒馆 / 酒馆助手调用走 {HOST_ADAPTER}）")
+    fails += bad
+
     if fails:
         print(f"架构看门狗：{len(fails)} 处违规")
         for f in fails:
             print(f"  {f}")
         return 1
-    print("架构看门狗：9 道防线全过")
+    print("架构看门狗：10 道防线全过")
     return 0
 
 
