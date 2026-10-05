@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T16:12:25Z",
+ "at": "2026-10-05T16:18:51Z",
  "files": {
   "map/app/about-build.mjs": "f7fbf3a41692572fa709f69f5dfea8b82551225a17501ce5ec087ed321fa57ce",
   "map/app/ai-cards.mjs": "9bb771fe7cc84ea0d9d119a199a36f13eb5361a6a5f27280f3f3b0e0a7e2df4d",
@@ -315,5 +315,5 @@
   "map/viewer.html": "98e35490d271aa569412c8328d967e92c4dd6d8402b1ad45e5f02640cfb0c0ba",
   "map/worldbook-peek-view.mjs": "7c83fe30813b0c01a762d8cded92dbf9d524f012a2767193e5c6751c7eebd0c0"
  },
- "head_sha": "deab06ad4a47debac1a7b5872c6f3cacca3c99e6"
+ "head_sha": "d50033e1c85626d4d417f7084cbf862ac2c7706a"
 }
