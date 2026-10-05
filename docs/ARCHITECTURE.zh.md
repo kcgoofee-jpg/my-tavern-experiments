@@ -37,7 +37,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 由此得出的规则：
 
 - **`map/core` 不指向任何别处。** 不许有离开 `map/core/` 的相对 import（看门狗检查 2），除登记的单一属主（`storage.mjs`、`logbuf.mjs`、`room-gallery-db.mjs`）外不许碰宿主全局。
-- **`map/tavern` 是宿主侧。** 只有 `mvu-bridge.mjs` 可以碰 `Mvu` / `SillyTavern` 全局；纯流水线（`context`、`msgtext`、`sanitize`、`preset`）完全不碰宿主全局。
+- **`map/tavern` 是宿主侧。** 只有 `host-adapter.mjs` 可以碰宿主全局（`Mvu`、`SillyTavern` 与酒馆助手的接口）；别的模块都向它要，`mvu-bridge.mjs` 是引擎面向它那组 chat / mvu 能力的包装。纯流水线（`context`、`msgtext`、`sanitize`、`preset`）完全不碰宿主全局。
 - **查看器外挂之间只经 `plugins` 互相找到。** app 模块显式 import `app/state.mjs` 与它旁边的小工具模块（`dom-helpers.mjs`、`protocol-stamp.mjs`、`text-lookup.mjs` 等）里的共享状态；根目录外挂 import 同一份核心状态，彼此（以及不保证已加载的 app 模块）经 `app/plugins.mjs` 的 `P` 注册表相见；没加载的外挂是 `undefined`，调用方自己带守卫。查看器要用的纯 `tavern/` 模块（`events-parse`、`characters-parse`、`mvu-readers`、`picker`、`compose-templates`）和宿主用的是同一批文件，用按 `document.baseURI` 解析的动态 `import()` 加载，所以在 `srcdoc` 里也能用。
 - **包只是数据。** 卡的原名只原样出现在 `map/packs/**`、`map/data/**` 和 `tools/**` 下的构建工具里。
 - **`map/estate/**`、`map/props/*/**`、`map/vendor/**`、`map/packs/**`、`map/data/**` 不算引擎源码**，只减不增账本（§9）从不扫描它们；`map/estate/` 是第一个包的三维页。
@@ -277,6 +277,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `follow-pin.mjs` | 跟随 / 分支加载地址钉到头提交号；检查更新走哪条链的判定。 |
 | `gallery-flow.mjs` | 媒体来源的宿主侧（K-R106），由 `chars-flow` 创建：每个聊天读一次卡的图片表，每轮扫聊天楼层正文里的标记（一楼的地点经 `MVUBridge.floorPlace`，K-R105），发 `eden-map:media`；回应 `eden-map:media-ask`；开关 `edenMapGallery`（默认开）能关掉；什么都不存。 |
 | `host-about.mjs` | 版本信息与检查更新的编排，所有副作用由外部注入。 |
+| `host-adapter.mjs` | F0 宿主适配层，引擎与宿主相见的唯一一处：接口名表（`TH_API`）、三种取法（`fn` 全局 → 命名空间、`raw` / `okRaw` 只认全局、`hfn` 再退父窗口命名空间）与能力分组 `events` / `chat` / `mvu` / `vars` / `inject` / `wb` / `macro` / `ui`。接口缺了安静按旧行为降级；F1 的原生实现必须给同一个对象形状。看门狗检查 10 守住它。 |
 | `host-api.mjs` | 本机扩展接口 `window.EdenMap`（订阅、头像压缩）与酒馆助手侧的暴露：脚本按钮、类宏、脚本说明、世界书全自动。`createHostApi(host)`。 |
 | `host-checks.mjs` | 启动自检、首次运行自检卡、宿主提示、自动检查更新与版本切换。`createHostChecks(host)`。 |
 | `host-lifecycle.mjs` | 宿主实例生命周期：接管旧实例、挂面板 DOM、登记监听器、清理钩子。 |
@@ -292,7 +293,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `model-texts.mjs` | 会送到模型的文本清单（状态行「已有字段跳过」用）与不注入的原因。 |
 | `modes-flow.mjs` | 宿主侧的交互方式 (a)(d)(e)：状态行与空间坐标契约注入、检查点、地点冲突自检。`createModesFlow(host)`。 |
 | `msgtext.mjs` | 消息正文解析预处理：解析前剥掉思考块与变量更新块。 |
-| `mvu-bridge.mjs` | MVUBridge：唯一允许碰 `Mvu` / `SillyTavern` 的模块；快照、`getHere` 回退、聊天变量、名册读取。 |
+| `mvu-bridge.mjs` | MVUBridge：快照、`getHere` 回退、聊天变量、名册读取；它碰宿主的一切都经 `host-adapter.mjs`。 |
 | `mvu-readers.mjs` | MVU 数据与地图自有自定义数据的纯读取器（名称、着装、按包的槽位字段读名册行、立绘、时间与时段）。 |
 | `mvu-snapshot.mjs` | MVU 快照选取与生成状态规则。 |
 | `nav-ops.mjs` | 宿主侧的领航员叠加（K-R86）：给线索与标注盖楼层与地图章，20 楼后淘汰，每个列表最多 12 条。纯函数；只在会话里。 |
@@ -411,7 +412,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 
 ```
 Mvu / SillyTavern globals
-        ▲  (only tavern/mvu-bridge.mjs touches them)
+        ▲  (only tavern/host-adapter.mjs touches them)
         │
     MVUBridge ◄────────┐                    ┌──► ledger (core/ledger.mjs) + varsync (tavern/settlement-guard.mjs)
                        │                    │
@@ -427,7 +428,7 @@ ContextPipeline ◄──► host entry  tavern/eden-map.js ──► protocol S
 
 ```
 Mvu / SillyTavern globals
-        │  (only tavern/mvu-bridge.mjs touches them)
+        │  (only tavern/host-adapter.mjs touches them)
         ▼
 MVUBridge ─────────► ContextPipeline (tavern/context.mjs; msgtext / sanitize / preset feed it)
                         │  pure data in / out: message window, round, roster, tags, trips

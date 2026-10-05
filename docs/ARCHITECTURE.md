@@ -46,8 +46,9 @@ Rules that follow:
 
 - **`map/core` points at nothing.** No relative import that leaves `map/core/` (checked by watchdog check 2), and
   no host globals except the registered single owners (`storage.mjs`, `logbuf.mjs`, `room-gallery-db.mjs`).
-- **`map/tavern` is the host side.** Only `mvu-bridge.mjs` may touch the `Mvu` / `SillyTavern` globals; the pure
-  pipelines (`context`, `msgtext`, `sanitize`, `preset`) touch no host global at all.
+- **`map/tavern` is the host side.** Only `host-adapter.mjs` may touch the host globals (`Mvu`, `SillyTavern`,
+  the TavernHelper APIs); every other module asks it, and `mvu-bridge.mjs` is the engine-facing wrapper over its chat and
+  MVU groups. The pure pipelines (`context`, `msgtext`, `sanitize`, `preset`) touch no host global at all.
 - **Viewer plugins meet each other only through `plugins`.** App modules import shared state explicitly from
   `app/state.mjs` and the small helper modules beside it (`dom-helpers.mjs`, `protocol-stamp.mjs`, `text-lookup.mjs`, …); root plugins import that same core state and reach one another (and app
   modules that are not guaranteed to be loaded) through the `plugins` registry in `app/plugins.mjs`; a missing plugin is
@@ -297,6 +298,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `follow-pin.mjs` | Follow / branch load addresses pinned to the head sha; update-channel decision. |
 | `gallery-flow.mjs` | Host side of the media source (K-R106), made by `chars-flow`: reads the card's picture table once per chat, scans the chat floors' text for tags each round (the place of a floor via `MVUBridge.floorPlace`, K-R105), sends `eden-map:media`; answers `eden-map:media-ask`; the switch `edenMapGallery` (default on) turns it off; nothing is stored. |
 | `host-about.mjs` | Version info and update check orchestration, all effects injected. |
+| `host-adapter.mjs` | F0 host adapter, the single place the engine meets the host: the API name table (`TH_API`), the three lookup semantics (`fn` global-then-namespace, `raw`/`okRaw` global-only, `hfn` plus the parent namespace) and the capability groups `events` / `chat` / `mvu` / `vars` / `inject` / `wb` / `macro` / `ui`. Missing APIs degrade quietly; the native (F1) implementation must provide the same object shape. Enforced by watchdog check 10. |
 | `host-api.mjs` | The local `window.EdenMap` extension API (subscriptions, avatar shrinking) and the TavernHelper-side exposure: script buttons, macros, script info, worldbook automation. `createHostApi(host)`. |
 | `host-checks.mjs` | Startup self-check, first-run card, host toasts, auto update check and version switching. `createHostChecks(host)`. |
 | `host-lifecycle.mjs` | Host instance lifecycle: takeover of old instances, panel DOM mount, listener registration, cleanup hooks. |
@@ -312,7 +314,7 @@ The host side: the entry script, host glue, and pure pipelines that the host and
 | `model-texts.mjs` | Texts that reach the model (for the state line's skip rule) and the no-injection reasons. |
 | `modes-flow.mjs` | Interaction modes (a)(d)(e) on the host side: state line and spatial contract injection, checkpoint, location conflict check. `createModesFlow(host)`. |
 | `msgtext.mjs` | Message text pre-processing: strips reasoning blocks and variable-update blocks before parsing. |
-| `mvu-bridge.mjs` | MVUBridge: the only module allowed to touch `Mvu` / `SillyTavern`; snapshots, `getHere` fallbacks, chat variables, roster reads. |
+| `mvu-bridge.mjs` | MVUBridge: snapshots, `getHere` fallbacks, chat variables, roster reads; every host read it does goes through `host-adapter.mjs`. |
 | `mvu-readers.mjs` | Pure readers for MVU data and the map's own custom data (names, outfit, roster rows through the pack's slot fields, portraits, time and period bands). |
 | `mvu-snapshot.mjs` | MVU snapshot selection and generation-state rules. |
 | `nav-ops.mjs` | Navigator overlays on the host (K-R86): stamps clues and markers with the floor and the map, ages them out after 20 messages, caps each list at 12. Pure; session only. |
@@ -435,7 +437,7 @@ modules reach each other through the one `host` deps bag; nothing hands data alo
 
 ```
 Mvu / SillyTavern globals
-        ▲  (only tavern/mvu-bridge.mjs touches them)
+        ▲  (only tavern/host-adapter.mjs touches them)
         │
     MVUBridge ◄────────┐                    ┌──► ledger (core/ledger.mjs) + varsync (tavern/settlement-guard.mjs)
                        │                    │
@@ -451,7 +453,7 @@ ContextPipeline ◄──► host entry  tavern/eden-map.js ──► protocol S
 
 ```
 Mvu / SillyTavern globals
-        │  (only tavern/mvu-bridge.mjs touches them)
+        │  (only tavern/host-adapter.mjs touches them)
         ▼
 MVUBridge ─────────► ContextPipeline (tavern/context.mjs; msgtext / sanitize / preset feed it)
                         │  pure data in / out: message window, round, roster, tags, trips

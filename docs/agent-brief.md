@@ -26,9 +26,11 @@
 2. **Ratchet ledger.** File length ≤ 400 lines, no bare z-index (tokens only), no inline appearance styles, no card
    terms. Existing offenders are recorded in `tools/arch_baseline.json` and may only shrink; anything new that
    violates fails `tools/check_architecture.py` (runs in smoke).
-3. **One-way data flow.** MVUBridge (`map/tavern/mvu-bridge.mjs`, the only module allowed to touch the `Mvu` /
-   `SillyTavern` globals) → ContextPipeline (`map/tavern/context.mjs`) → ledger (`map/core/ledger.mjs`) → protocol
-   (`map/core/protocol.mjs`) → viewer. The viewer sends intents up; it never writes host state.
+3. **One-way data flow.** MVUBridge (`map/tavern/mvu-bridge.mjs`) → ContextPipeline (`map/tavern/context.mjs`) → ledger
+   (`map/core/ledger.mjs`) → protocol (`map/core/protocol.mjs`) → viewer. The viewer sends intents up; it never writes
+   host state. Since F0 the only module allowed to touch the host globals (`Mvu`, `SillyTavern`, the TavernHelper API
+   functions) is the adapter `map/tavern/host-adapter.mjs`; the bridge and every other module ask it
+   (watchdog check 10, plus the isolation contract in `tests/mvu_bridge.test.mjs`).
 4. **The chat log is the only truth.** Everything the map shows must be recomputable from the chat floors; caches
    (keyframes, stash) are droppable and a recompute must match item for item. Never invent state without an
    explicit physical action in the text.

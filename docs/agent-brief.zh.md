@@ -15,7 +15,7 @@
 
 1. **引擎零业务词。** `map/core`、`map/app`、`map/tavern`、`map/ui`、`map/three`、`map/*.mjs`、`map/viewer.html`、`map/props/viewer3d.html` 以及核心 i18n 词典里，不许出现卡专有的名字、地点、状态或等级。卡的原名只原样出现在包数据（`map/packs/**`、`map/data/**`）和构建侧工具（`tools/**`）里。界面文案对所有包一律中性，伊甸也不例外；包可以通过清单的 `strings` 覆盖文案。
 2. **只减不增账本。** 单文件 ≤ 400 行、不许裸 z-index（只用令牌）、不许内联外观样式、不许卡专有名词。现有违规记在 `tools/arch_baseline.json`，只许减少；新增违规会让 `tools/check_architecture.py` 失败（smoke 里会跑）。
-3. **单向数据流。** MVUBridge（`map/tavern/mvu-bridge.mjs`，全仓唯一允许碰 `Mvu` / `SillyTavern` 全局的模块）→ ContextPipeline（`map/tavern/context.mjs`）→ 账本（`map/core/ledger.mjs`）→ 协议（`map/core/protocol.mjs`）→ 查看器。查看器只向上发意图，不写宿主状态。
+3. **单向数据流。** MVUBridge（`map/tavern/mvu-bridge.mjs`）→ ContextPipeline（`map/tavern/context.mjs`）→ 账本（`map/core/ledger.mjs`）→ 协议（`map/core/protocol.mjs`）→ 查看器。查看器只向上发意图，不写宿主状态。F0 起全仓唯一允许碰宿主全局（`Mvu`、`SillyTavern`、酒馆助手的接口函数）的是适配层 `map/tavern/host-adapter.mjs`；桥和其余模块都向它要（看门狗检查 10 与 `tests/mvu_bridge.test.mjs` 的隔离契约）。
 4. **聊天记录是唯一真相。** 地图显示的一切都必须能从聊天楼层重算；缓存（关键帧、藏物）随时可丢，重算结果必须逐项一致。文本里没有明确的实物动作，就不许凭空造状态。
 5. **绝不写卡的 `stat_data`**（它的 MVU schema 会拒绝未知键），也不碰用户自己的世界书——只动我们的附加书，以及带我们 `extra.eden_id` 标记的条目。地图自己的状态存在包的聊天变量里（伊甸是 `eden_map`）。
 6. **对用户安静，对日志不沉默。** 缺依赖就悄悄降级，不弹阻塞对话框（不许出现「去后台设置 X」这类拦路提示）；但每个被捕获的失败都要经 `core/logbuf.mjs`（或被它截获的 `console.warn`）记下，带一个点名模块的短标签，这样它才会进反馈报告。空 catch 只留给「预期且无害」的失败（存储配额、隐私模式、有明确默认值的 JSON 解析），并且要写注释说明原因；`tools/check_architecture.py` 按文件统计空 catch，只许减少。新开关默认关，并且要登记：存储键进 `map/core/storage.mjs`，协议字段进 `map/core/protocol.mjs` 的 SCHEMA，中英文案齐备。
