@@ -129,7 +129,7 @@ function declare(layer) {
   states.set(id, st);
   const canvas = CANVAS.includes(layer.type);
   if (canvas) st.cl = canvasLayer({ key: 'lyr.' + id, slot: layer.slot, cls: 'lyr-cv', still: true, frame: frameOf(st), idle: () => !st.app || (layer.type === 'flow' && !st.feats.length) });
-  if (layer.type === 'sound') st.snd = soundLayer(layer, { id, data: () => soundData(layer) });
+  if (layer.type === 'sound') st.snd = soundLayer(layer, { id, data: () => soundData(layer), base: PACK?.base ?? '' });
   loadFile(layer, PACK?.base ?? '', later);
   registry.register({ id, slot: layer.slot, kind: canvas ? 'canvas' : st.snd ? 'dom' : 'osd', order: 50, type: layer.type, origin: layer.origin || 'pack', source: layer.source, style: layer.style, filter: layer.filter,
     menu: layer.menu ? { ...layer.menu, id: 'lyr-' + id, boxId: 'lyrBox-' + id } : undefined, applies: layer.applies, legend: layer.legend,

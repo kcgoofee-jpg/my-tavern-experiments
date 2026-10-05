@@ -1,10 +1,14 @@
-// 程序化空间环境音效（Part 4-4，2026-09-30）纯核心：不采样、不下载音频文件——WebAudio 按配方合成
-// （滤波噪声 = 风 / 雨 / 噼啪，谐波振荡器 = 机械嗡鸣）。配方表 + 场景规则都是纯数据：数据来自 `sound` 图层（docs/layers-schema.md §12，K-R89）的 data——
+// 程序化空间环境音效（Part 4-4，2026-09-30）纯核心：不采样、不取文件——WebAudio 按配方合成（滤波噪声 = 风 / 雨 / 噼啪，谐波振荡器 = 机械嗡鸣），
+// 或引用 pack 自备的无缝循环音频文件（kind 'file'：本核心只校验路径，取文件、解码、播放都在 app 侧）。配方表 + 场景规则都是纯数据：数据来自 `sound` 图层（docs/layers-schema.md §12，K-R89）的 data——
 // { "rules": [ { "match": { "map": "town_harbour" }, "scenes": [ { "id": "wind", "gain": 0.4 } ] } ], "recipes": { 自定义配方… } }（内联，或 file: 指向的 JSON）。
 // 规则首个全键命中者生效；天气 rain/storm 自动附加 rain 场景（app 侧）。渲染层 app/sound-block.mjs 把配方接到 WebAudio 节点图。
 // 纯函数、不碰 DOM / 全局（core 铁律）；node 单测 tests/ambience.test.mjs。
 
-/** 内置配方（数据即声音）：kind = noise（滤波噪声，循环白噪声缓冲）| osc（谐波振荡器组）；
+/** 配方文件路径：相对包根，只允许 .ogg / .mp3，不许 ../、绝对路径或外链（渲染层拼接后 fetch，越界即静默不出声）。 */
+const SRC_RE = /^[A-Za-z0-9][A-Za-z0-9_./-]{0,160}\.(ogg|mp3)$/;
+const srcOk = s => typeof s === 'string' && SRC_RE.test(s) && !s.includes('..');
+
+/** 内置配方（数据即声音）：kind = noise（滤波噪声，循环白噪声缓冲）| osc（谐波振荡器组）| file（pack 自备无缝循环，src 必填、alt 可选的备用编码）；
  *  filter = biquad 参数；lfo = 增益呼吸（rate Hz / depth 0..1 / wave sine|random）；gain 基准 0..1。 */
 export const RECIPES = {
   wind:     { kind: 'noise', filter: { type: 'bandpass', freq: 320, q: 0.55 }, lfo: { rate: 0.07, depth: 0.55 }, gain: 0.5 },
@@ -17,7 +21,8 @@ export const RECIPES = {
 };
 
 const clamp01 = x => Math.max(0, Math.min(1, +x || 0));
-const recipeOk = r => r && typeof r === 'object' && (r.kind === 'noise' || r.kind === 'osc') && clamp01(r.gain) > 0;
+const recipeOk = r => !!r && typeof r === 'object' && clamp01(r.gain) > 0
+  && (r.kind === 'noise' || r.kind === 'osc' || (r.kind === 'file' && srcOk(r.src) && (r.alt === undefined || srcOk(r.alt))));
 
 /** 配置规范化：规则保序、match 必须是对象、scenes 收敛为 { id, gain }；自定义 recipes 覆盖 / 追加内置。 */
 export function normAmbience(cfg) {

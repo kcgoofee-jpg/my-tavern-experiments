@@ -1,14 +1,17 @@
-// The `sound` building block (docs/layers-schema.md §12, K-R89): procedural ambience for a pack-declared layer. The pure engine is core/ambience.mjs (recipes, rules, mixing plan);
-// this file connects a plan to Web Audio (filtered noise and harmonic oscillators, no audio files) for the declared-layer host, which owns the menu row and the stored choice.
-// Audio never starts by itself: a sound row is off until the user switches it on (core/layer-geometry initialVisible), the AudioContext is created only after a user gesture
-// (switching the row on is one; a stored "on" waits for the first click or key), and it is suspended while the page is hidden or no sound layer is live (visible and applicable).
+// The `sound` building block (docs/layers-schema.md §12, K-R89): ambience for a pack-declared layer. The pure engine is core/ambience.mjs (recipes, rules, mixing plan);
+// this file connects a plan to Web Audio for the declared-layer host, which owns the menu row and the stored choice: synthesized scenes (filtered noise, harmonic oscillators)
+// and `file` scenes — the pack's own seamless audio loops (.ogg with an optional .mp3 fallback), fetched once per url, decoded, looped sample-accurately; a failed fetch or
+// decode leaves that scene silent (self-heal, no dialog). Audio never starts by itself: a sound row is off until the user switches it on (core/layer-geometry initialVisible),
+// the AudioContext is created only after a user gesture (switching the row on is one; a stored "on" waits for the first click or key), and it is suspended while the page is
+// hidden or no sound layer is live (visible and applicable).
 // The scene set follows the open view, the day / night band (`eden-map:clock`) and the weather (WeatherApi); a plan whose scene ids did not change only moves the gains.
 import { normAmbience, planFor } from '../core/ambience.mjs';
 import { currentMapId } from './state.mjs';
 import { busOn, busOff } from './bus.mjs';
 
 const NOISE_S = 2.5, THROTTLE = 2000;
-const layers = new Map();   // layer id -> { live, ab, src, sig, nodes: Map(scene id -> { set, stop }), plan }
+const layers = new Map();   // layer id -> { live, ab, src, sig, nodes: Map(scene id -> { set, stop }), plan, base }
+const loaded = new Set();   // file urls whose AudioBuffer is ready this page
 let ctx = null, master = null, night = false, hooked = false, armed = false, wait = 0, last = 0, noise = null;
 
 const gestured = () => { try { return !!navigator.userActivation?.hasBeenActive; } catch (e) { return false; } };
@@ -19,6 +22,16 @@ function ensureCtx() {
   master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
   return ctx;
 }
+const urlCache = new Map();
+/** fileBuf(url) -> the decoded loop buffer (one fetch + decode per url per page; failures cache as null and stay silent). */
+function fileBuf(url) {
+  if (!urlCache.has(url)) urlCache.set(url, fetch(url)
+    .then(r => (r.ok ? r.arrayBuffer() : null))
+    .then(b => (b && ctx && ctx.decodeAudioData(b)))
+    .then(buf => { if (buf) loaded.add(url); return buf; })
+    .catch(() => null));
+  return urlCache.get(url);
+}
 const noiseBuf = () => {
   if (noise) return noise;
   noise = ctx.createBuffer(1, Math.round(ctx.sampleRate * NOISE_S), ctx.sampleRate);
@@ -26,10 +39,20 @@ const noiseBuf = () => {
   return noise;
 };
 /** one scene = a small node graph: { set(gain), stop() } */
-function buildScene(recipe, gain) {
+function buildScene(recipe, gain, base) {
   const g = ctx.createGain(); g.gain.value = gain; g.connect(master);
   const stops = [];
-  if (recipe.kind === 'noise') {
+  if (recipe.kind === 'file') {   // the pack's loop: start once the buffer is ready; a scene stopped before that never starts (silent self-heal)
+    let live = true;
+    stops.push(() => { live = false; });
+    const url = (base || '') + recipe.src;
+    fileBuf(url).then(buf => (buf || !recipe.alt ? buf : fileBuf((base || '') + recipe.alt))).then(buf => {
+      if (!live || !buf || !ctx || ctx.state === 'closed') return;
+      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(g);
+      try { src.start(0, Math.random() * buf.duration); } catch (e) { try { src.start(0); } catch (e2) { console.warn('[map] sound-block: loop start failed', e2); } }
+      stops.push(() => { try { src.stop(); } catch (e) { console.warn('[map] sound-block: loop stop failed', e); } });
+    }).catch(e => console.warn('[map] sound-block: file loop scene failed', e));
+  } else if (recipe.kind === 'noise') {
     const src = ctx.createBufferSource(); src.buffer = noiseBuf(); src.loop = true; let last = src;
     if (recipe.filter) { const f = ctx.createBiquadFilter(); f.type = recipe.filter.type || 'bandpass'; f.frequency.value = recipe.filter.freq || 500; f.Q.value = recipe.filter.q ?? 1; src.connect(f); last = f; }
     last.connect(g); src.start(0, Math.random() * NOISE_S); stops.push(() => src.stop());
@@ -56,7 +79,7 @@ function replan(s) {
   const sig = s.plan.map(p => p.id).join(',');
   if (sig === s.sig) { for (const p of s.plan) s.nodes.get(p.id)?.set(p.gain); return; }
   for (const n of s.nodes.values()) n.stop(); s.nodes.clear();
-  for (const p of s.plan) s.nodes.set(p.id, buildScene(p.recipe, p.gain));
+  for (const p of s.plan) s.nodes.set(p.id, buildScene(p.recipe, p.gain, s.base));
   s.sig = sig;
 }
 /** settle(userGesture): create / resume / suspend the context to match the layers' state, then replan every layer */
@@ -81,12 +104,15 @@ function hook() {
   if (hooked) return; hooked = true;
   busOn({ key: 'sound.hostMsg', type: 'message', fn: e => { if (!window.__isFromHost?.(e)) return; const t = e.data?.type; if (t === 'eden-map:clock') { night = !!e.data.night; soon(); } else if (t === 'eden-map:events') soon(); } });
   busOn({ key: 'sound.visible', type: 'visibilitychange', target: document, fn: () => { if (!ctx) return; if (document.hidden) ctx.suspend?.().catch(() => {}); else if (anyLive()) ctx.resume?.().catch(() => {}); } });
-  window.SoundApi = { describe: () => [...layers].map(([id, s]) => ({ id, active: s.live && !!ctx && ctx.state !== 'closed', scenes: s.live ? (s.plan || []).map(p => p.id) : [] })), contexts: () => (ctx ? 1 : 0) };
+  window.SoundApi = { describe: () => [...layers].map(([id, s]) => ({ id, active: s.live && !!ctx && ctx.state !== 'closed', scenes: s.live ? (s.plan || []).map(p => p.id) : [],
+      gains: s.live ? (s.plan || []).map(p => +p.gain.toFixed(3)) : [],
+      loops: s.live ? (s.plan || []).filter(p => p.recipe.kind === 'file').map(p => ({ id: p.id, ready: loaded.has((s.base || '') + p.recipe.src) })) : [] })),
+    contexts: () => (ctx ? 1 : 0), state: () => (ctx ? ctx.state : 'none') };
 }
 
-/** soundLayer(layer, { id, data }) -> { mount, unmount, setVisible, live(on) } for the declared-layer host; `data()` returns the ambience data of the layer (inline or its loaded file) */
-export function soundLayer(layer, { id = layer.id, data = () => layer.data } = {}) {
-  const s = { live: false, ab: null, src: undefined, sig: '', nodes: new Map(), plan: [], data };
+/** soundLayer(layer, { id, data, base }) -> { mount, unmount, setVisible, live(on) } for the declared-layer host; `data()` returns the ambience data of the layer (inline or its loaded file), `base` is the pack's base (a `file` recipe's src is relative to it) */
+export function soundLayer(layer, { id = layer.id, data = () => layer.data, base = '' } = {}) {
+  const s = { live: false, ab: null, src: undefined, sig: '', nodes: new Map(), plan: [], data, base };
   layers.set(id, s);
   return {
     mount() { hook(); return true; },
