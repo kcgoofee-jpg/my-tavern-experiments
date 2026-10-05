@@ -556,6 +556,8 @@ def check_tc_globals(files=None, root=ROOT):
 # ---------------------------------------------------------------- 检查 10：宿主接口名（F0，硬零、无账本）
 
 HOST_ADAPTER = 'map/tavern/host-adapter.mjs'
+HOST_NATIVE = 'map/tavern/host-native.mjs'
+ADAPTER_FILES = {HOST_ADAPTER, HOST_NATIVE}
 TH_API_BLOCK_RE = re.compile(r'export const TH_API\s*=\s*Object\.freeze\(\[(.*?)\]\)', re.S)
 QUOTED_RE = re.compile(r"'([^']+)'")
 
@@ -658,9 +660,9 @@ def scan_host_calls(files=None, root=ROOT):
 
 
 def host_check_files(files=None, root=ROOT):
-    """检查 10 的扫描面 = 引擎文件去掉适配层本身。"""
+    """检查 10 的扫描面 = 引擎文件去掉适配层本身（TH 版与原生版都豁免）。"""
     return [p for p in (engine_files(root) if files is None else [Path(f) for f in files])
-            if rel_of(p, root) != HOST_ADAPTER]
+            if rel_of(p, root) not in ADAPTER_FILES]
 
 
 def check_host_calls(files=None, root=ROOT):

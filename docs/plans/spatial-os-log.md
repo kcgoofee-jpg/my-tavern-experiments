@@ -2484,3 +2484,15 @@ blocker: none
 open: F1 gives the same object shape a native implementation — nothing in `map/**` outside the adapter should need to change, which is the point of this step · I-37 (the chat_iso failures predate F0 and need their own step) · whether `events.on/off` should ever be reachable on a namespace-only host is untested against a real TavernHelper (no computer use in this step; the stub host covers both lookups in `tests/f0_host_adapter.test.mjs`)
 cleanup: done (temp worktree `/tmp/f0-base` and its symlinked `node_modules` removed, `/tmp/f0_*` scratch removed, no preview server or background process left; the F0 worktree itself stays for the orchestrator)
 === END ===
+
+=== RESULT F1 ===
+status: DONE
+items: 1 ✓ 2 ✓
+commits: (to be filled after commit)
+pushed: not pushed
+tests: node 1713/1714 pass (1 skipped, was 1700 before F1 — 13 new parity tests added) | smoke PASS | arch PASS | probes: not run (no browser probe changes in this step)
+deviations: none
+blocker: none
+open: F2 (extension repo with manifest, loader, settings drawer, per-card enable, dual-load handshake) is next · Playwright on a real local SillyTavern deferred to F2/F3 (no GUI driving per standing constraint; the native adapter is tested at the unit level against a fake ST context that mirrors the same state as the TH stub) · MVU write still requires TH (by design — card's MVU schema rejects unknown keys)
+cleanup: done
+=== END ===

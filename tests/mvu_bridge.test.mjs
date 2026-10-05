@@ -225,15 +225,16 @@ function stripLiterals(src) {
   return out;
 }
 
-test('宿主隔离契约：字符串与注释之外，map/tavern 运行时代码里只有 host-adapter.mjs 碰 Mvu / SillyTavern', () => {
+test('宿主隔离契约：字符串与注释之外，map/tavern 运行时代码里只有适配层碰 Mvu / SillyTavern', () => {
   const dir = fileURLToPath(new URL('../map/tavern/', import.meta.url));
   const files = readdirSync(dir).filter(f => /\.(js|mjs)$/.test(f) && !f.startsWith('test-'));   // test-*.html 是手工桩页（按扩展名已排除，双保险）
-  assert.ok(files.includes('host-adapter.mjs'), 'F0：适配层得在这一层'); assert.ok(files.includes('mvu-bridge.mjs')); assert.ok(files.includes('eden-map.js'));
+  const ADAPTERS = new Set(['host-adapter.mjs', 'host-native.mjs']);
+  assert.ok(files.includes('host-adapter.mjs'), 'F0：TH 适配层得在这一层'); assert.ok(files.includes('mvu-bridge.mjs')); assert.ok(files.includes('eden-map.js'));
   for (const f of files) {
     const stripped = stripLiterals(readFileSync(dir + f, 'utf8'));
     const hits = stripped.match(/\b(?:Mvu|SillyTavern)\b/g) ?? [];
-    if (f === 'host-adapter.mjs') assert.ok(hits.length >= 2, '适配层自己必须真的在碰这些全局（否则契约空转）');
-    else assert.deepEqual(hits, [], `${f} 直连了 Mvu / SillyTavern 全局（应经 host-adapter.mjs；桥再向业务模块暴露）`);
+    if (ADAPTERS.has(f)) assert.ok(hits.length >= 2, `${f} 作为适配层必须真的在碰这些全局（否则契约空转）`);
+    else assert.deepEqual(hits, [], `${f} 直连了 Mvu / SillyTavern 全局（应经适配层；桥再向业务模块暴露）`);
   }
 });
 
