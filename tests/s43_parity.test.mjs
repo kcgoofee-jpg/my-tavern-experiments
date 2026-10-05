@@ -130,7 +130,13 @@ test('credits and data paths: the first pack\'s manifest carries the author cred
   const man = J('map/packs/eden/manifest.json'), PK = await import('../map/core/pack.mjs'), R = PK.resolve(man);
   assert.equal(man.credits.card.creator, 'Yehehua');   // the original author's credit stays visible (agent-brief §7)
   assert.equal(man.credits.pack[0].name, 'kcgoofee-jpg'); assert.equal(man.credits.pack[0].url.replace(/^https:\/\//, ''), 'github.com/' + man.cdn.repo);
-  assert.deepEqual(man.credits.assets.map(a => [a.name, a.license]), [['Poly Haven', 'CC0'], ['ambientCG', 'CC0']]);
+  assert.deepEqual(man.credits.assets.map(a => [a.name, a.license]), [['Poly Haven', 'CC0'], ['ambientCG', 'CC0'],
+    ['wind loop — Lajmmoore (Wikimedia Commons, edited into a seamless loop)', 'CC BY-SA 4.0'],
+    ['birds loop — ezwa (Wikimedia Commons, edited into a seamless loop)', 'Public domain'],
+    ['crowd loop — Marble Toast (Wikimedia Commons, edited into a seamless loop)', 'CC0'],
+    ['rail loop — Work With Sounds / Museum of Municipal Engineering (Wikimedia Commons, edited into a seamless loop)', 'CC BY 4.0'],
+    ['factory loop — Work With Sounds / Technical Museum of Slovenia (Wikimedia Commons, edited into a seamless loop)', 'CC BY 4.0'],
+    ['steam loop — Work With Sounds / Konrad Gutkowski (Wikimedia Commons, edited into a seamless loop)', 'CC BY 4.0']]);   // AMBIENT-SOUND: the ambience loops, licence per file
   assert.deepEqual(R.credits, man.credits); assert.deepEqual(R.worldbook, man.worldbook); assert.equal(R.worldbook.prefix, '伊甸地图');
   assert.equal(PK.resolve(J('map/packs/town/manifest.json')).credits, null);   // a pack without credits shows no credit rows
   for (const k of ['worldbook_addon', 'roster', 'maps', 'routine']) assert.ok(man.data[k], k);
