@@ -4,6 +4,7 @@ import { buildReportText, buildIssueLink } from './feedback-report.mjs';
 import * as logbuf from '../core/logbuf.mjs';
 import { $, esc } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { copyText, saveTextFile, openExternal } from './transfer.mjs';
 import { about, selfCheck } from './settings.mjs';
 import { buildInfo } from './topbar.mjs';
 import { mapRegistry, currentMapId } from './state.mjs';
@@ -35,12 +36,7 @@ function gatherInfo() {
   };
 }
 export function buildReport() { return buildReportText(gatherInfo()); }
-function download(text) {
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob); const el = document.createElement('a');
-  el.href = url; el.download = 'eden-map-feedback-' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt';
-  document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+function reportName() { return 'eden-map-feedback-' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt'; }
 export function openFeedback() {
   const info = gatherInfo();
   const baseText = buildReportText(info);
@@ -61,11 +57,22 @@ export function openFeedback() {
       </div>`;
     document.body.appendChild(dlg);
     dlg.querySelector('#fbClose').onclick = () => dlg.close();
-    dlg.querySelector('#fbDownload').onclick = () => download(dlg.querySelector('#fbText').value);
+    dlg.querySelector('#fbDownload').onclick = () => {
+      const b = dlg.querySelector('#fbDownload'), ta = dlg.querySelector('#fbText');
+      const flash = zh => { const old = b.textContent; b.textContent = uiTextOr('feedback.copied', zh); setTimeout(() => { b.textContent = old; }, 1500); };
+      saveTextFile(reportName(), ta.value).then(r => {
+        if (r === 'copied') flash('已复制');                                   // TT：下载会被忽略，已改复制进剪贴板
+        else if (r === 'manual') { ta.focus(); ta.select(); }                  // 对话框在最上层：选这里已有的文本框，不再另挂面板
+      });
+    };
     dlg.querySelector('#fbCopy').onclick = () => {
       const t = dlg.querySelector('#fbText').value, b = dlg.querySelector('#fbCopy');
       const done = () => { b.textContent = uiTextOr('feedback.copied', '已复制'); setTimeout(() => b.textContent = uiTextOr('feedback.copy', '复制'), 1500); };
-      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(done).catch(() => download(t));
+      copyText(t).then(ok => {
+        if (ok) { done(); return; }
+        const ta = dlg.querySelector('#fbText'); ta.focus(); ta.select();       // 三级复制全挂：全选报告文本框让用户手动复制
+        b.textContent = uiTextOr('feedback.select', '已选中，请手动复制'); setTimeout(() => { b.textContent = uiTextOr('feedback.copy', '复制'); }, 2000);
+      });
     };
   }
   // 日志来源切换：本次会话（完整报告视图）或某次历史会话（日志小节换成那一份）
@@ -82,13 +89,12 @@ export function openFeedback() {
   sess.replaceChildren(...opts);
   const show = () => { const i = +sess.value || 0; ta.value = i === 0 ? baseText : buildReportText({ ...info, logLines: all[i].lines, logSessions: [] }); };
   sess.onchange = show; show();
-  // GitHub 预填 issue：新标签打开（noopener）；弹窗被拦时把链接留在只读输入框里供手动复制
+  // GitHub 预填 issue：TT 走系统浏览器接口，其余 window.open；两条都没成时把链接留在只读输入框里供手动复制
   dlg.querySelector('#fbGh').onclick = () => {
     const warns = (info.selfCheckItems || []).filter(x => x && x.status === 'warn').length;
     const url = buildIssueLink({ title: `[eden-map] v${info.version || '?'} build ${info.build || '?'}${warns ? ` · ${warns}⚠` : ''}`, body: ta.value, repo: PACK?.cdn?.repo });   // 反馈提到哪个仓库：清单 cdn.repo（没有就用引擎自己的）
     const link = dlg.querySelector('#fbLink'); link.hidden = false; link.value = url;
-    let w = null; try { w = window.open(url, '_blank', 'noopener'); } catch (e) {}
-    if (!w) { link.focus(); link.select(); }
+    openExternal(url).then(ok => { if (!ok) { link.focus(); link.select(); } });
   };
   if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
 }

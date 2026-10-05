@@ -4,6 +4,7 @@ import { $, iconSvg } from './dom-helpers.mjs';
 import { getJSON } from './json-cache.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { copyText } from './transfer.mjs';
 import { autoKey, effTier, leanBg, tier } from './sharpness-tiers.mjs';
 import { uiText } from './i18n.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
@@ -83,7 +84,7 @@ onBuilt('adv', () => { paintBuild(); $('#build').addEventListener('click', () =>
     'view=' + innerWidth + 'x' + innerHeight, 'base=' + document.baseURI, 'ua=' + navigator.userAgent].join('\n');
   const done = () => { const b = $('#build'); b.textContent = uiText('copied'); setTimeout(() => b.textContent = buildCode, 1500); };
   const show = () => { let t = $('#buildDiag'); if (!t) { t = document.createElement('textarea'); t.id = 'buildDiag'; t.readOnly = true; t.rows = 6; $('#build').closest('.hrow').after(t); } t.value = d; t.select(); };   // 剪贴板不可用：把诊断信息放进只读文本框让用户自己复制（不弹阻塞对话框）
-  (navigator.clipboard ? navigator.clipboard.writeText(d) : Promise.reject()).then(done).catch(show);
+  copyText(d).then(ok => { if (ok) done(); else show(); });   // F3：走三级复制兜底（TT 桥 → 网页剪贴板带超时 → execCommand），网页剪贴板挂住也不会卡在这
 }); });
 export const getText = url => { if (!textCache.has(url)) textCache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).catch(e => { textCache.delete(url); throw e; })); return textCache.get(url); };   // 失败不留在缓存里（接手 review P1）
 // 大版本 2（docs/perf/v2.md）：只预热「走一步就到」的图——同组各层、上级、直接下级（都从节点树读）。

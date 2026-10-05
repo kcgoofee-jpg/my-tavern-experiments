@@ -3,6 +3,7 @@
 // Texts: prof.* (zh + en). Every text goes in through textContent. No dialogs: the name field is inline, delete asks twice on the button itself.
 import { $, iconSvg } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { saveTextFile, revealManual } from './transfer.mjs';
 import { onBuilt, onShow, placeIn, pageEl } from './settings-pages.mjs';
 import { createProfiles } from './profiles.mjs';
 import { BUILTIN, REC_ID, cardKey } from '../core/profiles.mjs';
@@ -74,9 +75,11 @@ function del() {
   if (!delArmed) { delArmed = true; $('#profDel').textContent = tr('prof.del2', '再点一次删除'); setTimeout(() => { delArmed = false; refresh(); }, 4000); return; }
   delArmed = false; api.remove(profile.id); refresh(); say('prof.deleted', '已删除');
 }
-function download() {
+async function download() {
   const { profile } = api.current(), text = api.exportText(profile.id, nameOf(profile)); if (!text) return;
-  const a = el('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = 'eden-map-profile.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 0);
+  const res = await saveTextFile('eden-map-profile.json', text, { type: 'application/json' });   // F3：TT 里 <a download> 被忽略，走复制兜底 / 手动面板
+  if (res === 'copied') say('transfer.copied', '这个环境不下载文件：内容已复制到剪贴板，请粘贴到目标位置。');
+  if (res === 'manual') { revealManual('eden-map-profile.json', text); say('transfer.manual_shown', '这个环境既不能下载也不能复制：内容已显示在下方，请手动复制并存成 {name}', { name: 'eden-map-profile.json' }); }
 }
 function upload(file) {
   if (!file) return; const rd = new FileReader();

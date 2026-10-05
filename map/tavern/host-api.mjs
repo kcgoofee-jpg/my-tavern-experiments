@@ -1,6 +1,7 @@
 // 本机扩展接口 window.EdenMap（E6）与酒馆助手侧的暴露：api 对象、订阅 / 广播、头像压缩、脚本按钮 / 类宏 / 脚本说明 / 世界书全自动（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { createWbAuto, fnGuard, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { EDEN_API, guardApi } from './extension-api-contract.mjs';
 import { createFacts } from './feature-health.mjs';
 export const DEPS = [
@@ -104,7 +105,8 @@ export function createHostApi(host) {
   let tavernhelperApiModule = null, thBtns = null, cardId = null;
   const thReady = import(scriptBase + 'tavern/tavernhelper-api.mjs').then(m => { tavernhelperApiModule = m; thInit(); return m; }).catch(() => null);
   // 任务三：泄露防御网装配（纯净化函数在 sanitize.mjs，tavernhelper-api.mjs 只管取元素与洗净渲染结果）
-  thReady.then(m => { if (m) host.LKF = m.createLeakFence({ retrieve: id => { const f = thFn('retrieveDisplayedMessage'); return f ? f(id) : null; }, log: s => console.info('[eden-map]', s) }); }).catch(() => {});
+  // F3：取楼层 DOM 走适配层 ui.displayedMessage —— 脚本形态照旧调 TH 的接口，原生形态（扩展）查酒馆聊天列。
+  thReady.then(m => { if (m) host.LKF = m.createLeakFence({ retrieve: id => hostAdapter.ui.displayedMessage(id) ?? null, log: s => console.info('[eden-map]', s) }); }).catch(e => console.warn('[map] host-api: leak fence wiring failed', e));
   function thInit() {
     if (life.dead) return;
     // B2 脚本按钮：浮动按钮之外的第二个入口（TH 脚本栏里的「地图」「地图自检」）；句柄走 listen，cleanup 自动撤

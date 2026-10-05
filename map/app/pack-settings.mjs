@@ -6,6 +6,7 @@
 import { $ } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
+import { copyText, saveTextFile, revealManual } from './transfer.mjs';
 import { LANG } from './i18n.mjs';
 import { getJSON } from './json-cache.mjs';
 import { PACK } from './current-pack.mjs';
@@ -67,19 +68,23 @@ async function runExport() {
   const r = exportPack(p.manifest, { userAliases: names, card: { name: c.name, creator: c.creator, version: c.version }, draft: await currentDraft() });
   return r.problems.length ? { problems: r.problems.map(x => x.code) } : { r };
 }
-/** Writes <id>.pack.json (a download) and returns the line to show; used by the pack box and by the edit bar. */
+/** Writes <id>.pack.json (a download, or the TT fallbacks of transfer.mjs) and returns the line to show; used by the pack box and by the edit bar. */
 export async function saveExport() {
   const p = tc(), x = await runExport(); if (!x.r) return T('pack.export_fail', '没有导出：{why}', { why: whyText(x.problems) });
-  const r = x.r, a = document.createElement('a'), url = URL.createObjectURL(new Blob([r.text], { type: 'application/json' }));
-  a.href = url; a.download = p.id + '.pack.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
-  return T('pack.export_done', '已保存 {name}（{kb} KB）。{fits}', { name: p.id + '.pack.json', kb: Math.max(1, Math.round(r.bytes / 1024)), fits: r.fitsCard ? T('pack.export_fits', '可以放进角色卡。') : T('pack.export_nofit', '超过 1 MB：太大，放不进角色卡。') });
+  const r = x.r, name = p.id + '.pack.json';
+  const res = await saveTextFile(name, r.text, { type: 'application/json' });
+  if (res === 'copied') return T('transfer.copied', '这个环境不下载文件：内容已复制到剪贴板，请粘贴到目标位置。');
+  if (res === 'manual') { revealManual(name, r.text); return T('transfer.manual_shown', '这个环境既不能下载也不能复制：内容已显示在下方，请手动复制并存成 {name}', { name }); }
+  return T('pack.export_done', '已保存 {name}（{kb} KB）。{fits}', { name, kb: Math.max(1, Math.round(r.bytes / 1024)), fits: r.fitsCard ? T('pack.export_fits', '可以放进角色卡。') : T('pack.export_nofit', '超过 1 MB：太大，放不进角色卡。') });
 }
 function exportBox(box) {
   const p = tc(); if (!p || p.trust !== 'foreign' || !p.manifest) return;
   const save = async () => note(await saveExport());
   const copy = async () => {
     const x = await runExport(); if (!x.r) return note(T('pack.export_fail', '没有导出：{why}', { why: whyText(x.problems) }));
-    try { await navigator.clipboard.writeText(x.r.compact); note(T('pack.copy_done', '已复制。粘贴到一个新的世界书条目，标题写 spatial_os:pack，并让这个条目保持停用。')); } catch (e) { note(T('pack.copy_fail', '复制失败；请改用「导出为设定包」。')); }
+    if (await copyText(x.r.compact)) { note(T('pack.copy_done', '已复制。粘贴到一个新的世界书条目，标题写 spatial_os:pack，并让这个条目保持停用。')); return; }
+    revealManual('spatial_os-pack.txt', x.r.compact);
+    note(T('pack.copy_fail', '复制失败：内容已显示在下方，请全选手动复制。'));
   };
   box.append(row(btn(T('pack.export', '导出为设定包'), save), btn(T('pack.export_copy', '复制为世界书条目'), copy)), el('small', 'na', T('pack.export_note', '文件里是地图找到并长出来的地点、你给它们起的叫法和角色卡署名；不含聊天状态。')));
 }

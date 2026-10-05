@@ -218,7 +218,13 @@ export function createNativeAdapter(ctx, extKey = 'eden_map') {
     scriptId: () => undefined,
     scriptInfo: () => undefined,
     globalApi: (name, value) => { safe(() => { window[name] = value; }); },
-    displayedMessage: () => undefined,
+    // F3 TT 聊天界面：原生模式下「取某楼层渲染后的 DOM」= 直接查酒馆聊天列（docs/extension-study.md §4），
+    // 与 TH 的 retrieveDisplayedMessage 同义；越界或非数字返回 undefined，调用方（泄露防御网）自行跳过。
+    displayedMessage: id => safe(() => {
+      const n = Math.round(Number(id));
+      if (!Number.isFinite(n) || n < 0) return undefined;
+      return document.querySelector(`#chat .mes[mesid="${n}"]`) ?? undefined;
+    }),
     charData: which => {
       const chid = ctx?.characterId;
       const chars = ctx?.characters;

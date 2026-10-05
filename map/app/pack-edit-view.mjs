@@ -15,6 +15,7 @@ import { createEditor, saveDraft, loadDraft, idbPictures } from './pack-edit.mjs
 import { applyDraft, emptyDraft, overlayText, isEmptyDraft } from '../core/pack-draft.mjs';
 import { viewIdsOf } from '../core/nodes.mjs';
 import { nodePictures } from '../core/pack-media.mjs';
+import { saveTextFile, revealManual } from './transfer.mjs';
 
 const T = (k, zh, v) => uiTextOr(k, zh, v);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -120,7 +121,9 @@ async function exportNow() {
   const d = await currentDraft(), id = pid();
   if (!shipped()) { const { saveExport } = await import('./pack-settings.mjs'); return note(await saveExport()); }
   const nodes = (basePack()?.nodes) || (RT ? RT.tree.ids().map(k => RT.tree.get(k)) : []), text = overlayText(d, { nodes }), name = `${id}.overlay.json`;
-  const a = el('a'), url = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  const res = await saveTextFile(name, text, { type: 'application/json' });   // F3：TT 里 <a download> 被忽略，走复制兜底 / 手动面板
+  if (res === 'copied') return note(T('transfer.copied', '这个环境不下载文件：内容已复制到剪贴板，请粘贴到目标位置。'));
+  if (res === 'manual') { revealManual(name, text); return note(T('transfer.manual_shown', '这个环境既不能下载也不能复制：内容已显示在下方，请手动复制并存成 {name}', { name })); }
   note(T('edit.exported', '已保存 {name}（只含你的改动，交给维护者合并）。', { name }));
 }
 function bar() {

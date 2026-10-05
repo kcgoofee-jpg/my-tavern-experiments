@@ -13,6 +13,7 @@ import * as B from '../tavern/imagegen-bridge.mjs';
 import * as DB from '../core/room-gallery-db.mjs';
 import { makeImageMeta, scopeKey, MAX_DIM, WEBP_QUALITY } from '../core/room-gallery-logic.mjs';
 import { getCustomName, currentScope, galleryChatId } from './room-gallery-panel.js';
+import { copyText, revealManual } from '../app/transfer.mjs';
 
 const STYLE_KEY = 'edenIllustStyleV1';
 const SCENE_KEY = 'edenIllustSceneV1';
@@ -197,7 +198,8 @@ export async function openIllustPanel(roomId, { lang = 'zh', floor = null } = {}
     out.querySelector('.ilp-again').addEventListener('click', run);
     out.querySelector('.ilp-copy').addEventListener('click', async (e) => {
       const txt = B.resultNote(r, prompt, { lang: 'en' });
-      try { await navigator.clipboard.writeText(txt); e.target.textContent = t.copied; } catch (err) { }
+      if (await copyText(txt)) { e.target.textContent = t.copied; return; }
+      revealManual('illustration-prompt.txt', txt);   // TT：三级复制全挂——把手动复制面板挂出来，不静默吞掉
     });
   }
 
