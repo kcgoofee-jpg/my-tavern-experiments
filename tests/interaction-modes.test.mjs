@@ -72,7 +72,7 @@ test('(a) 注入生命周期：普通 / swipe / 重生 / 重载都只有一条�
   // 没有注入接口：不抛
   assert.equal(M.applyState(() => null, 'x', 2), false);
   // 宿主接线：GENERATION_AFTER_COMMANDS 带 type；默认开；设置里深度 / 上限
-  assert.match(HOST, /GENERATION_AFTER_COMMANDS, \(type\) => \{[^\n]*stateInject\(typeof type === 'string' \? type : 'normal'\)/);
+  assert.match(HOST, /onT\('GENERATION_AFTER_COMMANDS', \(type\) => \{[^\n]*stateInject\(typeof type === 'string' \? type : 'normal'\)/);   // F0：onT = 入口的事件登记（事件名向适配层要）
   assert.match(HOST, /lsGet\('edenMapStateInj'\) !== '0'/);
 });
 

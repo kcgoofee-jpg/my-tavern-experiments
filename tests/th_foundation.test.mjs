@@ -95,7 +95,7 @@ test('A4 偏好迁移：脚本变量优先、本机回退、双写；键表与�
 test('A5 cleanup 清 watchT；生成期间空闲预取排队、结束后补做', () => {
   const m = /const cleanup = \(\) => \{([^\n]+)/.exec(HOST); assert.ok(m); assert.match(m[1], /clearInterval\(watchT\)/);
   assert.match(HOST, /afterGen\(\(\) => preload\(\)/); assert.match(HOST, /afterGen\(\(\) => fetchHtml\(\)/);
-  assert.match(HOST, /GENERATION_STOPPED'\]\) if \(tavern_events\[k\]\) listen\(tavern_events\[k\], \(\) => \{ GEN\.since = 0; setTimeout\(flushIdle/);
+  assert.match(HOST, /GENERATION_STOPPED'\]\) onT\(k, \(\) => \{ GEN\.since = 0; setTimeout\(flushIdle/);   // F0：事件名向适配层要（tavern_events 的检查搬进 onT）
   // 行为：把 afterGen / flushIdle 抠出来跑
   const src = /const idleQ = \[\];\n([\s\S]*?)\n  if \(line/.exec(HOST)[1];
   const GEN = { generating: true }; let dead = false; const ran = [];
