@@ -113,7 +113,7 @@ export function worldOverlays() {
     place(el, ov.at[0], ov.at[1], OpenSeadragon.Placement.CENTER); }
   const gOf = id => id && Object.keys(mapRegistry.groups).find(k => mapRegistry.groups[k].place === id);   // 世界图地点 → 有地图的组（主城、开局地点）
   const enter = gid => { const g = gid && mapRegistry.groups[gid]; if (!g) return ''; return g.layers.map(k => { const L = mapRegistry.maps[k];
-    return L.status === 'planned' ? `<span class="planned">${esc(localName(L.layer))}${esc(uiText('planned_paren'))}</span>` : `<a data-go="${k}" role="button" tabindex="0">${esc(uiText('enter', { name: localName(L.layer) }))}</a>`; }).join(''); };
+    return L.status === 'planned' ? `<span class="planned">${esc(localName(L.layer))}${esc(uiText('planned_paren'))}</span>` : `<a data-go="${esc(k)}" role="button" tabindex="0">${esc(uiText('enter', { name: localName(L.layer) }))}</a>`; }).join(''); };
   for (const p of worldData.places) {
     const gid = gOf(p.id);
     marker({ name: p.name, sub: p.sub, cls: (p.type === 'capital' ? 'capital' : 'start') + (gid ? ' drill' : ''), src: p.src, x: p.x, y: p.y, openings: p.openings, group: gid || undefined, extra: () => enter(gid) + links(p) });

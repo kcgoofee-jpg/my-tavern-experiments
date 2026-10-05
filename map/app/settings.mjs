@@ -1,6 +1,6 @@
 // 设置弹层：分页、SettingsApi.registerSection、搜索、initSettings、关于 / 检查更新、自检。
 import { creditSections } from './credits-extra.mjs';
-import { $, esc } from './dom-helpers.mjs';
+import { $, esc, safeHref } from './dom-helpers.mjs';
 import { post } from './protocol-stamp.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { buildDate, buildLine, buildTag, viewerHead } from './about-build.mjs';
@@ -100,6 +100,7 @@ function renderLicense() {
     if (cr?.card?.creator) row(uiTextOr('s.lic_orig', '原作角色卡'), uiTextOr('s.lic_orig_v', '{creator}（类脑社区）原创；地图是经授权的二次创作（2026-09-27 起）', { creator: cr.card.creator }));
     if (typeof cr?.card?.url === 'string' && /^https:\/\//.test(cr.card.url)) { const r = document.createElement('div'), a = document.createElement('a'); r.className = 'row'; a.href = cr.card.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = uiTextOr('s.lic_post_go', '打开');   // 原作发布帖的链接来自包的 credits.card.url（包数据；引擎里没有卡名）
       r.append(Object.assign(document.createElement('span'), { textContent: uiTextOr('s.lic_post', '原作发布帖') }), a); box.appendChild(r); } }
+  { const adult = PACK?.strings?.['s.lic_adult_v']; if (adult) row(uiTextOr('s.lic_adult', '内容分级'), uiTextOr('s.lic_adult_v', adult), true); }   // 分级提示由包声明：引擎不认识任何卡的内容边界
   box.append(...creditSections());   // HEADER-1: this map's source line and the related project
   label(uiTextOr('s.lic_disc', '免责声明'));
   const p = document.createElement('small'); p.style.cssText = 'display:block;line-height:1.5;opacity:.75';
@@ -200,13 +201,13 @@ export function renderAbout() {
   { const vh = viewerHead(renderAbout); if (vh && Number.isInteger(a.build) && vh.build !== a.build) h += `<br><span id="buildMismatch">${esc(uiTextOr('about.build_mismatch', '地图文件构建 head #{n} · {d}（和脚本不一致）', { n: vh.build, d: buildDate(vh, loadedAt) }))}</span>`; }   // P2-3：脚本和地图文件的构建不一致时两行都给出
   if (a.line) h += `<br>${esc(uiTextOr('about.line', '线路：{l}', { l: a.line }))}`;
   if (window.top !== window) h += `<br><button type="button" class="btn" id="updBtn" ${updBusy ? 'disabled' : ''}>${esc(updBusy ? uiTextOr('about.checking', '检查中…') : uiTextOr('about.check', '检查更新'))}</button>`;
-  const r = updRes;
+  const r = updRes, nh = safeHref(r?.notes);   // SEC-1：远端更新说明里的链接只收 http(s) / 协议相对，别的不进 href
   if (r) {
     const how = a.channel === 'follow' ? uiTextOr('about.how_follow', '跟随版会自动用上新版本：刷新酒馆页面即可') : uiTextOr('about.how_tag', '固定版不会自己变：导入新版脚本「{script} v{v}」（同名覆盖）', { v: r.latest || '', script: uiTextOr('app.script', '【地图】空间地图') });
     if (r.follow) h += `<div class="res" role="status">${esc(r.status === 'fail' ? uiTextOr('about.fail', '检查失败：连不上更新接口，稍后再试')
       : uiTextOr(r.status === 'new' ? 'about.follow_new' : 'about.follow_latest', r.status === 'new' ? '分支有新构建 #{n}（来源 {s}）：刷新酒馆页面即可' : '已是最新（最新构建 #{n} · 来源 {s}）', { n: r.build, s: SRC[r.source] || r.source || '?' }))}</div>`;
     else h += `<div class="res" role="status">${r.status === 'latest' ? esc(uiTextOr('about.latest', '已是最新（v{v}）', { v: r.latest || ver }))
-      : r.status === 'new' ? `${esc(uiTextOr('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br><a href="${esc(r.notes || '')}" target="_blank" rel="noopener">${esc(uiTextOr('about.notes', '更新说明'))}</a><br>${esc(how)}`
+      : r.status === 'new' ? `${esc(uiTextOr('about.new', '有新版 v{v}', { v: r.latest }))}${r.code ? ' · ' + esc(r.code) : ''}<br>${nh ? `<a href="${nh}" target="_blank" rel="noopener">${esc(uiTextOr('about.notes', '更新说明'))}</a><br>` : ''}${esc(how)}`
       : esc(uiTextOr('about.fail', '检查失败：连不上更新接口，稍后再试'))}</div>`;
   }
   box.innerHTML = h; updSub(); mountFeedbackButton(box);

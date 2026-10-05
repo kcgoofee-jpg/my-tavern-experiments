@@ -2,6 +2,7 @@
 // 选了某个时段 = 只换地图的看法（底图档位、时段色调、夜间图层）：时钟消息带 view = 时段 id，tod / night 跟着改；
 // 时间本身（time / date）不动——日程、行程、注入一律仍按聊天时间算。只在本次会话里有效（不存储），换聊天或重载回到跟随。
 // 纯宿主 DOM：不碰酒馆全局；chars-flow.mjs 推时钟前过 applyView，选了以后在胶囊上派发 'em-period' 让它重推。
+import { esc } from '../app/dom-helpers.mjs';   // SEC-1：时段 id 来自包数据，进属性与文本位置都要转义
 const WORDS = {
   zh: { follow: '跟随聊天时间', title: '地图时段', dawn: '黎明', day: '白天', dusk: '黄昏', night: '夜间', preview: '预览：{b}（聊天时间不变）' },
   en: { follow: 'Follow chat time', title: 'Map period', dawn: 'Dawn', day: 'Day', dusk: 'Dusk', night: 'Night', preview: 'Preview: {b} (chat time unchanged)' },
@@ -29,7 +30,7 @@ export function mountClockPop(clk, { lang = () => 'zh' } = {}) {
   clk.setAttribute('role', 'button'); clk.tabIndex = 0; clk.setAttribute('aria-haspopup', 'menu'); clk.setAttribute('aria-expanded', 'false');
   const render = () => {
     const w = words(lang());
-    const row = (id, text) => `<button type="button" role="menuitemradio" data-band="${id}" aria-checked="${state.view === id}">${text}</button>`;
+    const row = (id, text) => `<button type="button" role="menuitemradio" data-band="${esc(id)}" aria-checked="${state.view === id}">${esc(text)}</button>`;
     pop.setAttribute('aria-label', w.title);
     pop.innerHTML = `<b>${w.title}</b>` + row('', w.follow) + state.bands.map(b => row(b.id, bandName(b.id, lang()))).join('');
   };

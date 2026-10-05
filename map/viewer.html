@@ -18,8 +18,8 @@ window.__packStorageKey = k => (window.__packId !== 'eden' && typeof k === 'stri
   if (!window.__tcPack?.manifest) add(u);   // 宿主注入的包（含门卫解析出的外来 / 自动包，S9-2）清单已在手：没有 packs/<id>/manifest.json 可预取
   if (window.__tcPack?.manifest) put(window.__tcPack.manifest);
   else window.__manifestPromise = fetch(u, { credentials: 'omit', referrerPolicy: 'no-referrer' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(m => (put(m), m)).catch(() => {});
-  if (window.__edenArtBase || window.__edenArtAt) document.documentElement.style.setProperty('--art-thumb', `url("${(window.__edenArtAt || (x => (window.__edenArtBase || '') + x))('art/world_1k.jpg')}")`); window.__openWorldMapFirst = !new URLSearchParams(location.search).get('map');   // 总是先开世界图（用户 2026-09-28）；N14 a：加载页缩略图也按稳定的 @<art_sha> 取
-  if (window.__openWorldMapFirst && (id === 'eden' || !!window.__tcPack?.manifest?.data?.world)) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) add((window.__edenArtAt || (x => (window.__edenArtBase || '') + x))(h), as, co);
+  const artUrl = x => { const v = String((window.__edenArtAt || (y => (window.__edenArtBase || '') + y))(x) || ''); return /^(?:javascript|data|vbscript|file|blob):/i.test(v) || /[\s"'\\()]/.test(v) ? '' : v; }; if (window.__edenArtBase || window.__edenArtAt) document.documentElement.style.setProperty('--art-thumb', `url("${artUrl('art/world_1k.jpg')}")`); window.__openWorldMapFirst = !new URLSearchParams(location.search).get('map');   // SEC-1：包给的地址不许带 javascript: / data: 这类协议，也不许带引号、括号或空白（否则逃出 url() 与 href）；本地开发的相对路径照旧。总是先开世界图（用户 2026-09-28）；N14 a：加载页缩略图也按稳定的 @<art_sha> 取
+  if (window.__openWorldMapFirst && (id === 'eden' || !!window.__tcPack?.manifest?.data?.world)) for (const [h, as, co] of [['art/world.dzi', 'fetch', 1], ['art/borders.dzi', 'fetch', 1], ['art/world_1k.jpg', 'image', 0]]) add(artUrl(h), as, co);
 })();
 
 </script>

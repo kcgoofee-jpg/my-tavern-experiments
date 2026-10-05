@@ -47,7 +47,7 @@ const STR = {
   },
 };
 
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // SEC-1：单引号也要闭合
 const read = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* 存不下就算了，纯偏好 */ } };
 function readScenes() { try { return JSON.parse(read(SCENE_KEY, '{}')) || {}; } catch (e) { return {}; } }

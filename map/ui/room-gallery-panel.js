@@ -43,7 +43,7 @@ export function setCustomIntro(roomId, intro) { const s = readCustomStore(); s[r
 export function clearCustomName(roomId) { const s = readCustomStore(); if (s[roomId]) { delete s[roomId].name; writeCustomStore(s); } }
 
 // ---------------- 卡片里插的自定义 + 图集入口（cardHTML 拼进去用） ----------------
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // SEC-1：与 app/dom-helpers.mjs 同一张表，单引号也要闭合
 const BTN = 'padding:4px 8px;border-radius:var(--r-s,4px);background:var(--surface-2,rgba(255,255,255,.08));font-size:var(--fs-small,12px);white-space:nowrap';
 function css(id, text) { if (document.getElementById(id)) return; const s = el('style'); s.id = id; s.textContent = text; document.head.appendChild(s); }
 const cardCSS = () => css('rgc-css', `.rgc{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line,rgba(255,255,255,.15));display:flex;flex-direction:column;gap:6px}

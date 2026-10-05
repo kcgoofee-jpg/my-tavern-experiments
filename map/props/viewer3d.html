@@ -109,7 +109,7 @@ let dirty = true;
 const post = m => { if (EMBED) try { parent.postMessage(m, '*'); } catch (e) {} };
 
 // ---------------- UI v2 外壳（ui/chrome3d.js）：视图分段 + 剖切高度二级条 + 控制列 + 唯一抽屉（部件 · 流向 · 说明）----------------
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // SEC-1：与 app/dom-helpers.mjs 同一张表，单引号也要闭合
 const PID = window.__packId || 'eden';   // 宿主查看器注入（app/subpage3d-host.mjs）；单独打开默认 eden
 const NKEY = k => nsKey(k, PID);
 const LSg = k => { try { return localStorage.getItem(NKEY(k)); } catch (e) { return null; } };

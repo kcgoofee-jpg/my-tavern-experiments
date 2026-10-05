@@ -25,3 +25,41 @@ test('I-09 (3) viewer3d: cvdColor returns #ffffff for anything that is not #rrgg
   assert.equal(three('0')('#D9A441'), '#D9A441');
   assert.match(v3, /style="background:\$\{cvdColor\(x\.f\.color\)\}"/);
 });
+
+// ---- SEC-1 (PUB, 2026-10-06): the attribute and URL sites a pack or chat value can reach ----
+test('SEC-1 esc() closes the single quote as well, so a value cannot break out of a single-quoted attribute', () => {
+  for (const bad of [`a'"<b>`, "onerror='alert(1)'", '<img src=x onerror=alert(1)>']) assert.doesNotMatch(esc(bad), /[<>'"]/);
+});
+test('SEC-1 safeHref: only http(s) and protocol-relative addresses reach an href', async () => {
+  const { safeHref } = await import('../map/app/dom-helpers.mjs');
+  for (const ok of ['https://github.com/kcgoofee-jpg/my-tavern-experiments/releases', '//cdn.jsdelivr.net/gh/a/b@map-v0.9.8/x']) assert.equal(safeHref(ok), ok);
+  for (const bad of ['javascript:alert(1)', 'data:text/html,<script>1</script>', 'HTTPS:/evil.example.com', ' /x', '', undefined, null, 'https://ok.example.com/" onmouseover=x', 'https://a b.example.com', 'https://a.example.com/(x']) assert.equal(safeHref(bad), '', String(bad));
+});
+test('SEC-1 every id that reaches an attribute goes through esc()', () => {
+  assert.match(src('tavern/clock-view.mjs'), /data-band="\$\{esc\(id\)\}"/); assert.match(src('tavern/clock-view.mjs'), /\$\{esc\(text\)\}<\/button>/);
+  assert.match(src('characters-view.mjs'), /data-g="\$\{esc\(id\)\}"/);
+  assert.match(src('app/markers.mjs'), /data-go="\$\{esc\(k\)\}"/); assert.match(src('app/map-level-nav.mjs'), /data-go="\$\{esc\(k\)\}"/);
+  for (const [f, pat] of [['app/markers.mjs', /data-go="\$\{k\}"/], ['app/map-level-nav.mjs', /data-go="\$\{k\}"/], ['characters-view.mjs', /data-g="\$\{id\}"/], ['tavern/clock-view.mjs', /data-band="\$\{id\}"/]]) assert.doesNotMatch(src(f), pat, f);
+});
+test('SEC-1 the update link and the pack art base are filtered, not echoed', () => {
+  assert.match(src('app/settings.mjs'), /nh = safeHref\(r\?\.notes\)/); assert.match(src('app/settings.mjs'), /href="\$\{nh\}"/);
+  assert.doesNotMatch(src('app/settings.mjs'), /href="\$\{esc\(r\.notes/); assert.doesNotMatch(src('app/settings.mjs'), /href="\$\{safeHref\(r\.notes\)\}"/);
+  const v = src('viewer.html');
+  assert.match(v, /url\("\$\{artUrl\('art\/world_1k\.jpg'\)\}"/); assert.match(v, /add\(artUrl\(h\), as, co\)/);
+  assert.doesNotMatch(v, /url\("\$\{\(window\.__edenArtAt/);
+  const decl = v.split('\n').find(l => l.includes('const artUrl =')) || '';
+  const art = (w) => new Function('window', `return (${decl.replace(/^.*const artUrl = /, '').replace(/; if \(window.*$/, '')});`)(w);
+  assert.equal(art({ __edenArtBase: 'https://cdn.example/gh/a/b@sha/' })('art/world_1k.jpg'), 'https://cdn.example/gh/a/b@sha/art/world_1k.jpg');
+  assert.equal(art({ __edenArtAt: y => 'https://cdn.example/' + y })('art/world.dzi'), 'https://cdn.example/art/world.dzi');
+  assert.equal(art({})('art/world.dzi'), 'art/world.dzi');   // 单独打开 / 本地开发：相对路径照旧
+  for (const w of [{ __edenArtBase: 'javascript:alert(1)/' }, { __edenArtBase: 'data:text/html,x' }, { __edenArtBase: 'https://ok/ a' }, { __edenArtBase: 'https://ok/" e' }, { __edenArtBase: 'https://ok/(x' }, { __edenArtAt: y => 'javascript:' + y }])
+    for (const f of ['art/world.dzi', 'art/world_1k.jpg']) assert.equal(art(w)(f), '', JSON.stringify(w) + ' ' + f);
+});
+test('SEC-1 the escape helpers copied into the estate, 3D and panel pages close the single quote too', () => {
+  for (const f of ['props/viewer3d.html', 'ui/illustration-panel.js', 'ui/room-gallery-panel.js', 'estate/main.js']) {
+    const decl = src(f).split('\n').find(l => l.includes('const esc =')) || '';
+    const run = new Function('return (' + decl.slice(decl.indexOf('=') + 1).replace(/\/\/.*$/, '').trim().replace(/;+$/, '') + ')')();
+    for (const bad of [`a'"<b>`, "onerror='alert(1)'", '<img src=x onerror=alert(1)>']) assert.doesNotMatch(run(bad), /[<>'"]/, `${f} ${bad}`);
+    assert.equal(run('&'), '&amp;');
+  }
+});

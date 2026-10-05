@@ -190,7 +190,7 @@ const CharactersView = (() => {
     return c ? `<li><button type="button" class="chgo" data-n="${esc(it.name)}">${body}</button></li>` : `<li><button type="button" class="chgo chro" data-card="${esc(it.name)}">${body}</button></li>`;   // v0.9.6：不在图上的名册成员也能开人物卡
   }
   function group(id, label, n, inner, raw) {   // raw: the body is already markup (the present group's sections), not a list of rows
-    return `<details class="chgrp" data-g="${id}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary>${raw ? inner : `<ul>${inner}</ul>`}</details>`;
+    return `<details class="chgrp" data-g="${esc(id)}" ${closed.has(id) ? '' : 'open'}><summary>${esc(label)} <small>${n}</small></summary>${raw ? inner : `<ul>${inner}</ul>`}</details>`;
   }
   // 在场组按层级分节（K-R73）：宏观 = 全部展开，微观 = 只有「和你在一起」展开；用户开合记在 closed 里（sec:<键> = 用户合上，sec+:<键> = 用户展开）
   const secOpen = (key, mode) => closed.has('sec+:' + key) ? true : closed.has('sec:' + key) ? false : mode === 'macro' ? true : key === 'here';

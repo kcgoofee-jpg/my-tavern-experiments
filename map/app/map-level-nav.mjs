@@ -33,7 +33,7 @@ export function renderNav() {
   const m = mapRegistry.maps[currentMapId], chain = crumbs(currentMapId);
   const zone = k => anchorIn(k) ? ` data-focus="${esc(anchorIn(k))}"` : '';   // 返回一张三维页时，落到我在它里面所挂的区域上（S2-B）
   $('#crumbs').innerHTML = chain.map((k, i) => { const ti = localName(mapRegistry.maps[k], 'title');
-    return i < chain.length - 1 ? `<a data-go="${k}"${zone(chain[i + 1])} role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
+    return i < chain.length - 1 ? `<a data-go="${esc(k)}"${zone(chain[i + 1])} role="button" tabindex="0">${esc(ti)}</a><span class="sep" aria-hidden="true">›</span>` : `<b aria-current="page">${esc(ti)}</b>`; }).join('');
   const nav = $('#layers'), floors = EstateShell.stripFloors(nav);   // floors = the 3D shell drew the floor strip; in 2D the levels live in the breadcrumb menu (HEADER-1, D36)
   if (!floors) { nav.hidden = true; nav.replaceChildren(); }   // a 2D map keeps no floating level strip (and a map without levels keeps no buttons of the previous one)
   nav.title = uiTextOr('layers.keys', 'PageUp / PageDown 或 [ ] 切换上下层');

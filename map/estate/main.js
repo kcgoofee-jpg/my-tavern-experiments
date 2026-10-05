@@ -657,7 +657,7 @@ function showHi(h, it) {
 
 /* ---------------- 房间卡 ---------------- */
 const card = $('#card');
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));   // SEC-1：与 app/dom-helpers.mjs 同一张表，单引号也要闭合
 const shown = (t) => !!t && (LANG === 'zh' || !/[\u4e00-\u9fff]/.test(t));   // 数据里只有中文的说明，英文界面不显示
 /** 一张卡的内容（独立页自己画；嵌入时发给查看器，由它画共用的地点卡）：{ title, sub, kind?, rows: [[label, text]], acts: [{ id, label, ... }] } */
 function info(it) {
