@@ -2391,3 +2391,15 @@ deviations: U-FIX-10 resolved as probe alignment, not a product restore: the one
 open: U-FIX-13 (1)(3)(4)(5)(6) need the user's art decisions; DIST-3 §5 still waits for the user's go; v096's ring checks realigned to the oblique contract (DOM ring retired on the oblique view, breadcrumb carries the handoff) and pass; v3d_pins_no_overlap stays red in CI (pre-existing at head #352; placePins runs only on real frames, none painted on SwiftShader in 15 s) — filed as U-FIX-14.
 cleanup: done
 === END ===
+
+=== RESULT RELEASE-098 ===
+status: DONE
+items: 1 version bump, build.json notes & CHANGELOG entry ✓ · 2 sync main ff, user confirmation, tags & pre-release GitHub release ✓ · 3 release import line verification (curl + dist3_load Playwright first frame) ✓
+commits: (see push)
+pushed: yes
+tests: node 1671/1672 (1 skipped) | smoke PASS | arch PASS | probes: dist3_load=PASS (Chromium + WebKit on gh lines)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===

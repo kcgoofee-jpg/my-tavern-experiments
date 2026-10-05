@@ -1,9 +1,9 @@
 {
  "schema": 1,
  "book": "伊甸地图·世界书附加条目",
- "version": "0.9.8-dev",
+ "version": "0.9.8",
  "ver": "0.9.8+ee5bad0f",
- "built": "2026-10-02",
+ "built": "2026-10-05",
  "category": {
   "map.readme": "readme",
   "map.link-rules": "rules",

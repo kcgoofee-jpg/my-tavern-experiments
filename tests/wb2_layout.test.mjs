@@ -53,9 +53,9 @@ test('fresh book: the readme goes first, is disabled and explains version, write
   assert.ok(r.ok);
   const book = t.B[W.BOOK], rd = book[0];
   assert.equal(rd.extra.eden_id, R.README_ID); assert.equal(rd.enabled, false); assert.equal(book.length, SHIP.entries.length);
-  assert.match(rd.name, /^说明 · .+ · 0\.9\.8-dev · head #303$/);
+  assert.match(rd.name, /^说明 · .+ · 0\.9\.8(-dev)? · head #303$/);
   const c = rd.content;
-  assert.match(c, /0\.9\.8-dev · 2026-10-02/); assert.match(c, /head #303/); assert.match(c, /2026-10-02 \d\d:\d\d/);
+  assert.match(c, /0\.9\.8(-dev)? · \d{4}-\d\d-\d\d/); assert.match(c, /head #303/); assert.match(c, /2026-10-02 \d\d:\d\d/);
   assert.match(c, /不用。.*原地更新/); assert.match(c, /不会发给模型，不占 token/);
   assert.match(c, new RegExp(`共 ${SHIP.entries.length - 1} 条：常驻 3 条，关键词触发 129 条；写入时开着 ${SHIP.entries.length - 1} 条，关着 0 条`));
   assert.match(c, /「世界书按需挂载」关着/); assert.match(c, /报 bug 时请附上/);

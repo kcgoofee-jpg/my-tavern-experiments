@@ -13,14 +13,14 @@ engine that knows no card, plus data **packs**. The first pack describes the car
 ## Status
 
 The live state is the status block at the top of [`docs/todo.md`](docs/todo.md) (this README carries no stage status). **Follow line: `preview`** — every push lands there first. Current release:
-`0.9.7` (tag `map-v0.9.7`), on hold until the refactor ends.
+`0.9.8` (tag `map-v0.9.8`), on hold until the refactor ends.
 
 ## Install
 
 In TavernHelper, add this as a script:
 
 ```js
-import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/tavern/eden-map.js'
+import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.8/map/tavern/eden-map.js'
 ```
 
 The address points at the published `eden-map-engine` package, pinned to the version below; it does not expire, and

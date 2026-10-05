@@ -12,14 +12,14 @@ English edition: [README.md](README.md)（以英文版为准）
 ## 状态
 
 实时状态见 [`docs/todo.md`](docs/todo.md) 顶部的状态块（本 README 不再写阶段状态）。
-**跟随线：`preview`**——每次推送都先落在这条线上。当前发布版本 `0.9.7`（标签 `map-v0.9.7`），重构结束前暂缓发新版。
+**跟随线：`preview`**——每次推送都先落在这条线上。当前发布版本 `0.9.8`（标签 `map-v0.9.8`），重构结束前暂缓发新版。
 
 ## 安装
 
 在酒馆助手里新建脚本，内容为下面这一行：
 
 ```js
-import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/tavern/eden-map.js'
+import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.8/map/tavern/eden-map.js'
 ```
 
 这条地址指向已发布的 `eden-map-engine` 包，钉在下面那个版本上，不会过期；`tools/check_readme.py` 在 CI 里守着它。本仓约 1 GB，
