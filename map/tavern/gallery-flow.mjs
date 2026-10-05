@@ -3,6 +3,7 @@
 // no address is written to a variable or to local storage, and no picture is ever put into a message (the card's own script does that).
 // Factory style like the other *-flow.mjs: createGalleryFlow(host) is called once by chars-flow.mjs; DEPS are the host keys it reads.
 import { thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { getProfile } from './pack-profile.mjs';
 import { parseText } from './msgtext.mjs';
 import { gallerySpec, readTable, galleryUrlOk } from '../core/gallery-spec.mjs';
@@ -27,7 +28,7 @@ export function createGalleryFlow(host) {
     try { const g = thFn('getCharData'); const r = g ? g('current') : null; if (r && typeof r.then === 'function') r.then(done, () => done(null)); else done(r); } catch (e) { done(null); }
   }
   function floors() {
-    let list = []; try { const top = host.floorNow; if (top >= 0) list = getChatMessages(`0-${top}`, { role: 'assistant' }) || []; } catch (e) { list = []; }
+    let list = []; try { const top = host.floorNow; if (top >= 0) list = hostAdapter.chat.messages(`0-${top}`, { role: 'assistant' }) || []; } catch (e) { list = []; }
     const keep = new Set(), out = [], open = spec.tag.open;
     for (const m of list) {
       const f = m?.message_id, msg = typeof m?.message === 'string' ? m.message : ''; if (!Number.isInteger(f) || !msg.includes(open)) continue;

@@ -1,6 +1,6 @@
 // 宿主实例的生命周期：接管旧实例（幂等注入）、挂面板 DOM、事件监听登记与「死亡」标记、清理钩子（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // cleanup 本身仍在入口组装（它要停入口里的计时器 / 观察器），这里只负责登记到 window.parent.__edenMapCleanup 与 pagehide。
-import { fnOk, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { hostTokensCss } from './host-tokens.mjs';
 import { mountClockPop } from './clock-view.mjs';
 
@@ -19,13 +19,14 @@ export function createLife() {
     listen: (ev, fn, last) => {
       if (dead) return;
       try {
-        const mkLast = last ? thFn('eventMakeLast') : null;   // thFn：全局与 TavernHelper 命名空间都认
-        if (mkLast) { const h = mkLast(ev, fn); offs.push([null, null, typeof h?.stop === 'function' ? () => h.stop() : (typeof h === 'function' ? h : () => {})]); return; }
-        offs.push([ev, fn, eventOn(ev, fn)]);
+        const h = last ? hostAdapter.events.onLast(ev, fn) : null;   // 有 eventMakeLast：排在所有同事件处理器之后；没有 → null，退回下面的 eventOn
+        if (h !== null) { offs.push([null, null, typeof h?.stop === 'function' ? () => h.stop() : (typeof h === 'function' ? h : () => {})]); return; }
+        // F0：只认全局的 eventOn（旧裸调用口径）；没装这个接口时旧代码在此抛 ReferenceError、监听不落登记，这里保持一样（缺接口 = 不登记）
+        if (hostAdapter.okRaw('eventOn')) offs.push([ev, fn, hostAdapter.events.on(ev, fn)]);
       } catch (e) {}
     },
     add: off => offs.push([null, null, off]),   // 非酒馆事件的撤销函数（visibilitychange 等）
-    unlisten: () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (ev === null) h(); else if (fnOk('eventRemoveListener')) eventRemoveListener(ev, fn, h); else if (fnOk('eventOff')) eventOff(ev, fn); } catch (e) {} } },
+    unlisten: () => { for (const [ev, fn, h] of offs.splice(0)) { try { if (ev === null) h(); else hostAdapter.events.off(ev, fn, h); } catch (e) {} } },
   };
 }
 

@@ -1,5 +1,6 @@
 // 时间轴回放（Part 5-4）与 W3 关键帧缓存的宿主侧接线（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
+import { hostAdapter } from './host-adapter.mjs';
 export const DEPS = [
   'mvuBridge', 'scriptBase', 'life', 'post', 'push', 'root', 'sendEvents', 'sendTrips', 'CHM', 'tripsParseModule', 'alive', 'chars', 'floorNow', 'rep', 'roster', 'uiLang',
 ];
@@ -18,7 +19,7 @@ export function createTimelineFlow(host) {
   const kfReset = () => { tlWalk = { top: -1, pts: [] }; kfView = null; kfDirty = false; };
   // 取数依赖（纯模块不碰酒馆全局：读楼 / 该楼变量 / 人物解析都在这里注入）
   const tlDeps = () => ({
-    getRaw: x => { try { return getChatMessages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
+    getRaw: x => { try { return hostAdapter.chat.messages(x + '-' + x)?.[0]?.message || ''; } catch (e) { return ''; } },
     perFloorStat: x => mvuBridge.perFloorStat(x), mvuGet: (s, p) => mvuBridge.mvuGet(s, p), varMap: mvuBridge.varMap,
     parseChars: host.CHM?.parseChars, mvuChars: host.CHM?.mvuChars, patchPlace: host.tripsParseModule?.patchPlace,
     lp: mvuBridge.varMap.location ? '/' + String(mvuBridge.varMap.location).split('.').join('/') : '',

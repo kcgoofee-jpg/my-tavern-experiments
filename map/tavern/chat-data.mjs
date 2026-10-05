@@ -3,6 +3,7 @@
 // 每聊天自定义世界书（名字由聊天 id 哈希得出；只动带我们条目名的书）。只碰这四处——不碰卡的 stat_data、不碰用户自己的世界书。
 // 纯判定（orphanBooks / orphanLocal / orphanScopes）在这里导出，node 单测 tests/chat_data.test.mjs；副作用走 createChatData(host, io)。
 import { fnOk, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 
 /** 我们的每聊天世界书里，聊天已经不在了的书名（书名 = 前缀 + 6 位十六进制；前缀没配 = 没有这类书） */
 export function orphanBooks(names, wbName, liveIds) {
@@ -26,23 +27,23 @@ export function createChatData(host, io) {
   async function unbind(name) {
     const W = await wbSync(); if (!W?.bindingOf) return;
     const b = await W.bindingOf(thf, name);
-    if (b.chat && fnOk('rebindChatWorldbook')) await rebindChatWorldbook('current', '');
-    if (b.char && fnOk('rebindCharWorldbooks')) { const c = await getCharWorldbookNames('current'); await rebindCharWorldbooks('current', { primary: c.primary === name ? null : c.primary, additional: arr(c.additional).filter(n => n !== name) }); }
-    if (b.global && fnOk('rebindGlobalWorldbooks')) await rebindGlobalWorldbooks(arr(await getGlobalWorldbookNames()).filter(n => n !== name));
+    if (b.chat && fnOk('rebindChatWorldbook')) await hostAdapter.wb.bindChat('current', '');
+    if (b.char && fnOk('rebindCharWorldbooks')) { const c = await hostAdapter.wb.charNames('current'); await hostAdapter.wb.bindChar('current', { primary: c.primary === name ? null : c.primary, additional: arr(c.additional).filter(n => n !== name) }); }
+    if (b.global && fnOk('rebindGlobalWorldbooks')) await hostAdapter.wb.bindGlobal(arr(await hostAdapter.wb.globalNames()).filter(n => n !== name));
   }
   /** 删一本每聊天自定义书；书里没有我们的条目名 = 不是我们的书，一概不动 */
   async function dropBook(name) {
     if (!name || !fnOk('getWorldbook') || !fnOk('deleteWorldbook')) return false;
     try {
-      const es = await getWorldbook(name); if (!arr(es).some(e => e?.name === R().WB_ENTRY)) return false;
+      const es = await hostAdapter.wb.book(name); if (!arr(es).some(e => e?.name === R().WB_ENTRY)) return false;
       await unbind(name);
-      return !!(await deleteWorldbook(name));
+      return !!(await hostAdapter.wb.remove(name));
     } catch (e) { console.warn('[eden-map] 删每聊天世界书失败', name, e); return false; }
   }
   async function removeRecord() {   // 聊天变量里只摘 eden_map 一个键（整块替换，深合并删不掉键）；stat_data 等别的键原样
     const k = R().VAR_ROOT;
-    if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { delete v[k]; return v; }, { type: 'chat' });
-    else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; delete all[k]; await replaceVariables(all, { type: 'chat' }); }
+    if (fnOk('updateVariablesWith')) await hostAdapter.vars.update(v => { delete v[k]; return v; }, 'chat');
+    else if (fnOk('replaceVariables')) { const all = { ...(hostAdapter.vars.read('chat') || {}) }; delete all[k]; await hostAdapter.vars.replace(all, 'chat'); }
   }
   /** 「重置本聊天地图数据」：清掉当前聊天的 eden_map、本机行、图集 / 见闻录图片、自定义世界书，然后按聊天楼层从零重算 */
   async function reset() {
@@ -74,7 +75,7 @@ export function createChatData(host, io) {
     if (SB && st) for (const id of orphanLocal(SB.chatsByAge(st, cur), live, cur)) { SB.dropChat(st, id); res.local.push(id); }
     const G = await galleryDb();
     if (G?.indexedDBAvailable()) { try { for (const s of orphanScopes(await G.listScopes(), live, cur)) { await G.deleteScope(s); res.scopes.push(s); } } catch (e) { console.warn('[eden-map] orphan: gallery', e); } }
-    if (fnOk('getWorldbookNames')) { try { for (const n of orphanBooks(await getWorldbookNames(), R().wbName, live)) if (await dropBook(n)) res.books.push(n); } catch (e) { console.warn('[eden-map] orphan: books', e); } }
+    if (fnOk('getWorldbookNames')) { try { for (const n of orphanBooks(await hostAdapter.wb.names(), R().wbName, live)) if (await dropBook(n)) res.books.push(n); } catch (e) { console.warn('[eden-map] orphan: books', e); } }
     if (res.local.length || res.scopes.length || res.books.length) console.info('[eden-map] 清理已删除聊天留下的地图数据：本机', res.local.length, '个聊天，图集', res.scopes.length, '个，世界书', res.books.length, '本');
     return res;
   }

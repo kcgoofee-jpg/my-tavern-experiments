@@ -1,6 +1,7 @@
 // 地图在聊天变量里的根（eden_map）：自定义名称 / 用途的读写与迁移、本机存储预算、世界书同步、标签改名重放（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { recordNorm, describeRecord } from '../core/settlement-record.mjs';
 import { fromV1 } from '../core/compat-v1.mjs';
 import { records, idFinder } from '../core/place-record.mjs';
@@ -28,11 +29,11 @@ export function createRootStore(host) {
     if (chat !== chatId()) return false;   // 换聊天了：这次写入作废，不写进别的聊天
     if (varsOk()) {
       try {
-        let same = false; try { same = JSON.stringify(getVariables({ type: 'chat' })?.[host.mvuReaders.VAR_ROOT]) === JSON.stringify(root); } catch (e) {}   // 幂等：内容没变不写（重放事件 / 两个实例不重复触发保存）
+        let same = false; try { same = JSON.stringify(hostAdapter.vars.read('chat')?.[host.mvuReaders.VAR_ROOT]) === JSON.stringify(root); } catch (e) {}   // 幂等：内容没变不写（重放事件 / 两个实例不重复触发保存）
         if (same) { try { (LS || localStorage).removeItem(lsCustomKey()); } catch (e) {} return true; }
-        if (fnOk('updateVariablesWith')) await updateVariablesWith(v => { v[host.mvuReaders.VAR_ROOT] = root; return v; }, { type: 'chat' });
-        else if (fnOk('replaceVariables')) { const all = { ...(getVariables({ type: 'chat' }) || {}) }; all[host.mvuReaders.VAR_ROOT] = root; await replaceVariables(all, { type: 'chat' }); }
-        else await insertOrAssignVariables({ [host.mvuReaders.VAR_ROOT]: root }, { type: 'chat' });
+        if (fnOk('updateVariablesWith')) await hostAdapter.vars.update(v => { v[host.mvuReaders.VAR_ROOT] = root; return v; }, 'chat');
+        else if (fnOk('replaceVariables')) { const all = { ...(hostAdapter.vars.read('chat') || {}) }; all[host.mvuReaders.VAR_ROOT] = root; await hostAdapter.vars.replace(all, 'chat'); }
+        else await hostAdapter.vars.assign({ [host.mvuReaders.VAR_ROOT]: root }, 'chat');
         try { (LS || localStorage).removeItem(lsCustomKey()); } catch (e) {}   // 之前退回本机的那份已经过时
         return true;
       } catch (e) { console.warn('[eden-map] 写聊天变量失败，改存本机', e); varsFailed = true; }
@@ -162,7 +163,7 @@ export function createRootStore(host) {
     if (d.kind === 'item' && host.stashStoreModule && host.stash) { const r = host.stashStoreModule.setNotItem(host.stash, key, on); if (r.changed) { host.stash = r.stash; host.changedInv(); } }
   }
   const wbOk = () => fnOk('createOrReplaceWorldbook') || fnOk('createWorldbook');
-  async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await getWorldbookNames() || []).includes(n) : false; } catch (e) { return false; } }
+  async function wbExists(n) { try { return fnOk('getWorldbookNames') ? (await hostAdapter.wb.names() || []).includes(n) : false; } catch (e) { return false; } }
   let wbState = '';
   /** 任务二 静默绑定代理：一本我们的书在那儿却没挂上任何一处 → 自己找一档挂上（纯判定在 wb_jit.bindPlan）。
    *  已有绑定一律不动（改了用户的选择 = 串味儿）；只在「一处都没挂」时补，失败 / 没接口 → null。 */
@@ -172,8 +173,8 @@ export function createRootStore(host) {
       if (!W?.bindingOf || !W?.customBindPlan) return null;
       const b = await W.bindingOf(thFn, name);
       let chatCur = null, hasChar = false;
-      try { chatCur = fnOk('getChatWorldbookName') ? await getChatWorldbookName('current') : null; } catch (e) {}
-      try { hasChar = !!(fnOk('getCharWorldbookNames') && await getCharWorldbookNames('current')); } catch (e) {}
+      try { chatCur = fnOk('getChatWorldbookName') ? await hostAdapter.wb.chatName('current') : null; } catch (e) {}
+      try { hasChar = !!(fnOk('getCharWorldbookNames') && await hostAdapter.wb.charNames('current')); } catch (e) {}
       const w = W.customBindPlan(b, name, { chatCur, hasChar, api: { chat: fnOk('rebindChatWorldbook'), char: fnOk('rebindCharWorldbooks'), global: fnOk('rebindGlobalWorldbooks') } });   // N15：聊天槽被别的书占着 → 角色附加书（不是聊天）
       if (w === 'none') return null;
       const ok = await W.bind(thFn, name, w);
@@ -191,13 +192,13 @@ export function createRootStore(host) {
     const W = host.WBSm ?? await import(scriptBase + 'tavern/worldbook-sync.mjs').catch(() => null), info = { version: host.plainVer(host.VER) || host.SCRIPT?.version || '', build: Number.isInteger(host.SCRIPT?.build) ? host.SCRIPT.build : null };
     const keyed = mvr.wbEntries(custom, { on }).length - 1;   // WB-2: a disabled readme entry goes first (what the book is, written when, by which map build)
     const entries = mvr.wbEntries(custom, { on, readme: W?.customReadme?.({ map: info, now: Date.now(), lang: host.uiLang === 'en' ? 'en' : 'zh', on, count: keyed }) });
-    if (fnOk('createOrReplaceWorldbook')) await createOrReplaceWorldbook(WBN, entries); else await createWorldbook(WBN, entries);
+    if (fnOk('createOrReplaceWorldbook')) await hostAdapter.wb.createOrReplace(WBN, entries); else await hostAdapter.wb.create(WBN, entries);
     if (!on) { wbState = ''; sendCustom(); return true; }
     // 绑定：聊天槽空着绑到这个聊天；被别的书占着就退到角色附加世界书 / 全局（N15），别的绑定一律不动
     let bound = false;
-    try { const cur = fnOk('getChatWorldbookName') ? getChatWorldbookName('current') : null;
-      if (cur === WBN) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await rebindChatWorldbook('current', WBN); bound = true; } } catch (e) {}
-    if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && getGlobalWorldbookNames().includes(WBN)); } catch (e) {}
+    try { const cur = fnOk('getChatWorldbookName') ? hostAdapter.wb.chatName('current') : null;
+      if (cur === WBN) bound = true; else if (!cur && fnOk('rebindChatWorldbook')) { await hostAdapter.wb.bindChat('current', WBN); bound = true; } } catch (e) {}
+    if (!bound) try { bound = (fnOk('getGlobalWorldbookNames') && hostAdapter.wb.globalNames().includes(WBN)); } catch (e) {}
     if (!bound) { bound = !!(await silentBind(WBN)); if (!bound) console.info('[eden-map] 世界书未绑定，且没有可用的绑定接口：', WBN); }   // 任务二：不再让玩家进后台手动勾
     wbState = bound ? 'bound' : 'unbound'; sendCustom(); return true;
   }

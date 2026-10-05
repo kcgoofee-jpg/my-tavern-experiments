@@ -6,6 +6,7 @@
 // keys of the chat variables, the shipped index and the user's choice; writes only this browser's `edenMapPackPick` / `edenMapPackLlm` and the pack store.
 import { redirected } from './follow-gate.mjs';
 import { cdnFetch, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { hostAccess } from './mvu-bridge.mjs';
 import { readCardBasics, readCardBooks, readCardSource, cardKey, embeddedText } from './card-source.mjs';
 import { parsePack, importPack, gateLlm, MAX_URL_BYTES } from './pack-runtime-v2.mjs';
@@ -107,8 +108,8 @@ export function createGate(env) {
     if (r) apply(r);
     else { apply(baked ? { id: baked.id, source: 'baked', trust: 'shipped', tc: baked } : { id: DEFAULT_ID, source: 'default', trust: 'shipped', legacy: true }); p.then(late => { if (late && !same(late)) { apply(late); restart(late.key); } }); }   // over budget: start with what we have, correct by a restart
     try { window.parent.__edenGateOff?.(); } catch (e) {}   // a restart on a new build evaluates this module again: retire the previous gate's handler, or every chat change runs one gate per past build
-    try { const on = thFn('eventOn'), ev = globalThis.tavern_events?.CHAT_CHANGED;
-      if (on && ev) { const h = on(ev, onChat); window.parent.__edenGateOff = () => { try { if (typeof h?.stop === 'function') h.stop(); else (thFn('eventRemoveListener') || thFn('eventOff'))?.(ev, onChat); } catch (e) {} delete window.parent.__edenGateOff; }; } } catch (e) {}
+    try { const ev = hostAdapter.events.name('CHAT_CHANGED');
+      if (hostAdapter.ok('eventOn') && ev) { const h = hostAdapter.events.on(ev, onChat); window.parent.__edenGateOff = () => { try { if (typeof h?.stop === 'function') h.stop(); else hostAdapter.events.off(ev, onChat); } catch (e) {} delete window.parent.__edenGateOff; }; } } catch (e) {}
     return current;
   }
   /** `eden-map:pack-pick` (K-R99): validate, store, set the choice, resolve again and restart. Returns { ok, id?, source?, problems }. */

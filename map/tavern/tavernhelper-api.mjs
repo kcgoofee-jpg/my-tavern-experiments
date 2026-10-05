@@ -2,15 +2,14 @@
 // 规则：每个 TH 接口都先功能探测（fn(name) 返回函数或 null），缺了静默退回旧行为；永远不按版本号分支。
 // 不用 installExtension / builtin / 角色卡写接口；不调 generate*。**不改写任何聊天内容**——
 // 渲染层的泄露清理（createLeakFence）只删显示出来的 DOM 节点与文本，聊天记录一个字节都不动（docs/rejected.md #8）。
+import { hostAdapter } from './host-adapter.mjs';
 
 /** 统一的外部请求（§3.6）：不带凭据、不带 Referer（酒馆的 origin 不发给 CDN）。eden-map.js 里有同一行的内联副本（启动路径要同步可用），tests/cdnfetch.test.mjs 对照 */
 export const CDN_OPTS = Object.freeze({ credentials: 'omit', referrerPolicy: 'no-referrer' });
 export const cdnFetch = (u, o = {}, f = globalThis.fetch) => f(u, { ...o, ...CDN_OPTS });
 
-/** 取 TH 接口：全局优先，其次 TavernHelper 命名空间；拿不到 → null */
-export function hostFns(scopes) {
-  return n => { for (const s of scopes) { try { const g = s?.[n]; if (typeof g === 'function') return g; const th = s?.TavernHelper; if (typeof th?.[n] === 'function') return th[n].bind(th); } catch (e) {} } return null; };
-}
+/** 取 TH 接口：全局优先，其次命名空间；拿不到 → null（取法的实现住在适配层，这里只按作用域喂表） */
+export const hostFns = scopes => hostAdapter.fnsFor(scopes);
 const call = (fn, n, ...a) => { const f = fn(n); if (!f) return undefined; try { return f(...a); } catch (e) { return undefined; } };
 
 // ---------------- A3 身份与多实例 ----------------

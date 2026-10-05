@@ -6,14 +6,13 @@ import { worldbookPrefix } from '../core/pack.mjs';
 import { peekItems } from '../core/wb-peek.mjs';
 import { unwrap } from '../core/place-record.mjs';
 import { healthOf, healthSum } from './feature-health.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 export const cdnFetch = (u, o = {}) => fetch(u, { ...o, credentials: 'omit', referrerPolicy: 'no-referrer' });
-// 窗口函数取法（地基 A3）：全局优先，其次 TavernHelper 命名空间
-export const thFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g; const t = window.TavernHelper; return typeof t?.[n] === 'function' ? t[n].bind(t) : null; } catch (e) { return null; } };
-export const fnOk = n => { try { return typeof window[n] === 'function' || typeof globalThis[n] === 'function'; } catch (e) { return false; } };
-// 世界书（v0.9.6）：判定与接口兼容都在 selfcheck.mjs 的 collectWorldbook（node 单测 tests/worldbook096.test.mjs）；这里只把接口交给它：
-// 全局函数优先，其次酒馆助手的 TavernHelper 命名空间（有的版本不挂全局）。出错 → null（跳过）
-export const hostFn = n => { try { const g = window[n] ?? globalThis[n]; if (typeof g === 'function') return g;
-  const th = window.TavernHelper ?? window.parent?.TavernHelper; return typeof th?.[n] === 'function' ? th[n].bind(th) : null; } catch (e) { return null; } };
+// F0：窗口函数取法搬进适配层（map/tavern/host-adapter.mjs）——这里只留同名转手，调用方与行为不变。
+// thFn = 全局优先、其次 TavernHelper 命名空间；fnOk = 只认全局（旧口径，别放宽）；hostFn = 世界书面取法，再退父窗口命名空间。
+export const thFn = n => hostAdapter.fn(n);
+export const fnOk = n => hostAdapter.okRaw(n);
+export const hostFn = n => hostAdapter.hfn(n);
 // G6（P0，handoff 准则 1；docs/reviews/architecture_and_stream_perf.md §1.4）：跨窗口 / 暴露点取函数的统一守卫。
 // 类型与形参个数（fn.length，默认参数不计）都过才给；不过 → 按名字去重告警一次，返回 null，调用方走自己的降级。
 const _guardWarned = new Set();

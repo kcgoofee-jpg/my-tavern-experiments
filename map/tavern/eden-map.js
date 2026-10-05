@@ -10,6 +10,7 @@
 // 下面的 host 依赖袋是它们取入口变量与函数的唯一通道；入口留着面板 / 查看器状态机、重算调度、监听登记与清理。
 import '../core/logbuf.mjs'; import { redirected } from './follow-gate.mjs'; import './pack-gate.mjs'; // 反馈日志缓冲：最先 import，模块求值即安装，启动日志不丢（v0.9.6 报告「(none)」根因）
 import { cdnFetch, thFn, packNs, createPrefs } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';   // F0：宿主接口的唯一出口
 import { createRoutes, scoreText } from './host-routes.mjs';   // REPO（源码仓库，给「关于」与更新检查）由 createRoutes 按包清单给，见下面那行解构
 import { createLife, takeOver, mount, install, watchVisible, chainText } from './host-lifecycle.mjs';
 import { createAbout } from './host-about.mjs';
@@ -28,6 +29,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
   const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(scriptBase); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）
   const life = createLife(), { listen } = life;   // 监听登记与「死亡」标记（host-lifecycle.mjs）
+  const onT = (k, fn, last) => { const ev = hostAdapter.events.name(k); if (ev) listen(ev, fn, last); };   // F0：事件名向适配层要（tavern_events 全局只住在 host-adapter.mjs）；拿不到（没装酒馆助手）= 这一条监听不挂
   // 协议 v2（core/protocol.mjs，docs/design/arch-v2.md §3）：发出的消息盖 v；收到的消息按 schema 校验（模块没到时照旧处理）
   const PROTO = 2; let protocolModule = null;   // 与 core/protocol.mjs PROTO 一致（tests/protocol.test.mjs 检查）
   import(scriptBase + 'core/protocol.mjs').then(m => { protocolModule = m; }).catch(e => console.warn('[map] eden-map: protocol import failed', e));
@@ -322,10 +324,8 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     const win = TICK.pick(floorNow, tickLed?.lastFloor ?? -1);
     const t0 = performance.now();
     try {
-      if (win.n > 0 && typeof getChatMessages === 'function') {
-        const list = getChatMessages(`${win.from}-${win.to}`, { role: 'assistant' });
-        contextPipeline.readMsgs(list, floorNow);   // 只读：只喂缓存，不 recompute、不发消息、不写变量
-      }
+      if (win.n > 0 && hostAdapter.okRaw('getChatMessages')) { const list = hostAdapter.chat.messages(`${win.from}-${win.to}`, { role: 'assistant' });
+        contextPipeline.readMsgs(list, floorNow); }   // 只读：只喂缓存，不 recompute、不发消息、不写变量
     } catch (e) {}
     tickLed = TICK.ledger(tickLed, { now: Date.now(), floorNow, ms: performance.now() - t0, n: win.n });
     perf('tick', performance.now() - t0);
@@ -469,7 +469,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
   const perf = (k, ms) => { const P = window.parent.__perfSamples; if (P) (P[k] ||= []).push(ms); };
   function readMsgs() {
     let list = null;
-    try { floorNow = getLastMessageId(); if (floorNow >= 0) list = getChatMessages(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
+    try { const id = hostAdapter.chat.lastId(); floorNow = typeof id === 'number' ? id : -1; if (floorNow >= 0) list = hostAdapter.chat.messages(`${Math.max(0, floorNow - contextPipeline.SCAN)}-${floorNow}`, { role: 'assistant' }); } catch (e) { floorNow = -1; }
     const out = contextPipeline.readMsgs(list, floorNow); CF.oocRead(out, floorNow); return out;   // D32: the player's OOC map corrections (user floors) are read with the window
   }
   function recompute(lite = false) {
@@ -525,8 +525,7 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     if (life.dead) return; HA.facts.digest = { text, floor: floorNow };   // health (feature-health.mjs): what the digest sent this round
     if (text === injected) return; injected = text;
     try {
-      uninjectPrompts([INJECT_ID]);
-      if (text) injectPrompts([{ id: INJECT_ID, position: 'in_chat', depth: 4, role: 'system', content: text, should_scan: false }]);
+      hostAdapter.inject.swap([INJECT_ID], text ? [{ id: INJECT_ID, position: 'in_chat', depth: 4, role: 'system', content: text, should_scan: false }] : []);   // 固定 id：先撤再注（空内容 = 只撤）
     } catch (e) {}
   }
   // 发给地图：isNew = 上次打开面板之后才出现 / 更新的。打开时不再自动飞向未读事件（用户 2026-09-28：只在点了事件时飞）
@@ -632,23 +631,23 @@ import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } 
     // 地图侧的写入排在 VARIABLE_UPDATE_ENDED 收尾之后，绝不落在这个更新窗口里（tests/mvu_lifecycle.test.mjs）。
     // 第三个参数 true = 排在所有同事件处理器之后（eventMakeLast）：结算必须晚于宿主 / 卡内状态引擎的写
     try { mvuBridge.whenMvu().then(() => { const ev = mvuBridge.varUpdateEvent(); if (ev) listen(ev, () => { mvuBridge.markVarUpdate(); pushSoon(); recomputeSoon(); gateFlush('ended'); }, true); }); } catch (e) {}   // MVU 人物表也会变（人物栏）
-    listen(tavern_events.CHAT_CHANGED, () => pushSoon(300));
-    listen(tavern_events.CHAT_CHANGED, () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
-    listen(tavern_events.MESSAGE_SWIPED, () => pushSoon(300));
-    chatSwitched = () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} LL.jitReset(); injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); }; listen(tavern_events.CHAT_CHANGED, () => chatSwitched());
+    onT('CHAT_CHANGED', () => pushSoon(300));
+    onT('CHAT_CHANGED', () => { clearTimeout(wbChatT); wbChatT = setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动', e))); }, 1500); });   // 换角色 / 聊天：新角色也挂上、聊天版本提醒
+    onT('MESSAGE_SWIPED', () => pushSoon(300));
+    chatSwitched = () => { try { RS.storageBudget?.touch(store(), chatId()); } catch (e) {} LL.jitReset(); injected = null; MO.stateNow = ''; MO.cardSkip = null; MO.cp = null; contextPipeline.reset(); gate()?.drop('chat'); LF.resetChat(); LL.resetOps(); RF.onChat(); loadSeen(); RS.custom = null; if (TL.tlOn) { TL.tlOn = false; tlEl.hidden = true; tlBtn.classList.remove('on'); } tlCache.clear(); loadCustom().then(() => { recomputeSoon(300); sendCardInfo(); }); }; onT('CHAT_CHANGED', () => chatSwitched());
     // 通读 R1：开局菜单用 setChatMessage(swipe_id) 换开场白，不一定触发 SWIPED；渲染 / 编辑事件也听，地点跟着刷新
-    for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) if (tavern_events[k]) listen(tavern_events[k], () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
+    for (const k of ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'MESSAGE_DELETED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED']) onT(k, () => { recomputeSoon(); pushSoon(300); });   // 新楼、改楼、重 roll、删楼：重算
     // 任务三：渲染之后再走一遍泄露防御网（占位符 / 整段状态栏 HTML 源码糊在界面上时抹掉；干净就什么都不做）
-    if (tavern_events.CHARACTER_MESSAGE_RENDERED) listen(tavern_events.CHARACTER_MESSAGE_RENDERED, id => leakSweep(id));
-    if (tavern_events.MESSAGE_RECEIVED) listen(tavern_events.MESSAGE_RECEIVED, id => { setTimeout(() => leakSweep(id), 0); });   // 刚到的楼：等它渲染完再洗一次
+    onT('CHARACTER_MESSAGE_RENDERED', id => leakSweep(id));
+    onT('MESSAGE_RECEIVED', id => { setTimeout(() => leakSweep(id), 0); });   // 刚到的楼：等它渲染完再洗一次
     // 生成前同步一次，注入的是最新态势（A-3：只做注入需要的部分；输入没变直接跳过；标签改名 / 行程推到空闲）
     // v0.9.9：生成状态（pending 指示）+ swipe 删除 + 切回前台（被系统挂起 / 断网恢复后事件可能丢了）→ 从聊天记录与楼层变量重新推导
-    if (tavern_events.GENERATION_STARTED) listen(tavern_events.GENERATION_STARTED, (t, o, dry) => { if (!dry) { GEN.since = Date.now(); pushSoon(0); } });
-    for (const k of ['GENERATION_ENDED', 'GENERATION_STOPPED']) if (tavern_events[k]) listen(tavern_events[k], () => { GEN.since = 0; setTimeout(flushIdle, 800); recomputeSoon(); pushSoon(300); });
-    if (tavern_events.MESSAGE_SWIPE_DELETED) listen(tavern_events.MESSAGE_SWIPE_DELETED, () => { recomputeSoon(); pushSoon(300); });
+    onT('GENERATION_STARTED', (t, o, dry) => { if (!dry) { GEN.since = Date.now(); pushSoon(0); } });
+    for (const k of ['GENERATION_ENDED', 'GENERATION_STOPPED']) onT(k, () => { GEN.since = 0; setTimeout(flushIdle, 800); recomputeSoon(); pushSoon(300); });
+    onT('MESSAGE_SWIPE_DELETED', () => { recomputeSoon(); pushSoon(300); });
     { const wake = () => { if (pdoc.visibilityState !== 'hidden' && !life.dead) { statSig = ''; recomputeSoon(0); pushSoon(0); post({ type: 'eden-map:wake' }); } }; pdoc.addEventListener('visibilitychange', wake); window.parent.addEventListener('pageshow', wake); window.parent.addEventListener('online', wake);   // G3（P1）：切回前台顺手叫醒查看器（唤醒消息此前只用于休眠恢复）——宿主数据推送之外，查看器也能即时自刷新
       life.add(() => { pdoc.removeEventListener('visibilitychange', wake); window.parent.removeEventListener('pageshow', wake); window.parent.removeEventListener('online', wake); }); }
-    if (tavern_events.GENERATION_AFTER_COMMANDS) listen(tavern_events.GENERATION_AFTER_COMMANDS, (type) => { clearTimeout(evT); recompute(true); MO.stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
+    onT('GENERATION_AFTER_COMMANDS', (type) => { clearTimeout(evT); recompute(true); MO.stateNow = ''; stateInject(typeof type === 'string' ? type : 'normal'); });   // (a) 重生 / swipe：用被替换那一楼之前的状态
     push(); loadSeen(); recompute(); stateInject(); startTick();   // interaction-modes.mjs 经桥静态可用（原动态加载后补一次注入，改为启动序列里统一做）
     (window.parent.requestIdleCallback || (f => setTimeout(f, 1500)))(() => { if (life.dead) return; afterGen(() => preload().catch(e => console.warn('[map] eden-map: preload failed', e))); try { budgetSweep(); } catch (e) {} setTimeout(() => { if (!life.dead) autoCheck().catch(() => {}); }, window.parent.__autoCheckDelay ?? 6000); if (splashDue()) { lsSet('edenMapSplashSeen', String(VER || 'dev')); runCheck(); } else setTimeout(runCheck, 4000); setTimeout(() => { if (!life.dead) afterGen(() => wbAuto().catch(e => console.warn('[eden-map] 世界书自动同步失败', e))); }, 8000); });   // 打开聊天后空闲时：测速选线 + 预加载；稍后自检一次
   })();

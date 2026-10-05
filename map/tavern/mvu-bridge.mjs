@@ -3,11 +3,13 @@
 // refreshVarMap / setVarUser（tavern/stat-path-mapping.mjs 变量映射编排）、readVars（A-11 聊天变量 → 本机退回）全部搬来这里，
 // 并统一编排 mvu-snapshot.mjs（快照选取）、tabledb-bridge.mjs（表格数据库只读）、mvu-readers.mjs（时间 / 着装 / 名册 / 立绘，按需加载）。
 //
-// 宿主隔离契约：本模块是 map/tavern/ 里唯一允许直接触碰 Mvu / SillyTavern 全局变量的模块
-// （tests/mvu_bridge.test.mjs 按源码机械检查），其他业务模块一律经这里拿数据。
+// 宿主隔离契约（F0 起）：碰宿主全局（Mvu / SillyTavern / 酒馆助手接口）的唯一一处是 host-adapter.mjs
+// （tests/mvu_bridge.test.mjs 与看门狗检查 10 按源码机械检查）；本模块是它对引擎的包装——读快照、找地点、
+// 变量映射、名册，全部向适配层要，自己不再直接碰全局。其他业务模块一律经这里拿数据。
 // 桥自己不碰 DOM、不发消息、不做 UI——变化通过构造参数的回调（onMvuLoad / onTableUpdate / onRoster）告诉宿主；
 // 底层四个模块全是纯函数，node 单测桩出全局变量即可覆盖（无浏览器）。
 import { thFn, fnOk } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import * as SNP from './mvu-snapshot.mjs';
 import * as AD from './stat-path-mapping.mjs';
 import * as DB from './tabledb-bridge.mjs';
@@ -26,10 +28,11 @@ import { pickValues } from '../core/layer-values.mjs';
 
 /** 宿主接口的取法（S9-2 pack-gate / card-source 用：读角色卡与它自己的世界书）：本模块是 Mvu / SillyTavern 的唯一属主，所以取法在这里，card-source 只拿函数。 */
 export function hostAccess() {
-  const par = () => { try { return window.parent; } catch (e) { return null; } };
-  return { th: () => thFn('getCharData'), ctx: () => SillyTavern.getContext(), parentTh: () => par()?.TavernHelper?.getCharData, parentCtx: () => par()?.SillyTavern?.getContext?.(),
+  const par = () => hostAdapter.top();
+  const parFns = () => hostAdapter.fnsFor([par()]);
+  return { th: () => thFn('getCharData'), ctx: () => hostAdapter.chat.context(), parentTh: () => parFns()('getCharData'), parentCtx: () => hostAdapter.chat.parentContext(),
     bookNames: () => thFn('getCharWorldbookNames')?.('current'), getBook: n => thFn('getWorldbook')?.(n),
-    stat: () => { try { return typeof Mvu !== 'undefined' ? Mvu.getMvuData?.({ type: 'message', message_id: 'latest' })?.stat_data ?? null : null; } catch (e) { return null; } } };   // read only (S9-3: the shape the automatic pack's variables are found in)
+    stat: () => hostAdapter.mvu.data({ type: 'message', message_id: 'latest' })?.stat_data ?? null };   // read only (S9-3: the shape the automatic pack's variables are found in)
 }
 
 export class MVUBridge {
@@ -78,20 +81,19 @@ export class MVUBridge {
   }
 
   // ---------------- 全局访问（本模块独占） ----------------
-  #mvu() { return typeof Mvu !== 'undefined' ? Mvu : null; }
-  #chat() { try { return SillyTavern?.chat; } catch (e) { return undefined; } }
-  mvuPresent() { return typeof Mvu !== 'undefined'; }
-  mvuUsable() { return this.mvuPresent() && typeof this.#mvu()?.getMvuData === 'function'; }
-  stContext() { return SillyTavern.getContext(); }
-  chatLen() { const ch = this.#chat(); return Array.isArray(ch) && ch.length ? ch.length : -1; }
-  chatAt(i) { const ch = this.#chat(); return ch && typeof ch === 'object' ? ch[i] ?? null : null; }
-  swipeAt(i) { return this.#chat()?.[i]?.swipe_id; }
-  cardKey() { try { const c = SillyTavern.getContext(); return c.characters?.[c.characterId]?.avatar || c.name2 || ''; } catch (e) { return ''; } }
-  chatId() { try { return String(SillyTavern.getContext().chatId || ''); } catch (e) { return ''; } }
+  // F0：宿主全局的读取（Mvu / SillyTavern.chat / getContext）都搬进适配层——这一节只剩转手，桥不再自己点全局。
+  mvuPresent() { return hostAdapter.mvu.present(); }
+  mvuUsable() { return hostAdapter.mvu.usable(); }
+  stContext() { return hostAdapter.chat.context(); }
+  chatLen() { return hostAdapter.chat.floorCount(); }
+  chatAt(i) { return hostAdapter.chat.floorAt(i); }
+  swipeAt(i) { return hostAdapter.chat.floorAt(i)?.swipe_id; }
+  cardKey() { try { const c = hostAdapter.chat.context(); return c?.characters?.[c.characterId]?.avatar || c?.name2 || ''; } catch (e) { return ''; } }
+  chatId() { try { return String(hostAdapter.chat.context().chatId || ''); } catch (e) { return ''; } }
   /** 酒馆里现存的全部聊天 id（角色聊天 + 群聊）；读不到就返回 null（调用方什么都不删）。接口：POST /api/chats/search（空查询 = 全部），失败 / 结果为空 / 里面没有当前聊天 = 不可信 → null */
   async listChatIds() {
     try {
-      const c = SillyTavern.getContext(), cur = this.chatId(); if (!cur || typeof c.getRequestHeaders !== 'function') return null;
+      const c = hostAdapter.chat.context(), cur = this.chatId(); if (!cur || typeof c.getRequestHeaders !== 'function') return null;
       const P = this.#parent() || window, r = await P.fetch('/api/chats/search', { method: 'POST', headers: { ...c.getRequestHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '' }) });
       if (!r.ok) return null;
       const rows = await r.json(); if (!Array.isArray(rows)) return null;
@@ -101,14 +103,14 @@ export class MVUBridge {
     } catch (e) { return null; }
   }
   // 标题栏显示用：{{user}} 换成酒馆里的用户名，取不到就去掉（发给地图的仍是原值，地图自己处理）
-  userName(s) { let n = ''; try { n = SillyTavern.getContext().name1 || ''; } catch (e) {} return String(s).replace(/\{\{user\}\}/g, n).trim(); }
+  userName(s) { let n = ''; try { n = hostAdapter.chat.context().name1 || ''; } catch (e) {} return String(s).replace(/\{\{user\}\}/g, n).trim(); }
   // 酒馆助手接口在不在（A-11 读写路径共用）
   #varsOk() { return fnOk('getVariables') && (fnOk('updateVariablesWith') || fnOk('replaceVariables') || fnOk('insertOrAssignVariables')); }
   #store() { try { return this.o.storage?.() ?? null; } catch (e) { return null; } }
 
   // ---------------- stat_data 快照 ----------------
   /** 楼层读取（mvu-snapshot.mjs / interaction-modes.mjs 的 readFloor 契约）：该楼当前 swipe 的变量 + 隐藏 / 角色标注 */
-  readFloor(i) { const c = SillyTavern?.chat?.[i]; return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; }
+  readFloor(i) { const c = hostAdapter.chat.floorAt(i); return c ? { vars: c.variables?.[c.swipe_id ?? 0], system: !!c.is_system, role: c.is_user ? 'user' : 'assistant' } : null; }
   get pickStat() { return SNP.pickStat; }
   get modes() { return MDm; }   // 交互方式纯逻辑模块（interaction-modes.mjs）：modes-flow.mjs 靠它做状态行注入 / 检查点 / 标签对账；没有这个访问器它们静默失效
   #statSnap;   // A-3：一轮（同一个同步任务）只取一次 stat_data 快照；微任务里作废。undefined = 本轮还没取
@@ -116,7 +118,7 @@ export class MVUBridge {
   mvuStat() {
     if (this.#statSnap !== undefined) return this.#statSnap;
     let v = null, stt = 'ok';
-    try { v = this.#mvu()?.getMvuData?.({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
+    try { v = hostAdapter.mvu.data({ type: 'message', message_id: 'latest' })?.stat_data || null; } catch (e) {}
     try { const n = this.chatLen(); if (n > 0) { const r = SNP.pickStat(i => this.readFloor(i), n, { generating: this.o.isGenerating?.() || false });
       this.snapFloor = r.floor; this.snapTop = r.top; if (!v || r.floor === r.top) v = r.stat || v; stt = v ? r.state : (this.mvuPresent() ? r.state : 'ok'); } } catch (e) {}
     this.snapState = stt; this.#statSnap = v; queueMicrotask(() => { this.#statSnap = undefined; }); return v;
@@ -129,7 +131,7 @@ export class MVUBridge {
   markVarUpdate() { this.invalidate(); this.varEpoch += 1; return this.varEpoch; }
   varUpdateSeq() { return this.varEpoch; }
   /** 某一楼的 stat_data（行程 / 冲突对账用；那一楼没有返回 null） */
-  perFloorStat(floor) { try { return this.#mvu()?.getMvuData?.({ type: 'message', message_id: floor })?.stat_data || null; } catch (e) { return null; } }
+  perFloorStat(floor) { try { return hostAdapter.mvu.data({ type: 'message', message_id: floor })?.stat_data || null; } catch (e) { return null; } }
 
   // ---------------- 变量映射（stat-path-mapping.mjs） ----------------
   /** 换卡 / 改映射后重算生效映射。返回「签名变了」（宿主据此发 eden-map:varmap） */
@@ -167,7 +169,7 @@ export class MVUBridge {
    */
   cardTried = [];
   async cardInfo() {
-    const acc = { ...hostAccess(), ctx: () => this.stContext(), parentTh: () => this.#parent()?.TavernHelper?.getCharData, parentCtx: () => this.#parent()?.SillyTavern?.getContext?.() };
+    const acc = { ...hostAccess(), ctx: () => this.stContext(), parentTh: () => hostAdapter.fnsFor([this.#parent()])('getCharData'), parentCtx: () => hostAdapter.chat.parentContext() };
     const { card, tried } = await readCardBasics(acc);   // 三级降级的实现在 card-source.mjs（S9-2）；这里照旧给版权申明页（不含 spatialOs）
     this.cardTried = tried;   // 试过哪几档（有接口才算试过）：bridge = 酒馆助手，context = 酒馆上下文（含父窗口）；全空 = 一档也没有接口
     if (!card) return null;
@@ -306,7 +308,7 @@ export class MVUBridge {
   #whenMvuP = null;
   /** waitGlobalInitialized('Mvu')：没装 MVU 时也照常落定（不 reject），宿主接着挂楼层事件 */
   whenMvu() { this.#whenMvuP ??= new Promise(res => { try { Promise.resolve(thFn('waitGlobalInitialized')?.('Mvu')).then(res, res); } catch (e) { res(); } }); return this.#whenMvuP; }
-  varUpdateEvent() { return this.#mvu()?.events?.VARIABLE_UPDATE_ENDED || null; }
+  varUpdateEvent() { return hostAdapter.mvu.events()?.VARIABLE_UPDATE_ENDED || null; }
 
   // ---------------- 会话快照导出（Session Replay，只读） ----------------
   /** 只读导出 MVU 状态与聊天变量（SessionSnapshot 的 mvu 段，契约在 map/tavern/context.mjs）。

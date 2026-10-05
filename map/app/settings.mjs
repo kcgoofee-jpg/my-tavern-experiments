@@ -10,6 +10,7 @@ import { LANG, applyI18nTo } from './i18n.mjs';
 import { buildInfo } from './topbar.mjs';
 import { tierAvail } from './sharpness-tiers.mjs';
 import { buildPage, isBuilt, pageEl, placeIn, runLeave, runShow, searchIndex } from './settings-pages.mjs';
+import { hostAdapter } from '../tavern/host-adapter.mjs';   // F0：查看器读宿主全局的唯一出口（版权申明页的卡信息兜底探测）
 import { bootEffects } from './settings-wire.mjs';
 import { narrowNow } from './subpage3d-host.mjs';
 import { noticeRefresh } from './notice-layer.mjs';
@@ -60,7 +61,8 @@ export function setAiSum(v) { aiSum = v && typeof v === 'object' ? { n: +v.n || 
 // 版权申明页：角色卡信息 + 地图项目与免责声明。不做真伪鉴定，只提示风险。
 // 卡信息**不在这里摸宿主全局**（任务四）：优先用卡内脚本经桥（mvu-bridge.cardInfo 的三级降级）推来的
 // eden-map:cardinfo；没有才自己探父级窗口（同源 srcdoc 才碰得到）；全都没有 = 安全占位。
-// 旧版直接读本窗口的 window.SillyTavern——嵌在 iframe 里那个全局必然读不到，于是永远误报「未接入酒馆」。
+// 旧版直接读本窗口的酒馆全局——嵌在 iframe 里那个全局必然读不到，于是永远误报「未接入酒馆」。
+// F0：探测这一步也进适配层（hostAdapter.ui.probeContext / probeCharName），这一层不再自己点宿主对象。
 export function cardOf() {
   if (cardInfo) return cardInfo;
   const pick = (c, src) => {
@@ -71,8 +73,8 @@ export function cardOf() {
       tags: Array.isArray(d.tags) ? d.tags.map(String).slice(0, 12) : [], notes: String(d.creator_notes || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200), src };
   };
   for (const w of [window.parent, window]) {
-    try { const c = w?.SillyTavern?.getContext?.(); const r = pick(c?.characters?.[c.characterId], 'probe'); if (r) return r; } catch (e) {}
-    try { const n = w?.TavernHelper?.getCharacterName?.(); if (n) return { name: String(n), creator: '', version: '', avatar: '', tags: [], notes: '', src: 'probe' }; } catch (e) {}
+    try { const c = hostAdapter.ui.probeContext(w); const r = pick(c?.characters?.[c.characterId], 'probe'); if (r) return r; } catch (e) {}
+    try { const n = hostAdapter.ui.probeCharName(w); if (n) return { name: String(n), creator: '', version: '', avatar: '', tags: [], notes: '', src: 'probe' }; } catch (e) {}
   }
   return null;
 }

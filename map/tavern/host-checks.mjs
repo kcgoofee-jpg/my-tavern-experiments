@@ -1,6 +1,7 @@
 // 启动自检、开场自检卡、宿主提示、自动检查更新与版本切换（S5-1 自 eden-map.js 原样搬出）。
 // 工厂风格同 host-*.mjs：createX(host) 只在入口调用一次；host 是入口给的依赖袋（活的变量 = 取 / 存器，函数 = 晚绑定转发），DEPS 是本模块要用的全部键。
 import { cdnFetch, fnOk, hostFn, thFn } from './host-tavernhelper.mjs';
+import { hostAdapter } from './host-adapter.mjs';
 import { worldbookPrefix } from '../core/pack.mjs';
 import { parseScriptBase, contentBase, entryUrl, updateChannel } from './follow-pin.mjs';
 export const DEPS = [
@@ -48,7 +49,7 @@ export function createHostChecks(host) {
       const ln = { swappable, name: (LINES.find(l => l.key === host.line) || {}).name || '',
         ok: !swappable ? null : host.lineP ? await host.lineP.then(ok => ok && fetchHtml().then(() => true, () => false), () => false) : host.html ? await host.html.then(() => true, () => false) : null };
       checkFacts = {
-        api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: typeof tavern_events === 'object' },
+        api: { getChatMessages: fnOk('getChatMessages'), eventOn: fnOk('eventOn'), injectPrompts: fnOk('injectPrompts'), tavern_events: hostAdapter.events.present() },
         vars: varsOk(), ejs: (() => { try { return typeof (window.parent.EjsTemplate || globalThis.EjsTemplate) === 'object'; } catch (e) { return false; } })(),
         db: mvuBridge.dbFacts(true),
         mvu, varmode, dup: { others: loads, oldStyle, replaced: !root.isConnected }, line: ln, worldbook: await wbFacts(), wbWhere: await wbWhere(), wbBook: await wbBook(), version: { script: plainVer(VER), viewer: viewerVer }, update: await updateFacts(),
