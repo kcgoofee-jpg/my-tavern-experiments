@@ -26,6 +26,7 @@ import { createPresence } from './presence.js';   // S7-3：人物头像（聊�
 import { createLabelGuard } from './labels.js';   // S7-3：被楼体挡住的标注隐掉
 import { createBackdrop, PERIOD_MIN } from '../three/backdrop.mjs';   // ESTATE-MODES-1 7c：分时段天空渐变 + 云海（与地标查看器共用）；PERIOD_MIN = 时钟胶囊的时段 → 关键帧时刻
 import { flatColorOf, patchSurface, patchBackFace, applyNightFlat, applyGlow, isGlowMaterial } from '../three/night-look.mjs';   // A4：夜里把烘焙的日光对比抹平；D38：夜里亮的是窗
+import { patchInterior, loadInteriors, armInteriors, aimInterior, interiorCount } from '../three/interior-look.mjs';   // INTERIOR-WINDOWS：窗后摆一间带纵深的房间
 import { LayerRegistry } from '../core/layer-registry.mjs';                                                           // P3-C：fx 槽位按注册表契约挂载
 
 const T0 = performance.now();
@@ -215,16 +216,14 @@ GROUNDS.forEach((o) => splitWalls(o, { THREE, renderer, scene, STAT, SITE_EXTRA 
 scene.add(siteG);
 { const bb = new THREE.Box3().setFromObject(siteG); SPH = sphereOfBox(bb); }   // near / far 取景量一次
 backdrop.fit(siteG); paintBackdrop();
-const HOUSE_SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell'));
-const SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
+const HOUSE_SHELL = Object.values(MESH).filter((m) => m.name.startsWith('house_shell')), SITE_MESHES = Object.values(MESH).filter((m) => !m.name.startsWith('house_shell'));
 
 /* ---------------- Part 9-1 / 9-2：昼夜调色与 fx 槽位粒子 ---------------- */
 // 外观这批是烘焙光照的 MeshBasic（不吃灯），昼夜只能靠调色：把每件材质的基准色记下来，按环境参数改 tint。
 // 室内体量是真灯（Lambert），走 applyDayNight 的太阳 / 半球光那一支。
 // 夜里再向每块烘焙面自己的平均色提（night-look.mjs）：烘焙的日光长影子和受光面对比抹平，只剩月光 / 环境光（A4）。
 // 夜里亮的是窗：清单 x-night-glow 点的材质（没点就按材质名认窗 / 玻璃）加一层暖光，按世界坐标分格——每层亮度不同、约两成窗暗着。
-const GRADE_TARGETS = [], NIGHT_TARGETS = [], GLOW_TARGETS = [], GLOW_NAMES = [], CUT_TARGETS = [];
-const GLOW_LIST = MAN['x-night-glow'];   // 清单可点名夜里发光的材质（包数据；引擎里不写卡词）
+const GLOW_LIST = MAN['x-night-glow'], GRADE_TARGETS = [], NIGHT_TARGETS = [], GLOW_TARGETS = [], GLOW_NAMES = [], CUT_TARGETS = [];   // 清单可点名夜里发光的材质（包数据；引擎里不写卡词）
 for (const o of [...SITE_MESHES, ...HOUSE_SHELL, ...SITE_EXTRA]) {
   const m = o?.material; if (!m?.color?.setRGB || m.isShaderMaterial) continue;
   GRADE_TARGETS.push({ material: m, base: [m.color.r, m.color.g, m.color.b] });
@@ -234,8 +233,10 @@ for (const o of [...SITE_MESHES, ...HOUSE_SHELL, ...SITE_EXTRA]) {
   const u = patchSurface(THREE, m, { flat: flatColorOf(THREE, o), back: shell ? [0.55, 0.52, 0.47] : null, glow });   // 截面色：浅灰（原先近黑，F2 剖切时翼楼成了黑块）；只在真的剖开时涂（applyMode 开 uCut）
   NIGHT_TARGETS.push({ u });
   if (shell) CUT_TARGETS.push(u);
-  if (glow) GLOW_TARGETS.push({ u });
+  if (glow) { GLOW_TARGETS.push({ u }); patchInterior(THREE, m, { day: true }); }   // 窗：夜光之外再挂一层窗内景（没图集时 uIntOn=0，等于没挂）
 }
+// 窗内景图集（清单 x-interior，包数据）：异步到齐再打开，拿不到就一直是一层平光
+loadInteriors(THREE, MAN['x-interior'], M3D.base, { low: LOW, aniso: LOW ? ANISO_LOW : ANISO }).then(armInteriors);
 // 粒子按 LayerRegistry 契约注册在 fx 槽位（第 9 槽）；绘制仍用本页的渲染器 / 场景。
 const FX_REG = new LayerRegistry();
 const { engine: fx3d } = registerFX(FX_REG, {
@@ -263,7 +264,6 @@ function attachAurora() {
   m.position.set(0, h * .34, -(camera.near + 5));   // 紧贴近平面（加法混合、不写深度，原先 600 m 处；near 贴合场景后 600 m 在近平面之内会被裁掉）
   m.scale.set(w * 1.3 / 1100, h * .62 / 360, 1);
 }
-// 背面（剖开的墙内侧）涂深色：剖切时看起来像墙体截面（补丁在 night-look.mjs）
 
 /* ---------------- 室内体量 glb（进楼层视图时才加载） ---------------- */
 const houseClip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
@@ -1063,7 +1063,7 @@ function loop(now) {
   if (needs || moving || STATS) {
     needs = false;
     if (now - lastPropPulse > 66) { lastPropPulse = now; pulseProps(now); }   // 发光拾取物的呼吸：只在这一帧本来就要画时跟着变（core/stash3d.mjs 的 propGlow）
-    adapt(now, moving); fitDepth();
+    adapt(now, moving); fitDepth(); aimInterior(camera);   // 窗内景：每帧把眼睛位置递给窗材质（interior-look.mjs）
     renderer.render(scene, camera); lastInfo = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
     labelR.render(scene, camera); cullLabels();
     if (cardFor && !cardAt) placeCard();
@@ -1126,7 +1126,7 @@ window.__estate = {
     floor: name => npcs.get(name)?.floor ?? null,
     describe: () => ({ ...npcWalker.describe(), clock: npcClock, rounds: npcRounds, scheduled: !!npcSched }) },
   dayNight: { setClock: (c) => dayNight.setClock(c), describe: () => ({ ...dayNight.describe(), graded: GRADE_TARGETS.length }), period: () => periodOv, setPeriod },   // Part 9-1（探针 / 浏览器测试用）
-  nightLook: () => ({ glow: [...new Set(GLOW_NAMES)], glowOn: GLOW_TARGETS.length, uGlow: GLOW_TARGETS[0]?.u.uGlow.value ?? 0, uNight: NIGHT_TARGETS[0]?.u.uNight.value ?? 0, flat: NIGHT_TARGETS.filter(t => t.u.uFlatOn.value).length, phase: lastEnvPhase }),   // D38 探针：夜里该亮的窗亮了没有
+  nightLook: () => ({ glow: [...new Set(GLOW_NAMES)], glowOn: GLOW_TARGETS.length, uGlow: GLOW_TARGETS[0]?.u.uGlow.value ?? 0, uNight: NIGHT_TARGETS[0]?.u.uNight.value ?? 0, flat: NIGHT_TARGETS.filter(t => t.u.uFlatOn.value).length, phase: lastEnvPhase, interior: interiorCount() }),   // D38 探针：夜里该亮的窗亮了没有（interior = 挂上窗内景的窗材质数）
   fx: { set: (type, intensity) => fx3d?.setFXType(type, intensity) || null, describe: () => fx3d?.describe() || null,
     layers: () => FX_REG.describe(), mounted: () => !!fx3d?.object?.parent },                                                        // Part 9-2
   people: { set: setPeople, list: () => PRES.list, chips: () => [...document.querySelectorAll('.pc')].map((b) => b.dataset.name || b.textContent), count: () => PRES.count(), located: () => [...LOCATED] },   // S7-3（探针用）

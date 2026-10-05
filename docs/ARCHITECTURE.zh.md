@@ -356,6 +356,7 @@ tools, tests, blender  builders, checks, tests (never shipped to the viewer)
 | `daynight.mjs` | 动态昼夜：世界时钟换成四时段光照、雾、自发光参数并平滑过渡。 |
 | `depth-fit.mjs` | 深度缓冲取景：按场景包围球和相机距离算 near / far（每帧重算），并提供深度 / 模板位数读数给调试叠层。 |
 | `instancing.mjs` | 静态网格的 GPU 实例化，带实例到原网格的索引表。 |
+| `interior-look.mjs` | 玻璃后面的窗内景（interior mapping）：把视向射线打进每扇窗后的一个虚拟箱体，看它从哪张面出去，出去点的比例就是拼版图集里那一格的 uv，于是窗读作一间有纵深的房间（透视相机下房间还会跟着视角滑）。房间与亮暗沿用窗光那一套世界坐标哈希；图集是可选的，没到位就整层不开。 |
 | `lod-controller.mjs` | 把 `core/lod.mjs` 的决策接到 three 场景上的动态 LOD 控制器。 |
 | `night-look.mjs` | 烘焙外观的夜面：给材质打补丁，把每块烘焙面向它自己的平均色提，抹平烘进去的日光长影子与受光面，读成平的月光 / 环境光；另可只涂剖开墙的背面色。 |
 | `particles.mjs` | `fx` 槽位的粒子渲染器（天气、极光）：一种效果一次 draw call，描述符由调用方注册。 |

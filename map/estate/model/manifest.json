@@ -9,6 +9,8 @@
  "f1_z": 30.0,
  "v": "2026-10-03-b6",
  "x-night-glow": ["m_win_glass"],
+ "x-interior": { "_说明": "窗内景图集（INTERIOR-WINDOWS）：一张 6 列 × 6 行的格子图，列 = 房间类别（bedroom / corridor / study / salon / service / stairs，顺序见 map/three/interior-look.mjs 的 FACES 与 blender/estate/interior_maps.py 的 ROOMS），行 = 箱体面（far / near / right / left / top / bottom）。着色器把视向射线打进窗后的虚拟箱体，按出射点在面上的比例取那一格。由 /usr/bin/python3 tools/interior_atlas.py build 从 blender/eden_interior_maps.py 的出图拼成；night = 夜（ std 档），night_low = 夜（低档），day = 昼。",
+  "night": "interior_night.jpg", "night_low": "interior_night_low.jpg", "day": "interior_day.jpg" },
  "floors": [
   { "id": "B2", "label": "地下二层", "i18n": { "en": { "label": "Basement 2" } } },
   { "id": "B1", "label": "地下一层", "i18n": { "en": { "label": "Basement 1" } } },

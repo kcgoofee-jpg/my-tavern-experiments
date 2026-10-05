@@ -377,6 +377,7 @@ fake THREE.
 | `daynight.mjs` | Dynamic day / night: world clock to four-period lighting, fog and emissive parameters with smoothing. |
 | `depth-fit.mjs` | Depth-buffer fitting: near / far from the scene bounding sphere and camera distance (recomputed every frame), plus depth / stencil bit read-out for the debug overlay. |
 | `instancing.mjs` | GPU instancing of static meshes with an instance-to-mesh index map. |
+| `interior-look.mjs` | Interior mapping behind glazing: the view ray is traced through a virtual box behind each window and its exit face picks a cell of a room atlas, so windows read as rooms with depth (under a perspective camera the rooms also slide). Room and light level come from the same world-position hash as the window glow; the atlas is optional and the layer stays off without it. |
 | `lod-controller.mjs` | Dynamic LOD controller applying `core/lod.mjs` decisions to a three scene. |
 | `night-look.mjs` | Night look for baked exteriors: a material patch that mixes each baked surface toward its own average colour so the baked sun shadows and lit faces read as flat moonlight, with a back-face colour for cut walls. |
 | `particles.mjs` | `fx` slot particle renderer (weather, aurora): one draw call per effect, descriptors registered by the caller. |
