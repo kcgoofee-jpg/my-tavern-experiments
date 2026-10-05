@@ -57,3 +57,5 @@ jobs:
         run: node tools/browser/topo_dairy.mjs /tmp/topo_dairy
       - if: ${{ !cancelled() }}
         run: node tools/browser/boot_watchdog.mjs /tmp/boot_watchdog   # F-TT：查看器有一个子资源不落地时自己起来（WebKit + Chromium）
+      - if: ${{ !cancelled() }}
+        run: node tools/browser/f3_tt_webkit.mjs /tmp/f3_tt_webkit   # F3：WKWebView 复制 / 存文件 / 外链三级兜底 + 聊天界面取层（WebKit + Chromium，可信手势下）
