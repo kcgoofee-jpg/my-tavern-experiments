@@ -10,21 +10,29 @@ import { createFacts } from '../map/tavern/feature-health.mjs';
 
 const rd = f => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 
-test('host-routes：版本推断、换线路地址（DIST-2：npm 线路，顺序 npmmirror → jsDelivr → unpkg）', () => {
+test('host-routes：版本推断、换线路地址（DIST-3：仓库线路 jsdmirror → jsDelivr → fastly；npm 表封存备选）', () => {
   const R = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/', PACK_IN: null });
   assert.equal(R.VER, '0.9.7'); assert.ok(R.swappable);
-  assert.deepEqual(R.LINES.map(l => l.key), ['npm-cn', 'npm-js', 'npm-unpkg']);       // Q-26 定的顺序
+  assert.deepEqual(R.LINES.map(l => l.key), ['npm-cn', 'npm-js', 'npm-unpkg']);       // Q-26 定的顺序（npm 备选表）
   assert.equal(R.PKG, 'eden-map-engine');
   assert.equal(R.baseFor('npm-js'), 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.7/map/');
   assert.equal(R.baseFor('npm-cn'), 'https://registry.npmmirror.com/eden-map-engine/0.9.7/files/map/');
   assert.equal(R.baseFor('npm-unpkg'), 'https://unpkg.com/eden-map-engine@0.9.7/map/');
   assert.equal(R.baseFor(), R.baseFor('npm-cn'), '没选线路时按表的第一条（探测会把它换成能用的那条）');
   assert.equal(R.tagOf('S2:0.1.0'), 'map-s2-v0.1.0'); assert.equal(R.plainVer('S2:0.1.0'), '0.1.0');
-  // 仓库线路的入口（--follow 加载器、用户手里钉了标签的旧脚本）也认版本：美术与三维改从同版本 npm 包取
+  // 仓库线路（docs/delivery.md §3）：换线路只换 host，路径与 ref 一字不改；标签地址认得出版本
   const G = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@map-s2-v0.1.0/map/', PACK_IN: null });
   assert.equal(G.VER, 'S2:0.1.0'); assert.ok(G.swappable);
-  assert.equal(G.baseFor('npm-js'), 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.1.0/map/');
-  // 认不出版本（分支 / 提交号）或不在 CDN 域名下（本地开发）→ 不开线路，地址照旧用脚本自己所在的地方
+  assert.deepEqual(G.LINES.map(l => l.key), ['gh-cn', 'gh-js', 'gh-fastly']);
+  assert.equal(G.baseFor('gh-cn'), 'https://cdn.jsdmirror.com/gh/o/r@map-s2-v0.1.0/map/');
+  assert.equal(G.baseFor('gh-fastly'), 'https://fastly.jsdelivr.net/gh/o/r@map-s2-v0.1.0/map/');
+  assert.deepEqual(G.pkgBases('gh-js', { prefixes: [['art/tc_mid', 'eden-map-art-tc_mid']] }), {}, '仓库线路没有跨包：整个仓库同一个根');
+  // 跟随版的提交号地址：一样可换线（提交号不可变，三条线路给同一份内容），线路表里没有 npm 键时退回第一条
+  const S = createRoutes({ scriptBase: 'https://cdn.jsdmirror.com/gh/o/r@332c9469abcd/map/', PACK_IN: null });
+  assert.equal(S.VER, null); assert.ok(S.swappable);
+  assert.equal(S.baseFor('npm-js'), 'https://cdn.jsdmirror.com/gh/o/r@332c9469abcd/map/', '旧线路键不认识的地址不能变 undefined');
+  assert.equal(S.baseFor('gh-js'), 'https://cdn.jsdelivr.net/gh/o/r@332c9469abcd/map/');
+  // 认不出版本（分支）或不在 CDN 域名下（本地开发）→ 不开线路，地址照旧用脚本自己所在的地方
   const B = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@preview/map/', PACK_IN: null });
   assert.equal(B.VER, null); assert.ok(!B.swappable); assert.deepEqual(B.LINES, []); assert.equal(B.baseFor('npm-js'), 'https://cdn.jsdelivr.net/gh/o/r@preview/map/');
   const L = createRoutes({ scriptBase: 'http://localhost:8080/map/', PACK_IN: null });
@@ -43,6 +51,15 @@ test('跨包表：包里每个包都拿到这条线路上的地址，索引之�
   const P = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/npm/other-pkg@1.2.3/map/', PACK_IN: { manifest: { cdn: { npm: 'other-pkg' } } } });
   assert.equal(P.PKG, 'other-pkg');
   assert.equal(P.pkgBases('npm-js', { prefixes: [] })['other-pkg'], 'https://cdn.jsdelivr.net/npm/other-pkg@1.2.3/map/');
+});
+
+test('跨包索引只在 npm 线路取；仓库线路没有包表（DIST-3）', async () => {
+  const idx = { version: '0.9.7', paths: { 'art/tc_mid': 'eden-map-art-tc_mid' } };
+  const fetchJSON = async () => idx;
+  const G = createRoutes({ scriptBase: 'https://cdn.jsdelivr.net/gh/o/r@332c9469abcd/map/', PACK_IN: null, fetchJSON, line: () => 'gh-js' });
+  assert.equal(await G.PKGS.table(), null, '仓库线路：没有包表，底图与模型照旧按 <base> 取');
+  const R = createRoutes({ scriptBase: 'https://unpkg.com/eden-map-engine@0.9.7/map/', PACK_IN: null, fetchJSON, line: () => 'npm-unpkg' });
+  assert.equal((await R.PKGS.table()).bases['eden-map-art-tc_mid'], 'https://unpkg.com/eden-map-art-tc_mid@0.9.7/map/');
 });
 
 test('线路测速：按「字节 / 毫秒」算分，小响应不算有效测量（2026-09-29 重做）', () => {

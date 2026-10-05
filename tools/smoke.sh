@@ -6,7 +6,7 @@
 #   3. map/viewer.html 的内联脚本抽出来 node --check；map/*.js、map/*.mjs、map/tavern/*.js|mjs 也 node --check
 #   4. map/data/*.json、map/i18n/*.json 能解析
 #   5. 可选 --cdn <ref>：两条线都查——该 ref 下 map/ 的一组文件（固定几个入口 + 随机瓦片）走仓库线路，
-#      再加钉版本的 npm 引擎包（入口、页面、索引、清单、一张底图、一份模型清单），要求全部 200
+#      再加三条仓库线路（jsdmirror / jsDelivr / fastly）各取代表文件（代码、页面、数据、一张底图、一份模型清单），要求全部 200
 #   6. tools/*.sh + tools/**/*.sh lint：`$var` 紧跟非 ASCII 字符（macOS bash 3.2 下会被吞进变量名报 unbound variable）；
 #      裸 cat/ls（用户 shell 把 cat/ls 起了坏别名，脚本要用 `command cat`/`command ls`）
 #   7. 架构看门狗（tools/check_architecture.py，8 道防线（含注释卡词）+ tools/arch_baseline.json 只减不增账本）：
@@ -105,28 +105,26 @@ PY
 }
 step "JSON（map/data、map/i18n）" json_check
 
-# DIST-2：交付搬到 npm 之后，smoke --cdn 要查两条线——① 钉版本的 npm 包（用户真正用的那条），
-# ② 仓库线路的 ref（--follow 开发通道仍然从那里进）。两条分别报，坏哪条写哪条。
-npm_check() {
-  local ver pkg base bad=0 u c idx
-  ver=$(command cat VERSION); pkg=$(python3 -c "import json;print(json.load(open('map/packs/eden/manifest.json'))['cdn']['npm'])")
-  base="https://cdn.jsdelivr.net/npm/$pkg@$ver/map"
-  for u in tavern/eden-map.js viewer.html data/assets.json data/maps.json; do
-    c=$(curl -sIL -o /dev/null -m 20 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c npm/$pkg@$ver/$u"; bad=1; }
+# DIST-3（docs/delivery.md §5 第 4 条）：交付回到仓库线路，smoke --cdn 查两条——① 正式标签上的代表文件，三条线路都要答得出
+# （代码 / 页面 / 数据 / 底图 / 模型：换线路 = 只换 host，同一份内容）；② HEAD ref 的一批 URL（原来那条自检）。
+# npm 那条撤了：包从未发布（用户 2026-10-04：不做 npm），查它只会把 smoke --cdn 永远变红。
+# HEAD 一次；不是 200 就隔 3 秒再试一次。jsDelivr 冷路径偶发 000 / 403（2026-10-06 实测 map/app/boot.mjs、
+# map/ui/tokens.css 与一批瓦片第一轮挂、第二轮同地址 200），第一轮的结果不该算线路坏了。
+head_code() { local u=$1 c; c=$(curl -sIL -o /dev/null -m 30 -w '%{http_code}' "$u"); [ "$c" = 200 ] || { sleep 3; c=$(curl -sIL -o /dev/null -m 30 -w '%{http_code}' "$u"); }; printf '%s' "$c"; }
+gh_lines_check() {
+  git rev-parse --verify -q "$CDN^{commit}" >/dev/null || git fetch -q origin "$CDN" 2>/dev/null || true
+  local list bad=0 u host base art prop c
+  list=$(git ls-tree -r --name-only "$CDN" -- map 2>/dev/null) || { echo "本地没有 ${CDN}（先 git fetch）"; return 1; }
+  art=$(printf '%s\n' "$list" | grep -m1 -E '^map/art/[^_]+\.dzi$')
+  prop=$(printf '%s\n' "$list" | grep -m1 -E '^map/props/[^/]+/manifest\.json$')
+  for u in map/tavern/eden-map.js map/viewer.html map/data/maps.json "$art" "$prop"; do
+    [ -n "$u" ] || continue
+    for host in cdn.jsdmirror.com cdn.jsdelivr.net fastly.jsdelivr.net; do
+      base="https://$host/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
+      c=$(head_code "$base/$u"); [ "$c" = 200 ] || { echo "$c $host/$u"; bad=1; }
+    done
   done
-  # 底图与模型各按索引里的第一个前缀取一个真实文件（引擎包只发代码与数据，底图 / 模型在别的包里）
-  idx=$(python3 -c "
-import json
-a = json.load(open('map/data/assets.json')); ps = sorted(a['paths'].items()); out = []
-for k, _ in ps:
-    if k.startswith('art/') and '_files' not in k: out.append(k + '.dzi'); break
-for k, _ in ps:
-    if k.startswith('props/'): out.append(k + '/manifest.json'); break
-print(' '.join(out))")
-  for u in $idx; do
-    c=$(curl -sIL -o /dev/null -m 30 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c npm/$pkg@$ver/$u"; bad=1; }
-  done
-  echo "npm ${pkg}@${ver} (${base})"; return $bad
+  echo "三条仓库线路 @${CDN}（代码 / 页面 / 数据 / 底图 / 模型）"; return $bad
 }
 cdn_check() {
   local base="https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@$CDN"
@@ -136,11 +134,11 @@ cdn_check() {
     grep -E '_files/[0-9]+/' <<<"$list" | python3 -c "import sys,random; l=sys.stdin.read().split(); random.shuffle(l); print('\n'.join(l[:$CDN_N]))"
   } | grep -vE '\.(md|py)$' | sort -u > "$TMP/cdn"
   local bad=0 u c
-  while read -r u; do c=$(curl -sI -o /dev/null -m 20 -w '%{http_code}' "$base/$u"); [ "$c" = 200 ] || { echo "$c $u"; bad=1; }; done < "$TMP/cdn"
+  while read -r u; do c=$(head_code "$base/$u"); [ "$c" = 200 ] || { echo "$c $u"; bad=1; }; done < "$TMP/cdn"
   echo "$(wc -l < "$TMP/cdn" | tr -d ' ') 个 URL"; return $bad
 }
 [ -n "$CDN" ] && step "仓库线路 HEAD @$CDN" cdn_check
-[ -n "$CDN" ] && step "npm 包 HEAD（用户实际走的那条）" npm_check
+[ -n "$CDN" ] && step "三条仓库线路 HEAD @$CDN" gh_lines_check
 
 shell_lint() {
   # BSD grep（macOS 自带）没有 -P（PCRE），非 ASCII 判断也不好写可移植的 POSIX 正则，改用 python3。

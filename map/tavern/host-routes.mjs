@@ -1,7 +1,8 @@
-// 加载线路（npm 包）与版本识别：纯计算，不碰 DOM、不持有状态（C2 第 4 步从 eden-map.js 拆出，行为不变）。
+// 加载线路（GitHub 仓库线路；npm 表是封存备选）与版本识别：纯计算，不碰 DOM、不持有状态（C2 第 4 步从 eden-map.js 拆出，行为不变）。
 // 当前选中的线路（line / BASE / 页面缓存）与线路选择界面仍在入口 eden-map.js：它们和查看器的加载 / 卸载绑在一起。
 import { cdnFetch } from './host-tavernhelper.mjs';
 import { createPkgs } from './pkg-bases.mjs';
+import { parseScriptBase, refKind } from './follow-pin.mjs';
 
 /** 线路分数：字节 / 毫秒（读得越多、越快，分越高）。纯函数，测试直接断言。 */
 export function lineScore(bytes, ms) { return (bytes > 0 && ms > 0) ? bytes / ms : 0; }
@@ -21,20 +22,32 @@ export function probeVerdict(bytes, ms, minBytes = PROBE_MIN_BYTES) {
 /** 引擎自己的 npm 包（清单 cdn.npm 写了别的就用它；不是任何卡的名字）。包的清单与代码一起发，所以名字是常量。 */
 export const ENGINE_PKG = 'eden-map-engine';
 
-/** 引擎自己的仓库：「关于」面板与自检的更新检查走它（清单 cdn.repo 写了别的就用别的）。线路不再从仓库取文件。 */
+/** 引擎自己的仓库：「关于」面板与自检的更新检查走它（清单 cdn.repo 写了别的就用别的）。仓库名也是线路地址的默认值（清单 cdn.repo 优先）。 */
 export const ENGINE_REPO = 'kcgoofee-jpg/my-tavern-experiments';
 
-/** 线路表：仓库约 1 GB，仓库型 CDN 撑不住（2026-10-03 用户决定走 npm）。顺序 = 优先级：npmmirror → jsDelivr-npm → unpkg（Q-26）。
- *  npmmirror 排在最前是用户定的顺序；它的 unpkg files 服务只对白名单开放（cnpm/unpkg-white-list），
- *  新包一律 451/403，所以它现在必然测不过、自动落选，等白名单下来就自动生效——不用改代码（RESULT DIST-2）。
- *  每包体积上限实测 ≥ 90 MB（探针 eden-map-probe 0.0.2/0.0.3 = 45/90 MB，jsDelivr-npm 与 unpkg 都完整取回）。 */
+/** 主线路表（DIST-3 / docs/delivery.md §3）：一个仓库、按提交号或标签钉死，换线路只换 host 前缀，路径结构完全一致。
+ *  顺序 = 优先级：国内镜像 jsdmirror → 官方 jsDelivr → fastly（fastly 是独立缓存层，官方抽风时是第三条真线路）。
+ *  statically.io 与 raw.githubusercontent 实测出局：前者 30 s 只回 32 KB、跨源重定向被 CORS 拒，后者模块 MIME 是 text/plain，import 直接被拒（数字在 docs/delivery.md §2）。
+ *  地址里的 ref 来自脚本自己所在的地址（提交号 / 标签都不可变），所以 url 只吃 { repo, ref }。 */
+export const GH_LINES = [
+  { key: 'gh-cn', name: '国内镜像', name_en: 'CN mirror', short_en: 'CN', sub: 'GitHub 仓库 · jsdmirror', host: 'cdn.jsdmirror.com',
+    url: ({ repo, ref }) => `https://cdn.jsdmirror.com/gh/${repo}@${ref}/map/` },
+  { key: 'gh-js', name: 'jsDelivr', name_en: 'jsDelivr', short_en: 'jsDelivr', sub: 'GitHub 仓库 · jsDelivr', host: 'cdn.jsdelivr.net',
+    url: ({ repo, ref }) => `https://cdn.jsdelivr.net/gh/${repo}@${ref}/map/` },
+  { key: 'gh-fastly', name: 'fastly', name_en: 'fastly', short_en: 'fastly', sub: 'GitHub 仓库 · fastly', host: 'fastly.jsdelivr.net',
+    url: ({ repo, ref }) => `https://fastly.jsdelivr.net/gh/${repo}@${ref}/map/` },
+];
+
+/** 备选线路表（§4，封存不删）：仓库约 1 GB，仓库型 CDN 撑不住时（2026-10-03）改成 npm 包的写法，代码留着零维护成本；
+ *  只有脚本本身从 npm 地址加载（路径里带版本号）时才会用到它。npm 从未发布（用户 2026-10-04：不做 npm）。
+ *  npmmirror 的 unpkg files 服务只对白名单开放（cnpm/unpkg-white-list），新包必然 451/403、自动落选，等白名单下来自动生效（RESULT DIST-2）。 */
 export const NPM_LINES = [
   { key: 'npm-cn', name: '国内镜像', name_en: 'CN mirror', short_en: 'CN', sub: 'npm 包 · npmmirror', host: 'registry.npmmirror.com',
-    pkgUrl: (pkg, v) => `https://registry.npmmirror.com/${pkg}/${v}/files/map/` },
+    url: ({ pkg, ver }) => `https://registry.npmmirror.com/${pkg}/${ver}/files/map/` },
   { key: 'npm-js', name: 'jsDelivr', name_en: 'jsDelivr', short_en: 'jsDelivr', sub: 'npm 包 · jsDelivr', host: 'cdn.jsdelivr.net',
-    pkgUrl: (pkg, v) => `https://cdn.jsdelivr.net/npm/${pkg}@${v}/map/` },
+    url: ({ pkg, ver }) => `https://cdn.jsdelivr.net/npm/${pkg}@${ver}/map/` },
   { key: 'npm-unpkg', name: 'unpkg', name_en: 'unpkg', short_en: 'unpkg', sub: 'npm 包 · unpkg', host: 'unpkg.com',
-    pkgUrl: (pkg, v) => `https://unpkg.com/${pkg}@${v}/map/` },
+    url: ({ pkg, ver }) => `https://unpkg.com/${pkg}@${ver}/map/` },
 ];
 
 /** 认得的线路域名：在这几个域名下、且认得出版本号，才谈得上换线。 */
@@ -57,24 +70,31 @@ export function createRoutes({ scriptBase, PACK_IN, manifest, fetchJSON, line })
     return b ? b[1] : null;
   })();
   const tagOf = v => { const m = /^S(\d+):(.+)$/.exec(v); return m && +m[1] > 1 ? `map-s${+m[1]}-v${m[2]}` : 'map-v' + (m ? m[2] : v); };
-  // 认得出版本号、又在 CDN 域名下，才开线路：版本号就是 npm 路径的必需参数（仓库分支 / 提交号没有）
-  const swappable = !!VER && CDN_HOST.test(new URL(scriptBase).host);
-  const LINES = swappable ? NPM_LINES : [];
+  // 线路表按脚本自己所在的地址形状选：仓库型（…/gh/<仓库>@<提交号或标签>/map/）走 GH_LINES，换的只是 host；
+  // npm 型（路径里带版本号）走封存的 NPM_LINES。分支名地址（@preview）不列进线路表：每条 CDN 对分支名的缓存不一样，
+  // 换了 host 可能换内容（docs/branching.md），这种地址照旧用脚本自己所在的地方，只由加载器按提交号重载。
+  const GH = parseScriptBase(scriptBase), ghKind = GH ? refKind(GH.ref) : '';
+  const ghOk = ghKind === 'sha' || ghKind === 'tag';
+  const npmOk = !ghOk && !!VER && CDN_HOST.test(new URL(scriptBase).host);   // 认得出版本号、又在 CDN 域名下，才谈得上换 npm 线路
+  const swappable = ghOk || npmOk;
+  const LINES = ghOk ? GH_LINES : npmOk ? NPM_LINES : [];
+  const lineCtx = ghOk ? { repo: GH.repo, ref: GH.ref } : { pkg: PKG, ver: plainVer(VER) };
   const LINE_KEY = 'edenMapLine';
-  // 这条线路上「包名 → 包地址」。引擎包自己也在表里（第一个），art/props 包跟着 assets.json 的索引一起进来。
+  // 这条线路上「包名 → 包地址」：npm 线路每个包一个地址；仓库线路整个仓库就在同一个根下，跨包索引不参与（底图、模型照旧按 <base> 取）
   const pkgBases = (key, index) => {
+    if (ghOk) return {};
     const l = LINES.find(x => x.key === key) || LINES[0];
     if (!l) return {};
     const names = new Set([PKG]);
     for (const [, pkg] of index?.prefixes || []) names.add(pkg);
-    return Object.fromEntries([...names].map(n => [n, l.pkgUrl(n, plainVer(VER))]));
+    return Object.fromEntries([...names].map(n => [n, l.url({ ...lineCtx, pkg: n })]));
   };
-  // 存下来的线路键可能来自旧版本（0.9.x 存的是 vpn / cn，npm 线路换成了 npm-cn / npm-js / npm-unpkg），
+  // 存下来的线路键可能来自旧版本（0.9.x 的 vpn / cn、DIST-2 的 npm-*），
   // 表里没有就退回第一条，不能让它把base 变成 undefined——那会让整张地图都取不到东西。
   const baseFor = key => {
     if (!swappable) return scriptBase;
     const l = LINES.find(x => x.key === key) || LINES[0];
-    return l && VER ? l.pkgUrl(PKG, plainVer(VER)) : scriptBase;
+    return l ? l.url(lineCtx) : scriptBase;
   };
   // ---- 测速（2026-09-29 重做）----
   // 老实现：所有线路同时取 data/build.json（约 400 B，还带 ?probe= 绕缓存），**谁先答完谁胜出**，
@@ -122,8 +142,8 @@ export function createRoutes({ scriptBase, PACK_IN, manifest, fetchJSON, line })
     return best.key;
   }
   const deadLines = () => lastRace.filter((r) => !r.ok).map((r) => r.key);
-  // 跨包资源表（DIST-2 / pkg-bases.mjs）：底图与三维模型在各自的包里，包地址按当前线路拼
-  const PKGS = createPkgs({ fetchJSON, base: () => baseFor(line()), line, lines: LINES, swappable, enginePkg: PKG, pkgBases });
+  // 跨包资源表：只有 npm 线路需要（底图与三维模型在各自的包里）；仓库线路里全仓库同一个根，PKGS 停用，页面照旧按 <base> 与美术根取
+  const PKGS = createPkgs({ fetchJSON, base: () => baseFor(line()), line, lines: LINES, swappable, crossPkg: npmOk, enginePkg: PKG, pkgBases });
   return { PKG, REPO, PKGS, LINES, LINE_KEY, swappable, VER, tagOf, plainVer, baseFor, pkgBases, LINE_TTL, LINE_AT,
     probePath, PROBE_MIN_BYTES, PROBE_TIMEOUT, PROBE_MARGIN, measure, probe, race, deadLines };
 }

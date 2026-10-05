@@ -20,15 +20,15 @@ The live state is the status block at the top of [`docs/todo.md`](docs/todo.md) 
 In TavernHelper, add this as a script:
 
 ```js
-import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.8/map/tavern/eden-map.js'
+import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.8/map/tavern/eden-map.js'
 ```
 
-The address points at the published `eden-map-engine` package, pinned to the version below; it does not expire, and
-`tools/check_readme.py` keeps it correct in CI. The repository itself is about 1 GB, which is over the 50 MB
-per-package limit of the repository-backed CDNs, so the map no longer loads from a repository address — the code, the
-map art and the 3-D models ship as npm packages instead. Inside the map, three lines are tried in order and the
-fastest one that answers is used: the npmmirror CDN (needs its file whitelist, not granted yet), then jsDelivr, then
-unpkg; you can also pick one by hand from the title bar.
+The address is this repository pinned to the release tag below, so it never changes under you, and
+`tools/check_readme.py` keeps it correct in CI. Inside the map, three lines are tried in order and the map switches by
+itself when one stops answering: the jsDelivr China mirror (`cdn.jsdmirror.com`), then jsDelivr, then Fastly. Only the
+host prefix changes — the repository and the tag stay the same, so all three serve the same bytes (measured in
+`docs/delivery.md`); you can also pick one by hand from the title bar. The npm route is still in the code as the
+fallback for the day the repository CDNs stop working; no npm package is published.
 
 To follow the development branch instead, import the script that
 `python3 tools/build_preview_script.py --follow preview` generates: it carries a small inline bootstrap that reads

@@ -19,12 +19,12 @@ English edition: [README.md](README.md)（以英文版为准）
 在酒馆助手里新建脚本，内容为下面这一行：
 
 ```js
-import 'https://cdn.jsdelivr.net/npm/eden-map-engine@0.9.8/map/tavern/eden-map.js'
+import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.8/map/tavern/eden-map.js'
 ```
 
-这条地址指向已发布的 `eden-map-engine` 包，钉在下面那个版本上，不会过期；`tools/check_readme.py` 在 CI 里守着它。本仓约 1 GB，
-超过了仓库型 CDN 的单包 50 MB 上限，地图已经不再从仓库地址加载：代码、底图与三维模型改按 npm 包发布。地图内部会按顺序试三条线路，
-挑最快答上的那条：国内镜像（需要它的文件白名单，目前还没批）、jsDelivr、unpkg；也可以在标题栏手动选。
+这条地址就是本仓库、钉在下面那个标签上，不会自己变；`tools/check_readme.py` 在 CI 里守着它。地图内部按顺序试三条线路，一条不答话
+就自己换下一条：国内镜像 `cdn.jsdmirror.com`、jsDelivr、fastly。换的只是 host 前缀，仓库与标签都不变，三条线路给的是同一份字节
+（实测见 `docs/delivery.md`）；也可以在标题栏手动选。npm 线路的代码留着当备选（哪天仓库型 CDN 又不通了走它），包不发布。
 
 想跟随开发分支，就导入 `python3 tools/build_preview_script.py --follow preview` 生成的脚本：它内联一小段引导，每次打开先取最新的
 `map/data/head.json`（不走缓存、带分钟级参数），再按那个提交号加载入口。之前装的是上面这一行的话，请重新导入一次脚本；这一行本身仍然可用。

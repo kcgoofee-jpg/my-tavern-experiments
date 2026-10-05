@@ -8,7 +8,7 @@
   python3 tools/build_preview_script.py --tag map-v0.9.6            # 正式版加载器（0.9.6 起：每次加载最新正式版，离线退回该标签；小修补丁 map-v0.9.6.1；新系列 map-s2-v0.1.0）；：钉在发版标签（不改角色卡时随世界书附加条目一起发给用户）
 输出：~/Downloads/eden-map/eden-map-preview-<ref>.json；--tag 输出 eden-map-v<版本>.json（单个脚本 JSON，酒馆助手「导入脚本」可直接导入；文件名 C3 英文化，酒馆里显示的脚本名不变）。
 --tag 不创建标签：标签不存在（本地与 origin 都没有）、或与 VERSION 不一致时**退出码 2、不产出文件**（2026-09-27 起；以前只提醒）；发版前先打标签、推送、预热 CDN。
-脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr，加载成功就停。
+脚本内容与卡内相同（tools/add_script_to_card.py 的多线路写法）：依次尝试国内镜像 jsdmirror → 官方 jsDelivr → fastly，加载成功就停。
 注意：jsDelivr 对分支名会缓存（最长约 12 小时），带「/」的分支名也可能解析不了；预览最好用提交号或标签。只用标准库。
 """
 import argparse, json, os, re, subprocess, sys, uuid
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import verlib
 
 REPO = 'kcgoofee-jpg/my-tavern-experiments'
-HOSTS = ['cdn.jsdmirror.com', 'cdn.jsdelivr.net']   # 与卡内顺序一致：先国内镜像，再官方 CDN
+HOSTS = ['cdn.jsdmirror.com', 'cdn.jsdelivr.net', 'fastly.jsdelivr.net']   # 与卡内顺序一致：先国内镜像，再官方 CDN，最后 fastly（独立缓存层，docs/delivery.md §3）
 
 
 # 原作署名（作者同意二次创作的条件：发布时首帖附原作帖链接，2026-09-27 经 Discord 同意）

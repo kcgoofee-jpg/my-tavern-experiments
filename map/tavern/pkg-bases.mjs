@@ -8,14 +8,15 @@ import { pkgIndex, tableSrc } from '../core/pkg-paths.mjs';
 const ART_FALLBACK = "window.__edenArtAt=function(p){return typeof p==='string'&&p.indexOf('art/')===0?(window.__edenArtBase||'')+p:p;};";
 
 /**
- * deps = { fetchJSON, base(), line(), lines, swappable, enginePkg, pkgBases(key, index) }
+ * deps = { fetchJSON, base(), line(), lines, swappable, crossPkg, enginePkg, pkgBases(key, index) }
  * table() → { engine, index, bases } 或 null；src(t, art) 是注入 viewer.html / props/viewer3d.html 的那一整段。
  * 同一线路只取一次；换线路后地址变了，缓存按 base 作废。
+ * crossPkg = 有没有「文件分在几个包里」这回事（npm 线路 = 有；仓库线路 = 没有，整个仓库同一个根，这里直接停用）。
  */
-export function createPkgs({ fetchJSON, base, line, lines, swappable, enginePkg, pkgBases }) {
+export function createPkgs({ fetchJSON, base, line, lines, swappable, crossPkg = true, enginePkg, pkgBases }) {
   let cache = null;
   async function table() {
-    if (!swappable || typeof fetchJSON !== 'function') return null;
+    if (!swappable || !crossPkg || typeof fetchJSON !== 'function') return null;
     const b = base();
     if (cache && cache.base === b) return cache.table;
     cache = { base: b, table: null };

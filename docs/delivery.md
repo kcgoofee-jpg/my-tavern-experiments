@@ -1,13 +1,13 @@
-# 交付线路（DIST-3 设计）
+# 交付线路（DIST-3）
 
-> 状态：2026-10-04，基于 head #348（332c9469）实测。结论先行：**仓库型 gh 线路今天就能用，不用建任何新仓库**；
-> npm 路线（DIST-2 的 33 个包）整体降级为备用方案，包不发布。§5 的改动与 npm 包「不发布只封存」的处理
-> 等用户确认后执行（DIST-3 项 3）。
+> 状态：2026-10-06 落地（PUB-A），实测基于 2026-10-04 / head #348（332c9469）。结论：**仓库型 gh 线路今天就能用，不用建任何新仓库**；
+> npm 路线（DIST-2 的 33 个包）整体降级为封存备选，包不发布。§5 的改动与 npm 包「不发布只封存」已执行完毕，
+> 只剩第 5 项（用户在 TT 重新导入）要用户动手。
 >
 > U-FIX-10（2026-10-05）：瓦片全挂后的自动换线**仍在**（查看器 `eden-map:tiles-failed` → 宿主 `nextRoute` →
-> `chooseLine`，一次 / 2 分钟窗口），只是只在「线路可换」（npm 版本号形态的 scriptBase）时武装。`tile_fail` /
-> `probe095` 两个探针已改按 npm 线路表（npm-js 被挡 → 自动换到 npm-unpkg）对齐这一契约；gh 线路回归时
-> （DIST-3 落地）再随 §3 扩回 gh 形态。
+> `chooseLine`，一次 / 2 分钟窗口），只是只在「线路可换」的 scriptBase 上武装。DIST-3 落地后仓库形态（`@<提交号>` /
+> `@map-v*`）也可换了，真实用户重新拿到测速与自动换线；`tile_fail` / `probe095` 两个探针已改按 gh 线路表
+> （gh-cn 被拖慢 → 选 gh-js）对齐这一契约。
 
 ## 1. 为什么重新测
 
@@ -32,7 +32,7 @@ DIST-2 时仓库约 1 GB，超过 jsDelivr 单包 50 MB 上限，`cdn.jsdelivr.n
 WebKit：jsdmirror 5298 ms（1824）、jsDelivr 3446 ms（1473）、fastly 6353 ms（3488）。
 raw 在两个引擎都被 strict MIME 拒（text/plain）；statically 是 CORS 跨源重定向被拒（不是单纯慢）——排除理由用数字钉住。
 
-## 3. 设计（本方案，待用户确认后落地）
+## 3. 设计（本方案，2026-10-06 已落地）
 
 **单一仓库 + 按提交号钉死 + 三条 gh 线路轮换。**
 
@@ -44,6 +44,10 @@ raw 在两个引擎都被 strict MIME 拒（text/plain）；statically 是 CORS 
 - 加载器：每个 `import()` 与 10 s 超时竞速，挂起也换下一条（2026-10-04 已落，`tests/follow_head.test.mjs`）。
 - npm 路线封存不删：`NPM_LINES`、`pkg-paths.mjs`、`assets.json` 索引都是现成代码，零维护成本；
   若 gh 线路将来再被卡（jsDelivr 恢复限制 / 镜像全灭），按下节备选执行。
+- 落地形态（`map/tavern/host-routes.mjs`）：线路键 `gh-cn` / `gh-js` / `gh-fastly`，只有 scriptBase 长成
+  `…/gh/<仓库>@<提交号或标签>/map/` 时才武装测速与换线（分支名 `@preview` 每条 CDN 缓存不一样，故意排除）。
+  仓库线路只有一个根，跨包索引没有意义，所以 `pkgBases` 在该形态返回空、`PKGS` 关闭，底图与模型照旧按
+  `<base href>` 取（`artBase()` / N14-a 路径不变）。
 
 ## 4. 备选（仅当 gh 线路将来彻底不可用）
 
@@ -58,13 +62,13 @@ raw 在两个引擎都被 strict MIME 拒（text/plain）；statically 是 CORS 
 同步工具（只传变更文件）、运行时索引（`assets.json` 的 paths 前缀表已就绪）、README、smoke 都按 DIST-2 的
 npm 蓝图平移。此表只作预案：**现在不动手，等 gh 线路确实死了再建**。
 
-## 5. 交付物改动清单（确认后执行）
+## 5. 交付物改动清单（2026-10-06 执行，PUB-A）
 
-1. README zh + en：一行导入改回 `https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@<标签>/map/tavern/eden-map.js`（正式版用标签，跟随版用提交号）。
-2. `tools/check_readme.py`：规则随导入地址改回 gh 形态。
-3. `tools/build_preview_script.py`：HOSTS 增加 `fastly.jsdelivr.net`（线路顺序 jsdmirror → jsdelivr → fastly）。
-4. `bash tools/smoke.sh --cdn`：对正式标签走 gh 线路自检。
-5. 用户在 TT 重新导入：`~/eden-map-review/dist-3/导入说明.md`（中文步骤清单）。
+1. ~~README zh + en：一行导入改回 `https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@<标签>/map/tavern/eden-map.js`（正式版用标签，跟随版用提交号）。~~ ✅ 2026-10-06 (sha in RESULT PUB)
+2. ~~`tools/check_readme.py`：规则随导入地址改回 gh 形态。~~ ✅ 2026-10-06 (sha in RESULT PUB)
+3. ~~`tools/build_preview_script.py`：HOSTS 增加 `fastly.jsdelivr.net`（线路顺序 jsdmirror → jsdelivr → fastly）。~~ ✅ 2026-10-06 (sha in RESULT PUB)
+4. ~~`bash tools/smoke.sh --cdn`：对正式标签走 gh 线路自检（`npm_check` 已换成 `gh_lines_check`，同一标签三条线路都 HEAD 代表文件）。~~ ✅ 2026-10-06 (sha in RESULT PUB)
+5. 用户在 TT 重新导入：`~/eden-map-review/dist-3/导入说明.md`（中文步骤清单，清单已写好，等用户动手）。
 
 ## 6. 扩展加载器用的也是这三条线（F2，2026-10-05）
 

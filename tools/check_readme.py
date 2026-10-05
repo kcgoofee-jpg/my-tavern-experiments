@@ -6,12 +6,12 @@
 （`map/estate3d/` 这个目录从来不存在、色觉模式早做了却还写着「无限期推迟」、事件种数写 9 类 66 种、
 国内线路写「npmmirror（计划）」但其实早就用 `cdn.jsdmirror.com` 实现了）。所以放进 smoke 当门控。
 
-检查项（H1 重写后：README.md 英文为准，README.zh.md 是同结构中文版，两份都查）：
-  1. 必须有钉住版本的 npm import 地址（`…/npm/<引擎包>@<版本>/map/tavern/eden-map.js`）与
-     `--follow <预览分支>` 脚本生成命令；npm 没有分支概念，预览线靠那条脚本（它从仓库取最新提交）；
-  2. 地址里的包名 == 第一个包清单的 `cdn.npm`（运行时拼包地址用的就是它，见 map/tavern/host-routes.mjs）；
-  3. 地址里的版本 == `VERSION`，且正文声明的版本（`0.9.7` 或 `当前发布版本 X`）与最新 `map-v*` 标签一致；
-     （DIST-2：仓库约 1 GB，仓库型 CDN 取不到，import 地址搬到了 npm，见 docs/naming.md）
+检查项（H1 重写后：README.md 英文为准，README.zh.md 是同结构中文版，两份都查；DIST-3 / docs/delivery.md §5 把导入地址改回仓库线路）：
+  1. 必须有钉住标签的仓库 import 地址（`https://<线路>/gh/<仓库>@map-v<版本>/map/tavern/eden-map.js`）与
+     `--follow <预览分支>` 脚本生成命令（跟随版走提交号，分支路径会被 CDN 缓存，见 docs/branching.md）；
+  2. 地址里的 host 必须是三条实测线路之一（jsdmirror / jsDelivr / fastly），仓库名 == `git remote origin` 的仓库；
+  3. 地址里的标签 == 最新 `map-v*` 标签，且正文声明的版本（`0.9.7` 或 `当前发布版本 X`）与 VERSION 一致；
+     （npm 路线封存为备选：包从未发布，README 不再指向它，见 docs/delivery.md §1）
   4. 正文里出现的仓库相对路径（`map/…`、`tools/…`、`docs/…`、`blender/…`）与 markdown 链接的相对目标必须真实存在；
   5. 结构：恰好六个 `##` 小节（是什么 / 状态 / 安装 / 文档 / 署名 / 素材许可）。
 
@@ -22,7 +22,6 @@
   python3 tools/check_readme.py -v         # 多打一点
 退出码：0 通过；1 有不一致；2 用法问题。
 """
-import json
 import os
 import re
 import subprocess
@@ -33,8 +32,9 @@ README = os.path.join(ROOT, 'README.md')
 README_ZH = os.path.join(ROOT, 'README.zh.md')
 SECTIONS = 6                                  # README 的 ## 小节数（结构门控）
 PREVIEW_REF = 'preview'                      # 预览线分支名（docs/branching.md）
-URL_RE = re.compile(r'https://([a-z0-9.-]+)/npm/([A-Za-z0-9._-]+)@([\d][\d.]*)/map/tavern/eden-map\.js')
-DEFAULT_HOST = 'cdn.jsdelivr.net'                     # npm 线路的第一条（顺序见 host-routes.mjs 的 NPM_LINES）
+URL_RE = re.compile(r'https://([a-z0-9.-]+)/gh/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)@([\w.\-]+)/map/tavern/eden-map\.js')
+DEFAULT_HOST = 'cdn.jsdelivr.net'                     # 写进行式的那条官方线路
+GH_HOSTS = ('cdn.jsdmirror.com', 'cdn.jsdelivr.net', 'fastly.jsdelivr.net')   # 实测可用的三条（docs/delivery.md §2）
 PATH_DIRS = ('map/', 'tools/', 'docs/', 'blender/', 'tests/', '.github/')
 # 有意不存在的路径写在这里（例如还没有的产出物）；默认空，宁可报错也别静默放过
 ALLOW_MISSING = set()
@@ -86,23 +86,24 @@ def main():
     lines = text.splitlines()
     tag = latest_tag()
     version = open(os.path.join(ROOT, 'VERSION'), encoding='utf-8').read().strip()
-    engine_pkg = json.load(open(os.path.join(ROOT, 'map', 'packs', 'eden', 'manifest.json'), encoding='utf-8'))['cdn']['npm']
+    slug = remote_slug()
     problems = []
     fixed = []
 
-    # --- 1/2. 顶部那条钉版本的 npm import 地址 ---
+    # --- 1/2. 顶部那条钉住标签的仓库线路 import 地址 ---
     urls = [m for m in URL_RE.finditer(text)]
     if not urls:
-        problems.append('顶部没有找到形如 https://<host>/npm/<包名>@<版本>/map/tavern/eden-map.js 的导入地址')
-    if os.path.dirname(target) == ROOT and os.path.basename(target) in ('README.md', 'README.zh.md') and '--follow ' + PREVIEW_REF not in text:   # I-20：安装小节要给出带内联引导的脚本生成命令（npm 没有分支，预览线靠它）
+        problems.append('顶部没有找到形如 https://<线路>/gh/<仓库>@map-v<版本>/map/tavern/eden-map.js 的导入地址')
+    if os.path.dirname(target) == ROOT and os.path.basename(target) in ('README.md', 'README.zh.md') and '--follow ' + PREVIEW_REF not in text:   # I-20：安装小节要给出带内联引导的脚本生成命令（跟随版按提交号取，分支路径会被 CDN 缓存）
         problems.append(f'安装小节缺 `build_preview_script.py --follow {PREVIEW_REF}`（带内联引导的脚本，I-20）')
     for m in urls:
-        if m.group(2) != engine_pkg:
-            problems.append(f'第 {text[:m.start()].count(chr(10)) + 1} 行的地址里包名是 `{m.group(2)}`，'
-                            f'而第一个包清单的 cdn.npm 是 `{engine_pkg}`')
-        if version and m.group(3) != version:
-            problems.append(f'第 {text[:m.start()].count(chr(10)) + 1} 行钉的版本是 `{m.group(3)}`，'
-                            f'而 VERSION 是 `{version}`（发版后按 --fix 刷新）')
+        at = f'第 {text[:m.start()].count(chr(10)) + 1} 行的地址'
+        if m.group(1) not in GH_HOSTS:
+            problems.append(f'{at}的线路域名是 `{m.group(1)}`，实测可用的只有 {", ".join("`" + h + "`" for h in GH_HOSTS)}')
+        if slug and m.group(2) != slug:
+            problems.append(f'{at}里仓库是 `{m.group(2)}`，而 `git remote origin` 是 `{slug}`')
+        if tag and m.group(3) != tag:
+            problems.append(f'{at}钉的是 `{m.group(3)}`，而最新标签是 `{tag}`（发版后按 --fix 刷新；分支名 / 提交号不是正式版的写法）')
 
     # --- 3. 正文声明的版本与标签 ---
     if version and not re.search(r'(?:当前发布版本|Current release:?)\s*`' + re.escape(version) + '`', text):
@@ -150,10 +151,11 @@ def main():
     if fix and urls:
         new = text
         for m in urls:
-            host, pkg, ver = m.group(1), m.group(2), m.group(3)
-            if (pkg != engine_pkg or ver != version) and version:
-                new = new.replace(m.group(0), f'https://{host}/npm/{engine_pkg}@{version}/map/tavern/eden-map.js')
-                fixed.append(f'`{pkg}@{ver}` → `{engine_pkg}@{version}`')
+            host, repo, ref = m.group(1), m.group(2), m.group(3)
+            want_host = host if host in GH_HOSTS else DEFAULT_HOST
+            if (repo != slug or ref != tag) and tag and slug:
+                new = new.replace(m.group(0), f'https://{want_host}/gh/{slug}@{tag}/map/tavern/eden-map.js')
+                fixed.append(f'`{repo}@{ref}` → `{slug}@{tag}`')
         if new != text:
             open(target, 'w', encoding='utf-8').write(new)
             print('已刷新：' + '；'.join(fixed))
@@ -185,7 +187,7 @@ def main():
         print('（只刷新地址用 `python3 tools/check_readme.py --fix`；正文里的过时内容要手改）', file=sys.stderr)
         return 1
     if verbose:
-        print(f'  OK 包 {engine_pkg}@{version} · 预览 {PREVIEW_REF} · 最新标签 {tag} · 路径引用 {len(set(re.findall(r"`([^`\n]+)`", text)))} 个 token')
+        print(f'  OK 仓库 {slug} · 标签 {tag} · 预览 {PREVIEW_REF} · 路径引用 {len(set(re.findall(r"`([^`\n]+)`", text)))} 个 token')
     print('README 置顶导入链接与路径引用：OK')
     return 0
 

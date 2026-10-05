@@ -1,8 +1,9 @@
 // N13 probe, U-FIX-10 contract: what the map does when its tiles (or a DZI) fail to load on the route a build was pinned to.
-// The delivery lines are the npm table (host-routes.mjs NPM_LINES); the script base carries a numeric version
-// (.../r@0.9.7/map/) so the line is swappable. A fake CDN answers all four line hosts from the local map/ folder
+// The delivery lines are the repository table (host-routes.mjs GH_LINES); the script base carries a commit
+// (.../gh/o/r@<sha>/map/), which is immutable, so switching host keeps the same bytes. A fake CDN answers all three
+// line hosts from the local map/ folder
 // (same idea as follow_pin.mjs), so a route can be made to fail with page.route aborts while the others work.
-// The chosen route is npm-js (the line the script base sits on); the switch target is npm-unpkg (the next line in
+// The chosen route is gh-js (the line the script base sits on); the switch target is gh-fastly (the next line in
 // the table). The host script is loaded "pinned" (window.__edenMapScript set).
 // Cases (tc_upper at day and at night unless noted):
 //   pinned      chosen route up: every art request (DZI and tiles) goes to the chosen base, base fills the extent,
@@ -20,8 +21,8 @@ const SHOTS = path.join(process.env.HOME, 'eden-map-review/n13'); fs.mkdirSync(S
 B.quietWait(); await B.ensureServer();
 const rep = B.reporter(OUT);
 const MAP = path.resolve(B.REPO_ROOT, 'map');
-const VER = '0.9.7', PKG = 'eden-map-engine';
-const HOSTS = { 'npm-js': 'cdn.jsdelivr.net', 'npm-cn': 'registry.npmmirror.com', 'npm-unpkg': 'unpkg.com' };   // chosen = npm-js, the line the script base sits on
+const SHA = 'c0ffee0123456789', REPO = 'o/r';
+const HOSTS = { 'gh-js': 'cdn.jsdelivr.net', 'gh-cn': 'cdn.jsdmirror.com', 'gh-fastly': 'fastly.jsdelivr.net' };   // chosen = gh-js, the line the script base sits on
 const TYPES = { '.json': 'application/json', '.mjs': 'text/javascript', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.dzi': 'application/xml' };
 const BANDS = [{ id: 'dawn' }, { id: 'day' }, { id: 'dusk' }, { id: 'night', dark: true }];
 const HH = { dawn: 360, day: 720, dusk: 1080, night: 1380 };
@@ -29,18 +30,14 @@ const maps = JSON.parse(fs.readFileSync(path.join(MAP, 'data/maps.json'), 'utf8'
 const near = (a, b) => Math.abs(a - b) <= 0.005 * Math.max(1, Math.abs(b));
 const isTile = u => /_files\/\d+\/[\d_]+\.(jpg|png)$/.test(u), isDzi = u => /\.dzi$/.test(u);
 
-// block = { 'npm-js': { tiles, dzi, levels: [n..] }, 'npm-cn': {...}, ... } — keyed by line
+// block = { 'gh-js': { tiles, dzi, levels: [n..] }, 'gh-cn': {...}, ... } — keyed by line
 async function openAt(block, { ls = {}, tier = 'hd', band = 'night', map = 'tc_upper', preset = 'desktop' } = {}) {
   const P = await B.newPage(preset, { tier }), reqs = [];
-  await P.ctx.route(/^https:\/\/(cdn\.jsdmirror\.com|registry\.npmmirror\.com|cdn\.jsdelivr\.net|unpkg\.com)\//, async route => {
+  await P.ctx.route(/^https:\/\/(cdn\.jsdmirror\.com|cdn\.jsdelivr\.net|fastly\.jsdelivr\.net)\//, async route => {
     const u = new URL(route.request().url()), p = u.pathname;
     let line = null, rel = null;
-    let m = /\/npm\/[^/]+@[\d.]+\/map\/(.*)$/.exec(p);              // jsDelivr npm shape (the chosen route)
-    if (m && u.host === HOSTS['npm-js']) { line = 'npm-js'; rel = decodeURIComponent(m[1]); }
-    m = /\/[^/]+@[\d.]+\/map\/(.*)$/.exec(p);                   // unpkg shape
-    if (!line && m && u.host === HOSTS['npm-unpkg']) { line = 'npm-unpkg'; rel = decodeURIComponent(m[1]); }
-    m = /\/[^/]+\/[\d.]+\/files\/map\/(.*)$/.exec(p);           // npmmirror shape
-    if (!line && m && u.host === HOSTS['npm-cn']) { line = 'npm-cn'; rel = decodeURIComponent(m[1]); }
+    const m = /\/gh\/[^@/]+\/[^@/]+@[\w.\-]+\/map\/(.*)$/.exec(p);   // the repository shape: every line differs only by host
+    if (m) { line = Object.keys(HOSTS).find(k => HOSTS[k] === u.host) || null; rel = decodeURIComponent(m[1]); }
     if (!line) return route.fulfill({ status: 404, body: 'no shape' });
     const b = block[line] || {}, lv = /_files\/(\d+)\//.exec(rel)?.[1];
     reqs.push({ line, rel });
@@ -51,11 +48,11 @@ async function openAt(block, { ls = {}, tier = 'hd', band = 'night', map = 'tc_u
     const f = path.resolve(MAP, rel); if (!f.startsWith(MAP + path.sep) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return route.fulfill({ status: 404, body: 'nf' });
     return route.fulfill({ contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f), headers: { 'access-control-allow-origin': '*' } });
   });
-  await P.ctx.addInitScript(() => { if (window.top !== window) window.__edenMapScript = { channel: 'ver', ref: '0.9.7', sha: 'c0ffee0123456789', build: 9100 };
+  await P.ctx.addInitScript(() => { if (window.top !== window) window.__edenMapScript = { channel: 'ref', ref: 'c0ffee0123456789', sha: 'c0ffee0123456789', build: 9100 };
   else addEventListener('message', e => { if (e.data && String(e.data.type || '').startsWith('eden-map:tiles')) console.log('TRACE', e.data.type, JSON.stringify(e.data).slice(0, 120), 'line=', localStorage.getItem('edenMapLine')); }); });
   P.page.on('console', m => { const t = m.text(); if (/tiles-failed|tiles-route|\[eden-map\]/.test(t) || process.env.DBG) console.log('CONSOLE', t.slice(0, 160)); });
   P.page.on('requestfailed', r => process.env.DBG && console.log('REQFAIL', r.url().slice(0, 140), r.failure()?.errorText)); P.page.on('console', m => process.env.DBG && console.log('CONSOLE', m.text().slice(0, 200)));
-  const H = await openHost(P, { here: '天城执法局总局', ls: { edenMapLine: 'npm-js', edenMapLineManual: '1', ...ls }, scriptBase: `https://${HOSTS['npm-js']}/npm/${PKG}@${VER}/map/` });
+  const H = await openHost(P, { here: '天城执法局总局', ls: { edenMapLine: 'gh-js', edenMapLineManual: '1', ...ls }, scriptBase: `https://${HOSTS['gh-js']}/gh/${REPO}@${SHA}/map/` });
   return { P, H, reqs, band, map };
 }
 const clock = (D, b) => D.page.evaluate(m => { document.querySelector('#eden-map-root .em-frame')?.contentWindow?.postMessage(m, '*'); },
@@ -90,8 +87,8 @@ const markersIn = async (label, vf, s) => {
 };
 const shot = async (D, name) => { await B.shot(D.page, OUT, name); try { fs.copyFileSync(path.join(OUT, name + '.png'), path.join(SHOTS, name + '.png')); } catch (e) {} };
 const artReqs = reqs => reqs.filter(q => /^art\//.test(q.rel));
-const BLOCK_ALL_TILES = { chosen: { tiles: true }, 'npm-cn': { tiles: true }, 'npm-js': { tiles: true }, 'npm-unpkg': { tiles: true } };
-const BLOCK_ALL_DZI = { chosen: { dzi: true }, 'npm-cn': { dzi: true }, 'npm-js': { dzi: true }, 'npm-unpkg': { dzi: true } };
+const BLOCK_ALL_TILES = { chosen: { tiles: true }, 'gh-cn': { tiles: true }, 'gh-js': { tiles: true }, 'gh-fastly': { tiles: true } };
+const BLOCK_ALL_DZI = { chosen: { dzi: true }, 'gh-cn': { dzi: true }, 'gh-js': { dzi: true }, 'gh-fastly': { dzi: true } };
 
 try {
   // ---- pinned: both routes up
@@ -100,20 +97,20 @@ try {
     const S = await openAt({}, { ls, band }); const vf = await openMap(S, band, 'tc_upper');
     let s = await readView(vf); inFrame(label, s, 'tc_upper'); s = await markersIn(label, vf, s);
     const a = artReqs(S.reqs), tiles = a.filter(q => isTile(q.rel)), dz = a.filter(q => isDzi(q.rel));
-    rep.check(`${label}: tiles requested, from the chosen base on the chosen route only`, tiles.length > 0 && a.every(q => q.line === 'npm-js'), `n=${tiles.length} ${[...new Set(a.map(q => q.line))].join(',')}`);
+    rep.check(`${label}: tiles requested, from the chosen base on the chosen route only`, tiles.length > 0 && a.every(q => q.line === 'gh-js'), `n=${tiles.length} ${[...new Set(a.map(q => q.line))].join(',')}`);
     rep.check(`${label}: the DZI and its tiles share one base`, dz.length > 0 && new Set(a.map(q => q.line)).size === 1, [...new Set(a.map(q => q.line))].join(','));
     rep.check(`${label}: no failure toast`, !s.toast, s.toastText);
     await shot(S.P, `pinned_${band}_${variant.replace(/\W/g, '')}`); await S.P.close();
   }
-  // ---- switch: tiles blocked on the chosen route only (the switch target is npm-unpkg, the next line in the table)
+  // ---- switch: tiles blocked on the chosen route only (the switch target is gh-fastly, the next line in the table)
   for (const band of ['day', 'night']) {
-    const label = `switch ${band}`, S = await openAt({ 'npm-js': { tiles: true } }, { band }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4000);
+    const label = `switch ${band}`, S = await openAt({ 'gh-js': { tiles: true } }, { band }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4000);
     let vf = await H0(S); await clock(S.P, band); await sleep(800);
     await vf.evaluate(() => ViewerDebug.go('world')).catch(() => {}); await sleep(600); await vf.evaluate(() => ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(16000);
     vf = await H0(S); await vf.evaluate(() => ViewerDebug.currentMapId !== 'tc_upper' && ViewerDebug.go('tc_upper')).catch(() => {}); await sleep(12000);
-    const s = await readView(vf), switched = artReqs(S.reqs).filter(q => q.line === 'npm-unpkg' && isTile(q.rel));
+    const s = await readView(vf), switched = artReqs(S.reqs).filter(q => q.line === 'gh-fastly' && isTile(q.rel));
     const storedLine = await S.P.page.evaluate(() => { try { return localStorage.getItem('edenMapLine'); } catch (e) { return '?'; } });
-    rep.check(`${label}: one automatic switch to another line, tiles come from it (npm-unpkg)`, switched.length > 0, `npm-unpkg tiles=${switched.length} npm-js tiles=${artReqs(S.reqs).filter(q => q.line === 'npm-js' && isTile(q.rel)).length} storedLine=${storedLine} perLine=${JSON.stringify(artReqs(S.reqs).reduce((m, q) => ((m[q.line] = (m[q.line] || 0) + 1), m), {}))} last=${S.reqs.slice(-4).map(q => q.line + ':' + q.rel.slice(0, 40)).join(' | ')}`);
+    rep.check(`${label}: one automatic switch to another line, tiles come from it (gh-fastly)`, switched.length > 0, `gh-fastly tiles=${switched.length} gh-js tiles=${artReqs(S.reqs).filter(q => q.line === 'gh-js' && isTile(q.rel)).length} storedLine=${storedLine} perLine=${JSON.stringify(artReqs(S.reqs).reduce((m, q) => ((m[q.line] = (m[q.line] || 0) + 1), m), {}))} last=${S.reqs.slice(-4).map(q => q.line + ':' + q.rel.slice(0, 40)).join(' | ')}`);
     inFrame(label, s, 'tc_upper'); await markersIn(label, vf, s);
     rep.check(`${label}: no failure toast after the switch`, !(await readView(vf)).toast, s.toastText);
     await shot(S.P, `switch_${band}`); await S.P.close();
@@ -139,7 +136,7 @@ try {
   }
   // ---- levels missing, every tier x map x period
   for (const tier of ['save', 'std', 'hd']) {
-    const S = await openAt({ 'npm-js': { levels: [12, 13, 14] } }, { tier, band: 'day' }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4500);
+    const S = await openAt({ 'gh-js': { levels: [12, 13, 14] } }, { tier, band: 'day' }); await S.P.page.locator('#eden-map-root .em-fab').click(); await sleep(4500);
     const vf = await S.H.viewer();
     for (const band of ['day', 'night']) for (const map of ['tc_upper', 'tc_mid', 'tc_low']) {
       await clock(S.P, band); await sleep(900); await vf.evaluate(() => ViewerDebug.go('world')).catch(() => {}); await sleep(500); await vf.evaluate(id => ViewerDebug.go(id), map).catch(() => {}); await sleep(4000);
