@@ -5,7 +5,9 @@ import { $, iconSvg } from './dom-helpers.mjs';
 import { uiTextOr } from './text-lookup.mjs';
 import { onBuilt, onShow, placeIn, pageEl } from './settings-pages.mjs';
 import { createProfiles } from './profiles.mjs';
-import { BUILTIN, REC_ID } from '../core/profiles.mjs';
+import { BUILTIN, REC_ID, cardKey } from '../core/profiles.mjs';
+import { cardOf } from './settings.mjs';
+import { PACK } from './current-pack.mjs';
 
 const tr = (k, zh, v) => uiTextOr(k, zh, v);
 const CSS = `#profBox{margin:var(--sp-3) 0 var(--sp-5)}#profBox .profhead{display:flex;width:100%;align-items:center;gap:var(--sp-3);min-height:var(--hit,44px);text-align:left;justify-content:flex-start}#profBox .profhead .proflab{flex:none;color:var(--muted)}#profBox .profhead .profchev{margin-left:auto;flex:none;transition:transform var(--dur-2)}#profBox.expanded .profhead .profchev{transform:rotate(180deg)}
@@ -19,10 +21,16 @@ const io = { read: k => { try { return LocalStore.get(k); } catch (e) { return n
   remove: k => { try { LocalStore.remove(k); } catch (e) { console.warn('[profile] remove', k); } }, load: () => io.read('edenMapProfiles'), save: v => io.write('edenMapProfiles', v) };
 let box = null, mode = '', delArmed = false;
 function setExpanded(on, quiet) { box.classList.toggle('expanded', on); box.querySelector('#profHead').setAttribute('aria-expanded', String(on)); box.querySelector('#profBody').hidden = !on; if (!quiet) { try { LocalStore.set('edenMapProfOpen', on ? '1' : '0'); } catch (e) { console.warn('[map] profile-section: remembering the open state failed', e); } } }
-const api = createProfiles(io, { applied: keys => import('./profile-live.mjs').then(m => m.applyChanged(keys)).catch(e => console.warn('[profile] live', e)) });
+export const api = createProfiles(io, { applied: keys => import('./profile-live.mjs').then(m => m.applyChanged(keys)).catch(e => console.warn('[profile] live', e)) });
 const nameOf = p => (p.nameKey ? tr(p.nameKey, p.name) : p.name);
 const builtinNames = () => BUILTIN.flatMap(b => [b.name, tr(b.nameKey, b.name)]);
 const say = (key, zh, v) => { const m = $('#profMsg'); if (m) m.textContent = tr(key, zh, v); };
+
+export const currentTargetKey = () => {
+  const c = cardOf();
+  const k = cardKey(c);
+  return k !== 'k0' ? k : (PACK?.id || 'eden');
+};
 
 /** repaint name, marker, picker and the buttons that only make sense for a user profile */
 export function refresh() {
@@ -32,6 +40,25 @@ export function refresh() {
   const sel = $('#profSel'); sel.replaceChildren(...[...BUILTIN, ...store.list].map(p => { const o = el('option', '', nameOf(p)); o.value = p.id; return o; })); sel.value = profile.id;
   const user = !profile.builtin; $('#profRen').disabled = !user; $('#profDel').disabled = !user;
   if (!delArmed) $('#profDel').textContent = tr('prof.del', '删除');
+  const bBtn = $('#profBind');
+  if (bBtn) {
+    const tk = currentTargetKey(), bound = store.binds?.[tk];
+    const isBoundToCurrent = bound && bound === profile.id;
+    bBtn.textContent = isBoundToCurrent ? tr('prof.unbind', '解除卡绑定') : tr('prof.bind', '绑定到这张卡');
+    bBtn.dataset.i18n = isBoundToCurrent ? 'prof.unbind' : 'prof.bind';
+  }
+}
+function toggleBind() {
+  const { store, profile } = api.current(), tk = currentTargetKey(), bound = store.binds?.[tk];
+  if (bound === profile.id) {
+    api.unbind(tk);
+    refresh();
+    say('prof.unbound', '已解除绑定');
+  } else {
+    api.bind(tk, profile.id);
+    refresh();
+    say('prof.bound', '已绑定到当前卡');
+  }
 }
 function ask(m, initial) { mode = m; $('#profForm').hidden = false; const i = $('#profIn'); i.value = initial; i.focus(); i.select(); }
 function closeForm() { mode = ''; $('#profForm').hidden = true; }
@@ -58,6 +85,27 @@ function upload(file) {
   rd.onerror = () => say('prof.imp_bad', '不是有效的方案文件'); rd.readAsText(file);
 }
 
+let lastAppliedKey = null;
+/** check and auto-apply profile bound to current card if any */
+export function onCardChange() {
+  const tk = currentTargetKey();
+  if (lastAppliedKey === tk) return;
+  lastAppliedKey = tk;
+  const boundId = api.boundProfile(tk);
+  if (!boundId) return;
+  const p = api.store().list.find(x => x.id === boundId) || BUILTIN.find(x => x.id === boundId);
+  if (!p) return;
+  const nm = nameOf(p);
+  api.apply(boundId);
+  refresh();
+  const title = tr('prof.auto_applied', '已应用卡绑定的方案「{name}」', { name: nm });
+  if (typeof window !== 'undefined' && typeof window.showNotice === 'function') {
+    window.showNotice({ level: 1, key: 'prof-bind-auto', title });
+  } else {
+    say('prof.auto_applied', '已应用卡绑定的方案「{name}」', { name: nm });
+  }
+}
+
 onBuilt('home', () => {
   if (box) return;
   if (!document.getElementById('profCss')) { const s = el('style'); s.id = 'profCss'; s.textContent = CSS; document.head.appendChild(s); }
@@ -72,7 +120,7 @@ onBuilt('home', () => {
   pick.append(sel, btn('profSave', 'prof.save', '保存当前设置为方案…', () => ask('save', '')));
   const more = el('div', 'profrow profmore');
   const fi = el('input'); fi.type = 'file'; fi.accept = 'application/json,.json'; fi.id = 'profFile'; fi.hidden = true; fi.addEventListener('change', () => { upload(fi.files[0]); fi.value = ''; });
-  more.append(btn('profRen', 'prof.rename', '重命名', () => ask('rename', nameOf(api.current().profile))), btn('profDel', 'prof.del', '删除', del), btn('profRestore', 'prof.restore', '恢复推荐默认', () => choose(REC_ID)),
+  more.append(btn('profBind', 'prof.bind', '绑定到这张卡', toggleBind), btn('profRen', 'prof.rename', '重命名', () => ask('rename', nameOf(api.current().profile))), btn('profDel', 'prof.del', '删除', del), btn('profRestore', 'prof.restore', '恢复推荐默认', () => choose(REC_ID)),
     btn('profExp', 'prof.export', '导出', download), btn('profImp', 'prof.import', '导入', () => fi.click()), fi);
   const tg = btn('profToggle', 'prof.manage', '管理方案', () => { box.classList.toggle('open'); tg.setAttribute('aria-expanded', box.classList.contains('open')); }); tg.setAttribute('aria-expanded', 'false'); tg.setAttribute('aria-controls', 'profMoreRow'); more.id = 'profMoreRow'; pick.append(tg);
   const form = el('form', 'profrow'); form.id = 'profForm'; form.hidden = true;

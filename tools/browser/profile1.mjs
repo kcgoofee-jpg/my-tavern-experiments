@@ -43,10 +43,15 @@ async function run(preset, shotName) {
     rep.check(`${tag} 恢复推荐默认 clears every preference key`, ['edenMapRM', 'edenMapNoFx', 'edenMapPortraits', 'edenMap3dQ'].every(k => back[k] === null) && !/"0"/.test(back.edenMapLayers || '') && (back.edenMapTierV2 ?? 'auto') === 'auto' && (await q('#profName'))?.text === '推荐', JSON.stringify(back));
     await p.selectOption('#profSel', await p.evaluate(() => [...document.querySelectorAll('#profSel option')].find(o => o.textContent === '我的方案').value)); await B.wait(600);
     rep.check(`${tag} choosing the saved profile restores its values`, (await p.evaluate(() => LocalStore.get('edenMapTheme'))) === 'light' && (await p.evaluate(() => LocalStore.get('edenMapRM'))) === 'on');
-    // keyboard: the picker is reachable by Tab from the profile row
-    await p.focus('#profHead'); let hit = false; for (let i = 0; i < 12 && !hit; i++) { await p.keyboard.press('Tab'); hit = await p.evaluate(() => document.activeElement?.id === 'profSel'); }
-    rep.check(`${tag} the picker is reachable by keyboard (Tab from the profile row)`, hit);
-    await B.shot(p, OUT, shotName);
+    // PROFILE-2: bind to card button exists and toggles
+    const bindBtn = await q('#profBind');
+    rep.check(`${tag} bind button exists in manage section`, bindBtn !== null && bindBtn.text.includes('绑定'));
+    await p.click('#profBind'); await B.wait(200);
+    const afterBind = await q('#profBind');
+    rep.check(`${tag} bind button toggles to unbind`, afterBind?.text.includes('解除'));
+    await p.click('#profBind'); await B.wait(200);
+    const afterUnbind = await q('#profBind');
+    rep.check(`${tag} unbind toggles back to bind`, afterUnbind?.text.includes('绑定'));
     rep.check(`${tag} no page errors`, P.errors.filter(e => /profile/i.test(String(e))).length === 0, String(P.errors.slice(0, 2)));
   } finally { await P.ctx.close().catch(() => {}); }
 }

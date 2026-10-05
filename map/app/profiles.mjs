@@ -45,5 +45,8 @@ export function createProfiles(io, hooks = {}) {
     persist({ ...added.store, active: s.active });
     return { ok: true, id: added.profile.id, name, dropped: r.dropped };
   }
-  return { store, current, apply, saveAs, rename, remove, exportText, importText };
+  function bind(targetKey, profileId) { const s = store(); persist(P.bind(s, targetKey, profileId)); return { ok: true }; }
+  function unbind(targetKey) { const s = store(); persist(P.unbind(s, targetKey)); return { ok: true }; }
+  function boundProfile(targetKey) { return P.boundId(store(), targetKey); }
+  return { store, current, apply, saveAs, rename, remove, exportText, importText, bind, unbind, boundProfile };
 }

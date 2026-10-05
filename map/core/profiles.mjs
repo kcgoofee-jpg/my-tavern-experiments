@@ -64,7 +64,7 @@ export function cleanValues(obj) {
 export const cleanName = n => String(n ?? '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX);
 const newId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-/** normStore(raw) -> { active, list } from the stored JSON (anything unreadable = no user profiles, the recommended one active) */
+/** normStore(raw) -> { active, list, binds } from the stored JSON (anything unreadable = no user profiles, the recommended one active) */
 export function normStore(raw) {
   let o = null; try { o = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { o = null; }
   const list = [], seen = new Set();
@@ -74,7 +74,13 @@ export function normStore(raw) {
     seen.add(id); list.push({ id, name, values: cleanValues(p.values).values });
   }
   const active = typeof o?.active === 'string' && (seen.has(o.active) || BUILTIN.some(b => b.id === o.active)) ? o.active : REC_ID;
-  return { active, list };
+  const binds = {};
+  if (o?.binds && typeof o.binds === 'object' && !Array.isArray(o.binds)) {
+    for (const [k, v] of Object.entries(o.binds)) {
+      if (typeof k === 'string' && k.length > 0 && k.length <= 64 && typeof v === 'string' && (seen.has(v) || BUILTIN.some(b => b.id === v))) binds[k] = v;
+    }
+  }
+  return { active, list, binds };
 }
 /** all(store) -> built-in profiles then the user's */
 export const all = store => [...BUILTIN, ...(store?.list || [])];
@@ -83,10 +89,43 @@ export const find = (store, id) => all(store).find(p => p.id === id) || null;
 export function add(store, name, values) {
   const nm = cleanName(name); if (!nm) return { store, profile: null };
   const old = store.list.find(p => p.name === nm), profile = { id: old?.id || newId(), name: nm, values: cleanValues(values).values };
-  return { store: { active: profile.id, list: old ? store.list.map(p => (p === old ? profile : p)) : [...store.list, profile] }, profile };
+  return { store: { active: profile.id, list: old ? store.list.map(p => (p === old ? profile : p)) : [...store.list, profile], binds: { ...(store.binds || {}) } }, profile };
 }
 export function rename(store, id, name) { const nm = cleanName(name); if (!nm || !store.list.some(p => p.id === id) || store.list.some(p => p.name === nm && p.id !== id)) return store; return { ...store, list: store.list.map(p => (p.id === id ? { ...p, name: nm } : p)) }; }
-export function remove(store, id) { if (!store.list.some(p => p.id === id)) return store; return { active: store.active === id ? REC_ID : store.active, list: store.list.filter(p => p.id !== id) }; }
+export function remove(store, id) {
+  if (!store.list.some(p => p.id === id)) return store;
+  const binds = { ...(store.binds || {}) };
+  for (const [k, v] of Object.entries(binds)) if (v === id) delete binds[k];
+  return { active: store.active === id ? REC_ID : store.active, list: store.list.filter(p => p.id !== id), binds };
+}
+/** bind(store, targetKey, profileId) -> store with targetKey bound to profileId */
+export function bind(store, targetKey, profileId) {
+  const k = String(targetKey ?? '').trim(), p = find(store, profileId);
+  if (!k || !p) return store;
+  return { ...store, binds: { ...(store.binds || {}), [k]: p.id } };
+}
+/** unbind(store, targetKey) -> store without targetKey */
+export function unbind(store, targetKey) {
+  const k = String(targetKey ?? '').trim();
+  if (!k || !(k in (store.binds || {}))) return store;
+  const binds = { ...(store.binds || {}) };
+  delete binds[k];
+  return { ...store, binds };
+}
+/** boundId(store, targetKey) -> profile id bound to this target key, or null */
+export function boundId(store, targetKey) {
+  const k = String(targetKey ?? '').trim();
+  const id = store?.binds?.[k];
+  return id && find(store, id) ? id : null;
+}
+/** cardKey(card) -> stable identifier key for binding (e.g. k<hash> or k0) */
+export function cardKey(card) {
+  const name = String(card?.name || '').trim(), avatar = String(card?.avatar || '').trim();
+  if (!name && !avatar) return 'k0';
+  let h = 2166136261;
+  for (const c of (name + '\n' + avatar)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); }
+  return 'k' + (h >>> 0).toString(36);
+}
 /** exportDoc(profile) -> the file body { schema, name, values } */
 export const exportDoc = p => ({ schema: SCHEMA, name: p.name, values: cleanValues(p.values).values });
 /** parseImport(text) -> { ok, name, values, dropped } | { ok: false, reason }: unknown keys are dropped and counted, nothing secret is ever read */

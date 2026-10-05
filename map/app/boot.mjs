@@ -50,7 +50,7 @@ import { closeCard } from './markers.mjs';
 import { ALIAS, applyZoomLimit, focusStart, hereRes, jumpHere, markHere, setEstPlan, setUserMoved, startInScene, userMoved } from './locate.mjs';
 import { initSettings } from './settings.mjs';
 import './settings-head.mjs';   // HEADER-1: the settings search field moves into the sheet header
-import './profile-section.mjs';   // PROFILE-1: the settings-profile section on Settings home (registers its own onBuilt hook)
+import { onCardChange } from './profile-section.mjs';   // PROFILE-1, PROFILE-2: settings profiles and per-card binding
 import { emEmit, enNames, rebuildHere, setEnNames } from './extension-api.mjs';
 import { firstRunHint } from './notice-layer.mjs';
 import { initE7 } from './one-hand-mode.mjs';
@@ -182,6 +182,7 @@ async function mainInner() {
   // 唯一例外（任务三）：人**已经**在主场景（三维场景）里时跳过宏观世界层，直接下钻到主场景对应楼层——判定收在 locate.startInScene。
   plugins.EventsView?.init?.(); plugins.EventsView?.pollFeeds?.();   // 事态横条与花屏提示；外部事件数据源（maps.json 的 feeds，默认没有）。events-view.mjs 是独立 defer 脚本，读它的注册必须与模块求值顺序无关（打包时序曾在此崩，F-TT/PERF-BUNDLE）
   post({ type: 'eden-map:ready', proto: PROTO });
+  try { onCardChange(); } catch (e) { console.warn('[map] profile onCardChange', e); }
   // 首张地图画出来后，空闲时预热其他地图：描述文件、点位数据、最粗的几层瓦片（切过去立刻有模糊版）
   let warmT = 0; const warmSoon = ms => (clearTimeout(warmT), warmT = setTimeout(() => (window.requestIdleCallback || (f => f()))(() => warmOthers(), { timeout: 3000 }), ms));
   osdViewer.addOnceHandler('tile-drawn', () => { warmSoon(1500); setTimeout(firstRunHint, 1600); osdViewer.addHandler('open', () => warmSoon(2500)); });   // 每到一张新图，再预热它的邻居（已预热过的跳过）

@@ -76,3 +76,52 @@ test('rename / delete / name rules; built-in profiles are read-only', () => {
   pr.apply(id); assert.ok(pr.remove(id).ok); assert.equal(pr.current().profile.id, P.REC_ID); assert.deepEqual(pr.store().list.map(p => p.name), ['c']);
   assert.equal(P.normStore('garbage').active, P.REC_ID); assert.equal(P.cleanName('x'.repeat(40)).length, P.NAME_MAX);
 });
+test('cardKey returns deterministic stable hash or k0', () => {
+  assert.equal(P.cardKey(null), 'k0');
+  assert.equal(P.cardKey({}), 'k0');
+  const k1 = P.cardKey({ name: 'Alice', avatar: 'alice.png' });
+  const k2 = P.cardKey({ name: 'Alice', avatar: 'alice.png' });
+  assert.ok(k1.startsWith('k') && k1 !== 'k0');
+  assert.equal(k1, k2);
+  const k3 = P.cardKey({ name: 'Bob', avatar: 'bob.png' });
+  assert.notEqual(k1, k3);
+});
+test('bind and unbind profiles to card / pack key (PROFILE-2)', () => {
+  const io = mem(); const pr = createProfiles(io);
+  const id = pr.saveAs('hero-custom').id;
+  const cardK = 'k_my_hero';
+  assert.equal(pr.boundProfile(cardK), null);
+  pr.bind(cardK, id);
+  assert.equal(pr.boundProfile(cardK), id);
+  assert.equal(pr.store().binds[cardK], id);
+  // can also bind builtin lean profile
+  pr.bind('pack_eden', P.LEAN_ID);
+  assert.equal(pr.boundProfile('pack_eden'), P.LEAN_ID);
+  // unbinding cardK
+  pr.unbind(cardK);
+  assert.equal(pr.boundProfile(cardK), null);
+  assert.equal(pr.boundProfile('pack_eden'), P.LEAN_ID);
+  // removing profile cascades to removing its bindings
+  pr.bind(cardK, id);
+  assert.equal(pr.boundProfile(cardK), id);
+  pr.remove(id);
+  assert.equal(pr.boundProfile(cardK), null);
+});
+test('normStore validates and sanitizes binds', () => {
+  const raw = {
+    active: P.REC_ID,
+    list: [{ id: 'p1', name: 'User 1', values: {} }],
+    binds: {
+      card1: 'p1',
+      card2: P.LEAN_ID,
+      card3: 'non_existent',
+      '': 'p1',
+    },
+  };
+  const s = P.normStore(JSON.stringify(raw));
+  assert.equal(s.binds.card1, 'p1');
+  assert.equal(s.binds.card2, P.LEAN_ID);
+  assert.equal(s.binds.card3, undefined);
+  assert.equal(s.binds[''], undefined);
+});
+

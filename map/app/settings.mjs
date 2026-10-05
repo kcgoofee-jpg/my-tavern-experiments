@@ -269,7 +269,12 @@ export function renderSelfCheck() {
 }
 export function setAbout(v) { return (about = v); }
 // 任务四：卡内脚本推来的角色卡信息（经 mvu-bridge.cardInfo）。到了就重画一次版权申明页（正开着才画）
-export function setCardInfo(v, tried) { cardInfo = v && typeof v === 'object' ? v : null; cardTried = Array.isArray(tried) ? tried : null; if (setPageNow === 'license') renderLicense(); return cardInfo; }
+export function setCardInfo(v, tried) {
+  cardInfo = v && typeof v === 'object' ? v : null; cardTried = Array.isArray(tried) ? tried : null;
+  if (setPageNow === 'license') renderLicense();
+  import('./profile-section.mjs').then(m => m.onCardChange?.()).catch(e => console.warn('[map] profile onCardChange', e));
+  return cardInfo;
+}
 export function setUpdBusy(v) { return (updBusy = v); }
 export function setUpdRes(v) { return (updRes = v); }
 export function setSelfCheck(v) { return (selfCheck = v); }

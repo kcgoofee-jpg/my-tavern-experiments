@@ -2415,3 +2415,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT PROFILE-2 ===
+status: DONE
+items: PROFILE-2 (bind profile to card, opening card auto-applies with notice line, unbinding action) ✓
+commits: (see push)
+pushed: yes
+tests: node 1675/1677 (2 skipped) | smoke PASS | arch PASS | probes: profile1=PASS (1440 and 375 px)
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===
