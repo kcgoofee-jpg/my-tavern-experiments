@@ -1,6 +1,32 @@
 {
   "_note": "Schema-2 overlay of the schema-1 eden pack (docs/kernel-schema.md K-R67): tier hints, the outskirts and beyond nodes, district nodes with `at`. Nodes generated once by tools/gen_eden_overlay_v2.mjs from the pre-S3-2 event constants; the events block (K-R68: taxonomy, glitch preset, closed words, examples) and the injected-line tag by tools/gen_eden_events_v2.mjs from the pre-S4-1 constants.",
   "schema": 2,
+  "layers": [
+    {
+      "id": "tier-ambience", "type": "sound", "slot": "fx",
+      "applies": { "views": ["tc_upper", "tc_mid", "tc_low"] },
+      "data": {
+        "rules": [
+          { "match": { "map": "tc_upper", "night": true }, "scenes": [ { "id": "wind", "gain": 0.1 } ] },
+          { "match": { "map": "tc_upper" }, "scenes": [ { "id": "wind", "gain": 0.2 }, { "id": "birds", "gain": 0.14 } ] },
+          { "match": { "map": "tc_mid", "night": true }, "scenes": [ { "id": "rail", "gain": 0.08 } ] },
+          { "match": { "map": "tc_mid" }, "scenes": [ { "id": "crowd", "gain": 0.16 }, { "id": "rail", "gain": 0.13 } ] },
+          { "match": { "map": "tc_low", "night": true }, "scenes": [ { "id": "factory", "gain": 0.1 }, { "id": "steam", "gain": 0.07 } ] },
+          { "match": { "map": "tc_low" }, "scenes": [ { "id": "factory", "gain": 0.18 }, { "id": "steam", "gain": 0.12 } ] }
+        ],
+        "recipes": {
+          "wind":    { "kind": "file", "src": "packs/eden/ambient/wind.ogg",    "alt": "packs/eden/ambient/wind.mp3",    "gain": 0.2 },
+          "birds":   { "kind": "file", "src": "packs/eden/ambient/birds.ogg",   "alt": "packs/eden/ambient/birds.mp3",   "gain": 0.14 },
+          "crowd":   { "kind": "file", "src": "packs/eden/ambient/crowd.ogg",   "alt": "packs/eden/ambient/crowd.mp3",   "gain": 0.16 },
+          "rail":    { "kind": "file", "src": "packs/eden/ambient/rail.ogg",    "alt": "packs/eden/ambient/rail.mp3",    "gain": 0.13 },
+          "factory": { "kind": "file", "src": "packs/eden/ambient/factory.ogg", "alt": "packs/eden/ambient/factory.mp3", "gain": 0.18 },
+          "steam":   { "kind": "file", "src": "packs/eden/ambient/steam.ogg",   "alt": "packs/eden/ambient/steam.mp3",   "gain": 0.12 }
+        }
+      },
+      "menu": { "label": "天城环境声", "title": "上层风声鸟鸣，中层街声与轨道，下层厂房与蒸汽（默认关，音量偏低，夜里自动变轻；雨声仍由合成层叠加）",
+                "i18n": { "en": { "label": "Tiancheng ambience", "title": "Wind and birds on the upper tier, street and rail on the middle, factory and steam on the low (off by default, kept quiet, lighter at night; rain still comes from the synthesised layer)" } } }
+    }
+  ],
   "media": {},
   "nodes": [
     {
