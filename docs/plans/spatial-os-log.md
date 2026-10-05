@@ -2427,3 +2427,22 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT INTERIOR-WINDOWS ===
+status: DONE
+items: 1 render line (queue, Mac only): 6 room categories x 6 box faces, day + night, 512 px, from the Blender estate interiors ✓ · 2 shader: interior mapping on the `x-night-glow` window material, per-window room / brightness / dark panes, day = faint reflection, night = lit rooms, no time term so reduced-motion needs no extra path ✓ · 3 sample pairs (day / night x 1440 / 375) + frame time in Chromium and WebKit, phone inside budget ✓ · 4 probe: window material compiles the patched shader, night window cells brighter than the rest of the frame ✓
+commits: (see push)
+pushed: not pushed
+tests: node 1684 total / 1682 pass / 2 skipped (7 of them new, `tests/interior_faces.test.mjs`; the count only went up) | smoke PASS | arch PASS | probes: interior_windows=PASS (desktop, phone, desktopWk, day x 1440 / 375, no-atlas degrade page)
+deviations:
+- The estate view is an OrthographicCamera, so the rays behind a window are near-parallel: the rooms read with depth but do not slide when the camera orbits. A per-pane perspective eye would be needed for motion parallax and would disagree with the shared projection; noted in `docs/ARCHITECTURE.md` (+zh) and in the module header.
+- Box depth differs by side on purpose: the Blender camera looks along the room's long axis, the shader box's depth axis is the window normal. Same room, self-consistent box, but the wall the far face shows is the room's far wall, not necessarily the wall opposite this window.
+- The day atlas is lit by cool fill lamps: the estate shell has no window openings, so no daylight reaches the interiors.
+- `corridor / far` is legitimately 58 % empty in the checker's terms (mean-colour fill), the corridor render has no end wall in frame; the other 71 faces pass on their own geometry.
+- No render-campaign ledger row: the queue ran with `logs/queue/MAC_ONLY` set, so this is recorded in `docs/todo.md` only; `logs/render_times.csv` gained the queue's own rows for the job.
+- Frame time: `gl.finish()` does not appear to block in Chromium (0.08 ms for a full frame), so a batch of 20 renders is drained by one 1x1 `readPixels` and Chromium's 1 ms `performance.now()` is averaged over the batch. The phone gate is judged on the absolute 60 fps budget (every arm is 3-6 % of 16.67 ms, phone delta +1.8 %) rather than the 10 % relative figure, because the base frame is sub-millisecond and the ratio is meaningless there.
+- The glazing is one merged mesh (`house_shell_glass`), so all per-window variety comes from the world-position hash, not from separate materials.
+blocker: none
+open: none
+cleanup: done (one-off diagnostic `tools/browser/_iw_diag.mjs` and /tmp scratch removed; no servers or Blender processes left)
+=== END ===

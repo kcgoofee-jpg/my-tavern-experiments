@@ -1,0 +1,119 @@
+{
+ "desktop": {
+  "frames": {
+   "off": {
+    "p50": 0.82,
+    "p95": 0.86
+   },
+   "on": {
+    "p50": 0.86,
+    "p95": 0.975
+   },
+   "delta_pct": 4.9,
+   "budget_pct": 5.2
+  },
+  "armed": 1,
+  "glowOn": 1,
+  "shader": true,
+  "zoom": 2.2,
+  "iu": {
+   "n": 1,
+   "on": 1,
+   "w": 3072,
+   "glow": 1
+  },
+  "firstFrame": 514,
+  "lum": {
+   "winCells": 135,
+   "winMean": 87.12,
+   "restMean": 47
+  }
+ },
+ "phone": {
+  "frames": {
+   "off": {
+    "p50": 0.565,
+    "p95": 0.615
+   },
+   "on": {
+    "p50": 0.575,
+    "p95": 0.61
+   },
+   "delta_pct": 1.8,
+   "budget_pct": 3.4
+  },
+  "armed": 1,
+  "glowOn": 1,
+  "shader": true,
+  "zoom": 2.2,
+  "iu": {
+   "n": 1,
+   "on": 1,
+   "w": 3072,
+   "glow": 1
+  },
+  "firstFrame": 997,
+  "lum": {
+   "winCells": 393,
+   "winMean": 144.5,
+   "restMean": 50.1
+  }
+ },
+ "desktopWk": {
+  "frames": {
+   "off": {
+    "p50": 0.55,
+    "p95": 0.65
+   },
+   "on": {
+    "p50": 0.55,
+    "p95": 0.65
+   },
+   "delta_pct": 0,
+   "budget_pct": 3.3
+  },
+  "armed": 1,
+  "glowOn": 1,
+  "shader": true,
+  "zoom": 2.2,
+  "iu": {
+   "n": 1,
+   "on": 1,
+   "w": 3072,
+   "glow": 1
+  },
+  "firstFrame": 662,
+  "lum": {
+   "winCells": 135,
+   "winMean": 87.21,
+   "restMean": 48.49
+  }
+ },
+ "desktop_day": {
+  "iu": {
+   "on": 1,
+   "w": 3072,
+   "glow": 0
+  },
+  "shader": true,
+  "firstFrame": 464
+ },
+ "phone_day": {
+  "iu": {
+   "on": 1,
+   "w": 3072,
+   "glow": 0
+  },
+  "shader": true,
+  "firstFrame": 904
+ },
+ "no_atlas": {
+  "shader": true,
+  "iu": {
+   "on": 0,
+   "w": 1
+  }
+ },
+ "pass": true,
+ "fails": []
+}
