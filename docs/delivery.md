@@ -65,3 +65,12 @@ npm 蓝图平移。此表只作预案：**现在不动手，等 gh 线路确实�
 3. `tools/build_preview_script.py`：HOSTS 增加 `fastly.jsdelivr.net`（线路顺序 jsdmirror → jsdelivr → fastly）。
 4. `bash tools/smoke.sh --cdn`：对正式标签走 gh 线路自检。
 5. 用户在 TT 重新导入：`~/eden-map-review/dist-3/导入说明.md`（中文步骤清单）。
+
+## 6. 扩展加载器用的也是这三条线（F2，2026-10-05）
+
+`ext/index.js`（F2 扩展仓库的加载器，随 S10 拆分）按本节 §3 的同一张线路表取代码：jsdmirror → jsdelivr → fastly，
+每条 10 秒超时换下一条；`@<提交号>` 来自分支上的 `head.json`（三线路取构建号最大）。import 之前逐文件校
+`map/data/integrity.json`（`tools/build_integrity.py` 生成，`tools/bump_head.py` 每次 head  bump 一起重算），
+任何一处对不上就失败关死。扩展仓库自身的安装地址（国内镜像 / zip 兜底）在 `ext/README.md` / `ext/README.zh.md`，
+镜像地址未实测（Q-32c）。
+
