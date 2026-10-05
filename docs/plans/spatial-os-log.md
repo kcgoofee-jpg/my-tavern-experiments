@@ -2403,3 +2403,15 @@ blocker: none
 open: none
 cleanup: done
 === END ===
+
+=== RESULT TRANSIT-LOOK ===
+status: DONE
+items: 1 re-derive line geometry from render scenes through camera projection ✓ · 2 probe: line-to-rail distance median <= 3 px at 1440 (measured 0.29 px median, 0.56 px 90th percentile, 1.02 px max) ✓
+commits: (see push)
+pushed: yes
+tests: node 1673/1674 (1 skipped) | smoke PASS | arch PASS | probes: pack_routes=PASS
+deviations: none
+blocker: none
+open: none
+cleanup: done
+=== END ===

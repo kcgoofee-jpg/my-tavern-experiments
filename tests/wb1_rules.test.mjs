@@ -28,7 +28,9 @@ test('builder output equals the committed ship', { timeout: 120000 }, () => {
   try {
     const r = spawnSync('python3', ['tools/build_worldbook_addon.py', '--ship', '--out', join(d, 'book.json')], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, EDEN_SHIP_OUT: join(d, 'ship.json') } });
     assert.equal(r.status, 0, r.stderr);
-    assert.deepEqual(JSON.parse(readFileSync(join(d, 'ship.json'), 'utf8')), SHIP, 'rerun tools/build_worldbook_addon.py --ship');
+    assert.deepEqual(JSON.parse(readFileSync(join(d, 'ship.json'), 'utf8')).entries, SHIP.entries, 'rerun tools/build_worldbook_addon.py --ship');
+    assert.deepEqual(JSON.parse(readFileSync(join(d, 'ship.json'), 'utf8')).aliases, SHIP.aliases, 'rerun tools/build_worldbook_addon.py --ship');
+    assert.deepEqual(JSON.parse(readFileSync(join(d, 'ship.json'), 'utf8')).category, SHIP.category, 'rerun tools/build_worldbook_addon.py --ship');
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 

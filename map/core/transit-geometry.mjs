@@ -48,11 +48,19 @@ const modeLook = (graph, id, width) => {   // the look of a link or a walk in a 
   const m = graph.modes[id] || {}, road = m.trip === 'road', air = m.trip === 'air';
   return { color: m.color || (road ? '--muted' : '--ink'), width: road ? 1.2 : air ? 1.4 : width, dash: m.dash || (road ? [1, 4] : air ? [6, 4] : null) };
 };
-/** The path of the segment a -> b of a line (octilinear, shifted when other lines share it). */
-function segment(graph, shared, a, b, lineId, posOf, aspect, prev) {
+const segPath = (graph, a, b, view) => {
+  const xp = graph.transit?.['x-paths']?.[view] || graph.transit?.['x-paths'];
+  if (!xp) return null;
+  const fwd = xp[`${a}|${b}`]; if (fwd) return fwd;
+  const rev = xp[`${b}|${a}`]; if (rev) return rev.slice().reverse();
+  return null;
+};
+/** The path of the segment a -> b of a line (custom path or octilinear, shifted when other lines share it). */
+function segment(graph, shared, a, b, lineId, posOf, aspect, prev, view) {
   const pa = posOf(a), pb = posOf(b);
   if (!pa || !pb) return null;
-  const pts = octo(pa, pb, aspect, prev ? posOf(prev) : undefined), ls = lineId ? shared.get(key(a, b)) || [] : [];
+  const custom = segPath(graph, a, b, view);
+  const pts = custom || octo(pa, pb, aspect, prev ? posOf(prev) : undefined), ls = lineId ? shared.get(key(a, b)) || [] : [];
   return ls.length > 1 ? offsetPath(pts, ls.length, ls.indexOf(lineId)) : pts;
 }
 const layer = (id, type, style, features) => ({ id, type, slot: 'routes', style, features });
@@ -84,12 +92,12 @@ export function transitLayers(graph, view, { posOf, viewOf, nodePos, lang, t = f
     if (posOf(a) && !posOf(b) && ov && ov !== view) badgeF.push({ view, at: posOf(a), kind: 'stub', label: `→ ${name(other)} · ${viewTitle(ov)}` });
   };
   for (const k of T.links || []) {
-    const p = segment(graph, shared, k.from, k.to, null, posOf, aspect);
+    const p = segment(graph, shared, k.from, k.to, null, posOf, aspect, undefined, view);
     if (p) { lkF.push({ view, pts: p, kind: kind('k', k.mode) }); lk.by[kind('k', k.mode)] = modeLook(graph, k.mode, width); } else { stub(k.from, k.to, k.to); stub(k.to, k.from, k.from); }
   }
   for (const l of graph.lines.values()) {
     const kd = kind('l', l.id);
-    for (const [a, b, prev] of segs(l)) { const p = segment(graph, shared, a, b, l.id, posOf, aspect, prev); if (p) { lnF.push({ view, pts: p, kind: kd }); ln.by[kd] = { color: l.color, width, halo: true }; } else { stub(a, b, b); stub(b, a, a); } }
+    for (const [a, b, prev] of segs(l)) { const p = segment(graph, shared, a, b, l.id, posOf, aspect, prev, view); if (p) { lnF.push({ view, pts: p, kind: kd }); ln.by[kd] = { color: l.color, width, halo: true }; } else { stub(a, b, b); stub(b, a, a); } }
     const on = l.stops.filter(s => posOf(s));
     if (l.number && on.length) for (const s of [...new Set(l.loop ? [on[0]] : [on[0], on[on.length - 1]])]) { badgeF.push({ view, at: posOf(s), kind: kind('n', l.id), label: l.number }); badge.by[kind('n', l.id)] = { color: l.color, size: 'small', tone: 'chip', badge: true }; }
   }
@@ -119,7 +127,7 @@ export function planLayers(graph, plan, view, { posOf, endPos, viewOf, suggested
     const m = modeLook(graph, leg.mode, width), l = leg.line ? graph.lines.get(leg.line) : null, kd = leg.kind === 'ride' ? kind('p', leg.line) : kind('p-k', leg.mode);
     lines.by[kd] = leg.kind === 'ride' ? { color: l.color, width: width + 3, halo: true, dash, opacity } : { color: m.color, width: m.width + 1, dash: dash || m.dash, opacity };
     for (let j = 0; j + 1 < leg.stops.length; j++) {
-      const [a, b] = [leg.stops[j], leg.stops[j + 1]], p = segment(graph, shared, a, b, leg.line, posOf, aspect, j ? leg.stops[j - 1] : undefined);
+      const [a, b] = [leg.stops[j], leg.stops[j + 1]], p = segment(graph, shared, a, b, leg.line, posOf, aspect, j ? leg.stops[j - 1] : undefined, view);
       if (p) lf.push({ view, pts: p, kind: kd });
       else for (const [x, y] of [[a, b], [b, a]]) { const ov = viewOf?.(y); if (posOf(x) && ov && ov !== view) bf.push({ view, at: posOf(x), kind: 'p-stub', label: `→ ${viewTitle(ov)}` }); }
     }
@@ -138,7 +146,9 @@ export function pathOf(graph, plan, view, posOf, aspect = 1) {
   for (const leg of plan.legs) if (leg.kind !== 'walk') for (let j = 0; j + 1 < leg.stops.length; j++) {
     const [a, b] = [leg.stops[j], leg.stops[j + 1]], pa = posOf(a), pb = posOf(b);
     if (!pa || !pb) continue;
-    for (const p of octo(pa, pb, aspect, j ? posOf(leg.stops[j - 1]) || undefined : undefined)) { const q = out[out.length - 1]; if (!q || q[0] !== p[0] || q[1] !== p[1]) out.push(p); }
+    const custom = segPath(graph, a, b, view);
+    const segPts = custom || octo(pa, pb, aspect, j ? posOf(leg.stops[j - 1]) || undefined : undefined);
+    for (const p of segPts) { const q = out[out.length - 1]; if (!q || q[0] !== p[0] || q[1] !== p[1]) out.push(p); }
   }
   return out;
 }
