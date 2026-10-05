@@ -2446,3 +2446,22 @@ blocker: none
 open: none
 cleanup: done (one-off diagnostic `tools/browser/_iw_diag.mjs` and /tmp scratch removed; no servers or Blender processes left)
 === END ===
+
+=== RESULT AMBIENT-SOUND ===
+status: DONE
+items: 1 six seamless loops (28.5–30 s, ogg + mp3, 207–259 KB each, under the 400 KB cap), licence and source per file in the pack's `credits.assets` ✓ · 2 wired as pack data on the sound layer per tier and period (upper wind + birds, mid crowd + rail, low factory + steam; night quieter and thinned — mid keeps only the rail, upper only the wind), low gains, row registered and off by default ✓ · 3 probe: the right loops per tier / period, the context suspends when the page is hidden, no AudioContext before a user gesture ✓
+commits: 147b596a feat(sound): let an ambience recipe be a pack file loop · 2ae83d48 feat(eden-pack): per-tier ambient loops, off by default · 331de550 docs(kernel,layers): K-R89 amended for pack file-loop recipes · bbc23749 test(layers): pin the ambience behaviour end to end and re-pin the row counts · (this commit: todo + this block)
+pushed: yes
+tests: node 1685 total / 1684 pass / 1 skipped (one new file-recipe validation test in `tests/ambience.test.mjs`; the count went up, the skip is the pre-existing numpy-dependent anchor test) | smoke PASS | arch PASS (9 lines, empty-catch 439 = ledger) | probes: ambient_sound=PASS (16 checks), layers_ext=PASS, pack_layers=PASS
+deviations:
+- IN-1 needed one engine change: a `file` recipe kind (K-R89 said "no audio file exists anywhere", amended in `docs/kernel-schema.md` + zh and `docs/layers-schema.md` + zh). No other audio feature was added — no fades, no mixer channels, no new toggles beyond the one pack-declared row (OUT respected).
+- Sources: the prompt asked CC0 first. freesound requires an API key and the Sonniss GDC bundles are a multi-GB download, so the loops came from Wikimedia Commons, where the licence is per file: crowd CC0, birds public domain, wind CC BY-SA 4.0, rail / factory / steam CC BY 4.0. Each file's licence and link are recorded in `credits.assets`. No key was asked for or entered; no generated audio.
+- The credits are pack data (`manifest.json` `credits.assets`), which is the prompt's "credits in the pack credits"; the Settings credits page renders `credits.pack` / `credits.card` only, so the loop credits are in the data rather than on that screen. An open item below if the user wants them visible.
+- No airship loop: the upper tier is wind + birds. No free-licence distant-airship recording exists to edit, and a synthesized stand-in would have been a new audio-engine feature; the tier's ambience stays what the pack can actually ship.
+- The probe sets a 1440×1300 viewport because the layer popover has no max-height and no inner scroll: at a normal framed height the ambience row sits below the visible area and cannot be clicked. Pre-existing (18 rows already did this), made tighter by the new row; filed as Q-35 with a recommendation.
+- The three new failure paths in `map/app/sound-block.mjs` `console.warn` instead of swallowing: the empty-catch ratchet flagged 10 > the ledgered 7, and D16 says a swallowed error is either logged or commented — since the watchdog strips comments before matching, logging is what satisfies it. The ledger did not rise.
+- The pins that asserted "the first pack declares no layers" (22 registered layers, 17–18 menu rows, 7 credit assets) now expect the one declared sound row (23 / 19 / 8). Additive divergence only: no event, character, item or injected line changed, and each is pinned in `tests/declared_layers.test.mjs`, `tests/first_pack_additions.test.mjs`, `tests/s43_parity.test.mjs`, `tools/browser/layers_ext.mjs`, `tools/browser/pack_layers.mjs`.
+blocker: none
+open: Q-35 (the layer menu cannot scroll) · whether the credits page should render `credits.assets` (licence per file) as its own section
+cleanup: done (the probes stop their own static server; the loop builder and its venv are outside the repo in `~/eden-work/ambient-sound-scratch/`; no Blender, cors_server or background process of this session left; the worktree stays for the orchestrator)
+=== END ===
