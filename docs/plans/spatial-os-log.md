@@ -2488,7 +2488,7 @@ cleanup: done (temp worktree `/tmp/f0-base` and its symlinked `node_modules` rem
 === RESULT F1 ===
 status: DONE
 items: 1 ✓ 2 ✓
-commits: (to be filled after commit)
+commits: d0adf6db feat(host-native): F1 native ST/TT host adapter with parity tests
 pushed: not pushed
 tests: node 1713/1714 pass (1 skipped, was 1700 before F1 — 13 new parity tests added) | smoke PASS | arch PASS | probes: not run (no browser probe changes in this step)
 deviations: none
