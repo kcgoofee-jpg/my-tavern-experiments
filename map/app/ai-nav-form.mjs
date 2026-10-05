@@ -14,7 +14,7 @@ const when = t => { try { return new Date(t).toLocaleTimeString(); } catch (e) {
 
 export function navForm(s, api) {
   const sel = el('select'), base = el('input'), model = el('input'), key = el('input'), test = el('button', 'btn', tr('fc.nav.test', '测试连接')), save = el('button', 'btn', tr('fc.nav.save', '保存')),
-    res = el('small'), cost = el('small', '', tr('fc.nav.test_cost', '测试会发一个很小的请求，消耗几个 token')), consent = el('div', 'fcsub'), agree = el('button', 'btn primary', tr('fc.nav.agree', '同意并开启')),
+    res = el('small'), cost = el('small', '', tr('fc.nav.test_cost', '测试会发一个很小的请求，消耗几个 token')), keyHint = el('small', '', tr('fc.nav.key_notice', '密钥保存在这台浏览器的本地设置里，同一页面运行的脚本都能读到它。')), consent = el('div', 'fcsub'), agree = el('button', 'btn primary', tr('fc.nav.agree', '同意并开启')),
     why = el('small'), cad = el('select'), stats = el('small'), wd = el('button', 'btn', tr('fc.nav.withdraw', '撤回同意')), form = el('div', 'fcsub'), after = el('div', 'fcsub');
   for (const n of [test, save, agree, wd]) n.type = 'button';
   model.type = 'text'; sel.id = 'thNavProv'; base.type = 'url'; base.id = 'thNavBase'; model.id = 'thNavModel'; key.type = 'password'; key.id = 'thNavKey'; key.autocomplete = 'off'; test.id = 'thNavTest'; agree.id = 'thNavAgree'; save.id = 'thNavSave'; res.id = 'thNavRes';
@@ -32,7 +32,7 @@ export function navForm(s, api) {
   for (const c of CAD) { const o = el('option', '', tr('fc.nav.cad_' + c, CADZH[c])); o.value = c; cad.append(o); }
   cad.id = 'thNavCad'; cad.addEventListener('change', () => setPrefs({ navCadence: +cad.value }));
   const acts = el('div', 'fcact'); acts.append(test, save);
-  form.append(field('fc.nav.provider', '服务商', sel), field('fc.nav.base', '接口地址', base), field('fc.nav.model', '模型（默认值可直接改成别的型号）', model), field('fc.nav.key', '密钥', key), acts, cost, res);
+  form.append(field('fc.nav.provider', '服务商', sel), field('fc.nav.base', '接口地址', base), field('fc.nav.model', '模型（默认值可直接改成别的型号）', model), field('fc.nav.key', '密钥', key), keyHint, acts, cost, res);
   const ctext = el('small', '', tr('fc.nav.consent', 'AI 参谋会按你的设置在后台调用你自己的 API，给出地图建议；请求只发往你填的端点，会消耗你的额度。'));
   consent.append(ctext, agree, why); after.append(field('fc.nav.cadence', '运行间隔', cad), stats, wd);
   s.append(form, consent, after); api.ST = null;

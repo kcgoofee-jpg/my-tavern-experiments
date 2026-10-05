@@ -81,6 +81,8 @@
     "routes_title@en": "Upper-tier air lanes (gold dashes) and Silvercrown patrol rings (pale-blue dash-dot)",
     "s.cvd_hint": "事态、图例、人物头像等换成色盲安全配色，并加形状 / 描边区分；同步给庄园与三维页",
     "s.cvd_hint@en": "Switches events, legends, character avatars etc. to a colorblind-safe palette and adds shape / outline cues; also sent to the estate and 3D pages",
+    "s.lic_adult_v": "18+：本设定包按原作原样呈现成人向内容与措辞，未作删改，仅适合成年人；地图不审核、不过滤聊天内容",
+    "s.lic_adult_v@en": "18+: this data pack carries the original card's adult content and wording as it is, nothing is censored — adults only; the map never moderates or filters chat content",
     "s.lic_repo": "伊甸地图（开源）",
     "s.lic_repo@en": "Eden Map (open source)",
     "um.k_area": "庄园室外",
