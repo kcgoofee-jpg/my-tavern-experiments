@@ -2496,3 +2496,16 @@ blocker: none
 open: F2 (extension repo with manifest, loader, settings drawer, per-card enable, dual-load handshake) is next · Playwright on a real local SillyTavern deferred to F2/F3 (no GUI driving per standing constraint; the native adapter is tested at the unit level against a fake ST context that mirrors the same state as the TH stub) · MVU write still requires TH (by design — card's MVU schema rejects unknown keys)
 cleanup: done
 === END ===
+
+=== RESULT F2 ===
+status: DONE
+items: 1 ✓ 2 ✓ 3 ✓
+commits: b244035c feat(ext): F2 extension loader package with SHA-256 fail-closed check and dual-load handshake
+commits: d2fc0c1c docs(ext): F2 — delivery line note in docs/delivery.md, F2 item and Q-32 status in docs/todo.md
+pushed: not pushed
+tests: node 1726/1727 pass (1 skipped; 1713 before F2, 13 new tests in tests/f2_ext_loader.test.mjs, none removed) | smoke PASS | arch PASS | probes: not run (ext loader is browser-only and needs a real ST/TT install; per standing constraint this is the written checklist in ext/README.zh.md §真机清单, deferred to the user and F3)
+deviations: the extension package ships as ext/ inside the main repo (manifest + loader ready to become the repo root at S10b); no new GitHub repo was created — outward action, needs the user's explicit yes
+blocker: none
+open: new extension repo creation + remote name (awaiting user yes) · mainland mirror clone address untested (Q-32c; zip fallback documented) · ST registerCommand exposure differs by version (loader degrades silently) · drawer strings are zh-only for v0 (ext/ is outside the engine i18n gate; en mirror if a non-zh user appears)
+cleanup: done (worktree removed after push; no servers started)
+=== END ===
