@@ -353,10 +353,14 @@ The rescue branch `rescue/ambience-part4-4` holds three new files (`map/core/amb
   weather from `WeatherApi.now()` instead of the old globals and the `tc:weather` event;
 - a `sound` layer's data (inline `data` or `file:`) is the ambience format `{ rules: [{ match, scenes }], recipes?,
   master? }`; `match.map` is the open view id; `applies` decides where the layer is live at all;
+- a recipe may also be a pack file loop `{ kind: 'file', src: '<rel>.ogg', alt?: '<rel>.mp3' }` (paths relative to
+  the pack's base; the app fetches, decodes and loops it; a missing or broken file stays silent);
 - the row is off by default whatever `menu.default` says; the AudioContext is created on the first switch-on, resumed
   only after a user gesture, suspended while the page is hidden or the layer does not apply;
 - the example pack gets one default-off layer `harbour-sound` (wind and crackle on its harbour view); the first pack
-  gets none in S8.
+  gets none in S8. Later (AMBIENT-SOUND) eden gained a default-off `tier-ambience` file-loop layer — wind and birds
+  on the upper tier, crowd and rail on the middle, factory and steam on the low, lighter at night; the loops and
+  their per-file licences are in the pack's `credits.assets`.
 
 ## 13. Acceptance: the example pack adds two layers with data only
 

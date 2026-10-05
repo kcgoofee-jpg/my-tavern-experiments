@@ -292,8 +292,12 @@ LegendRow = { label, desc?, i18n?: { <语言>: { label?, desc? } }, kind? }
   `tc:weather` 事件；
 - `sound` 图层的数据（内联 `data` 或 `file:`）就是环境音格式 `{ rules: [{ match, scenes }], recipes?, master? }`；`match.map` 是
   当前视图 id；`applies` 决定这一层在哪里生效；
+- 配方也可以是包内的文件循环 `{ kind: 'file', src: '<rel>.ogg', alt?: '<rel>.mp3' }`（路径相对包根解析；由应用层取回、解码并
+  循环；文件缺失或损坏时保持静音）；
 - 不管 `menu.default` 写什么，这一行都默认关；AudioContext 在第一次打开时才创建，只在用户手势后恢复，页面隐藏或图层不适用时挂起；
-- 示例包加一条默认关的 `harbour-sound`（港口视图上的风声和噼啪声）；S8 不给第一个包加。
+- 示例包加一条默认关的 `harbour-sound`（港口视图上的风声和噼啪声）；S8 不给第一个包加。后来（AMBIENT-SOUND）eden 加了一条
+  默认关的 `tier-ambience` 文件循环图层——上层风声与鸟鸣、中层街声与轨道、下层厂房与蒸汽，夜里自动变轻；循环素材与逐文件
+  授权写在包的 `credits.assets` 里。
 
 ## 13. 验收：示例包只改数据就加上两个图层
 
