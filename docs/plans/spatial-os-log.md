@@ -2552,3 +2552,10 @@ blocker: none
 open: the A/B in docs/turn-ids.md §7 needs a free Mac TT window on the gg profile (same as WB-2-rest's open tag-rate question) · the builder's earlier unpinned --ship run left a stale hand-off file `~/Downloads/酒馆/世界书/伊甸地图·世界书附加条目 v0.9.9-dev.json` outside the repo — delete at the user's convenience; the committed ship JSON is the 0.9.8 one
 cleanup: done (no servers or background processes started left running; msg/result temp files removed; worktree removed after the push)
 === END ===
+
+=== RESULT TURN-IDS — CI addendum ===
+pushed: head #366 (82d96a06)
+CI #37371795715: job `test` PASS (node --test + smoke on the pushed tree); job `browser-smoke` FAIL, both reds not TURN-IDS:
+  · `v3d_pins_no_overlap` — pre-existing, already filed U-FIX-14 (also the only red on head #364).
+  · `embed_check_update` — a SEC-1 (PUB line, `eb6d4fdf`) regression: `map/app/settings.mjs:204` links 更新说明 from `safeHref(r?.notes)`, but `checkUpdate()` returns `notes` as the build.json note array and the URL as `r.changelog`, so the link never renders. It first executed on this head because head #365's browser-smoke was cancelled (verified `eb6d4fdf` not an ancestor of 65b715ec / head #364, where the probe passed). Filed U-FIX-15 with the one-line recommendation; not fixed here (one prompt = one unit of work, and the fix belongs to the PUB line).
+=== END ===
