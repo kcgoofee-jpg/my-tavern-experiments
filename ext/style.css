@@ -1,0 +1,34 @@
+/* Eden Map 扩展自己的界面样式（设置抽屉与提示条）。
+   引擎面板的样式不从这里走（那在 map/ui 里，按线路加载）；这里只服务 ext/ 自己的两个元素。 */
+
+.emx-drawer .emx-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.emx-drawer .emx-cards {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+}
+
+.emx-drawer .emx-line {
+  margin-left: 4px;
+}
+
+.emx-notice {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--em-z-toast, 980);
+  max-width: min(92vw, 560px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(30, 30, 36, 0.92);
+  color: #f2f2f2;
+  font-size: 14px;
+  line-height: 1.5;
+}

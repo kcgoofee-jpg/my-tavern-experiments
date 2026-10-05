@@ -24,7 +24,7 @@ import { createRootStore } from './root-store.mjs';
 import { createHostChecks } from './host-checks.mjs';
 import { createModesFlow } from './modes-flow.mjs';
 import { hostStr } from './host-strings.mjs'; import { updateChannel, artBase } from './follow-pin.mjs'; import { nextRoute } from './tile-route.mjs'; import { createBootWatchdog, rotateKeys } from './viewer-boot.mjs';   // P2 解耦：版本信息与检查更新（取数 / 发消息由入口注入）；viewer-boot：查看器起不来时的重挂（见 mountFrame）
-(() => { if (redirected) return;   // 分支路径加载的旧入口：门卫已换成 @<sha> 的入口（follow-gate.mjs），这里什么也不挂
+(() => { if (redirected || (window.parent?.__edenMapExtInstalled && !window.__edenMapExtImport)) return;   // 分支路径加载的旧入口：门卫已换成 @<sha>（follow-gate.mjs）；或扩展已接管本页（F2 双开握手：ext/index.js 置 __edenMapExtInstalled，自己 import 时临时带 __edenMapExtImport）——都不挂
   const scriptBase = new URL('../', import.meta.url).href;            // .../map/（脚本自己加载的位置）
   // 地基 A1 cdnFetch、设定包命名空间（NS / LS / lsGet / lsSet）：host-tavernhelper.mjs
   const { PACK_IN, PACK_ID, MAN, wrapLS, LS, lsGet, lsSet } = packNs(scriptBase); let MANv = PACK_IN?.manifest || null; MAN.then(m => { MANv = m || MANv; }); const HS = (k, en) => hostStr(MANv, k, en ? 'en' : 'zh');   // MAN：包清单（Promise）；MANv = 到了之后的同步副本，HS = 宿主文案（清单 strings，没到 / 没写就是中性默认）

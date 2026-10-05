@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at, art_sha: 最后改动 map/art 的提交, history: 最近 40 个构建 [{build, sha, at}]}，单独提交一次（消息「head #N」）。
+"""跟随分支的头指针：map/data/head.json = {build: 递增构建号, sha: 内容提交号, branch, at, art_sha: 最后改动 map/art 的提交, history: 最近 40 个构建 [{build, sha, at}]}，连同代码完整性清单 map/data/integrity.json（tools/build_integrity.py，F2 扩展加载器逐文件校 SHA-256 用），单独提交一次（消息「head #N」）。
 为什么单独提交：文件写不进自己所在提交的提交号，所以 head.json 记的是它的父提交（内容提交）；两者只差 head.json 本身，按提交号加载内容完全一致。
 跟随分支加载器（build_preview_script.py --follow）从 jsdmirror / jsDelivr / raw.githubusercontent 读分支路径上的这个文件（国内不用梯子），取构建号最大的。
 
@@ -11,13 +11,14 @@ HEAD 已经是「head #N」提交时先撤掉它再重写（重复跑不会叠�
 import argparse, datetime, json, os, subprocess, sys
 
 PATH = 'map/data/head.json'
+INTEGRITY = 'map/data/integrity.json'
 git = lambda *a, check=True: subprocess.run(['git', *a], capture_output=True, text=True, check=check)
 
 
 def drop_old_bump():
     msg = git('log', '-1', '--format=%s').stdout.strip()
     files = git('show', '--name-only', '--format=', 'HEAD').stdout.split()
-    if msg.startswith('head #') and files == [PATH]: git('reset', '-q', '--hard', 'HEAD^')
+    if msg.startswith('head #') and set(files) <= {PATH, INTEGRITY}: git('reset', '-q', '--hard', 'HEAD^')
 
 
 HISTORY = 40
@@ -52,7 +53,9 @@ def bump(branch):
     if art: h['art_sha'] = art
     h['history'] = history_of(prev, h)
     with open(PATH, 'w', encoding='utf-8') as f: json.dump(h, f, ensure_ascii=False); f.write('\n')
-    git('add', PATH); git('commit', '-q', '-m', f"head #{h['build']}", '--', PATH)
+    # F2：完整性清单按同一个内容提交号重算（ext/index.js 在 import 前逐文件校 SHA-256，用 head_sha 和 head.json 对表）
+    subprocess.run([sys.executable, 'tools/build_integrity.py'], capture_output=True, text=True, check=True)
+    git('add', PATH, INTEGRITY); git('commit', '-q', '-m', f"head #{h['build']}", '--', PATH, INTEGRITY)
     return h
 
 

@@ -1,0 +1,12 @@
+{
+  "display_name": "Eden Map",
+  "loading_order": 50,
+  "requires": [],
+  "optional": ["tavern-helper"],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "kcgoofee-jpg",
+  "version": "0.1.0",
+  "homePage": "https://github.com/kcgoofee-jpg/eden-map-ext",
+  "auto_update": true
+}
