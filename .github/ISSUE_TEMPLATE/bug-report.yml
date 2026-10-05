@@ -1,0 +1,74 @@
+name: 问题报告 / Bug report
+description: 地图打不开、白屏、瓦片不出、位置不对、崩溃
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先试这三步，多数情况立刻就好：标题栏「⇄」换一条线路 → 关掉面板再点悬浮按钮重开 → 刷新酒馆。
+        Try these first: switch the delivery line with 「⇄」 in the title bar, close and reopen the panel, refresh the tavern.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么 / What happened
+      description: 什么时候发生的、当时在做什么（进图、切层、进三维、翻聊天）、看到了什么
+      placeholder: |
+        打开伊甸卡后点悬浮按钮，面板出来了但一直停在「加载中」，大约 30 秒后按钮变成「预加载失败」。
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: 宿主 / Host
+      description: 实测过的是 SillyTavern 1.19.0 + 酒馆助手 4.11.2 与 TauriTavern 2.3.0 + 酒馆助手 4.11.2（见 docs/compatibility.md §1）
+      options:
+        - SillyTavern + 酒馆助手（TavernHelper）
+        - Mac TauriTavern（TT）+ 酒馆助手
+        - 手机 TauriTavern（未实测，你的反馈很值钱）
+        - 其它（在下面写明）
+    validations:
+      required: true
+  - type: dropdown
+    id: line
+    attributes:
+      label: 当时走的线路 / Delivery line
+      description: 标题栏「⇄」按钮上写的那一条；不知道就选最后一项
+      options:
+        - 国内镜像 cdn.jsdmirror.com
+        - jsDelivr cdn.jsdelivr.net
+        - fastly fastly.jsdelivr.net
+        - npm 地址（旧脚本；新版不再从 npm 取）
+        - 不知道 / 没注意
+  - type: input
+    id: version
+    attributes:
+      label: 地图版本 / Map version
+      description: 「关于」面板里的标签与构建号（例如 map-v0.9.8 / head #364）；跟随版请把构建号原样贴过来
+      placeholder: map-v0.9.8
+  - type: textarea
+    id: report
+    attributes:
+      label: 反馈报告全文 / The feedback report
+      description: 面板「反馈」按钮 → 复制，然后把内容贴到这里。报告只含地图版本 / 自检 / 位置 / 日志，不含聊天正文
+      render: text
+      placeholder: === 空间地图反馈报告 / Spatial Map feedback report ===
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 怎么稳定复现 / How to reproduce
+      description: 卡名、聊天大概多少楼、点了哪几步
+      placeholder: |
+        1. 打开「母畜庄园 Yehehua二创版V1.5」
+        2. 点悬浮按钮
+        3. 切到「天城 · 中层」
+    validations:
+      required: true
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: 已经确认过 / Checked already
+      options:
+        - label: 换过线路（⇄）试过
+        - label: 刷新酒馆重试过
+        - label: 同时只开了一份地图脚本（跟随版与正式版没有同时启用）
+        - label: 截图里有需要隐藏的内容，我已经处理过

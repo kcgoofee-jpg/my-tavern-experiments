@@ -34,6 +34,9 @@ import 'https://cdn.jsdelivr.net/gh/kcgoofee-jpg/my-tavern-experiments@map-v0.9.
 - [代理简报](docs/agent-brief.md) — 规则
 - [架构](docs/ARCHITECTURE.md) — 模块图、数据流、实体协议
 - [命名](docs/naming.md) — 命名规则、改名表、术语表
+- [玩家上手指南](docs/player-guide.zh.md) — 给玩家看的那一份（英文版 `docs/player-guide.md`）
+- [兼容性一览](docs/compatibility.zh.md) — 宿主、浏览器能力、画质档、实测耗时、还没实测的部分
+- [授权说明](docs/licensing.md) — 代码 MIT、设定包内容权利保留、18+ 与密钥提示
 - [待办](docs/todo.md) — 唯一清单
 - [交接](docs/handoff.md) — 上一轮会话的交接
 - [计划](docs/plans/spatial-os.md) — 现行计划

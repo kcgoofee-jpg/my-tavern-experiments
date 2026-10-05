@@ -22,6 +22,8 @@ PAIRS = [
     ("docs/transit-schema.md", "docs/transit-schema.zh.md"),
     ("docs/settings-ia.md", "docs/settings-ia.zh.md"),
     ("docs/ui-refactor.md", "docs/ui-refactor.zh.md"),
+    ("docs/compatibility.md", "docs/compatibility.zh.md"),
+    ("docs/player-guide.md", "docs/player-guide.zh.md"),
 ]
 HEADING = re.compile(r"^(#{1,6})\s")
 

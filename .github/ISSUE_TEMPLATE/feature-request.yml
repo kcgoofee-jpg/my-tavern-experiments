@@ -1,0 +1,44 @@
+name: 功能建议 / Feature request
+description: 想让地图多做什么、哪里不好用
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        地图的边界：只做「外挂脚本 + 世界书附加条目」，不生成也不修改角色卡，不审查、不删改聊天内容
+        （见 `docs/agent-brief.md` §2 与 `docs/player-guide.zh.md`）。越过这条边的建议我们会留档但不做。
+  - type: textarea
+    id: want
+    attributes:
+      label: 你想要什么 / What you want
+      description: 一句话说清「在哪里、做什么、现在缺什么」
+      placeholder: 希望城市图的面包屑能右键跳回上一级的同级地点。
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么需要 / Why
+      description: 你在哪张卡、哪一段剧情里被卡住了；没有这个功能你现在怎么绕过
+      placeholder: 现在只能一层层点回去，一次剧情要来回四五次。
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及的部分 / Which part
+      options:
+        - 二维地图（视图、层、标记、飞行）
+        - 三维页面（庄园、地标、室内）
+        - 聊天读取（地点、人物、事件、物品）
+        - 注入与状态行（写给模型的那部分）
+        - 设定包（新卡接入、自动包）
+        - 安装与线路
+        - 其它
+  - type: checkboxes
+    id: exist
+    attributes:
+      label: 查过现有开关吗 / Checked the existing switches
+      options:
+        - label: 查过设置里对应的那一组（多数行为有开关，默认关）
+        - label: 查过 `docs/compatibility.md`，我要的不是「未实测」而是新功能

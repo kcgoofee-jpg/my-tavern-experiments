@@ -40,6 +40,9 @@ the one-line import earlier, re-import the script once; the one-line import keep
 - [Agent brief](docs/agent-brief.md) — the rules
 - [Architecture](docs/ARCHITECTURE.md) — module map, data flow, entity protocol
 - [Naming](docs/naming.md) — naming rules, rename map, glossary
+- [Player guide](docs/player-guide.md) — what a player reads; `docs/player-guide.zh.md` is the edition users open (D18)
+- [Compatibility](docs/compatibility.md) — hosts, browser features, quality tiers, measured timings, what is unverified
+- [Licensing](docs/licensing.md) — MIT code, all-rights-reserved pack content, the 18+ and key notices
 - [Todo](docs/todo.md) — the single tracker
 - [Handoff](docs/handoff.md) — last session's handoff
 - [Plan](docs/plans/spatial-os.md) — the plan of record
